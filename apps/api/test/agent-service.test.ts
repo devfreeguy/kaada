@@ -373,10 +373,13 @@ describe("amount modes and assets", () => {
     assert.equal(turn.response.type, "CLARIFICATION_REQUIRED");
     if (turn.response.type !== "CLARIFICATION_REQUIRED") return;
     assert.equal(turn.response.reason, "AMBIGUOUS");
-    assert.deepEqual(
-      turn.response.options?.map((o) => o.id).sort(),
-      [h.assets.USDC_CELO.id, h.assets.USDC_OTHER.id].sort(),
+    const options = turn.response.options ?? [];
+    assert.equal(options.length, 2);
+    // Ids are opaque: they are not asset ids, and what they mean is stored on the server.
+    assert.ok(
+      options.every((o) => ![h.assets.USDC_CELO.id, h.assets.USDC_OTHER.id].includes(o.id)),
     );
+    assert.equal(h.world.clarificationChoices.length, 2);
   });
 
   it("resolves a token by its symbol and keeps USD apart from USDT", async () => {
@@ -595,7 +598,8 @@ describe("non-executing and conversational intents", () => {
 
     for (const message of ["help", "balance", "status"]) {
       const turn = await h.say(message);
-      assert.equal(turn.response.type, "MESSAGE", message);
+      assert.equal(turn.response.type, message === "help" ? "MESSAGE" : "ERROR", message);
+      if (turn.response.type === "ERROR") assert.equal(turn.response.code, "FEATURE_NOT_AVAILABLE");
       assert.equal(turn.intentId, undefined);
     }
     assert.deepEqual(h.world.intents.get(first.intentId ?? "")?.parsed, before?.parsed);
@@ -694,7 +698,7 @@ describe("robustness", () => {
     h.script.set("send $20", intent({ type: "SEND", amount: usd("20", "EXACT_INPUT") }));
     await h.say("send $20");
     assert.deepEqual(h.openTransactionDuringInterpret, [false]);
-    assert.equal(h.world.transactions, 2, "one short transaction to accept, one to apply");
+    assert.equal(h.world.transactions, 1, "accepting is transaction-free; only applying is atomic");
   });
 
   it("serialises simultaneous messages so the active intent is never corrupted", async () => {

@@ -9,6 +9,15 @@ export interface DatabaseConfig {
   poolTimeoutMs: number;
   /** Called for errors on idle pooled connections, e.g. Neon closing them. */
   onError?: (error: Error) => void;
+  /**
+   * Called after every SQL statement with its text and duration. Meant for profiling and debugging;
+   * never log the text in production, it can contain identifiers.
+   */
+  onQuery?: (sql: string, durationMs: number) => void;
+}
+
+interface QueryEmitter {
+  $on(event: "query", handler: (event: { query: string; duration: number }) => void): void;
 }
 
 export interface Database {
@@ -33,7 +42,16 @@ export function createDatabase(config: DatabaseConfig): Database {
     },
     config.onError && { onPoolError: config.onError, onConnectionError: config.onError },
   );
-  const client = new PrismaClient({ adapter });
+  const client = config.onQuery
+    ? new PrismaClient({ adapter, log: [{ emit: "event", level: "query" }] })
+    : new PrismaClient({ adapter });
+  if (config.onQuery) {
+    const onQuery = config.onQuery;
+    // The typed overload for the "query" event depends on the log option; this client has it.
+    (client as unknown as QueryEmitter).$on("query", (event) =>
+      onQuery(event.query, event.duration),
+    );
+  }
 
   return {
     client,

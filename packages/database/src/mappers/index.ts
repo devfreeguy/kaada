@@ -1,6 +1,7 @@
 // Internal to @kaada/database: mappers take Prisma rows, so they are deliberately NOT re-exported
 // from the package entry point. Only repositories use them.
 export { toAsset } from "./asset.js";
+export { choiceCreateData, toClarificationChoice } from "./clarification.js";
 export {
   conversationCreateData,
   messageCreateData,

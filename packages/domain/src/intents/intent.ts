@@ -58,11 +58,22 @@ export interface Intent {
   amount?: IntentAmountResolved;
   sourceAssetId?: string;
   destinationAssetId?: string;
+  /**
+   * An explicit funding preference ("use USDT"). It is not the currency of `amount`: "send $20 using
+   * USDT" is 20 USD with a USDT preference, and the amount stays in USD.
+   */
+  preferredSourceAssetId?: string;
   recipientId?: string;
   destinationCountry?: string;
   parsed?: AgentIntent;
   constraints?: PaymentConstraints;
   missingFields: MissingField[];
+  /**
+   * Starts at 1 and increases with every financial change (see hasFinancialChange). Anything derived
+   * from an intent (clarification options now; quotes and routes later) records the revision it was
+   * made from and is stale as soon as the intent has moved on.
+   */
+  revision: number;
   createdAt: Date;
   updatedAt: Date;
 }

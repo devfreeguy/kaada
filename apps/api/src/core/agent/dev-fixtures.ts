@@ -62,6 +62,7 @@ export const DEV_FIXTURES: Record<string, Interpretation> = {
   // Conversation controls and informational requests.
   "cancel that": { kind: "COMMAND", command: "CANCEL_ACTIVE_INTENT" },
   "start over": { kind: "COMMAND", command: "START_OVER" },
+  "don't use usdt": { kind: "COMMAND", command: "REMOVE_SOURCE_PREFERENCE" },
   help: intent({ type: "HELP" }),
   "what is my balance": intent({ type: "BALANCE" }),
   "where is my payment": intent({ type: "TRANSACTION_STATUS" }),

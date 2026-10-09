@@ -205,6 +205,7 @@ export type ConversationWhereInput = {
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   messages?: Prisma.MessageListRelationFilter
   intents?: Prisma.IntentListRelationFilter
+  clarificationOptions?: Prisma.ClarificationOptionListRelationFilter
 }
 
 export type ConversationOrderByWithRelationInput = {
@@ -219,6 +220,7 @@ export type ConversationOrderByWithRelationInput = {
   user?: Prisma.UserOrderByWithRelationInput
   messages?: Prisma.MessageOrderByRelationAggregateInput
   intents?: Prisma.IntentOrderByRelationAggregateInput
+  clarificationOptions?: Prisma.ClarificationOptionOrderByRelationAggregateInput
 }
 
 export type ConversationWhereUniqueInput = Prisma.AtLeast<{
@@ -237,6 +239,7 @@ export type ConversationWhereUniqueInput = Prisma.AtLeast<{
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   messages?: Prisma.MessageListRelationFilter
   intents?: Prisma.IntentListRelationFilter
+  clarificationOptions?: Prisma.ClarificationOptionListRelationFilter
 }, "id" | "channel_externalConversationId">
 
 export type ConversationOrderByWithAggregationInput = {
@@ -278,6 +281,7 @@ export type ConversationCreateInput = {
   user: Prisma.UserCreateNestedOneWithoutConversationsInput
   messages?: Prisma.MessageCreateNestedManyWithoutConversationInput
   intents?: Prisma.IntentCreateNestedManyWithoutConversationInput
+  clarificationOptions?: Prisma.ClarificationOptionCreateNestedManyWithoutConversationInput
 }
 
 export type ConversationUncheckedCreateInput = {
@@ -291,6 +295,7 @@ export type ConversationUncheckedCreateInput = {
   updatedAt?: Date | string
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutConversationInput
   intents?: Prisma.IntentUncheckedCreateNestedManyWithoutConversationInput
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedCreateNestedManyWithoutConversationInput
 }
 
 export type ConversationUpdateInput = {
@@ -304,6 +309,7 @@ export type ConversationUpdateInput = {
   user?: Prisma.UserUpdateOneRequiredWithoutConversationsNestedInput
   messages?: Prisma.MessageUpdateManyWithoutConversationNestedInput
   intents?: Prisma.IntentUpdateManyWithoutConversationNestedInput
+  clarificationOptions?: Prisma.ClarificationOptionUpdateManyWithoutConversationNestedInput
 }
 
 export type ConversationUncheckedUpdateInput = {
@@ -317,6 +323,7 @@ export type ConversationUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   messages?: Prisma.MessageUncheckedUpdateManyWithoutConversationNestedInput
   intents?: Prisma.IntentUncheckedUpdateManyWithoutConversationNestedInput
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedUpdateManyWithoutConversationNestedInput
 }
 
 export type ConversationCreateManyInput = {
@@ -480,6 +487,20 @@ export type ConversationUpdateOneRequiredWithoutIntentsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ConversationUpdateToOneWithWhereWithoutIntentsInput, Prisma.ConversationUpdateWithoutIntentsInput>, Prisma.ConversationUncheckedUpdateWithoutIntentsInput>
 }
 
+export type ConversationCreateNestedOneWithoutClarificationOptionsInput = {
+  create?: Prisma.XOR<Prisma.ConversationCreateWithoutClarificationOptionsInput, Prisma.ConversationUncheckedCreateWithoutClarificationOptionsInput>
+  connectOrCreate?: Prisma.ConversationCreateOrConnectWithoutClarificationOptionsInput
+  connect?: Prisma.ConversationWhereUniqueInput
+}
+
+export type ConversationUpdateOneRequiredWithoutClarificationOptionsNestedInput = {
+  create?: Prisma.XOR<Prisma.ConversationCreateWithoutClarificationOptionsInput, Prisma.ConversationUncheckedCreateWithoutClarificationOptionsInput>
+  connectOrCreate?: Prisma.ConversationCreateOrConnectWithoutClarificationOptionsInput
+  upsert?: Prisma.ConversationUpsertWithoutClarificationOptionsInput
+  connect?: Prisma.ConversationWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ConversationUpdateToOneWithWhereWithoutClarificationOptionsInput, Prisma.ConversationUpdateWithoutClarificationOptionsInput>, Prisma.ConversationUncheckedUpdateWithoutClarificationOptionsInput>
+}
+
 export type ConversationCreateWithoutUserInput = {
   id: string
   channel: $Enums.ChannelType
@@ -490,6 +511,7 @@ export type ConversationCreateWithoutUserInput = {
   updatedAt?: Date | string
   messages?: Prisma.MessageCreateNestedManyWithoutConversationInput
   intents?: Prisma.IntentCreateNestedManyWithoutConversationInput
+  clarificationOptions?: Prisma.ClarificationOptionCreateNestedManyWithoutConversationInput
 }
 
 export type ConversationUncheckedCreateWithoutUserInput = {
@@ -502,6 +524,7 @@ export type ConversationUncheckedCreateWithoutUserInput = {
   updatedAt?: Date | string
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutConversationInput
   intents?: Prisma.IntentUncheckedCreateNestedManyWithoutConversationInput
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedCreateNestedManyWithoutConversationInput
 }
 
 export type ConversationCreateOrConnectWithoutUserInput = {
@@ -554,6 +577,7 @@ export type ConversationCreateWithoutMessagesInput = {
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutConversationsInput
   intents?: Prisma.IntentCreateNestedManyWithoutConversationInput
+  clarificationOptions?: Prisma.ClarificationOptionCreateNestedManyWithoutConversationInput
 }
 
 export type ConversationUncheckedCreateWithoutMessagesInput = {
@@ -566,6 +590,7 @@ export type ConversationUncheckedCreateWithoutMessagesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   intents?: Prisma.IntentUncheckedCreateNestedManyWithoutConversationInput
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedCreateNestedManyWithoutConversationInput
 }
 
 export type ConversationCreateOrConnectWithoutMessagesInput = {
@@ -594,6 +619,7 @@ export type ConversationUpdateWithoutMessagesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutConversationsNestedInput
   intents?: Prisma.IntentUpdateManyWithoutConversationNestedInput
+  clarificationOptions?: Prisma.ClarificationOptionUpdateManyWithoutConversationNestedInput
 }
 
 export type ConversationUncheckedUpdateWithoutMessagesInput = {
@@ -606,6 +632,7 @@ export type ConversationUncheckedUpdateWithoutMessagesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intents?: Prisma.IntentUncheckedUpdateManyWithoutConversationNestedInput
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedUpdateManyWithoutConversationNestedInput
 }
 
 export type ConversationCreateWithoutIntentsInput = {
@@ -618,6 +645,7 @@ export type ConversationCreateWithoutIntentsInput = {
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutConversationsInput
   messages?: Prisma.MessageCreateNestedManyWithoutConversationInput
+  clarificationOptions?: Prisma.ClarificationOptionCreateNestedManyWithoutConversationInput
 }
 
 export type ConversationUncheckedCreateWithoutIntentsInput = {
@@ -630,6 +658,7 @@ export type ConversationUncheckedCreateWithoutIntentsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   messages?: Prisma.MessageUncheckedCreateNestedManyWithoutConversationInput
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedCreateNestedManyWithoutConversationInput
 }
 
 export type ConversationCreateOrConnectWithoutIntentsInput = {
@@ -658,6 +687,7 @@ export type ConversationUpdateWithoutIntentsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutConversationsNestedInput
   messages?: Prisma.MessageUpdateManyWithoutConversationNestedInput
+  clarificationOptions?: Prisma.ClarificationOptionUpdateManyWithoutConversationNestedInput
 }
 
 export type ConversationUncheckedUpdateWithoutIntentsInput = {
@@ -670,6 +700,75 @@ export type ConversationUncheckedUpdateWithoutIntentsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   messages?: Prisma.MessageUncheckedUpdateManyWithoutConversationNestedInput
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedUpdateManyWithoutConversationNestedInput
+}
+
+export type ConversationCreateWithoutClarificationOptionsInput = {
+  id: string
+  channel: $Enums.ChannelType
+  status?: $Enums.ConversationStatus
+  externalConversationId?: string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutConversationsInput
+  messages?: Prisma.MessageCreateNestedManyWithoutConversationInput
+  intents?: Prisma.IntentCreateNestedManyWithoutConversationInput
+}
+
+export type ConversationUncheckedCreateWithoutClarificationOptionsInput = {
+  id: string
+  userId: string
+  channel: $Enums.ChannelType
+  status?: $Enums.ConversationStatus
+  externalConversationId?: string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutConversationInput
+  intents?: Prisma.IntentUncheckedCreateNestedManyWithoutConversationInput
+}
+
+export type ConversationCreateOrConnectWithoutClarificationOptionsInput = {
+  where: Prisma.ConversationWhereUniqueInput
+  create: Prisma.XOR<Prisma.ConversationCreateWithoutClarificationOptionsInput, Prisma.ConversationUncheckedCreateWithoutClarificationOptionsInput>
+}
+
+export type ConversationUpsertWithoutClarificationOptionsInput = {
+  update: Prisma.XOR<Prisma.ConversationUpdateWithoutClarificationOptionsInput, Prisma.ConversationUncheckedUpdateWithoutClarificationOptionsInput>
+  create: Prisma.XOR<Prisma.ConversationCreateWithoutClarificationOptionsInput, Prisma.ConversationUncheckedCreateWithoutClarificationOptionsInput>
+  where?: Prisma.ConversationWhereInput
+}
+
+export type ConversationUpdateToOneWithWhereWithoutClarificationOptionsInput = {
+  where?: Prisma.ConversationWhereInput
+  data: Prisma.XOR<Prisma.ConversationUpdateWithoutClarificationOptionsInput, Prisma.ConversationUncheckedUpdateWithoutClarificationOptionsInput>
+}
+
+export type ConversationUpdateWithoutClarificationOptionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  channel?: Prisma.EnumChannelTypeFieldUpdateOperationsInput | $Enums.ChannelType
+  status?: Prisma.EnumConversationStatusFieldUpdateOperationsInput | $Enums.ConversationStatus
+  externalConversationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutConversationsNestedInput
+  messages?: Prisma.MessageUpdateManyWithoutConversationNestedInput
+  intents?: Prisma.IntentUpdateManyWithoutConversationNestedInput
+}
+
+export type ConversationUncheckedUpdateWithoutClarificationOptionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  channel?: Prisma.EnumChannelTypeFieldUpdateOperationsInput | $Enums.ChannelType
+  status?: Prisma.EnumConversationStatusFieldUpdateOperationsInput | $Enums.ConversationStatus
+  externalConversationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  messages?: Prisma.MessageUncheckedUpdateManyWithoutConversationNestedInput
+  intents?: Prisma.IntentUncheckedUpdateManyWithoutConversationNestedInput
 }
 
 export type ConversationCreateManyUserInput = {
@@ -692,6 +791,7 @@ export type ConversationUpdateWithoutUserInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   messages?: Prisma.MessageUpdateManyWithoutConversationNestedInput
   intents?: Prisma.IntentUpdateManyWithoutConversationNestedInput
+  clarificationOptions?: Prisma.ClarificationOptionUpdateManyWithoutConversationNestedInput
 }
 
 export type ConversationUncheckedUpdateWithoutUserInput = {
@@ -704,6 +804,7 @@ export type ConversationUncheckedUpdateWithoutUserInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   messages?: Prisma.MessageUncheckedUpdateManyWithoutConversationNestedInput
   intents?: Prisma.IntentUncheckedUpdateManyWithoutConversationNestedInput
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedUpdateManyWithoutConversationNestedInput
 }
 
 export type ConversationUncheckedUpdateManyWithoutUserInput = {
@@ -724,11 +825,13 @@ export type ConversationUncheckedUpdateManyWithoutUserInput = {
 export type ConversationCountOutputType = {
   messages: number
   intents: number
+  clarificationOptions: number
 }
 
 export type ConversationCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   messages?: boolean | ConversationCountOutputTypeCountMessagesArgs
   intents?: boolean | ConversationCountOutputTypeCountIntentsArgs
+  clarificationOptions?: boolean | ConversationCountOutputTypeCountClarificationOptionsArgs
 }
 
 /**
@@ -755,6 +858,13 @@ export type ConversationCountOutputTypeCountIntentsArgs<ExtArgs extends runtime.
   where?: Prisma.IntentWhereInput
 }
 
+/**
+ * ConversationCountOutputType without action
+ */
+export type ConversationCountOutputTypeCountClarificationOptionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ClarificationOptionWhereInput
+}
+
 
 export type ConversationSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -768,6 +878,7 @@ export type ConversationSelect<ExtArgs extends runtime.Types.Extensions.Internal
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   messages?: boolean | Prisma.Conversation$messagesArgs<ExtArgs>
   intents?: boolean | Prisma.Conversation$intentsArgs<ExtArgs>
+  clarificationOptions?: boolean | Prisma.Conversation$clarificationOptionsArgs<ExtArgs>
   _count?: boolean | Prisma.ConversationCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["conversation"]>
 
@@ -811,6 +922,7 @@ export type ConversationInclude<ExtArgs extends runtime.Types.Extensions.Interna
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   messages?: boolean | Prisma.Conversation$messagesArgs<ExtArgs>
   intents?: boolean | Prisma.Conversation$intentsArgs<ExtArgs>
+  clarificationOptions?: boolean | Prisma.Conversation$clarificationOptionsArgs<ExtArgs>
   _count?: boolean | Prisma.ConversationCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ConversationIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -826,6 +938,7 @@ export type $ConversationPayload<ExtArgs extends runtime.Types.Extensions.Intern
     user: Prisma.$UserPayload<ExtArgs>
     messages: Prisma.$MessagePayload<ExtArgs>[]
     intents: Prisma.$IntentPayload<ExtArgs>[]
+    clarificationOptions: Prisma.$ClarificationOptionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1233,6 +1346,7 @@ export interface Prisma__ConversationClient<T, Null = never, ExtArgs extends run
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   messages<T extends Prisma.Conversation$messagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Conversation$messagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   intents<T extends Prisma.Conversation$intentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Conversation$intentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$IntentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  clarificationOptions<T extends Prisma.Conversation$clarificationOptionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Conversation$clarificationOptionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ClarificationOptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1716,6 +1830,30 @@ export type Conversation$intentsArgs<ExtArgs extends runtime.Types.Extensions.In
   take?: number
   skip?: number
   distinct?: Prisma.IntentScalarFieldEnum | Prisma.IntentScalarFieldEnum[]
+}
+
+/**
+ * Conversation.clarificationOptions
+ */
+export type Conversation$clarificationOptionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ClarificationOption
+   */
+  select?: Prisma.ClarificationOptionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ClarificationOption
+   */
+  omit?: Prisma.ClarificationOptionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ClarificationOptionInclude<ExtArgs> | null
+  where?: Prisma.ClarificationOptionWhereInput
+  orderBy?: Prisma.ClarificationOptionOrderByWithRelationInput | Prisma.ClarificationOptionOrderByWithRelationInput[]
+  cursor?: Prisma.ClarificationOptionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ClarificationOptionScalarFieldEnum | Prisma.ClarificationOptionScalarFieldEnum[]
 }
 
 /**

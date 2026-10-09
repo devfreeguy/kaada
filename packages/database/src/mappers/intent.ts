@@ -52,6 +52,7 @@ export function toIntent(row: IntentRow): Intent {
     ...maybe("amount", amount),
     ...maybe("sourceAssetId", row.sourceAssetId),
     ...maybe("destinationAssetId", row.destinationAssetId),
+    ...maybe("preferredSourceAssetId", row.preferredSourceAssetId),
     ...maybe("recipientId", row.recipientId),
     ...maybe("destinationCountry", row.destinationCountry),
     ...maybe("parsed", parsed),
@@ -65,6 +66,7 @@ export function toIntent(row: IntentRow): Intent {
       row.missingFields === null
         ? []
         : parseColumn(missingFieldsSchema, row.missingFields, "Intent.missingFields"),
+    revision: row.revision,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -76,11 +78,13 @@ type MutableIntent = Pick<
   | "amount"
   | "sourceAssetId"
   | "destinationAssetId"
+  | "preferredSourceAssetId"
   | "recipientId"
   | "destinationCountry"
   | "parsed"
   | "constraints"
   | "missingFields"
+  | "revision"
 >;
 
 function intentColumns(intent: MutableIntent, absentJson: typeof Prisma.DbNull | undefined) {
@@ -98,6 +102,8 @@ function intentColumns(intent: MutableIntent, absentJson: typeof Prisma.DbNull |
     amountMode: intent.amount?.mode ?? null,
     sourceAssetId: intent.sourceAssetId ?? null,
     destinationAssetId: intent.destinationAssetId ?? null,
+    preferredSourceAssetId: intent.preferredSourceAssetId ?? null,
+    revision: intent.revision,
     recipientId: intent.recipientId ?? null,
     destinationCountry: intent.destinationCountry ?? null,
     normalizedData: jsonInput(intent.parsed, "Intent.parsed") ?? {},

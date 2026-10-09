@@ -186,6 +186,7 @@ describe("repositories (database round trips, rolled back)", { skip }, () => {
         status: "AWAITING_DETAILS",
         parsed,
         missingFields: ["RECIPIENT"],
+        revision: 1,
       });
       assert.deepEqual(draft.parsed, parsed);
       assert.equal(draft.amount, undefined, "human amount is not canonical money");
@@ -251,6 +252,7 @@ describe("repositories (database round trips, rolled back)", { skip }, () => {
         type: "SEND",
         status: "QUOTING",
         missingFields: [],
+        revision: 1,
       });
 
       const quote = await repos.quotes.create({
@@ -424,6 +426,7 @@ describe("repositories (database round trips, rolled back)", { skip }, () => {
         constraints: { maxSlippageBps: 10 },
         parsed: { type: "SEND" },
         missingFields: [],
+        revision: 1,
       });
       const cleared = await repos.intents.save({
         ...intent,
@@ -457,6 +460,61 @@ describe("repositories (database round trips, rolled back)", { skip }, () => {
       assert.equal(found.length, 1, "channel usernames are matched case-insensitively");
       assert.equal(found[0]?.userId, created.id);
       assert.deepEqual(await repos.identities.findByUsername("EMAIL", "mixedcase"), []);
+    });
+  });
+
+  it("stores clarification options, finds the latest question, and lets one caller use an option", async () => {
+    await rolledBack(async (repos) => {
+      const { usd, ngn } = await seeded(repos);
+      const { userId, conversation } = await newConversation(repos);
+      const intent = await repos.intents.create({
+        id: createId(),
+        userId,
+        conversationId: conversation.id,
+        type: "SEND",
+        status: "AWAITING_DETAILS",
+        missingFields: ["RECIPIENT"],
+        preferredSourceAssetId: ngn.id,
+        revision: 1,
+      });
+      assert.equal(intent.preferredSourceAssetId, ngn.id);
+      assert.equal(intent.revision, 1);
+      const saved = await repos.intents.save({ ...intent, revision: 2 });
+      assert.equal(saved.revision, 2);
+
+      const expiresAt = new Date(Date.now() + 60_000);
+      const option = (groupId: string, label: string) => ({
+        id: createId(),
+        groupId,
+        conversationId: conversation.id,
+        intentId: intent.id,
+        revision: 2,
+        field: "SOURCE_ASSET" as const,
+        label,
+        value: { kind: "ASSET", target: "AMOUNT", assetId: usd.id },
+        expiresAt,
+      });
+      const firstGroup = createId();
+      const secondGroup = createId();
+      const [a] = await repos.clarifications.issue([
+        option(firstGroup, "first A"),
+        option(firstGroup, "first B"),
+      ]);
+      assert.ok(a);
+      assert.equal(await repos.clarifications.latestGroupId(intent.id), firstGroup);
+      const [b] = await repos.clarifications.issue([option(secondGroup, "second A")]);
+      assert.ok(b);
+      assert.equal(await repos.clarifications.latestGroupId(intent.id), secondGroup);
+
+      const found = await repos.clarifications.findById(a.id);
+      assert.equal(found?.label, "first A");
+      assert.equal(found?.usedAt, undefined);
+      assert.deepEqual(found?.value, { kind: "ASSET", target: "AMOUNT", assetId: usd.id });
+
+      assert.equal(await repos.clarifications.markUsed(a.id, new Date()), true);
+      assert.equal(await repos.clarifications.markUsed(a.id, new Date()), false, "single use");
+      assert.ok((await repos.clarifications.findById(a.id))?.usedAt);
+      assert.equal(await repos.clarifications.findById(createId()), null);
     });
   });
 

@@ -33,16 +33,38 @@ function normalizeName(value: string): string {
   return value.trim().replace(/^@/, "").toLowerCase();
 }
 
+/** A username-like token is safe to show to tell two people apart; a phone number or address is not. */
+function publicHandle(identifier: string | undefined): string | undefined {
+  if (!identifier) return undefined;
+  const bare = identifier.trim().replace(/^@/, "");
+  const looksLikeHandle =
+    /^[A-Za-z0-9_.]{2,32}$/.test(bare) && !/^\d+$/.test(bare) && !/^0x/i.test(bare);
+  return looksLikeHandle ? bare : undefined;
+}
+
 function fromSaved(reference: RecipientReference, saved: Recipient): ResolvedRecipient {
+  const handle =
+    saved.type === "WALLET_ADDRESS" || saved.type === "PHONE_NUMBER"
+      ? undefined
+      : publicHandle(saved.identifier);
   return {
     reference,
     recipientId: saved.id,
     ...(saved.linkedUserId && { linkedUserId: saved.linkedUserId }),
     ...(saved.displayName && { displayName: saved.displayName }),
+    ...(handle && { handle }),
     ...(saved.walletAddress && { walletAddress: saved.walletAddress }),
     ...(saved.destinationCountry && { destinationCountry: saved.destinationCountry }),
     ...(saved.preferredAssetId && { preferredAssetId: saved.preferredAssetId }),
   };
+}
+
+/** The resolution of a reference that was already resolved and stored, rebuilt without any lookup. */
+export function resolvedFromStored(
+  reference: RecipientReference,
+  stored: Recipient,
+): ResolvedRecipient {
+  return fromSaved(reference, stored);
 }
 
 function pick(candidates: ResolvedRecipient[]): RecipientResolution {
@@ -77,7 +99,7 @@ export function createRepositoryRecipientResolver(
         return (
           name === wanted ||
           words.includes(wanted) ||
-          recipient.identifier?.toLowerCase() === wanted
+          recipient.identifier?.toLowerCase().replace(/^@/, "") === wanted
         );
       })
       .map((recipient) => fromSaved(reference, recipient));
@@ -87,9 +109,15 @@ export function createRepositoryRecipientResolver(
     const user = await repos.users.findByUsername(normalizeName(reference.value));
     if (!user) return notFound;
     const displayName = user.displayName ?? user.username;
+    const handle = publicHandle(user.username);
     return {
       status: "RESOLVED",
-      recipient: { reference, linkedUserId: user.id, ...(displayName && { displayName }) },
+      recipient: {
+        reference,
+        linkedUserId: user.id,
+        ...(displayName && { displayName }),
+        ...(handle && { handle }),
+      },
     };
   }
 
@@ -117,10 +145,12 @@ export function createRepositoryRecipientResolver(
               const user = await repos.users.findById(identity.userId);
               const displayName =
                 user?.displayName ?? (identity.username ? `@${identity.username}` : undefined);
+              const handle = publicHandle(identity.username);
               return {
                 reference,
                 linkedUserId: identity.userId,
                 ...(displayName && { displayName }),
+                ...(handle && { handle }),
               };
             }),
           );

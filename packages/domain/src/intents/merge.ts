@@ -21,7 +21,8 @@ export type MergeOutcome =
   | { kind: "REPLACED"; intent: AgentIntent }
   | { kind: "SIDE_REQUEST"; intent: AgentIntent };
 
-type TransactionalIntent = SendIntent | ConvertIntent | QuoteIntent;
+/** The intents that describe a money operation and can be built up over several messages. */
+export type TransactionalIntent = SendIntent | ConvertIntent | QuoteIntent;
 
 /** Intents that describe a money operation and can be built up over several messages. */
 export function isTransactionalIntent(intent: AgentIntent): intent is TransactionalIntent {
@@ -61,11 +62,21 @@ function mergeAmount(
   });
 }
 
+/**
+ * Destination details merge field by field, except that naming a different country starts the
+ * destination over: a currency or asset stated for the old country ("in BRL") no longer applies to
+ * "actually Argentina".
+ */
 function mergeDestination(
   previous: Destination | undefined,
   next: Destination | undefined,
 ): Destination | undefined {
-  return previous || next ? { ...compact(previous ?? {}), ...compact(next ?? {}) } : undefined;
+  if (!previous || !next) return previous ?? next;
+  const countryChanged =
+    next.country !== undefined &&
+    previous.country !== undefined &&
+    next.country !== previous.country;
+  return countryChanged ? compact(next) : { ...compact(previous), ...compact(next) };
 }
 
 function mergeConstraints(
@@ -129,4 +140,11 @@ export function mergeAgentIntent(
     return { kind: "MERGED", intent: mergeQuote(active, incoming) };
   }
   return { kind: "REPLACED", intent: incoming };
+}
+
+/** The same operation without its explicit funding preference ("don't use USDT"). */
+export function withoutSourcePreference(intent: AgentIntent): AgentIntent {
+  if (intent.type !== "SEND" || intent.sourceAsset === undefined) return intent;
+  const { sourceAsset: _removed, ...rest } = intent;
+  return rest;
 }

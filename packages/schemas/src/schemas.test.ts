@@ -287,3 +287,31 @@ describe("provider and confirmation schemas", () => {
     });
   });
 });
+
+describe("agent message request", () => {
+  it("accepts text, or a choice with its conversation, and nothing else", async () => {
+    const { agentMessageRequestSchema } = await import("./api/agent-message.js");
+    const id = "7b0f3c5e-1d2a-4b6c-8e9f-0a1b2c3d4e5f";
+    assert.equal(agentMessageRequestSchema.safeParse({ content: "hi" }).success, true);
+    assert.equal(
+      agentMessageRequestSchema.safeParse({ userId: id, conversationId: id, optionId: "x" })
+        .success,
+      true,
+    );
+    // A choice carries no value of its own, and cannot arrive without its conversation.
+    assert.equal(
+      agentMessageRequestSchema.safeParse({
+        userId: id,
+        conversationId: id,
+        optionId: "x",
+        recipientId: id,
+      }).success,
+      false,
+    );
+    assert.equal(agentMessageRequestSchema.safeParse({ optionId: "x" }).success, false);
+    assert.equal(
+      agentMessageRequestSchema.safeParse({ content: "hi", optionId: "x" }).success,
+      false,
+    );
+  });
+});

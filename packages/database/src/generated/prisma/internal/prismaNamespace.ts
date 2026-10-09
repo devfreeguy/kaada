@@ -405,6 +405,7 @@ export const ModelName = {
   Conversation: 'Conversation',
   Message: 'Message',
   Intent: 'Intent',
+  ClarificationOption: 'ClarificationOption',
   Recipient: 'Recipient',
   Provider: 'Provider',
   ProviderCapability: 'ProviderCapability',
@@ -430,7 +431,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "identity" | "session" | "wallet" | "asset" | "conversation" | "message" | "intent" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent"
+    modelProps: "user" | "identity" | "session" | "wallet" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1023,6 +1024,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.IntentCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.IntentCountAggregateOutputType> | number
+        }
+      }
+    }
+    ClarificationOption: {
+      payload: Prisma.$ClarificationOptionPayload<ExtArgs>
+      fields: Prisma.ClarificationOptionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ClarificationOptionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClarificationOptionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ClarificationOptionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClarificationOptionPayload>
+        }
+        findFirst: {
+          args: Prisma.ClarificationOptionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClarificationOptionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ClarificationOptionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClarificationOptionPayload>
+        }
+        findMany: {
+          args: Prisma.ClarificationOptionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClarificationOptionPayload>[]
+        }
+        create: {
+          args: Prisma.ClarificationOptionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClarificationOptionPayload>
+        }
+        createMany: {
+          args: Prisma.ClarificationOptionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ClarificationOptionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClarificationOptionPayload>[]
+        }
+        delete: {
+          args: Prisma.ClarificationOptionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClarificationOptionPayload>
+        }
+        update: {
+          args: Prisma.ClarificationOptionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClarificationOptionPayload>
+        }
+        deleteMany: {
+          args: Prisma.ClarificationOptionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ClarificationOptionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ClarificationOptionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClarificationOptionPayload>[]
+        }
+        upsert: {
+          args: Prisma.ClarificationOptionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClarificationOptionPayload>
+        }
+        aggregate: {
+          args: Prisma.ClarificationOptionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateClarificationOption>
+        }
+        groupBy: {
+          args: Prisma.ClarificationOptionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ClarificationOptionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ClarificationOptionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ClarificationOptionCountAggregateOutputType> | number
         }
       }
     }
@@ -1917,6 +1992,8 @@ export const IntentScalarFieldEnum = {
   destinationAssetId: 'destinationAssetId',
   recipientId: 'recipientId',
   destinationCountry: 'destinationCountry',
+  preferredSourceAssetId: 'preferredSourceAssetId',
+  revision: 'revision',
   normalizedData: 'normalizedData',
   constraints: 'constraints',
   missingFields: 'missingFields',
@@ -1925,6 +2002,24 @@ export const IntentScalarFieldEnum = {
 } as const
 
 export type IntentScalarFieldEnum = (typeof IntentScalarFieldEnum)[keyof typeof IntentScalarFieldEnum]
+
+
+export const ClarificationOptionScalarFieldEnum = {
+  id: 'id',
+  groupId: 'groupId',
+  conversationId: 'conversationId',
+  intentId: 'intentId',
+  revision: 'revision',
+  field: 'field',
+  label: 'label',
+  description: 'description',
+  value: 'value',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type ClarificationOptionScalarFieldEnum = (typeof ClarificationOptionScalarFieldEnum)[keyof typeof ClarificationOptionScalarFieldEnum]
 
 
 export const RecipientScalarFieldEnum = {
@@ -2650,6 +2745,7 @@ export type GlobalOmitConfig = {
   conversation?: Prisma.ConversationOmit
   message?: Prisma.MessageOmit
   intent?: Prisma.IntentOmit
+  clarificationOption?: Prisma.ClarificationOptionOmit
   recipient?: Prisma.RecipientOmit
   provider?: Prisma.ProviderOmit
   providerCapability?: Prisma.ProviderCapabilityOmit

@@ -6,6 +6,7 @@ import type { AgentTurnResult } from "../../src/core/agent/agent-service.js";
 import { MockIntentInterpreter } from "../../src/core/agent/mock-interpreter.js";
 import type { IntentInterpreter, InterpretationInput } from "../../src/core/agent/interpreter.js";
 import type { AgentLog } from "../../src/core/agent/ports.js";
+import type { OnIntentRevised } from "../../src/core/intents/intent-commit.js";
 import { createInMemoryWorld } from "./in-memory.js";
 import type { InMemoryWorld } from "./in-memory.js";
 
@@ -41,10 +42,17 @@ export interface Harness {
   script: Map<string, Interpretation>;
   /** Calls observed on the interpreter along with whether a transaction was open at that time. */
   openTransactionDuringInterpret: boolean[];
+  /** How many times the interpreter was asked. */
+  readonly interpreterCalls: number;
   logs: { level: string; event: string; fields: Record<string, unknown> }[];
   agent: AgentService;
   say(
     content: string,
+    options?: { externalMessageId?: string; externalConversationId?: string; userId?: string },
+  ): Promise<AgentTurnResult>;
+  /** Selects an option by id, as a channel would. */
+  choose(
+    optionId: string,
     options?: { externalMessageId?: string; externalConversationId?: string; userId?: string },
   ): Promise<AgentTurnResult>;
 }
@@ -55,6 +63,7 @@ export function createHarness(
     delayMs?: (input: InterpretationInput) => number;
     /** Use a different interpreter (e.g. the Groq one over a fake transport) instead of the mock. */
     interpreter?: IntentInterpreter;
+    onIntentRevised?: OnIntentRevised;
   } = {},
 ): Harness {
   const world = createInMemoryWorld();
@@ -72,7 +81,9 @@ export function createHarness(
 
   const script = new Map<string, Interpretation>();
   const openTransactionDuringInterpret: boolean[] = [];
+  let interpreterCalls = 0;
   const interpreter = new MockIntentInterpreter(async (input) => {
+    interpreterCalls += 1;
     openTransactionDuringInterpret.push(world.inTransaction);
     const delay = options.delayMs?.(input) ?? 0;
     if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
@@ -86,6 +97,7 @@ export function createHarness(
     unitOfWork: world.unitOfWork,
     interpreter: options.interpreter ?? interpreter,
     log,
+    ...(options.onIntentRevised && { onIntentRevised: options.onIntentRevised }),
   });
   let chat = 0;
   const defaultChat = `chat-${++chat}`;
@@ -96,8 +108,20 @@ export function createHarness(
     interpreter,
     script,
     openTransactionDuringInterpret,
+    get interpreterCalls() {
+      return interpreterCalls;
+    },
     logs,
     agent,
+    choose: (optionId, opts = {}) =>
+      agent.handleChoice({
+        kind: "CHOICE",
+        userId: opts.userId ?? SENDER,
+        channel: "TELEGRAM",
+        externalConversationId: opts.externalConversationId ?? defaultChat,
+        optionId,
+        ...(opts.externalMessageId && { externalMessageId: opts.externalMessageId }),
+      }),
     say: (content, opts = {}) =>
       agent.handleMessage({
         userId: opts.userId ?? SENDER,

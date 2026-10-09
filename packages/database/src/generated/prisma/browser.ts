@@ -64,6 +64,14 @@ export type Message = Prisma.MessageModel
  */
 export type Intent = Prisma.IntentModel
 /**
+ * Model ClarificationOption
+ * One selectable answer to a clarification question. The row, never the client payload, is the
+ * source of truth: a choice is honoured only while it belongs to the conversation's open intent at
+ * the same revision, is part of the latest question, is unexpired and unused. `value` holds what the
+ * choice means (a resolved recipient, an asset) and is never sent to the channel.
+ */
+export type ClarificationOption = Prisma.ClarificationOptionModel
+/**
  * Model Recipient
  * 
  */

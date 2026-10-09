@@ -59,6 +59,7 @@ export const ModelName = {
   Conversation: 'Conversation',
   Message: 'Message',
   Intent: 'Intent',
+  ClarificationOption: 'ClarificationOption',
   Recipient: 'Recipient',
   Provider: 'Provider',
   ProviderCapability: 'ProviderCapability',
@@ -199,6 +200,8 @@ export const IntentScalarFieldEnum = {
   destinationAssetId: 'destinationAssetId',
   recipientId: 'recipientId',
   destinationCountry: 'destinationCountry',
+  preferredSourceAssetId: 'preferredSourceAssetId',
+  revision: 'revision',
   normalizedData: 'normalizedData',
   constraints: 'constraints',
   missingFields: 'missingFields',
@@ -207,6 +210,24 @@ export const IntentScalarFieldEnum = {
 } as const
 
 export type IntentScalarFieldEnum = (typeof IntentScalarFieldEnum)[keyof typeof IntentScalarFieldEnum]
+
+
+export const ClarificationOptionScalarFieldEnum = {
+  id: 'id',
+  groupId: 'groupId',
+  conversationId: 'conversationId',
+  intentId: 'intentId',
+  revision: 'revision',
+  field: 'field',
+  label: 'label',
+  description: 'description',
+  value: 'value',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type ClarificationOptionScalarFieldEnum = (typeof ClarificationOptionScalarFieldEnum)[keyof typeof ClarificationOptionScalarFieldEnum]
 
 
 export const RecipientScalarFieldEnum = {

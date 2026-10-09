@@ -261,6 +261,171 @@ describe("agent core on the real database", { skip }, () => {
     assert.equal(await repositories.intents.findOpenByConversation(first.conversationId), null);
   });
 
+  describe("structured choices", () => {
+    async function twoDaniels(sender: { id: string }) {
+      const make = (displayName: string, identifier: string) =>
+        repositories.recipients.create({
+          id: createId(),
+          ownerUserId: sender.id,
+          type: "SAVED_BENEFICIARY",
+          identifier,
+          displayName,
+          isSaved: true,
+          destinationCountry: "BR",
+        });
+      return {
+        okafor: await make("Daniel Okafor", "daniel_o"),
+        silva: await make("Daniel Silva", "daniel_s"),
+      };
+    }
+
+    const sendToDaniel = intent({
+      type: "SEND",
+      recipient: { type: "SAVED_BENEFICIARY", value: "Daniel" },
+      amount: { value: "20", currencyOrAsset: "USD", mode: "EXACT_INPUT" },
+    });
+
+    const choose = (
+      agent: AgentService,
+      userId: string,
+      chat: string,
+      optionId: string,
+      ext?: string,
+    ) =>
+      agent.handleChoice({
+        kind: "CHOICE",
+        userId,
+        channel: "TELEGRAM",
+        externalConversationId: chat,
+        optionId,
+        ...(ext && { externalMessageId: ext }),
+      });
+
+    async function ask(label: string) {
+      const sender = await newUser("sender");
+      const people = await twoDaniels(sender);
+      const { agent, interpreter } = newAgent({ "send $20 to daniel": sendToDaniel });
+      const chat = `chat-${run}-${label}`;
+      const asked = await say(agent, sender.id, chat, "send $20 to daniel");
+      assert.equal(asked.response.type, "CLARIFICATION_REQUIRED");
+      const options =
+        asked.response.type === "CLARIFICATION_REQUIRED" ? (asked.response.options ?? []) : [];
+      assert.equal(options.length, 2);
+      return { sender, people, agent, interpreter, chat, asked, options };
+    }
+
+    it("resolves a selected recipient from stored state without the interpreter, single use", async () => {
+      const { sender, people, agent, interpreter, chat, asked, options } = await ask("pick");
+      const okafor = options.find((o) => o.label === "Daniel Okafor");
+      assert.equal(okafor?.description, "@daniel_o");
+
+      const picked = await choose(agent, sender.id, chat, okafor?.id ?? "", "cb-1");
+      assert.equal(picked.response.type, "ROUTING_REQUIRED");
+      assert.equal(interpreter.calls.length, 1, "only the original message was interpreted");
+
+      const stored = await repositories.intents.findById(asked.intentId ?? "");
+      assert.equal(stored?.recipientId, people.okafor.id);
+      assert.equal(stored?.status, "RESOLVED");
+      assert.equal(stored?.revision, 2, "choosing the recipient is a financial change");
+      const row = await repositories.clarifications.findById(okafor?.id ?? "");
+      assert.ok(row?.usedAt);
+
+      const redelivered = await choose(agent, sender.id, chat, okafor?.id ?? "", "cb-1");
+      assert.equal(redelivered.duplicate, true);
+      const reused = await choose(agent, sender.id, chat, okafor?.id ?? "", "cb-2");
+      assert.equal(reused.response.type === "ERROR" && reused.response.code, "CHOICE_ALREADY_USED");
+      assert.equal(
+        await database.client.intent.count({ where: { conversationId: asked.conversationId } }),
+        1,
+      );
+    });
+
+    it("applies exactly one of several simultaneous taps on the same option", async () => {
+      const { sender, agent, chat, options, asked } = await ask("taps");
+      const id = options[0]?.id ?? "";
+      const results = await Promise.all([1, 2, 3, 4].map(() => choose(agent, sender.id, chat, id)));
+      const types = results.map((r) => r.response.type).sort();
+      assert.deepEqual(types, ["ERROR", "ERROR", "ERROR", "ROUTING_REQUIRED"]);
+      const stored = await repositories.intents.findById(asked.intentId ?? "");
+      assert.equal(stored?.revision, 2, "applied once");
+    });
+
+    it("rejects fabricated, cross-conversation and stale options on the real database", async () => {
+      const { sender, agent, chat, options, asked } = await ask("reject");
+      const unknown = await choose(agent, sender.id, chat, createId());
+      assert.equal(unknown.response.type === "ERROR" && unknown.response.code, "CHOICE_UNKNOWN");
+
+      await say(agent, sender.id, `${chat}-other`, "hello");
+      const crossed = await choose(agent, sender.id, `${chat}-other`, options[0]?.id ?? "");
+      assert.equal(crossed.response.type === "ERROR" && crossed.response.code, "CHOICE_UNKNOWN");
+
+      const stillUnused = await repositories.clarifications.findById(options[0]?.id ?? "");
+      assert.equal(stillUnused?.usedAt, undefined);
+      assert.equal((await repositories.intents.findById(asked.intentId ?? ""))?.revision, 1);
+    });
+
+    it("stays coherent when a typed correction and a selection arrive together", async () => {
+      const sender = await newUser("sender");
+      await twoDaniels(sender);
+      const { agent } = newAgent(
+        {
+          "send $20 to daniel": sendToDaniel,
+          "make it $40": intent({ type: "SEND", amount: { value: "40", currencyOrAsset: "USD" } }),
+        },
+        { "make it $40": 100 },
+      );
+      const chat = `chat-${run}-mixed`;
+      const asked = await say(agent, sender.id, chat, "send $20 to daniel");
+      const optionId =
+        asked.response.type === "CLARIFICATION_REQUIRED"
+          ? (asked.response.options?.[0]?.id ?? "")
+          : "";
+
+      await Promise.all([
+        say(agent, sender.id, chat, "make it $40"),
+        choose(agent, sender.id, chat, optionId),
+      ]);
+
+      const intents = await database.client.intent.findMany({
+        where: { conversationId: asked.conversationId, status: { not: "CANCELLED" } },
+      });
+      assert.equal(intents.length, 1);
+      assert.ok((intents[0]?.revision ?? 0) >= 2);
+    });
+
+    it("persists the source-asset preference apart from the amount, and removes it", async () => {
+      const sender = await newUser("sender");
+      // No tokens are seeded yet, so any seeded asset stands in to prove the column round-trips.
+      const [usdt] = await repositories.assets.findByFiatCode("NGN");
+      assert.ok(usdt, "run `pnpm db:seed` first");
+      const usd = await usdAssetId();
+      await twoDaniels(sender);
+      const { agent } = newAgent({
+        "send $20 to daniel": intent({
+          type: "SEND",
+          recipient: { type: "SAVED_BENEFICIARY", value: "Daniel Okafor" },
+          amount: { value: "20", currencyOrAsset: "USD", mode: "EXACT_INPUT" },
+        }),
+        "use usdt": intent({ type: "SEND", sourceAsset: "NGN" }),
+        "don't use usdt": { kind: "COMMAND", command: "REMOVE_SOURCE_PREFERENCE" },
+      });
+      const chat = `chat-${run}-pref`;
+      const first = await say(agent, sender.id, chat, "send $20 to daniel");
+      assert.equal(first.response.type, "ROUTING_REQUIRED");
+
+      await say(agent, sender.id, chat, "use usdt");
+      let stored = await repositories.intents.findById(first.intentId ?? "");
+      assert.equal(stored?.preferredSourceAssetId, usdt.id);
+      assert.equal(stored?.amount?.money.assetId, usd, "the amount is still in USD");
+      assert.equal(stored?.revision, 2);
+
+      await say(agent, sender.id, chat, "don't use usdt");
+      stored = await repositories.intents.findById(first.intentId ?? "");
+      assert.equal(stored?.preferredSourceAssetId, undefined);
+      assert.equal(stored?.revision, 3);
+    });
+  });
+
   describe("development HTTP endpoint", () => {
     let app: NestFastifyApplication;
 

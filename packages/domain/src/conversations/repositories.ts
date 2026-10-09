@@ -35,6 +35,8 @@ export interface AppendMessageResult {
 export interface MessageRepository {
   /** Stores a message, or returns the existing one if its externalMessageId was already seen. */
   append(message: NewMessage): Promise<AppendMessageResult>;
+  /** A stored message by the channel's own id, if any. */
+  findByExternalId(conversationId: string, externalMessageId: string): Promise<Message | null>;
   /** The assistant message that answered `inboundMessageId`, if one was stored. */
   findReply(conversationId: string, inboundMessageId: string): Promise<Message | null>;
   /** The latest `limit` messages, in chronological order (oldest first). */

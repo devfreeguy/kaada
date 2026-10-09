@@ -22,8 +22,8 @@ never touches the database, resolves entities, or chooses routes.
 
 ## One turn (`AgentService.handleMessage`)
 
-1. **Accept** (short transaction): find or create the conversation for the channel chat, lock it,
-   store the user message. A redelivered message (same `externalMessageId`) that was already answered
+1. **Accept** (no transaction): find or create the conversation for the channel chat and store the
+   user message (one idempotent insert). A redelivered message (same `externalMessageId`) that was already answered
    returns the original answer (`duplicate: true`) and changes nothing.
 2. **Interpret** (no transaction open): load context, call the `IntentInterpreter`, validate the
    result with `interpretationSchema`. An invalid result is treated as UNKNOWN; an interpreter
@@ -86,13 +86,70 @@ A ready intent becomes `RESOLVED` with a `ROUTING_REQUIRED` response (`purpose: 
 ## Responses
 
 `AgentResponse` is a union: `MESSAGE`, `CLARIFICATION_REQUIRED` (with `field`, `reason` and optional
-`options` for buttons), `ROUTING_REQUIRED`, `CANCELLED`, and the placeholder
+`options` for buttons), `ROUTING_REQUIRED`, `CANCELLED`, `ERROR` (a request that cannot be honoured), and the placeholder
 `AUTHORIZATION_REQUIRED` (no producer yet). Channels render these; they must not parse `text`.
 
 Future payment path, with no stage skippable (`PAYMENT_STAGES`):
 `ROUTING_REQUIRED -> PAYMENT_READY -> AUTHORIZATION_REQUIRED -> AUTHORIZED -> EXECUTING`.
 A route that is ready is not cleared to execute; payment-specific authorization (PIN, delegated
 signing) comes first. Quote-only intents never leave `ROUTING_REQUIRED`.
+
+## Structured choices (Build 6)
+
+A question can come with selectable answers. The response carries only `{ id, label, description? }`
+per option; the meaning (a resolved recipient, or an asset and which part of the intent it replaces) is
+stored on the server in `ClarificationOption`, bound to the conversation, the intent and the intent
+`revision`. A channel returns just the opaque id, as `IncomingAgentInput = TextInput | ChoiceInput`
+(`AgentService.handle`).
+
+`verifyChoice` accepts an id only if, from server state alone: it exists in THIS conversation (unknown
+and foreign ids are indistinguishable), is unused, unexpired (30 min), belongs to the open intent at its
+current revision and to the latest question asked for it, and the intent is still waiting on that field.
+Then `markUsed` (`UPDATE ... WHERE usedAt IS NULL`) claims it atomically, so of any number of concurrent
+taps exactly one applies; redelivery of the same callback (`externalMessageId`) returns the original
+answer. Rejections are `ERROR` responses (`CHOICE_UNKNOWN`, `CHOICE_EXPIRED`, `CHOICE_ALREADY_USED`,
+`CHOICE_STALE`) and change nothing. Applying an option makes no interpreter call: it feeds the same
+`advance` step (assess, commit, answer) that interpreted text uses.
+
+- **Recipients**: an ambiguous name becomes options labelled with the display name and a public handle
+  (`Daniel O. / @daniel_o`); never phone numbers or full addresses. The chosen candidate is passed to
+  assessment as an override; the stored recipient is re-used on later turns while the typed reference is
+  unchanged, so "make it $40" does not ask "which Daniel?" again. A different reference ("Not Daniel,
+  João") is re-resolved from scratch.
+- **Assets**: ambiguous labels (two `USDC`) become options pinned to an asset id (UUID labels resolve
+  exactly). Fiat and tokens stay apart: `USD` is the fiat dollar, never USDT/USDC; `BRL` is never wBRL.
+
+## Source-asset preference
+
+`amount` is what the user fixed (`20 USD`, `EXACT_INPUT`); `preferredSourceAssetId` is how they want to
+fund it ("Use USDT"). They are separate columns, so a later "Use USDT." adds the preference without
+replacing the amount and it persists with the intent. `REMOVE_SOURCE_PREFERENCE` ("don't use USDT")
+clears it; a new `sourceAsset` replaces it.
+
+## Revision and invalidation
+
+`Intent.revision` starts at 1 and moves only in `commitIntent`, when `hasFinancialChange` sees a change
+in type, amount, mode, source/destination/preferred asset, recipient, country or constraints. Asking a
+question or restating the same details does not move it. Anything derived from an intent stores the
+revision it was made from (options do; quotes and routes will) and is stale once the intent moves on.
+`commitIntent` also calls the single `onIntentRevised` hook, where a later build discards quotes/routes.
+An edit after `ROUTING_REQUIRED` returns the intent to `RESOLVED` or `AWAITING_DETAILS` and produces a
+new `ROUTING_REQUIRED` with the new revision.
+
+## Routing handoff
+
+`ROUTING_REQUIRED` carries `summary` (display text per field) and `request: RoutingRequest`: intent id
+and revision, user, operation, `purpose` (`QUOTE` never becomes a payment), the fixed amount and mode,
+explicit source/destination asset ids when known, the funding preference, the recipient reference and
+destination country. It contains no rate, source amount, fee, route, provider or wrapped token.
+`BALANCE` and `TRANSACTION_STATUS` return `ERROR` / `FEATURE_NOT_AVAILABLE`.
+
+## Query count
+
+The accept step is transaction-free (one idempotent `INSERT ... ON CONFLICT DO NOTHING RETURNING` for the
+message, `findUnique` for the conversation); the apply transaction still takes the conversation lock and
+skips the duplicate-reply lookup for messages that were new when accepted. Measured on Neon with the dev
+fixtures: 14-18 queries per turn before, 9-13 after.
 
 ## Concurrency and duplicates
 

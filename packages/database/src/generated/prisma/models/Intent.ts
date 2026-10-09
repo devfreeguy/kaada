@@ -20,8 +20,18 @@ export type IntentModel = runtime.Types.Result.DefaultSelection<Prisma.$IntentPa
 
 export type AggregateIntent = {
   _count: IntentCountAggregateOutputType | null
+  _avg: IntentAvgAggregateOutputType | null
+  _sum: IntentSumAggregateOutputType | null
   _min: IntentMinAggregateOutputType | null
   _max: IntentMaxAggregateOutputType | null
+}
+
+export type IntentAvgAggregateOutputType = {
+  revision: number | null
+}
+
+export type IntentSumAggregateOutputType = {
+  revision: number | null
 }
 
 export type IntentMinAggregateOutputType = {
@@ -36,6 +46,8 @@ export type IntentMinAggregateOutputType = {
   destinationAssetId: string | null
   recipientId: string | null
   destinationCountry: string | null
+  preferredSourceAssetId: string | null
+  revision: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -52,6 +64,8 @@ export type IntentMaxAggregateOutputType = {
   destinationAssetId: string | null
   recipientId: string | null
   destinationCountry: string | null
+  preferredSourceAssetId: string | null
+  revision: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -68,6 +82,8 @@ export type IntentCountAggregateOutputType = {
   destinationAssetId: number
   recipientId: number
   destinationCountry: number
+  preferredSourceAssetId: number
+  revision: number
   normalizedData: number
   constraints: number
   missingFields: number
@@ -76,6 +92,14 @@ export type IntentCountAggregateOutputType = {
   _all: number
 }
 
+
+export type IntentAvgAggregateInputType = {
+  revision?: true
+}
+
+export type IntentSumAggregateInputType = {
+  revision?: true
+}
 
 export type IntentMinAggregateInputType = {
   id?: true
@@ -89,6 +113,8 @@ export type IntentMinAggregateInputType = {
   destinationAssetId?: true
   recipientId?: true
   destinationCountry?: true
+  preferredSourceAssetId?: true
+  revision?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -105,6 +131,8 @@ export type IntentMaxAggregateInputType = {
   destinationAssetId?: true
   recipientId?: true
   destinationCountry?: true
+  preferredSourceAssetId?: true
+  revision?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -121,6 +149,8 @@ export type IntentCountAggregateInputType = {
   destinationAssetId?: true
   recipientId?: true
   destinationCountry?: true
+  preferredSourceAssetId?: true
+  revision?: true
   normalizedData?: true
   constraints?: true
   missingFields?: true
@@ -167,6 +197,18 @@ export type IntentAggregateArgs<ExtArgs extends runtime.Types.Extensions.Interna
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: IntentAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: IntentSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: IntentMinAggregateInputType
@@ -197,6 +239,8 @@ export type IntentGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   take?: number
   skip?: number
   _count?: IntentCountAggregateInputType | true
+  _avg?: IntentAvgAggregateInputType
+  _sum?: IntentSumAggregateInputType
   _min?: IntentMinAggregateInputType
   _max?: IntentMaxAggregateInputType
 }
@@ -213,12 +257,16 @@ export type IntentGroupByOutputType = {
   destinationAssetId: string | null
   recipientId: string | null
   destinationCountry: string | null
+  preferredSourceAssetId: string | null
+  revision: number
   normalizedData: runtime.JsonValue
   constraints: runtime.JsonValue | null
   missingFields: runtime.JsonValue | null
   createdAt: Date
   updatedAt: Date
   _count: IntentCountAggregateOutputType | null
+  _avg: IntentAvgAggregateOutputType | null
+  _sum: IntentSumAggregateOutputType | null
   _min: IntentMinAggregateOutputType | null
   _max: IntentMaxAggregateOutputType | null
 }
@@ -253,6 +301,8 @@ export type IntentWhereInput = {
   destinationAssetId?: Prisma.UuidNullableFilter<"Intent"> | string | null
   recipientId?: Prisma.UuidNullableFilter<"Intent"> | string | null
   destinationCountry?: Prisma.StringNullableFilter<"Intent"> | string | null
+  preferredSourceAssetId?: Prisma.UuidNullableFilter<"Intent"> | string | null
+  revision?: Prisma.IntFilter<"Intent"> | number
   normalizedData?: Prisma.JsonFilter<"Intent">
   constraints?: Prisma.JsonNullableFilter<"Intent">
   missingFields?: Prisma.JsonNullableFilter<"Intent">
@@ -263,6 +313,8 @@ export type IntentWhereInput = {
   sourceAsset?: Prisma.XOR<Prisma.AssetNullableScalarRelationFilter, Prisma.AssetWhereInput> | null
   destinationAsset?: Prisma.XOR<Prisma.AssetNullableScalarRelationFilter, Prisma.AssetWhereInput> | null
   recipient?: Prisma.XOR<Prisma.RecipientNullableScalarRelationFilter, Prisma.RecipientWhereInput> | null
+  preferredSourceAsset?: Prisma.XOR<Prisma.AssetNullableScalarRelationFilter, Prisma.AssetWhereInput> | null
+  clarificationOptions?: Prisma.ClarificationOptionListRelationFilter
   quotes?: Prisma.QuoteListRelationFilter
   routes?: Prisma.RouteListRelationFilter
   executions?: Prisma.ExecutionListRelationFilter
@@ -280,6 +332,8 @@ export type IntentOrderByWithRelationInput = {
   destinationAssetId?: Prisma.SortOrderInput | Prisma.SortOrder
   recipientId?: Prisma.SortOrderInput | Prisma.SortOrder
   destinationCountry?: Prisma.SortOrderInput | Prisma.SortOrder
+  preferredSourceAssetId?: Prisma.SortOrderInput | Prisma.SortOrder
+  revision?: Prisma.SortOrder
   normalizedData?: Prisma.SortOrder
   constraints?: Prisma.SortOrderInput | Prisma.SortOrder
   missingFields?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -290,6 +344,8 @@ export type IntentOrderByWithRelationInput = {
   sourceAsset?: Prisma.AssetOrderByWithRelationInput
   destinationAsset?: Prisma.AssetOrderByWithRelationInput
   recipient?: Prisma.RecipientOrderByWithRelationInput
+  preferredSourceAsset?: Prisma.AssetOrderByWithRelationInput
+  clarificationOptions?: Prisma.ClarificationOptionOrderByRelationAggregateInput
   quotes?: Prisma.QuoteOrderByRelationAggregateInput
   routes?: Prisma.RouteOrderByRelationAggregateInput
   executions?: Prisma.ExecutionOrderByRelationAggregateInput
@@ -310,6 +366,8 @@ export type IntentWhereUniqueInput = Prisma.AtLeast<{
   destinationAssetId?: Prisma.UuidNullableFilter<"Intent"> | string | null
   recipientId?: Prisma.UuidNullableFilter<"Intent"> | string | null
   destinationCountry?: Prisma.StringNullableFilter<"Intent"> | string | null
+  preferredSourceAssetId?: Prisma.UuidNullableFilter<"Intent"> | string | null
+  revision?: Prisma.IntFilter<"Intent"> | number
   normalizedData?: Prisma.JsonFilter<"Intent">
   constraints?: Prisma.JsonNullableFilter<"Intent">
   missingFields?: Prisma.JsonNullableFilter<"Intent">
@@ -320,6 +378,8 @@ export type IntentWhereUniqueInput = Prisma.AtLeast<{
   sourceAsset?: Prisma.XOR<Prisma.AssetNullableScalarRelationFilter, Prisma.AssetWhereInput> | null
   destinationAsset?: Prisma.XOR<Prisma.AssetNullableScalarRelationFilter, Prisma.AssetWhereInput> | null
   recipient?: Prisma.XOR<Prisma.RecipientNullableScalarRelationFilter, Prisma.RecipientWhereInput> | null
+  preferredSourceAsset?: Prisma.XOR<Prisma.AssetNullableScalarRelationFilter, Prisma.AssetWhereInput> | null
+  clarificationOptions?: Prisma.ClarificationOptionListRelationFilter
   quotes?: Prisma.QuoteListRelationFilter
   routes?: Prisma.RouteListRelationFilter
   executions?: Prisma.ExecutionListRelationFilter
@@ -337,14 +397,18 @@ export type IntentOrderByWithAggregationInput = {
   destinationAssetId?: Prisma.SortOrderInput | Prisma.SortOrder
   recipientId?: Prisma.SortOrderInput | Prisma.SortOrder
   destinationCountry?: Prisma.SortOrderInput | Prisma.SortOrder
+  preferredSourceAssetId?: Prisma.SortOrderInput | Prisma.SortOrder
+  revision?: Prisma.SortOrder
   normalizedData?: Prisma.SortOrder
   constraints?: Prisma.SortOrderInput | Prisma.SortOrder
   missingFields?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.IntentCountOrderByAggregateInput
+  _avg?: Prisma.IntentAvgOrderByAggregateInput
   _max?: Prisma.IntentMaxOrderByAggregateInput
   _min?: Prisma.IntentMinOrderByAggregateInput
+  _sum?: Prisma.IntentSumOrderByAggregateInput
 }
 
 export type IntentScalarWhereWithAggregatesInput = {
@@ -362,6 +426,8 @@ export type IntentScalarWhereWithAggregatesInput = {
   destinationAssetId?: Prisma.UuidNullableWithAggregatesFilter<"Intent"> | string | null
   recipientId?: Prisma.UuidNullableWithAggregatesFilter<"Intent"> | string | null
   destinationCountry?: Prisma.StringNullableWithAggregatesFilter<"Intent"> | string | null
+  preferredSourceAssetId?: Prisma.UuidNullableWithAggregatesFilter<"Intent"> | string | null
+  revision?: Prisma.IntWithAggregatesFilter<"Intent"> | number
   normalizedData?: Prisma.JsonWithAggregatesFilter<"Intent">
   constraints?: Prisma.JsonNullableWithAggregatesFilter<"Intent">
   missingFields?: Prisma.JsonNullableWithAggregatesFilter<"Intent">
@@ -376,6 +442,7 @@ export type IntentCreateInput = {
   amount?: string | null
   amountMode?: $Enums.AmountMode | null
   destinationCountry?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -386,6 +453,8 @@ export type IntentCreateInput = {
   sourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsSourceInput
   destinationAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsDestinationInput
   recipient?: Prisma.RecipientCreateNestedOneWithoutIntentsInput
+  preferredSourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsPreferredSourceInput
+  clarificationOptions?: Prisma.ClarificationOptionCreateNestedManyWithoutIntentInput
   quotes?: Prisma.QuoteCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutIntentInput
@@ -403,11 +472,14 @@ export type IntentUncheckedCreateInput = {
   destinationAssetId?: string | null
   recipientId?: string | null
   destinationCountry?: string | null
+  preferredSourceAssetId?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedCreateNestedManyWithoutIntentInput
   quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteUncheckedCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutIntentInput
@@ -420,6 +492,7 @@ export type IntentUpdateInput = {
   amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountMode?: Prisma.NullableEnumAmountModeFieldUpdateOperationsInput | $Enums.AmountMode | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -430,6 +503,8 @@ export type IntentUpdateInput = {
   sourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsSourceNestedInput
   destinationAsset?: Prisma.AssetUpdateOneWithoutIntentsAsDestinationNestedInput
   recipient?: Prisma.RecipientUpdateOneWithoutIntentsNestedInput
+  preferredSourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsPreferredSourceNestedInput
+  clarificationOptions?: Prisma.ClarificationOptionUpdateManyWithoutIntentNestedInput
   quotes?: Prisma.QuoteUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutIntentNestedInput
@@ -447,11 +522,14 @@ export type IntentUncheckedUpdateInput = {
   destinationAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredSourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedUpdateManyWithoutIntentNestedInput
   quotes?: Prisma.QuoteUncheckedUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUncheckedUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutIntentNestedInput
@@ -469,6 +547,8 @@ export type IntentCreateManyInput = {
   destinationAssetId?: string | null
   recipientId?: string | null
   destinationCountry?: string | null
+  preferredSourceAssetId?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -483,6 +563,7 @@ export type IntentUpdateManyMutationInput = {
   amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountMode?: Prisma.NullableEnumAmountModeFieldUpdateOperationsInput | $Enums.AmountMode | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -502,6 +583,8 @@ export type IntentUncheckedUpdateManyInput = {
   destinationAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredSourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -531,11 +614,17 @@ export type IntentCountOrderByAggregateInput = {
   destinationAssetId?: Prisma.SortOrder
   recipientId?: Prisma.SortOrder
   destinationCountry?: Prisma.SortOrder
+  preferredSourceAssetId?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
   normalizedData?: Prisma.SortOrder
   constraints?: Prisma.SortOrder
   missingFields?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type IntentAvgOrderByAggregateInput = {
+  revision?: Prisma.SortOrder
 }
 
 export type IntentMaxOrderByAggregateInput = {
@@ -550,6 +639,8 @@ export type IntentMaxOrderByAggregateInput = {
   destinationAssetId?: Prisma.SortOrder
   recipientId?: Prisma.SortOrder
   destinationCountry?: Prisma.SortOrder
+  preferredSourceAssetId?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -566,8 +657,14 @@ export type IntentMinOrderByAggregateInput = {
   destinationAssetId?: Prisma.SortOrder
   recipientId?: Prisma.SortOrder
   destinationCountry?: Prisma.SortOrder
+  preferredSourceAssetId?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type IntentSumOrderByAggregateInput = {
+  revision?: Prisma.SortOrder
 }
 
 export type IntentScalarRelationFilter = {
@@ -631,6 +728,13 @@ export type IntentCreateNestedManyWithoutDestinationAssetInput = {
   connect?: Prisma.IntentWhereUniqueInput | Prisma.IntentWhereUniqueInput[]
 }
 
+export type IntentCreateNestedManyWithoutPreferredSourceAssetInput = {
+  create?: Prisma.XOR<Prisma.IntentCreateWithoutPreferredSourceAssetInput, Prisma.IntentUncheckedCreateWithoutPreferredSourceAssetInput> | Prisma.IntentCreateWithoutPreferredSourceAssetInput[] | Prisma.IntentUncheckedCreateWithoutPreferredSourceAssetInput[]
+  connectOrCreate?: Prisma.IntentCreateOrConnectWithoutPreferredSourceAssetInput | Prisma.IntentCreateOrConnectWithoutPreferredSourceAssetInput[]
+  createMany?: Prisma.IntentCreateManyPreferredSourceAssetInputEnvelope
+  connect?: Prisma.IntentWhereUniqueInput | Prisma.IntentWhereUniqueInput[]
+}
+
 export type IntentUncheckedCreateNestedManyWithoutSourceAssetInput = {
   create?: Prisma.XOR<Prisma.IntentCreateWithoutSourceAssetInput, Prisma.IntentUncheckedCreateWithoutSourceAssetInput> | Prisma.IntentCreateWithoutSourceAssetInput[] | Prisma.IntentUncheckedCreateWithoutSourceAssetInput[]
   connectOrCreate?: Prisma.IntentCreateOrConnectWithoutSourceAssetInput | Prisma.IntentCreateOrConnectWithoutSourceAssetInput[]
@@ -642,6 +746,13 @@ export type IntentUncheckedCreateNestedManyWithoutDestinationAssetInput = {
   create?: Prisma.XOR<Prisma.IntentCreateWithoutDestinationAssetInput, Prisma.IntentUncheckedCreateWithoutDestinationAssetInput> | Prisma.IntentCreateWithoutDestinationAssetInput[] | Prisma.IntentUncheckedCreateWithoutDestinationAssetInput[]
   connectOrCreate?: Prisma.IntentCreateOrConnectWithoutDestinationAssetInput | Prisma.IntentCreateOrConnectWithoutDestinationAssetInput[]
   createMany?: Prisma.IntentCreateManyDestinationAssetInputEnvelope
+  connect?: Prisma.IntentWhereUniqueInput | Prisma.IntentWhereUniqueInput[]
+}
+
+export type IntentUncheckedCreateNestedManyWithoutPreferredSourceAssetInput = {
+  create?: Prisma.XOR<Prisma.IntentCreateWithoutPreferredSourceAssetInput, Prisma.IntentUncheckedCreateWithoutPreferredSourceAssetInput> | Prisma.IntentCreateWithoutPreferredSourceAssetInput[] | Prisma.IntentUncheckedCreateWithoutPreferredSourceAssetInput[]
+  connectOrCreate?: Prisma.IntentCreateOrConnectWithoutPreferredSourceAssetInput | Prisma.IntentCreateOrConnectWithoutPreferredSourceAssetInput[]
+  createMany?: Prisma.IntentCreateManyPreferredSourceAssetInputEnvelope
   connect?: Prisma.IntentWhereUniqueInput | Prisma.IntentWhereUniqueInput[]
 }
 
@@ -673,6 +784,20 @@ export type IntentUpdateManyWithoutDestinationAssetNestedInput = {
   deleteMany?: Prisma.IntentScalarWhereInput | Prisma.IntentScalarWhereInput[]
 }
 
+export type IntentUpdateManyWithoutPreferredSourceAssetNestedInput = {
+  create?: Prisma.XOR<Prisma.IntentCreateWithoutPreferredSourceAssetInput, Prisma.IntentUncheckedCreateWithoutPreferredSourceAssetInput> | Prisma.IntentCreateWithoutPreferredSourceAssetInput[] | Prisma.IntentUncheckedCreateWithoutPreferredSourceAssetInput[]
+  connectOrCreate?: Prisma.IntentCreateOrConnectWithoutPreferredSourceAssetInput | Prisma.IntentCreateOrConnectWithoutPreferredSourceAssetInput[]
+  upsert?: Prisma.IntentUpsertWithWhereUniqueWithoutPreferredSourceAssetInput | Prisma.IntentUpsertWithWhereUniqueWithoutPreferredSourceAssetInput[]
+  createMany?: Prisma.IntentCreateManyPreferredSourceAssetInputEnvelope
+  set?: Prisma.IntentWhereUniqueInput | Prisma.IntentWhereUniqueInput[]
+  disconnect?: Prisma.IntentWhereUniqueInput | Prisma.IntentWhereUniqueInput[]
+  delete?: Prisma.IntentWhereUniqueInput | Prisma.IntentWhereUniqueInput[]
+  connect?: Prisma.IntentWhereUniqueInput | Prisma.IntentWhereUniqueInput[]
+  update?: Prisma.IntentUpdateWithWhereUniqueWithoutPreferredSourceAssetInput | Prisma.IntentUpdateWithWhereUniqueWithoutPreferredSourceAssetInput[]
+  updateMany?: Prisma.IntentUpdateManyWithWhereWithoutPreferredSourceAssetInput | Prisma.IntentUpdateManyWithWhereWithoutPreferredSourceAssetInput[]
+  deleteMany?: Prisma.IntentScalarWhereInput | Prisma.IntentScalarWhereInput[]
+}
+
 export type IntentUncheckedUpdateManyWithoutSourceAssetNestedInput = {
   create?: Prisma.XOR<Prisma.IntentCreateWithoutSourceAssetInput, Prisma.IntentUncheckedCreateWithoutSourceAssetInput> | Prisma.IntentCreateWithoutSourceAssetInput[] | Prisma.IntentUncheckedCreateWithoutSourceAssetInput[]
   connectOrCreate?: Prisma.IntentCreateOrConnectWithoutSourceAssetInput | Prisma.IntentCreateOrConnectWithoutSourceAssetInput[]
@@ -698,6 +823,20 @@ export type IntentUncheckedUpdateManyWithoutDestinationAssetNestedInput = {
   connect?: Prisma.IntentWhereUniqueInput | Prisma.IntentWhereUniqueInput[]
   update?: Prisma.IntentUpdateWithWhereUniqueWithoutDestinationAssetInput | Prisma.IntentUpdateWithWhereUniqueWithoutDestinationAssetInput[]
   updateMany?: Prisma.IntentUpdateManyWithWhereWithoutDestinationAssetInput | Prisma.IntentUpdateManyWithWhereWithoutDestinationAssetInput[]
+  deleteMany?: Prisma.IntentScalarWhereInput | Prisma.IntentScalarWhereInput[]
+}
+
+export type IntentUncheckedUpdateManyWithoutPreferredSourceAssetNestedInput = {
+  create?: Prisma.XOR<Prisma.IntentCreateWithoutPreferredSourceAssetInput, Prisma.IntentUncheckedCreateWithoutPreferredSourceAssetInput> | Prisma.IntentCreateWithoutPreferredSourceAssetInput[] | Prisma.IntentUncheckedCreateWithoutPreferredSourceAssetInput[]
+  connectOrCreate?: Prisma.IntentCreateOrConnectWithoutPreferredSourceAssetInput | Prisma.IntentCreateOrConnectWithoutPreferredSourceAssetInput[]
+  upsert?: Prisma.IntentUpsertWithWhereUniqueWithoutPreferredSourceAssetInput | Prisma.IntentUpsertWithWhereUniqueWithoutPreferredSourceAssetInput[]
+  createMany?: Prisma.IntentCreateManyPreferredSourceAssetInputEnvelope
+  set?: Prisma.IntentWhereUniqueInput | Prisma.IntentWhereUniqueInput[]
+  disconnect?: Prisma.IntentWhereUniqueInput | Prisma.IntentWhereUniqueInput[]
+  delete?: Prisma.IntentWhereUniqueInput | Prisma.IntentWhereUniqueInput[]
+  connect?: Prisma.IntentWhereUniqueInput | Prisma.IntentWhereUniqueInput[]
+  update?: Prisma.IntentUpdateWithWhereUniqueWithoutPreferredSourceAssetInput | Prisma.IntentUpdateWithWhereUniqueWithoutPreferredSourceAssetInput[]
+  updateMany?: Prisma.IntentUpdateManyWithWhereWithoutPreferredSourceAssetInput | Prisma.IntentUpdateManyWithWhereWithoutPreferredSourceAssetInput[]
   deleteMany?: Prisma.IntentScalarWhereInput | Prisma.IntentScalarWhereInput[]
 }
 
@@ -753,6 +892,20 @@ export type EnumIntentStatusFieldUpdateOperationsInput = {
 
 export type NullableEnumAmountModeFieldUpdateOperationsInput = {
   set?: $Enums.AmountMode | null
+}
+
+export type IntentCreateNestedOneWithoutClarificationOptionsInput = {
+  create?: Prisma.XOR<Prisma.IntentCreateWithoutClarificationOptionsInput, Prisma.IntentUncheckedCreateWithoutClarificationOptionsInput>
+  connectOrCreate?: Prisma.IntentCreateOrConnectWithoutClarificationOptionsInput
+  connect?: Prisma.IntentWhereUniqueInput
+}
+
+export type IntentUpdateOneRequiredWithoutClarificationOptionsNestedInput = {
+  create?: Prisma.XOR<Prisma.IntentCreateWithoutClarificationOptionsInput, Prisma.IntentUncheckedCreateWithoutClarificationOptionsInput>
+  connectOrCreate?: Prisma.IntentCreateOrConnectWithoutClarificationOptionsInput
+  upsert?: Prisma.IntentUpsertWithoutClarificationOptionsInput
+  connect?: Prisma.IntentWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.IntentUpdateToOneWithWhereWithoutClarificationOptionsInput, Prisma.IntentUpdateWithoutClarificationOptionsInput>, Prisma.IntentUncheckedUpdateWithoutClarificationOptionsInput>
 }
 
 export type IntentCreateNestedManyWithoutRecipientInput = {
@@ -846,6 +999,7 @@ export type IntentCreateWithoutUserInput = {
   amount?: string | null
   amountMode?: $Enums.AmountMode | null
   destinationCountry?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -855,6 +1009,8 @@ export type IntentCreateWithoutUserInput = {
   sourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsSourceInput
   destinationAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsDestinationInput
   recipient?: Prisma.RecipientCreateNestedOneWithoutIntentsInput
+  preferredSourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsPreferredSourceInput
+  clarificationOptions?: Prisma.ClarificationOptionCreateNestedManyWithoutIntentInput
   quotes?: Prisma.QuoteCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutIntentInput
@@ -871,11 +1027,14 @@ export type IntentUncheckedCreateWithoutUserInput = {
   destinationAssetId?: string | null
   recipientId?: string | null
   destinationCountry?: string | null
+  preferredSourceAssetId?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedCreateNestedManyWithoutIntentInput
   quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteUncheckedCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutIntentInput
@@ -922,6 +1081,8 @@ export type IntentScalarWhereInput = {
   destinationAssetId?: Prisma.UuidNullableFilter<"Intent"> | string | null
   recipientId?: Prisma.UuidNullableFilter<"Intent"> | string | null
   destinationCountry?: Prisma.StringNullableFilter<"Intent"> | string | null
+  preferredSourceAssetId?: Prisma.UuidNullableFilter<"Intent"> | string | null
+  revision?: Prisma.IntFilter<"Intent"> | number
   normalizedData?: Prisma.JsonFilter<"Intent">
   constraints?: Prisma.JsonNullableFilter<"Intent">
   missingFields?: Prisma.JsonNullableFilter<"Intent">
@@ -936,6 +1097,7 @@ export type IntentCreateWithoutSourceAssetInput = {
   amount?: string | null
   amountMode?: $Enums.AmountMode | null
   destinationCountry?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -945,6 +1107,8 @@ export type IntentCreateWithoutSourceAssetInput = {
   conversation: Prisma.ConversationCreateNestedOneWithoutIntentsInput
   destinationAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsDestinationInput
   recipient?: Prisma.RecipientCreateNestedOneWithoutIntentsInput
+  preferredSourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsPreferredSourceInput
+  clarificationOptions?: Prisma.ClarificationOptionCreateNestedManyWithoutIntentInput
   quotes?: Prisma.QuoteCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutIntentInput
@@ -961,11 +1125,14 @@ export type IntentUncheckedCreateWithoutSourceAssetInput = {
   destinationAssetId?: string | null
   recipientId?: string | null
   destinationCountry?: string | null
+  preferredSourceAssetId?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedCreateNestedManyWithoutIntentInput
   quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteUncheckedCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutIntentInput
@@ -988,6 +1155,7 @@ export type IntentCreateWithoutDestinationAssetInput = {
   amount?: string | null
   amountMode?: $Enums.AmountMode | null
   destinationCountry?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -997,6 +1165,8 @@ export type IntentCreateWithoutDestinationAssetInput = {
   conversation: Prisma.ConversationCreateNestedOneWithoutIntentsInput
   sourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsSourceInput
   recipient?: Prisma.RecipientCreateNestedOneWithoutIntentsInput
+  preferredSourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsPreferredSourceInput
+  clarificationOptions?: Prisma.ClarificationOptionCreateNestedManyWithoutIntentInput
   quotes?: Prisma.QuoteCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutIntentInput
@@ -1013,11 +1183,14 @@ export type IntentUncheckedCreateWithoutDestinationAssetInput = {
   sourceAssetId?: string | null
   recipientId?: string | null
   destinationCountry?: string | null
+  preferredSourceAssetId?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedCreateNestedManyWithoutIntentInput
   quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteUncheckedCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutIntentInput
@@ -1030,6 +1203,64 @@ export type IntentCreateOrConnectWithoutDestinationAssetInput = {
 
 export type IntentCreateManyDestinationAssetInputEnvelope = {
   data: Prisma.IntentCreateManyDestinationAssetInput | Prisma.IntentCreateManyDestinationAssetInput[]
+  skipDuplicates?: boolean
+}
+
+export type IntentCreateWithoutPreferredSourceAssetInput = {
+  id: string
+  type: $Enums.IntentType
+  status?: $Enums.IntentStatus
+  amount?: string | null
+  amountMode?: $Enums.AmountMode | null
+  destinationCountry?: string | null
+  revision?: number
+  normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutIntentsInput
+  conversation: Prisma.ConversationCreateNestedOneWithoutIntentsInput
+  sourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsSourceInput
+  destinationAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsDestinationInput
+  recipient?: Prisma.RecipientCreateNestedOneWithoutIntentsInput
+  clarificationOptions?: Prisma.ClarificationOptionCreateNestedManyWithoutIntentInput
+  quotes?: Prisma.QuoteCreateNestedManyWithoutIntentInput
+  routes?: Prisma.RouteCreateNestedManyWithoutIntentInput
+  executions?: Prisma.ExecutionCreateNestedManyWithoutIntentInput
+}
+
+export type IntentUncheckedCreateWithoutPreferredSourceAssetInput = {
+  id: string
+  userId: string
+  conversationId: string
+  type: $Enums.IntentType
+  status?: $Enums.IntentStatus
+  amount?: string | null
+  amountMode?: $Enums.AmountMode | null
+  sourceAssetId?: string | null
+  destinationAssetId?: string | null
+  recipientId?: string | null
+  destinationCountry?: string | null
+  revision?: number
+  normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedCreateNestedManyWithoutIntentInput
+  quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutIntentInput
+  routes?: Prisma.RouteUncheckedCreateNestedManyWithoutIntentInput
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutIntentInput
+}
+
+export type IntentCreateOrConnectWithoutPreferredSourceAssetInput = {
+  where: Prisma.IntentWhereUniqueInput
+  create: Prisma.XOR<Prisma.IntentCreateWithoutPreferredSourceAssetInput, Prisma.IntentUncheckedCreateWithoutPreferredSourceAssetInput>
+}
+
+export type IntentCreateManyPreferredSourceAssetInputEnvelope = {
+  data: Prisma.IntentCreateManyPreferredSourceAssetInput | Prisma.IntentCreateManyPreferredSourceAssetInput[]
   skipDuplicates?: boolean
 }
 
@@ -1065,6 +1296,22 @@ export type IntentUpdateManyWithWhereWithoutDestinationAssetInput = {
   data: Prisma.XOR<Prisma.IntentUpdateManyMutationInput, Prisma.IntentUncheckedUpdateManyWithoutDestinationAssetInput>
 }
 
+export type IntentUpsertWithWhereUniqueWithoutPreferredSourceAssetInput = {
+  where: Prisma.IntentWhereUniqueInput
+  update: Prisma.XOR<Prisma.IntentUpdateWithoutPreferredSourceAssetInput, Prisma.IntentUncheckedUpdateWithoutPreferredSourceAssetInput>
+  create: Prisma.XOR<Prisma.IntentCreateWithoutPreferredSourceAssetInput, Prisma.IntentUncheckedCreateWithoutPreferredSourceAssetInput>
+}
+
+export type IntentUpdateWithWhereUniqueWithoutPreferredSourceAssetInput = {
+  where: Prisma.IntentWhereUniqueInput
+  data: Prisma.XOR<Prisma.IntentUpdateWithoutPreferredSourceAssetInput, Prisma.IntentUncheckedUpdateWithoutPreferredSourceAssetInput>
+}
+
+export type IntentUpdateManyWithWhereWithoutPreferredSourceAssetInput = {
+  where: Prisma.IntentScalarWhereInput
+  data: Prisma.XOR<Prisma.IntentUpdateManyMutationInput, Prisma.IntentUncheckedUpdateManyWithoutPreferredSourceAssetInput>
+}
+
 export type IntentCreateWithoutConversationInput = {
   id: string
   type: $Enums.IntentType
@@ -1072,6 +1319,7 @@ export type IntentCreateWithoutConversationInput = {
   amount?: string | null
   amountMode?: $Enums.AmountMode | null
   destinationCountry?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1081,6 +1329,8 @@ export type IntentCreateWithoutConversationInput = {
   sourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsSourceInput
   destinationAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsDestinationInput
   recipient?: Prisma.RecipientCreateNestedOneWithoutIntentsInput
+  preferredSourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsPreferredSourceInput
+  clarificationOptions?: Prisma.ClarificationOptionCreateNestedManyWithoutIntentInput
   quotes?: Prisma.QuoteCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutIntentInput
@@ -1097,11 +1347,14 @@ export type IntentUncheckedCreateWithoutConversationInput = {
   destinationAssetId?: string | null
   recipientId?: string | null
   destinationCountry?: string | null
+  preferredSourceAssetId?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedCreateNestedManyWithoutIntentInput
   quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteUncheckedCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutIntentInput
@@ -1133,13 +1386,14 @@ export type IntentUpdateManyWithWhereWithoutConversationInput = {
   data: Prisma.XOR<Prisma.IntentUpdateManyMutationInput, Prisma.IntentUncheckedUpdateManyWithoutConversationInput>
 }
 
-export type IntentCreateWithoutRecipientInput = {
+export type IntentCreateWithoutClarificationOptionsInput = {
   id: string
   type: $Enums.IntentType
   status?: $Enums.IntentStatus
   amount?: string | null
   amountMode?: $Enums.AmountMode | null
   destinationCountry?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1149,6 +1403,120 @@ export type IntentCreateWithoutRecipientInput = {
   conversation: Prisma.ConversationCreateNestedOneWithoutIntentsInput
   sourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsSourceInput
   destinationAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsDestinationInput
+  recipient?: Prisma.RecipientCreateNestedOneWithoutIntentsInput
+  preferredSourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsPreferredSourceInput
+  quotes?: Prisma.QuoteCreateNestedManyWithoutIntentInput
+  routes?: Prisma.RouteCreateNestedManyWithoutIntentInput
+  executions?: Prisma.ExecutionCreateNestedManyWithoutIntentInput
+}
+
+export type IntentUncheckedCreateWithoutClarificationOptionsInput = {
+  id: string
+  userId: string
+  conversationId: string
+  type: $Enums.IntentType
+  status?: $Enums.IntentStatus
+  amount?: string | null
+  amountMode?: $Enums.AmountMode | null
+  sourceAssetId?: string | null
+  destinationAssetId?: string | null
+  recipientId?: string | null
+  destinationCountry?: string | null
+  preferredSourceAssetId?: string | null
+  revision?: number
+  normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutIntentInput
+  routes?: Prisma.RouteUncheckedCreateNestedManyWithoutIntentInput
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutIntentInput
+}
+
+export type IntentCreateOrConnectWithoutClarificationOptionsInput = {
+  where: Prisma.IntentWhereUniqueInput
+  create: Prisma.XOR<Prisma.IntentCreateWithoutClarificationOptionsInput, Prisma.IntentUncheckedCreateWithoutClarificationOptionsInput>
+}
+
+export type IntentUpsertWithoutClarificationOptionsInput = {
+  update: Prisma.XOR<Prisma.IntentUpdateWithoutClarificationOptionsInput, Prisma.IntentUncheckedUpdateWithoutClarificationOptionsInput>
+  create: Prisma.XOR<Prisma.IntentCreateWithoutClarificationOptionsInput, Prisma.IntentUncheckedCreateWithoutClarificationOptionsInput>
+  where?: Prisma.IntentWhereInput
+}
+
+export type IntentUpdateToOneWithWhereWithoutClarificationOptionsInput = {
+  where?: Prisma.IntentWhereInput
+  data: Prisma.XOR<Prisma.IntentUpdateWithoutClarificationOptionsInput, Prisma.IntentUncheckedUpdateWithoutClarificationOptionsInput>
+}
+
+export type IntentUpdateWithoutClarificationOptionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumIntentTypeFieldUpdateOperationsInput | $Enums.IntentType
+  status?: Prisma.EnumIntentStatusFieldUpdateOperationsInput | $Enums.IntentStatus
+  amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  amountMode?: Prisma.NullableEnumAmountModeFieldUpdateOperationsInput | $Enums.AmountMode | null
+  destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutIntentsNestedInput
+  conversation?: Prisma.ConversationUpdateOneRequiredWithoutIntentsNestedInput
+  sourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsSourceNestedInput
+  destinationAsset?: Prisma.AssetUpdateOneWithoutIntentsAsDestinationNestedInput
+  recipient?: Prisma.RecipientUpdateOneWithoutIntentsNestedInput
+  preferredSourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsPreferredSourceNestedInput
+  quotes?: Prisma.QuoteUpdateManyWithoutIntentNestedInput
+  routes?: Prisma.RouteUpdateManyWithoutIntentNestedInput
+  executions?: Prisma.ExecutionUpdateManyWithoutIntentNestedInput
+}
+
+export type IntentUncheckedUpdateWithoutClarificationOptionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  conversationId?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumIntentTypeFieldUpdateOperationsInput | $Enums.IntentType
+  status?: Prisma.EnumIntentStatusFieldUpdateOperationsInput | $Enums.IntentStatus
+  amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  amountMode?: Prisma.NullableEnumAmountModeFieldUpdateOperationsInput | $Enums.AmountMode | null
+  sourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destinationAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recipientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredSourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  quotes?: Prisma.QuoteUncheckedUpdateManyWithoutIntentNestedInput
+  routes?: Prisma.RouteUncheckedUpdateManyWithoutIntentNestedInput
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutIntentNestedInput
+}
+
+export type IntentCreateWithoutRecipientInput = {
+  id: string
+  type: $Enums.IntentType
+  status?: $Enums.IntentStatus
+  amount?: string | null
+  amountMode?: $Enums.AmountMode | null
+  destinationCountry?: string | null
+  revision?: number
+  normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutIntentsInput
+  conversation: Prisma.ConversationCreateNestedOneWithoutIntentsInput
+  sourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsSourceInput
+  destinationAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsDestinationInput
+  preferredSourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsPreferredSourceInput
+  clarificationOptions?: Prisma.ClarificationOptionCreateNestedManyWithoutIntentInput
   quotes?: Prisma.QuoteCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutIntentInput
@@ -1165,11 +1533,14 @@ export type IntentUncheckedCreateWithoutRecipientInput = {
   sourceAssetId?: string | null
   destinationAssetId?: string | null
   destinationCountry?: string | null
+  preferredSourceAssetId?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedCreateNestedManyWithoutIntentInput
   quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteUncheckedCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutIntentInput
@@ -1208,6 +1579,7 @@ export type IntentCreateWithoutQuotesInput = {
   amount?: string | null
   amountMode?: $Enums.AmountMode | null
   destinationCountry?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1218,6 +1590,8 @@ export type IntentCreateWithoutQuotesInput = {
   sourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsSourceInput
   destinationAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsDestinationInput
   recipient?: Prisma.RecipientCreateNestedOneWithoutIntentsInput
+  preferredSourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsPreferredSourceInput
+  clarificationOptions?: Prisma.ClarificationOptionCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutIntentInput
 }
@@ -1234,11 +1608,14 @@ export type IntentUncheckedCreateWithoutQuotesInput = {
   destinationAssetId?: string | null
   recipientId?: string | null
   destinationCountry?: string | null
+  preferredSourceAssetId?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteUncheckedCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutIntentInput
 }
@@ -1266,6 +1643,7 @@ export type IntentUpdateWithoutQuotesInput = {
   amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountMode?: Prisma.NullableEnumAmountModeFieldUpdateOperationsInput | $Enums.AmountMode | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1276,6 +1654,8 @@ export type IntentUpdateWithoutQuotesInput = {
   sourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsSourceNestedInput
   destinationAsset?: Prisma.AssetUpdateOneWithoutIntentsAsDestinationNestedInput
   recipient?: Prisma.RecipientUpdateOneWithoutIntentsNestedInput
+  preferredSourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsPreferredSourceNestedInput
+  clarificationOptions?: Prisma.ClarificationOptionUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutIntentNestedInput
 }
@@ -1292,11 +1672,14 @@ export type IntentUncheckedUpdateWithoutQuotesInput = {
   destinationAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredSourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUncheckedUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutIntentNestedInput
 }
@@ -1308,6 +1691,7 @@ export type IntentCreateWithoutRoutesInput = {
   amount?: string | null
   amountMode?: $Enums.AmountMode | null
   destinationCountry?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1318,6 +1702,8 @@ export type IntentCreateWithoutRoutesInput = {
   sourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsSourceInput
   destinationAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsDestinationInput
   recipient?: Prisma.RecipientCreateNestedOneWithoutIntentsInput
+  preferredSourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsPreferredSourceInput
+  clarificationOptions?: Prisma.ClarificationOptionCreateNestedManyWithoutIntentInput
   quotes?: Prisma.QuoteCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutIntentInput
 }
@@ -1334,11 +1720,14 @@ export type IntentUncheckedCreateWithoutRoutesInput = {
   destinationAssetId?: string | null
   recipientId?: string | null
   destinationCountry?: string | null
+  preferredSourceAssetId?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedCreateNestedManyWithoutIntentInput
   quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutIntentInput
 }
@@ -1366,6 +1755,7 @@ export type IntentUpdateWithoutRoutesInput = {
   amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountMode?: Prisma.NullableEnumAmountModeFieldUpdateOperationsInput | $Enums.AmountMode | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1376,6 +1766,8 @@ export type IntentUpdateWithoutRoutesInput = {
   sourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsSourceNestedInput
   destinationAsset?: Prisma.AssetUpdateOneWithoutIntentsAsDestinationNestedInput
   recipient?: Prisma.RecipientUpdateOneWithoutIntentsNestedInput
+  preferredSourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsPreferredSourceNestedInput
+  clarificationOptions?: Prisma.ClarificationOptionUpdateManyWithoutIntentNestedInput
   quotes?: Prisma.QuoteUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutIntentNestedInput
 }
@@ -1392,11 +1784,14 @@ export type IntentUncheckedUpdateWithoutRoutesInput = {
   destinationAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredSourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedUpdateManyWithoutIntentNestedInput
   quotes?: Prisma.QuoteUncheckedUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutIntentNestedInput
 }
@@ -1408,6 +1803,7 @@ export type IntentCreateWithoutExecutionsInput = {
   amount?: string | null
   amountMode?: $Enums.AmountMode | null
   destinationCountry?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1418,6 +1814,8 @@ export type IntentCreateWithoutExecutionsInput = {
   sourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsSourceInput
   destinationAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsDestinationInput
   recipient?: Prisma.RecipientCreateNestedOneWithoutIntentsInput
+  preferredSourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsPreferredSourceInput
+  clarificationOptions?: Prisma.ClarificationOptionCreateNestedManyWithoutIntentInput
   quotes?: Prisma.QuoteCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteCreateNestedManyWithoutIntentInput
 }
@@ -1434,11 +1832,14 @@ export type IntentUncheckedCreateWithoutExecutionsInput = {
   destinationAssetId?: string | null
   recipientId?: string | null
   destinationCountry?: string | null
+  preferredSourceAssetId?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedCreateNestedManyWithoutIntentInput
   quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteUncheckedCreateNestedManyWithoutIntentInput
 }
@@ -1466,6 +1867,7 @@ export type IntentUpdateWithoutExecutionsInput = {
   amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountMode?: Prisma.NullableEnumAmountModeFieldUpdateOperationsInput | $Enums.AmountMode | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1476,6 +1878,8 @@ export type IntentUpdateWithoutExecutionsInput = {
   sourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsSourceNestedInput
   destinationAsset?: Prisma.AssetUpdateOneWithoutIntentsAsDestinationNestedInput
   recipient?: Prisma.RecipientUpdateOneWithoutIntentsNestedInput
+  preferredSourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsPreferredSourceNestedInput
+  clarificationOptions?: Prisma.ClarificationOptionUpdateManyWithoutIntentNestedInput
   quotes?: Prisma.QuoteUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUpdateManyWithoutIntentNestedInput
 }
@@ -1492,11 +1896,14 @@ export type IntentUncheckedUpdateWithoutExecutionsInput = {
   destinationAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredSourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedUpdateManyWithoutIntentNestedInput
   quotes?: Prisma.QuoteUncheckedUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUncheckedUpdateManyWithoutIntentNestedInput
 }
@@ -1512,6 +1919,8 @@ export type IntentCreateManyUserInput = {
   destinationAssetId?: string | null
   recipientId?: string | null
   destinationCountry?: string | null
+  preferredSourceAssetId?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1526,6 +1935,7 @@ export type IntentUpdateWithoutUserInput = {
   amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountMode?: Prisma.NullableEnumAmountModeFieldUpdateOperationsInput | $Enums.AmountMode | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1535,6 +1945,8 @@ export type IntentUpdateWithoutUserInput = {
   sourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsSourceNestedInput
   destinationAsset?: Prisma.AssetUpdateOneWithoutIntentsAsDestinationNestedInput
   recipient?: Prisma.RecipientUpdateOneWithoutIntentsNestedInput
+  preferredSourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsPreferredSourceNestedInput
+  clarificationOptions?: Prisma.ClarificationOptionUpdateManyWithoutIntentNestedInput
   quotes?: Prisma.QuoteUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutIntentNestedInput
@@ -1551,11 +1963,14 @@ export type IntentUncheckedUpdateWithoutUserInput = {
   destinationAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredSourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedUpdateManyWithoutIntentNestedInput
   quotes?: Prisma.QuoteUncheckedUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUncheckedUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutIntentNestedInput
@@ -1572,6 +1987,8 @@ export type IntentUncheckedUpdateManyWithoutUserInput = {
   destinationAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredSourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1590,6 +2007,8 @@ export type IntentCreateManySourceAssetInput = {
   destinationAssetId?: string | null
   recipientId?: string | null
   destinationCountry?: string | null
+  preferredSourceAssetId?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1608,6 +2027,28 @@ export type IntentCreateManyDestinationAssetInput = {
   sourceAssetId?: string | null
   recipientId?: string | null
   destinationCountry?: string | null
+  preferredSourceAssetId?: string | null
+  revision?: number
+  normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type IntentCreateManyPreferredSourceAssetInput = {
+  id: string
+  userId: string
+  conversationId: string
+  type: $Enums.IntentType
+  status?: $Enums.IntentStatus
+  amount?: string | null
+  amountMode?: $Enums.AmountMode | null
+  sourceAssetId?: string | null
+  destinationAssetId?: string | null
+  recipientId?: string | null
+  destinationCountry?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1622,6 +2063,7 @@ export type IntentUpdateWithoutSourceAssetInput = {
   amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountMode?: Prisma.NullableEnumAmountModeFieldUpdateOperationsInput | $Enums.AmountMode | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1631,6 +2073,8 @@ export type IntentUpdateWithoutSourceAssetInput = {
   conversation?: Prisma.ConversationUpdateOneRequiredWithoutIntentsNestedInput
   destinationAsset?: Prisma.AssetUpdateOneWithoutIntentsAsDestinationNestedInput
   recipient?: Prisma.RecipientUpdateOneWithoutIntentsNestedInput
+  preferredSourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsPreferredSourceNestedInput
+  clarificationOptions?: Prisma.ClarificationOptionUpdateManyWithoutIntentNestedInput
   quotes?: Prisma.QuoteUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutIntentNestedInput
@@ -1647,11 +2091,14 @@ export type IntentUncheckedUpdateWithoutSourceAssetInput = {
   destinationAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredSourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedUpdateManyWithoutIntentNestedInput
   quotes?: Prisma.QuoteUncheckedUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUncheckedUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutIntentNestedInput
@@ -1668,6 +2115,8 @@ export type IntentUncheckedUpdateManyWithoutSourceAssetInput = {
   destinationAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredSourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1682,6 +2131,7 @@ export type IntentUpdateWithoutDestinationAssetInput = {
   amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountMode?: Prisma.NullableEnumAmountModeFieldUpdateOperationsInput | $Enums.AmountMode | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1691,6 +2141,8 @@ export type IntentUpdateWithoutDestinationAssetInput = {
   conversation?: Prisma.ConversationUpdateOneRequiredWithoutIntentsNestedInput
   sourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsSourceNestedInput
   recipient?: Prisma.RecipientUpdateOneWithoutIntentsNestedInput
+  preferredSourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsPreferredSourceNestedInput
+  clarificationOptions?: Prisma.ClarificationOptionUpdateManyWithoutIntentNestedInput
   quotes?: Prisma.QuoteUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutIntentNestedInput
@@ -1707,11 +2159,14 @@ export type IntentUncheckedUpdateWithoutDestinationAssetInput = {
   sourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredSourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedUpdateManyWithoutIntentNestedInput
   quotes?: Prisma.QuoteUncheckedUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUncheckedUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutIntentNestedInput
@@ -1728,6 +2183,76 @@ export type IntentUncheckedUpdateManyWithoutDestinationAssetInput = {
   sourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredSourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type IntentUpdateWithoutPreferredSourceAssetInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumIntentTypeFieldUpdateOperationsInput | $Enums.IntentType
+  status?: Prisma.EnumIntentStatusFieldUpdateOperationsInput | $Enums.IntentStatus
+  amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  amountMode?: Prisma.NullableEnumAmountModeFieldUpdateOperationsInput | $Enums.AmountMode | null
+  destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutIntentsNestedInput
+  conversation?: Prisma.ConversationUpdateOneRequiredWithoutIntentsNestedInput
+  sourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsSourceNestedInput
+  destinationAsset?: Prisma.AssetUpdateOneWithoutIntentsAsDestinationNestedInput
+  recipient?: Prisma.RecipientUpdateOneWithoutIntentsNestedInput
+  clarificationOptions?: Prisma.ClarificationOptionUpdateManyWithoutIntentNestedInput
+  quotes?: Prisma.QuoteUpdateManyWithoutIntentNestedInput
+  routes?: Prisma.RouteUpdateManyWithoutIntentNestedInput
+  executions?: Prisma.ExecutionUpdateManyWithoutIntentNestedInput
+}
+
+export type IntentUncheckedUpdateWithoutPreferredSourceAssetInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  conversationId?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumIntentTypeFieldUpdateOperationsInput | $Enums.IntentType
+  status?: Prisma.EnumIntentStatusFieldUpdateOperationsInput | $Enums.IntentStatus
+  amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  amountMode?: Prisma.NullableEnumAmountModeFieldUpdateOperationsInput | $Enums.AmountMode | null
+  sourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destinationAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recipientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedUpdateManyWithoutIntentNestedInput
+  quotes?: Prisma.QuoteUncheckedUpdateManyWithoutIntentNestedInput
+  routes?: Prisma.RouteUncheckedUpdateManyWithoutIntentNestedInput
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutIntentNestedInput
+}
+
+export type IntentUncheckedUpdateManyWithoutPreferredSourceAssetInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  conversationId?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumIntentTypeFieldUpdateOperationsInput | $Enums.IntentType
+  status?: Prisma.EnumIntentStatusFieldUpdateOperationsInput | $Enums.IntentStatus
+  amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  amountMode?: Prisma.NullableEnumAmountModeFieldUpdateOperationsInput | $Enums.AmountMode | null
+  sourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destinationAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recipientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1746,6 +2271,8 @@ export type IntentCreateManyConversationInput = {
   destinationAssetId?: string | null
   recipientId?: string | null
   destinationCountry?: string | null
+  preferredSourceAssetId?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1760,6 +2287,7 @@ export type IntentUpdateWithoutConversationInput = {
   amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountMode?: Prisma.NullableEnumAmountModeFieldUpdateOperationsInput | $Enums.AmountMode | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1769,6 +2297,8 @@ export type IntentUpdateWithoutConversationInput = {
   sourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsSourceNestedInput
   destinationAsset?: Prisma.AssetUpdateOneWithoutIntentsAsDestinationNestedInput
   recipient?: Prisma.RecipientUpdateOneWithoutIntentsNestedInput
+  preferredSourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsPreferredSourceNestedInput
+  clarificationOptions?: Prisma.ClarificationOptionUpdateManyWithoutIntentNestedInput
   quotes?: Prisma.QuoteUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutIntentNestedInput
@@ -1785,11 +2315,14 @@ export type IntentUncheckedUpdateWithoutConversationInput = {
   destinationAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredSourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedUpdateManyWithoutIntentNestedInput
   quotes?: Prisma.QuoteUncheckedUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUncheckedUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutIntentNestedInput
@@ -1806,6 +2339,8 @@ export type IntentUncheckedUpdateManyWithoutConversationInput = {
   destinationAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredSourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1824,6 +2359,8 @@ export type IntentCreateManyRecipientInput = {
   sourceAssetId?: string | null
   destinationAssetId?: string | null
   destinationCountry?: string | null
+  preferredSourceAssetId?: string | null
+  revision?: number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1838,6 +2375,7 @@ export type IntentUpdateWithoutRecipientInput = {
   amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountMode?: Prisma.NullableEnumAmountModeFieldUpdateOperationsInput | $Enums.AmountMode | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1847,6 +2385,8 @@ export type IntentUpdateWithoutRecipientInput = {
   conversation?: Prisma.ConversationUpdateOneRequiredWithoutIntentsNestedInput
   sourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsSourceNestedInput
   destinationAsset?: Prisma.AssetUpdateOneWithoutIntentsAsDestinationNestedInput
+  preferredSourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsPreferredSourceNestedInput
+  clarificationOptions?: Prisma.ClarificationOptionUpdateManyWithoutIntentNestedInput
   quotes?: Prisma.QuoteUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutIntentNestedInput
@@ -1863,11 +2403,14 @@ export type IntentUncheckedUpdateWithoutRecipientInput = {
   sourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   destinationAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredSourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedUpdateManyWithoutIntentNestedInput
   quotes?: Prisma.QuoteUncheckedUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUncheckedUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutIntentNestedInput
@@ -1884,6 +2427,8 @@ export type IntentUncheckedUpdateManyWithoutRecipientInput = {
   sourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   destinationAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredSourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1897,12 +2442,14 @@ export type IntentUncheckedUpdateManyWithoutRecipientInput = {
  */
 
 export type IntentCountOutputType = {
+  clarificationOptions: number
   quotes: number
   routes: number
   executions: number
 }
 
 export type IntentCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  clarificationOptions?: boolean | IntentCountOutputTypeCountClarificationOptionsArgs
   quotes?: boolean | IntentCountOutputTypeCountQuotesArgs
   routes?: boolean | IntentCountOutputTypeCountRoutesArgs
   executions?: boolean | IntentCountOutputTypeCountExecutionsArgs
@@ -1916,6 +2463,13 @@ export type IntentCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Exten
    * Select specific fields to fetch from the IntentCountOutputType
    */
   select?: Prisma.IntentCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * IntentCountOutputType without action
+ */
+export type IntentCountOutputTypeCountClarificationOptionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ClarificationOptionWhereInput
 }
 
 /**
@@ -1952,6 +2506,8 @@ export type IntentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   destinationAssetId?: boolean
   recipientId?: boolean
   destinationCountry?: boolean
+  preferredSourceAssetId?: boolean
+  revision?: boolean
   normalizedData?: boolean
   constraints?: boolean
   missingFields?: boolean
@@ -1962,6 +2518,8 @@ export type IntentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   sourceAsset?: boolean | Prisma.Intent$sourceAssetArgs<ExtArgs>
   destinationAsset?: boolean | Prisma.Intent$destinationAssetArgs<ExtArgs>
   recipient?: boolean | Prisma.Intent$recipientArgs<ExtArgs>
+  preferredSourceAsset?: boolean | Prisma.Intent$preferredSourceAssetArgs<ExtArgs>
+  clarificationOptions?: boolean | Prisma.Intent$clarificationOptionsArgs<ExtArgs>
   quotes?: boolean | Prisma.Intent$quotesArgs<ExtArgs>
   routes?: boolean | Prisma.Intent$routesArgs<ExtArgs>
   executions?: boolean | Prisma.Intent$executionsArgs<ExtArgs>
@@ -1980,6 +2538,8 @@ export type IntentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   destinationAssetId?: boolean
   recipientId?: boolean
   destinationCountry?: boolean
+  preferredSourceAssetId?: boolean
+  revision?: boolean
   normalizedData?: boolean
   constraints?: boolean
   missingFields?: boolean
@@ -1990,6 +2550,7 @@ export type IntentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   sourceAsset?: boolean | Prisma.Intent$sourceAssetArgs<ExtArgs>
   destinationAsset?: boolean | Prisma.Intent$destinationAssetArgs<ExtArgs>
   recipient?: boolean | Prisma.Intent$recipientArgs<ExtArgs>
+  preferredSourceAsset?: boolean | Prisma.Intent$preferredSourceAssetArgs<ExtArgs>
 }, ExtArgs["result"]["intent"]>
 
 export type IntentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -2004,6 +2565,8 @@ export type IntentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   destinationAssetId?: boolean
   recipientId?: boolean
   destinationCountry?: boolean
+  preferredSourceAssetId?: boolean
+  revision?: boolean
   normalizedData?: boolean
   constraints?: boolean
   missingFields?: boolean
@@ -2014,6 +2577,7 @@ export type IntentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   sourceAsset?: boolean | Prisma.Intent$sourceAssetArgs<ExtArgs>
   destinationAsset?: boolean | Prisma.Intent$destinationAssetArgs<ExtArgs>
   recipient?: boolean | Prisma.Intent$recipientArgs<ExtArgs>
+  preferredSourceAsset?: boolean | Prisma.Intent$preferredSourceAssetArgs<ExtArgs>
 }, ExtArgs["result"]["intent"]>
 
 export type IntentSelectScalar = {
@@ -2028,6 +2592,8 @@ export type IntentSelectScalar = {
   destinationAssetId?: boolean
   recipientId?: boolean
   destinationCountry?: boolean
+  preferredSourceAssetId?: boolean
+  revision?: boolean
   normalizedData?: boolean
   constraints?: boolean
   missingFields?: boolean
@@ -2035,13 +2601,15 @@ export type IntentSelectScalar = {
   updatedAt?: boolean
 }
 
-export type IntentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "conversationId" | "type" | "status" | "amount" | "amountMode" | "sourceAssetId" | "destinationAssetId" | "recipientId" | "destinationCountry" | "normalizedData" | "constraints" | "missingFields" | "createdAt" | "updatedAt", ExtArgs["result"]["intent"]>
+export type IntentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "conversationId" | "type" | "status" | "amount" | "amountMode" | "sourceAssetId" | "destinationAssetId" | "recipientId" | "destinationCountry" | "preferredSourceAssetId" | "revision" | "normalizedData" | "constraints" | "missingFields" | "createdAt" | "updatedAt", ExtArgs["result"]["intent"]>
 export type IntentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   conversation?: boolean | Prisma.ConversationDefaultArgs<ExtArgs>
   sourceAsset?: boolean | Prisma.Intent$sourceAssetArgs<ExtArgs>
   destinationAsset?: boolean | Prisma.Intent$destinationAssetArgs<ExtArgs>
   recipient?: boolean | Prisma.Intent$recipientArgs<ExtArgs>
+  preferredSourceAsset?: boolean | Prisma.Intent$preferredSourceAssetArgs<ExtArgs>
+  clarificationOptions?: boolean | Prisma.Intent$clarificationOptionsArgs<ExtArgs>
   quotes?: boolean | Prisma.Intent$quotesArgs<ExtArgs>
   routes?: boolean | Prisma.Intent$routesArgs<ExtArgs>
   executions?: boolean | Prisma.Intent$executionsArgs<ExtArgs>
@@ -2053,6 +2621,7 @@ export type IntentIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   sourceAsset?: boolean | Prisma.Intent$sourceAssetArgs<ExtArgs>
   destinationAsset?: boolean | Prisma.Intent$destinationAssetArgs<ExtArgs>
   recipient?: boolean | Prisma.Intent$recipientArgs<ExtArgs>
+  preferredSourceAsset?: boolean | Prisma.Intent$preferredSourceAssetArgs<ExtArgs>
 }
 export type IntentIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -2060,6 +2629,7 @@ export type IntentIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   sourceAsset?: boolean | Prisma.Intent$sourceAssetArgs<ExtArgs>
   destinationAsset?: boolean | Prisma.Intent$destinationAssetArgs<ExtArgs>
   recipient?: boolean | Prisma.Intent$recipientArgs<ExtArgs>
+  preferredSourceAsset?: boolean | Prisma.Intent$preferredSourceAssetArgs<ExtArgs>
 }
 
 export type $IntentPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2070,6 +2640,8 @@ export type $IntentPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     sourceAsset: Prisma.$AssetPayload<ExtArgs> | null
     destinationAsset: Prisma.$AssetPayload<ExtArgs> | null
     recipient: Prisma.$RecipientPayload<ExtArgs> | null
+    preferredSourceAsset: Prisma.$AssetPayload<ExtArgs> | null
+    clarificationOptions: Prisma.$ClarificationOptionPayload<ExtArgs>[]
     quotes: Prisma.$QuotePayload<ExtArgs>[]
     routes: Prisma.$RoutePayload<ExtArgs>[]
     executions: Prisma.$ExecutionPayload<ExtArgs>[]
@@ -2089,6 +2661,15 @@ export type $IntentPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     destinationAssetId: string | null
     recipientId: string | null
     destinationCountry: string | null
+    /**
+     * Explicit funding preference ("use USDT"). Distinct from the human currency of `amount`.
+     */
+    preferredSourceAssetId: string | null
+    /**
+     * Bumped on every financial change. Derived state (clarification options now; quotes and routes
+     * later) binds to the revision it was made from and is stale once it moves on.
+     */
+    revision: number
     normalizedData: runtime.JsonValue
     constraints: runtime.JsonValue | null
     missingFields: runtime.JsonValue | null
@@ -2493,6 +3074,8 @@ export interface Prisma__IntentClient<T, Null = never, ExtArgs extends runtime.T
   sourceAsset<T extends Prisma.Intent$sourceAssetArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Intent$sourceAssetArgs<ExtArgs>>): Prisma.Prisma__AssetClient<runtime.Types.Result.GetResult<Prisma.$AssetPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   destinationAsset<T extends Prisma.Intent$destinationAssetArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Intent$destinationAssetArgs<ExtArgs>>): Prisma.Prisma__AssetClient<runtime.Types.Result.GetResult<Prisma.$AssetPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   recipient<T extends Prisma.Intent$recipientArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Intent$recipientArgs<ExtArgs>>): Prisma.Prisma__RecipientClient<runtime.Types.Result.GetResult<Prisma.$RecipientPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  preferredSourceAsset<T extends Prisma.Intent$preferredSourceAssetArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Intent$preferredSourceAssetArgs<ExtArgs>>): Prisma.Prisma__AssetClient<runtime.Types.Result.GetResult<Prisma.$AssetPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  clarificationOptions<T extends Prisma.Intent$clarificationOptionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Intent$clarificationOptionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ClarificationOptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   quotes<T extends Prisma.Intent$quotesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Intent$quotesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$QuotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   routes<T extends Prisma.Intent$routesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Intent$routesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RoutePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   executions<T extends Prisma.Intent$executionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Intent$executionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ExecutionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -2536,6 +3119,8 @@ export interface IntentFieldRefs {
   readonly destinationAssetId: Prisma.FieldRef<"Intent", 'String'>
   readonly recipientId: Prisma.FieldRef<"Intent", 'String'>
   readonly destinationCountry: Prisma.FieldRef<"Intent", 'String'>
+  readonly preferredSourceAssetId: Prisma.FieldRef<"Intent", 'String'>
+  readonly revision: Prisma.FieldRef<"Intent", 'Int'>
   readonly normalizedData: Prisma.FieldRef<"Intent", 'Json'>
   readonly constraints: Prisma.FieldRef<"Intent", 'Json'>
   readonly missingFields: Prisma.FieldRef<"Intent", 'Json'>
@@ -2996,6 +3581,49 @@ export type Intent$recipientArgs<ExtArgs extends runtime.Types.Extensions.Intern
    */
   include?: Prisma.RecipientInclude<ExtArgs> | null
   where?: Prisma.RecipientWhereInput
+}
+
+/**
+ * Intent.preferredSourceAsset
+ */
+export type Intent$preferredSourceAssetArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Asset
+   */
+  select?: Prisma.AssetSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Asset
+   */
+  omit?: Prisma.AssetOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AssetInclude<ExtArgs> | null
+  where?: Prisma.AssetWhereInput
+}
+
+/**
+ * Intent.clarificationOptions
+ */
+export type Intent$clarificationOptionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ClarificationOption
+   */
+  select?: Prisma.ClarificationOptionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ClarificationOption
+   */
+  omit?: Prisma.ClarificationOptionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ClarificationOptionInclude<ExtArgs> | null
+  where?: Prisma.ClarificationOptionWhereInput
+  orderBy?: Prisma.ClarificationOptionOrderByWithRelationInput | Prisma.ClarificationOptionOrderByWithRelationInput[]
+  cursor?: Prisma.ClarificationOptionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ClarificationOptionScalarFieldEnum | Prisma.ClarificationOptionScalarFieldEnum[]
 }
 
 /**

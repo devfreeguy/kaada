@@ -1,5 +1,6 @@
 import type {
   AssetRepository,
+  ClarificationChoiceRepository,
   ConversationRepository,
   IdentityRepository,
   IntentRepository,
@@ -17,12 +18,13 @@ export interface AgentRepositories {
   intents: IntentRepository;
   recipients: RecipientRepository;
   assets: AssetRepository;
+  clarifications: ClarificationChoiceRepository;
 }
 
 /**
  * How the core talks to storage. `transaction` runs `work` atomically and must give back repositories
- * bound to that transaction; `read` is for reads outside one. The core never holds a transaction
- * open across a call to the interpreter.
+ * bound to that transaction; `read` is for reads and single idempotent writes outside one. The core
+ * never holds a transaction open across a call to the interpreter.
  */
 export interface AgentUnitOfWork {
   read: AgentRepositories;

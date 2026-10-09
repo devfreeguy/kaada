@@ -284,6 +284,7 @@ export type AssetWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Asset"> | Date | string
   intentsAsSource?: Prisma.IntentListRelationFilter
   intentsAsDestination?: Prisma.IntentListRelationFilter
+  intentsAsPreferredSource?: Prisma.IntentListRelationFilter
   recipientsPreferring?: Prisma.RecipientListRelationFilter
   capabilitiesAsInput?: Prisma.ProviderCapabilityListRelationFilter
   capabilitiesAsOutput?: Prisma.ProviderCapabilityListRelationFilter
@@ -315,6 +316,7 @@ export type AssetOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   intentsAsSource?: Prisma.IntentOrderByRelationAggregateInput
   intentsAsDestination?: Prisma.IntentOrderByRelationAggregateInput
+  intentsAsPreferredSource?: Prisma.IntentOrderByRelationAggregateInput
   recipientsPreferring?: Prisma.RecipientOrderByRelationAggregateInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityOrderByRelationAggregateInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityOrderByRelationAggregateInput
@@ -350,6 +352,7 @@ export type AssetWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"Asset"> | Date | string
   intentsAsSource?: Prisma.IntentListRelationFilter
   intentsAsDestination?: Prisma.IntentListRelationFilter
+  intentsAsPreferredSource?: Prisma.IntentListRelationFilter
   recipientsPreferring?: Prisma.RecipientListRelationFilter
   capabilitiesAsInput?: Prisma.ProviderCapabilityListRelationFilter
   capabilitiesAsOutput?: Prisma.ProviderCapabilityListRelationFilter
@@ -419,6 +422,7 @@ export type AssetCreateInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityCreateNestedManyWithoutOutputAssetInput
@@ -450,6 +454,7 @@ export type AssetUncheckedCreateInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentUncheckedCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentUncheckedCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientUncheckedCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutOutputAssetInput
@@ -481,6 +486,7 @@ export type AssetUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUpdateManyWithoutOutputAssetNestedInput
@@ -512,6 +518,7 @@ export type AssetUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUncheckedUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUncheckedUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUncheckedUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutOutputAssetNestedInput
@@ -667,6 +674,12 @@ export type AssetCreateNestedOneWithoutIntentsAsDestinationInput = {
   connect?: Prisma.AssetWhereUniqueInput
 }
 
+export type AssetCreateNestedOneWithoutIntentsAsPreferredSourceInput = {
+  create?: Prisma.XOR<Prisma.AssetCreateWithoutIntentsAsPreferredSourceInput, Prisma.AssetUncheckedCreateWithoutIntentsAsPreferredSourceInput>
+  connectOrCreate?: Prisma.AssetCreateOrConnectWithoutIntentsAsPreferredSourceInput
+  connect?: Prisma.AssetWhereUniqueInput
+}
+
 export type AssetUpdateOneWithoutIntentsAsSourceNestedInput = {
   create?: Prisma.XOR<Prisma.AssetCreateWithoutIntentsAsSourceInput, Prisma.AssetUncheckedCreateWithoutIntentsAsSourceInput>
   connectOrCreate?: Prisma.AssetCreateOrConnectWithoutIntentsAsSourceInput
@@ -685,6 +698,16 @@ export type AssetUpdateOneWithoutIntentsAsDestinationNestedInput = {
   delete?: Prisma.AssetWhereInput | boolean
   connect?: Prisma.AssetWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.AssetUpdateToOneWithWhereWithoutIntentsAsDestinationInput, Prisma.AssetUpdateWithoutIntentsAsDestinationInput>, Prisma.AssetUncheckedUpdateWithoutIntentsAsDestinationInput>
+}
+
+export type AssetUpdateOneWithoutIntentsAsPreferredSourceNestedInput = {
+  create?: Prisma.XOR<Prisma.AssetCreateWithoutIntentsAsPreferredSourceInput, Prisma.AssetUncheckedCreateWithoutIntentsAsPreferredSourceInput>
+  connectOrCreate?: Prisma.AssetCreateOrConnectWithoutIntentsAsPreferredSourceInput
+  upsert?: Prisma.AssetUpsertWithoutIntentsAsPreferredSourceInput
+  disconnect?: Prisma.AssetWhereInput | boolean
+  delete?: Prisma.AssetWhereInput | boolean
+  connect?: Prisma.AssetWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AssetUpdateToOneWithWhereWithoutIntentsAsPreferredSourceInput, Prisma.AssetUpdateWithoutIntentsAsPreferredSourceInput>, Prisma.AssetUncheckedUpdateWithoutIntentsAsPreferredSourceInput>
 }
 
 export type AssetCreateNestedOneWithoutRecipientsPreferringInput = {
@@ -911,6 +934,7 @@ export type AssetCreateWithoutIntentsAsSourceInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   intentsAsDestination?: Prisma.IntentCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityCreateNestedManyWithoutOutputAssetInput
@@ -941,6 +965,7 @@ export type AssetUncheckedCreateWithoutIntentsAsSourceInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   intentsAsDestination?: Prisma.IntentUncheckedCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientUncheckedCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutOutputAssetInput
@@ -976,6 +1001,7 @@ export type AssetCreateWithoutIntentsAsDestinationInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentCreateNestedManyWithoutSourceAssetInput
+  intentsAsPreferredSource?: Prisma.IntentCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityCreateNestedManyWithoutOutputAssetInput
@@ -1006,6 +1032,7 @@ export type AssetUncheckedCreateWithoutIntentsAsDestinationInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentUncheckedCreateNestedManyWithoutSourceAssetInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientUncheckedCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutOutputAssetInput
@@ -1025,6 +1052,73 @@ export type AssetUncheckedCreateWithoutIntentsAsDestinationInput = {
 export type AssetCreateOrConnectWithoutIntentsAsDestinationInput = {
   where: Prisma.AssetWhereUniqueInput
   create: Prisma.XOR<Prisma.AssetCreateWithoutIntentsAsDestinationInput, Prisma.AssetUncheckedCreateWithoutIntentsAsDestinationInput>
+}
+
+export type AssetCreateWithoutIntentsAsPreferredSourceInput = {
+  id: string
+  symbol: string
+  name: string
+  kind: $Enums.AssetKind
+  chainId?: number | null
+  contractAddress?: string | null
+  decimals: number
+  fiatCode?: string | null
+  countryCode?: string | null
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  intentsAsSource?: Prisma.IntentCreateNestedManyWithoutSourceAssetInput
+  intentsAsDestination?: Prisma.IntentCreateNestedManyWithoutDestinationAssetInput
+  recipientsPreferring?: Prisma.RecipientCreateNestedManyWithoutPreferredAssetInput
+  capabilitiesAsInput?: Prisma.ProviderCapabilityCreateNestedManyWithoutInputAssetInput
+  capabilitiesAsOutput?: Prisma.ProviderCapabilityCreateNestedManyWithoutOutputAssetInput
+  quotesAsInput?: Prisma.QuoteCreateNestedManyWithoutInputAssetInput
+  quotesAsOutput?: Prisma.QuoteCreateNestedManyWithoutOutputAssetInput
+  quotesAsFee?: Prisma.QuoteCreateNestedManyWithoutFeeAssetInput
+  routesAsInput?: Prisma.RouteCreateNestedManyWithoutInputAssetInput
+  routesAsOutput?: Prisma.RouteCreateNestedManyWithoutOutputAssetInput
+  routesAsFee?: Prisma.RouteCreateNestedManyWithoutTotalFeeAssetInput
+  routeStepsAsInput?: Prisma.RouteStepCreateNestedManyWithoutInputAssetInput
+  routeStepsAsOutput?: Prisma.RouteStepCreateNestedManyWithoutOutputAssetInput
+  transactionsAsTransferred?: Prisma.TransactionCreateNestedManyWithoutAssetInput
+  transactionsAsGas?: Prisma.TransactionCreateNestedManyWithoutGasAssetInput
+  rampSessions?: Prisma.RampSessionCreateNestedManyWithoutAssetInput
+}
+
+export type AssetUncheckedCreateWithoutIntentsAsPreferredSourceInput = {
+  id: string
+  symbol: string
+  name: string
+  kind: $Enums.AssetKind
+  chainId?: number | null
+  contractAddress?: string | null
+  decimals: number
+  fiatCode?: string | null
+  countryCode?: string | null
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  intentsAsSource?: Prisma.IntentUncheckedCreateNestedManyWithoutSourceAssetInput
+  intentsAsDestination?: Prisma.IntentUncheckedCreateNestedManyWithoutDestinationAssetInput
+  recipientsPreferring?: Prisma.RecipientUncheckedCreateNestedManyWithoutPreferredAssetInput
+  capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutInputAssetInput
+  capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutOutputAssetInput
+  quotesAsInput?: Prisma.QuoteUncheckedCreateNestedManyWithoutInputAssetInput
+  quotesAsOutput?: Prisma.QuoteUncheckedCreateNestedManyWithoutOutputAssetInput
+  quotesAsFee?: Prisma.QuoteUncheckedCreateNestedManyWithoutFeeAssetInput
+  routesAsInput?: Prisma.RouteUncheckedCreateNestedManyWithoutInputAssetInput
+  routesAsOutput?: Prisma.RouteUncheckedCreateNestedManyWithoutOutputAssetInput
+  routesAsFee?: Prisma.RouteUncheckedCreateNestedManyWithoutTotalFeeAssetInput
+  routeStepsAsInput?: Prisma.RouteStepUncheckedCreateNestedManyWithoutInputAssetInput
+  routeStepsAsOutput?: Prisma.RouteStepUncheckedCreateNestedManyWithoutOutputAssetInput
+  transactionsAsTransferred?: Prisma.TransactionUncheckedCreateNestedManyWithoutAssetInput
+  transactionsAsGas?: Prisma.TransactionUncheckedCreateNestedManyWithoutGasAssetInput
+  rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutAssetInput
+}
+
+export type AssetCreateOrConnectWithoutIntentsAsPreferredSourceInput = {
+  where: Prisma.AssetWhereUniqueInput
+  create: Prisma.XOR<Prisma.AssetCreateWithoutIntentsAsPreferredSourceInput, Prisma.AssetUncheckedCreateWithoutIntentsAsPreferredSourceInput>
 }
 
 export type AssetUpsertWithoutIntentsAsSourceInput = {
@@ -1052,6 +1146,7 @@ export type AssetUpdateWithoutIntentsAsSourceInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsDestination?: Prisma.IntentUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUpdateManyWithoutOutputAssetNestedInput
@@ -1082,6 +1177,7 @@ export type AssetUncheckedUpdateWithoutIntentsAsSourceInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsDestination?: Prisma.IntentUncheckedUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUncheckedUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutOutputAssetNestedInput
@@ -1123,6 +1219,7 @@ export type AssetUpdateWithoutIntentsAsDestinationInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUpdateManyWithoutSourceAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUpdateManyWithoutOutputAssetNestedInput
@@ -1153,6 +1250,80 @@ export type AssetUncheckedUpdateWithoutIntentsAsDestinationInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUncheckedUpdateManyWithoutSourceAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedUpdateManyWithoutPreferredSourceAssetNestedInput
+  recipientsPreferring?: Prisma.RecipientUncheckedUpdateManyWithoutPreferredAssetNestedInput
+  capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutInputAssetNestedInput
+  capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutOutputAssetNestedInput
+  quotesAsInput?: Prisma.QuoteUncheckedUpdateManyWithoutInputAssetNestedInput
+  quotesAsOutput?: Prisma.QuoteUncheckedUpdateManyWithoutOutputAssetNestedInput
+  quotesAsFee?: Prisma.QuoteUncheckedUpdateManyWithoutFeeAssetNestedInput
+  routesAsInput?: Prisma.RouteUncheckedUpdateManyWithoutInputAssetNestedInput
+  routesAsOutput?: Prisma.RouteUncheckedUpdateManyWithoutOutputAssetNestedInput
+  routesAsFee?: Prisma.RouteUncheckedUpdateManyWithoutTotalFeeAssetNestedInput
+  routeStepsAsInput?: Prisma.RouteStepUncheckedUpdateManyWithoutInputAssetNestedInput
+  routeStepsAsOutput?: Prisma.RouteStepUncheckedUpdateManyWithoutOutputAssetNestedInput
+  transactionsAsTransferred?: Prisma.TransactionUncheckedUpdateManyWithoutAssetNestedInput
+  transactionsAsGas?: Prisma.TransactionUncheckedUpdateManyWithoutGasAssetNestedInput
+  rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutAssetNestedInput
+}
+
+export type AssetUpsertWithoutIntentsAsPreferredSourceInput = {
+  update: Prisma.XOR<Prisma.AssetUpdateWithoutIntentsAsPreferredSourceInput, Prisma.AssetUncheckedUpdateWithoutIntentsAsPreferredSourceInput>
+  create: Prisma.XOR<Prisma.AssetCreateWithoutIntentsAsPreferredSourceInput, Prisma.AssetUncheckedCreateWithoutIntentsAsPreferredSourceInput>
+  where?: Prisma.AssetWhereInput
+}
+
+export type AssetUpdateToOneWithWhereWithoutIntentsAsPreferredSourceInput = {
+  where?: Prisma.AssetWhereInput
+  data: Prisma.XOR<Prisma.AssetUpdateWithoutIntentsAsPreferredSourceInput, Prisma.AssetUncheckedUpdateWithoutIntentsAsPreferredSourceInput>
+}
+
+export type AssetUpdateWithoutIntentsAsPreferredSourceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  symbol?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumAssetKindFieldUpdateOperationsInput | $Enums.AssetKind
+  chainId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  decimals?: Prisma.IntFieldUpdateOperationsInput | number
+  fiatCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  intentsAsSource?: Prisma.IntentUpdateManyWithoutSourceAssetNestedInput
+  intentsAsDestination?: Prisma.IntentUpdateManyWithoutDestinationAssetNestedInput
+  recipientsPreferring?: Prisma.RecipientUpdateManyWithoutPreferredAssetNestedInput
+  capabilitiesAsInput?: Prisma.ProviderCapabilityUpdateManyWithoutInputAssetNestedInput
+  capabilitiesAsOutput?: Prisma.ProviderCapabilityUpdateManyWithoutOutputAssetNestedInput
+  quotesAsInput?: Prisma.QuoteUpdateManyWithoutInputAssetNestedInput
+  quotesAsOutput?: Prisma.QuoteUpdateManyWithoutOutputAssetNestedInput
+  quotesAsFee?: Prisma.QuoteUpdateManyWithoutFeeAssetNestedInput
+  routesAsInput?: Prisma.RouteUpdateManyWithoutInputAssetNestedInput
+  routesAsOutput?: Prisma.RouteUpdateManyWithoutOutputAssetNestedInput
+  routesAsFee?: Prisma.RouteUpdateManyWithoutTotalFeeAssetNestedInput
+  routeStepsAsInput?: Prisma.RouteStepUpdateManyWithoutInputAssetNestedInput
+  routeStepsAsOutput?: Prisma.RouteStepUpdateManyWithoutOutputAssetNestedInput
+  transactionsAsTransferred?: Prisma.TransactionUpdateManyWithoutAssetNestedInput
+  transactionsAsGas?: Prisma.TransactionUpdateManyWithoutGasAssetNestedInput
+  rampSessions?: Prisma.RampSessionUpdateManyWithoutAssetNestedInput
+}
+
+export type AssetUncheckedUpdateWithoutIntentsAsPreferredSourceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  symbol?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumAssetKindFieldUpdateOperationsInput | $Enums.AssetKind
+  chainId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  decimals?: Prisma.IntFieldUpdateOperationsInput | number
+  fiatCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  intentsAsSource?: Prisma.IntentUncheckedUpdateManyWithoutSourceAssetNestedInput
+  intentsAsDestination?: Prisma.IntentUncheckedUpdateManyWithoutDestinationAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUncheckedUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutOutputAssetNestedInput
@@ -1184,6 +1355,7 @@ export type AssetCreateWithoutRecipientsPreferringInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentCreateNestedManyWithoutPreferredSourceAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityCreateNestedManyWithoutOutputAssetInput
   quotesAsInput?: Prisma.QuoteCreateNestedManyWithoutInputAssetInput
@@ -1214,6 +1386,7 @@ export type AssetUncheckedCreateWithoutRecipientsPreferringInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentUncheckedCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentUncheckedCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedCreateNestedManyWithoutPreferredSourceAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutOutputAssetInput
   quotesAsInput?: Prisma.QuoteUncheckedCreateNestedManyWithoutInputAssetInput
@@ -1260,6 +1433,7 @@ export type AssetUpdateWithoutRecipientsPreferringInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUpdateManyWithoutPreferredSourceAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUpdateManyWithoutOutputAssetNestedInput
   quotesAsInput?: Prisma.QuoteUpdateManyWithoutInputAssetNestedInput
@@ -1290,6 +1464,7 @@ export type AssetUncheckedUpdateWithoutRecipientsPreferringInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUncheckedUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUncheckedUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedUpdateManyWithoutPreferredSourceAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutOutputAssetNestedInput
   quotesAsInput?: Prisma.QuoteUncheckedUpdateManyWithoutInputAssetNestedInput
@@ -1320,6 +1495,7 @@ export type AssetCreateWithoutCapabilitiesAsInputInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityCreateNestedManyWithoutOutputAssetInput
   quotesAsInput?: Prisma.QuoteCreateNestedManyWithoutInputAssetInput
@@ -1350,6 +1526,7 @@ export type AssetUncheckedCreateWithoutCapabilitiesAsInputInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentUncheckedCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentUncheckedCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientUncheckedCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutOutputAssetInput
   quotesAsInput?: Prisma.QuoteUncheckedCreateNestedManyWithoutInputAssetInput
@@ -1385,6 +1562,7 @@ export type AssetCreateWithoutCapabilitiesAsOutputInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityCreateNestedManyWithoutInputAssetInput
   quotesAsInput?: Prisma.QuoteCreateNestedManyWithoutInputAssetInput
@@ -1415,6 +1593,7 @@ export type AssetUncheckedCreateWithoutCapabilitiesAsOutputInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentUncheckedCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentUncheckedCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientUncheckedCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutInputAssetInput
   quotesAsInput?: Prisma.QuoteUncheckedCreateNestedManyWithoutInputAssetInput
@@ -1461,6 +1640,7 @@ export type AssetUpdateWithoutCapabilitiesAsInputInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUpdateManyWithoutOutputAssetNestedInput
   quotesAsInput?: Prisma.QuoteUpdateManyWithoutInputAssetNestedInput
@@ -1491,6 +1671,7 @@ export type AssetUncheckedUpdateWithoutCapabilitiesAsInputInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUncheckedUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUncheckedUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUncheckedUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutOutputAssetNestedInput
   quotesAsInput?: Prisma.QuoteUncheckedUpdateManyWithoutInputAssetNestedInput
@@ -1532,6 +1713,7 @@ export type AssetUpdateWithoutCapabilitiesAsOutputInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUpdateManyWithoutInputAssetNestedInput
   quotesAsInput?: Prisma.QuoteUpdateManyWithoutInputAssetNestedInput
@@ -1562,6 +1744,7 @@ export type AssetUncheckedUpdateWithoutCapabilitiesAsOutputInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUncheckedUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUncheckedUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUncheckedUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutInputAssetNestedInput
   quotesAsInput?: Prisma.QuoteUncheckedUpdateManyWithoutInputAssetNestedInput
@@ -1592,6 +1775,7 @@ export type AssetCreateWithoutQuotesAsInputInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityCreateNestedManyWithoutOutputAssetInput
@@ -1622,6 +1806,7 @@ export type AssetUncheckedCreateWithoutQuotesAsInputInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentUncheckedCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentUncheckedCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientUncheckedCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutOutputAssetInput
@@ -1657,6 +1842,7 @@ export type AssetCreateWithoutQuotesAsOutputInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityCreateNestedManyWithoutOutputAssetInput
@@ -1687,6 +1873,7 @@ export type AssetUncheckedCreateWithoutQuotesAsOutputInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentUncheckedCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentUncheckedCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientUncheckedCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutOutputAssetInput
@@ -1722,6 +1909,7 @@ export type AssetCreateWithoutQuotesAsFeeInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityCreateNestedManyWithoutOutputAssetInput
@@ -1752,6 +1940,7 @@ export type AssetUncheckedCreateWithoutQuotesAsFeeInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentUncheckedCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentUncheckedCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientUncheckedCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutOutputAssetInput
@@ -1798,6 +1987,7 @@ export type AssetUpdateWithoutQuotesAsInputInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUpdateManyWithoutOutputAssetNestedInput
@@ -1828,6 +2018,7 @@ export type AssetUncheckedUpdateWithoutQuotesAsInputInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUncheckedUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUncheckedUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUncheckedUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutOutputAssetNestedInput
@@ -1869,6 +2060,7 @@ export type AssetUpdateWithoutQuotesAsOutputInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUpdateManyWithoutOutputAssetNestedInput
@@ -1899,6 +2091,7 @@ export type AssetUncheckedUpdateWithoutQuotesAsOutputInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUncheckedUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUncheckedUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUncheckedUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutOutputAssetNestedInput
@@ -1940,6 +2133,7 @@ export type AssetUpdateWithoutQuotesAsFeeInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUpdateManyWithoutOutputAssetNestedInput
@@ -1970,6 +2164,7 @@ export type AssetUncheckedUpdateWithoutQuotesAsFeeInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUncheckedUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUncheckedUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUncheckedUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutOutputAssetNestedInput
@@ -2000,6 +2195,7 @@ export type AssetCreateWithoutRoutesAsInputInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityCreateNestedManyWithoutOutputAssetInput
@@ -2030,6 +2226,7 @@ export type AssetUncheckedCreateWithoutRoutesAsInputInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentUncheckedCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentUncheckedCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientUncheckedCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutOutputAssetInput
@@ -2065,6 +2262,7 @@ export type AssetCreateWithoutRoutesAsOutputInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityCreateNestedManyWithoutOutputAssetInput
@@ -2095,6 +2293,7 @@ export type AssetUncheckedCreateWithoutRoutesAsOutputInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentUncheckedCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentUncheckedCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientUncheckedCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutOutputAssetInput
@@ -2130,6 +2329,7 @@ export type AssetCreateWithoutRoutesAsFeeInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityCreateNestedManyWithoutOutputAssetInput
@@ -2160,6 +2360,7 @@ export type AssetUncheckedCreateWithoutRoutesAsFeeInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentUncheckedCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentUncheckedCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientUncheckedCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutOutputAssetInput
@@ -2206,6 +2407,7 @@ export type AssetUpdateWithoutRoutesAsInputInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUpdateManyWithoutOutputAssetNestedInput
@@ -2236,6 +2438,7 @@ export type AssetUncheckedUpdateWithoutRoutesAsInputInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUncheckedUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUncheckedUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUncheckedUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutOutputAssetNestedInput
@@ -2277,6 +2480,7 @@ export type AssetUpdateWithoutRoutesAsOutputInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUpdateManyWithoutOutputAssetNestedInput
@@ -2307,6 +2511,7 @@ export type AssetUncheckedUpdateWithoutRoutesAsOutputInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUncheckedUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUncheckedUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUncheckedUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutOutputAssetNestedInput
@@ -2348,6 +2553,7 @@ export type AssetUpdateWithoutRoutesAsFeeInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUpdateManyWithoutOutputAssetNestedInput
@@ -2378,6 +2584,7 @@ export type AssetUncheckedUpdateWithoutRoutesAsFeeInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUncheckedUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUncheckedUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUncheckedUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutOutputAssetNestedInput
@@ -2408,6 +2615,7 @@ export type AssetCreateWithoutRouteStepsAsInputInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityCreateNestedManyWithoutOutputAssetInput
@@ -2438,6 +2646,7 @@ export type AssetUncheckedCreateWithoutRouteStepsAsInputInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentUncheckedCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentUncheckedCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientUncheckedCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutOutputAssetInput
@@ -2473,6 +2682,7 @@ export type AssetCreateWithoutRouteStepsAsOutputInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityCreateNestedManyWithoutOutputAssetInput
@@ -2503,6 +2713,7 @@ export type AssetUncheckedCreateWithoutRouteStepsAsOutputInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentUncheckedCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentUncheckedCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientUncheckedCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutOutputAssetInput
@@ -2549,6 +2760,7 @@ export type AssetUpdateWithoutRouteStepsAsInputInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUpdateManyWithoutOutputAssetNestedInput
@@ -2579,6 +2791,7 @@ export type AssetUncheckedUpdateWithoutRouteStepsAsInputInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUncheckedUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUncheckedUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUncheckedUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutOutputAssetNestedInput
@@ -2620,6 +2833,7 @@ export type AssetUpdateWithoutRouteStepsAsOutputInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUpdateManyWithoutOutputAssetNestedInput
@@ -2650,6 +2864,7 @@ export type AssetUncheckedUpdateWithoutRouteStepsAsOutputInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUncheckedUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUncheckedUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUncheckedUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutOutputAssetNestedInput
@@ -2680,6 +2895,7 @@ export type AssetCreateWithoutTransactionsAsTransferredInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityCreateNestedManyWithoutOutputAssetInput
@@ -2710,6 +2926,7 @@ export type AssetUncheckedCreateWithoutTransactionsAsTransferredInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentUncheckedCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentUncheckedCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientUncheckedCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutOutputAssetInput
@@ -2745,6 +2962,7 @@ export type AssetCreateWithoutTransactionsAsGasInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityCreateNestedManyWithoutOutputAssetInput
@@ -2775,6 +2993,7 @@ export type AssetUncheckedCreateWithoutTransactionsAsGasInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentUncheckedCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentUncheckedCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientUncheckedCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutOutputAssetInput
@@ -2821,6 +3040,7 @@ export type AssetUpdateWithoutTransactionsAsTransferredInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUpdateManyWithoutOutputAssetNestedInput
@@ -2851,6 +3071,7 @@ export type AssetUncheckedUpdateWithoutTransactionsAsTransferredInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUncheckedUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUncheckedUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUncheckedUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutOutputAssetNestedInput
@@ -2892,6 +3113,7 @@ export type AssetUpdateWithoutTransactionsAsGasInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUpdateManyWithoutOutputAssetNestedInput
@@ -2922,6 +3144,7 @@ export type AssetUncheckedUpdateWithoutTransactionsAsGasInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUncheckedUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUncheckedUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUncheckedUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutOutputAssetNestedInput
@@ -2952,6 +3175,7 @@ export type AssetCreateWithoutRampSessionsInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityCreateNestedManyWithoutOutputAssetInput
@@ -2982,6 +3206,7 @@ export type AssetUncheckedCreateWithoutRampSessionsInput = {
   updatedAt?: Date | string
   intentsAsSource?: Prisma.IntentUncheckedCreateNestedManyWithoutSourceAssetInput
   intentsAsDestination?: Prisma.IntentUncheckedCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedCreateNestedManyWithoutPreferredSourceAssetInput
   recipientsPreferring?: Prisma.RecipientUncheckedCreateNestedManyWithoutPreferredAssetInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutInputAssetInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutOutputAssetInput
@@ -3028,6 +3253,7 @@ export type AssetUpdateWithoutRampSessionsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUpdateManyWithoutOutputAssetNestedInput
@@ -3058,6 +3284,7 @@ export type AssetUncheckedUpdateWithoutRampSessionsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intentsAsSource?: Prisma.IntentUncheckedUpdateManyWithoutSourceAssetNestedInput
   intentsAsDestination?: Prisma.IntentUncheckedUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedUpdateManyWithoutPreferredSourceAssetNestedInput
   recipientsPreferring?: Prisma.RecipientUncheckedUpdateManyWithoutPreferredAssetNestedInput
   capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutInputAssetNestedInput
   capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutOutputAssetNestedInput
@@ -3081,6 +3308,7 @@ export type AssetUncheckedUpdateWithoutRampSessionsInput = {
 export type AssetCountOutputType = {
   intentsAsSource: number
   intentsAsDestination: number
+  intentsAsPreferredSource: number
   recipientsPreferring: number
   capabilitiesAsInput: number
   capabilitiesAsOutput: number
@@ -3100,6 +3328,7 @@ export type AssetCountOutputType = {
 export type AssetCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   intentsAsSource?: boolean | AssetCountOutputTypeCountIntentsAsSourceArgs
   intentsAsDestination?: boolean | AssetCountOutputTypeCountIntentsAsDestinationArgs
+  intentsAsPreferredSource?: boolean | AssetCountOutputTypeCountIntentsAsPreferredSourceArgs
   recipientsPreferring?: boolean | AssetCountOutputTypeCountRecipientsPreferringArgs
   capabilitiesAsInput?: boolean | AssetCountOutputTypeCountCapabilitiesAsInputArgs
   capabilitiesAsOutput?: boolean | AssetCountOutputTypeCountCapabilitiesAsOutputArgs
@@ -3137,6 +3366,13 @@ export type AssetCountOutputTypeCountIntentsAsSourceArgs<ExtArgs extends runtime
  * AssetCountOutputType without action
  */
 export type AssetCountOutputTypeCountIntentsAsDestinationArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.IntentWhereInput
+}
+
+/**
+ * AssetCountOutputType without action
+ */
+export type AssetCountOutputTypeCountIntentsAsPreferredSourceArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.IntentWhereInput
 }
 
@@ -3254,6 +3490,7 @@ export type AssetSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   updatedAt?: boolean
   intentsAsSource?: boolean | Prisma.Asset$intentsAsSourceArgs<ExtArgs>
   intentsAsDestination?: boolean | Prisma.Asset$intentsAsDestinationArgs<ExtArgs>
+  intentsAsPreferredSource?: boolean | Prisma.Asset$intentsAsPreferredSourceArgs<ExtArgs>
   recipientsPreferring?: boolean | Prisma.Asset$recipientsPreferringArgs<ExtArgs>
   capabilitiesAsInput?: boolean | Prisma.Asset$capabilitiesAsInputArgs<ExtArgs>
   capabilitiesAsOutput?: boolean | Prisma.Asset$capabilitiesAsOutputArgs<ExtArgs>
@@ -3320,6 +3557,7 @@ export type AssetOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
 export type AssetInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   intentsAsSource?: boolean | Prisma.Asset$intentsAsSourceArgs<ExtArgs>
   intentsAsDestination?: boolean | Prisma.Asset$intentsAsDestinationArgs<ExtArgs>
+  intentsAsPreferredSource?: boolean | Prisma.Asset$intentsAsPreferredSourceArgs<ExtArgs>
   recipientsPreferring?: boolean | Prisma.Asset$recipientsPreferringArgs<ExtArgs>
   capabilitiesAsInput?: boolean | Prisma.Asset$capabilitiesAsInputArgs<ExtArgs>
   capabilitiesAsOutput?: boolean | Prisma.Asset$capabilitiesAsOutputArgs<ExtArgs>
@@ -3344,6 +3582,7 @@ export type $AssetPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   objects: {
     intentsAsSource: Prisma.$IntentPayload<ExtArgs>[]
     intentsAsDestination: Prisma.$IntentPayload<ExtArgs>[]
+    intentsAsPreferredSource: Prisma.$IntentPayload<ExtArgs>[]
     recipientsPreferring: Prisma.$RecipientPayload<ExtArgs>[]
     capabilitiesAsInput: Prisma.$ProviderCapabilityPayload<ExtArgs>[]
     capabilitiesAsOutput: Prisma.$ProviderCapabilityPayload<ExtArgs>[]
@@ -3768,6 +4007,7 @@ export interface Prisma__AssetClient<T, Null = never, ExtArgs extends runtime.Ty
   readonly [Symbol.toStringTag]: "PrismaPromise"
   intentsAsSource<T extends Prisma.Asset$intentsAsSourceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Asset$intentsAsSourceArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$IntentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   intentsAsDestination<T extends Prisma.Asset$intentsAsDestinationArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Asset$intentsAsDestinationArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$IntentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  intentsAsPreferredSource<T extends Prisma.Asset$intentsAsPreferredSourceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Asset$intentsAsPreferredSourceArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$IntentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   recipientsPreferring<T extends Prisma.Asset$recipientsPreferringArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Asset$recipientsPreferringArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RecipientPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   capabilitiesAsInput<T extends Prisma.Asset$capabilitiesAsInputArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Asset$capabilitiesAsInputArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProviderCapabilityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   capabilitiesAsOutput<T extends Prisma.Asset$capabilitiesAsOutputArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Asset$capabilitiesAsOutputArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProviderCapabilityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -4243,6 +4483,30 @@ export type Asset$intentsAsSourceArgs<ExtArgs extends runtime.Types.Extensions.I
  * Asset.intentsAsDestination
  */
 export type Asset$intentsAsDestinationArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Intent
+   */
+  select?: Prisma.IntentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Intent
+   */
+  omit?: Prisma.IntentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.IntentInclude<ExtArgs> | null
+  where?: Prisma.IntentWhereInput
+  orderBy?: Prisma.IntentOrderByWithRelationInput | Prisma.IntentOrderByWithRelationInput[]
+  cursor?: Prisma.IntentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.IntentScalarFieldEnum | Prisma.IntentScalarFieldEnum[]
+}
+
+/**
+ * Asset.intentsAsPreferredSource
+ */
+export type Asset$intentsAsPreferredSourceArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
    * Select specific fields to fetch from the Intent
    */

@@ -284,6 +284,7 @@ model Asset {
   // with onDelete: Restrict; assets are deactivated (isActive), never deleted.
   intentsAsSource           Intent[]             @relation("IntentSourceAsset")
   intentsAsDestination      Intent[]             @relation("IntentDestinationAsset")
+  intentsAsPreferredSource  Intent[]             @relation("IntentPreferredSourceAsset")
   recipientsPreferring      Recipient[]          @relation("RecipientPreferredAsset")
   capabilitiesAsInput       ProviderCapability[] @relation("CapabilityInputAsset")
   capabilitiesAsOutput      ProviderCapability[] @relation("CapabilityOutputAsset")
@@ -318,9 +319,10 @@ model Conversation {
   createdAt              DateTime           @default(now()) @db.Timestamptz(3)
   updatedAt              DateTime           @updatedAt @db.Timestamptz(3)
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages Message[]
-  intents  Intent[]
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages             Message[]
+  intents              Intent[]
+  clarificationOptions ClarificationOption[]
 
   // One conversation per external chat. NULLs are distinct, so channels without an external id
   // (e.g. WEB) are unaffected.
@@ -349,36 +351,69 @@ model Message {
 // ───────────────────────────── Intents ─────────────────────────────
 
 model Intent {
-  id                 String       @id @db.Uuid
-  userId             String       @db.Uuid
-  conversationId     String       @db.Uuid
-  type               IntentType
-  status             IntentStatus @default(DRAFT)
+  id                     String       @id @db.Uuid
+  userId                 String       @db.Uuid
+  conversationId         String       @db.Uuid
+  type                   IntentType
+  status                 IntentStatus @default(DRAFT)
   /// Smallest-unit integer string. Unresolved human decimals belong in normalizedData instead.
-  amount             String?
-  amountMode         AmountMode?
-  sourceAssetId      String?      @db.Uuid
-  destinationAssetId String?      @db.Uuid
-  recipientId        String?      @db.Uuid
-  destinationCountry String?      @db.Char(2)
-  normalizedData     Json         @default("{}")
-  constraints        Json?
-  missingFields      Json?
-  createdAt          DateTime     @default(now()) @db.Timestamptz(3)
-  updatedAt          DateTime     @updatedAt @db.Timestamptz(3)
+  amount                 String?
+  amountMode             AmountMode?
+  sourceAssetId          String?      @db.Uuid
+  destinationAssetId     String?      @db.Uuid
+  recipientId            String?      @db.Uuid
+  destinationCountry     String?      @db.Char(2)
+  /// Explicit funding preference ("use USDT"). Distinct from the human currency of `amount`.
+  preferredSourceAssetId String?      @db.Uuid
+  /// Bumped on every financial change. Derived state (clarification options now; quotes and routes
+  /// later) binds to the revision it was made from and is stale once it moves on.
+  revision               Int          @default(1)
+  normalizedData         Json         @default("{}")
+  constraints            Json?
+  missingFields          Json?
+  createdAt              DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt              DateTime     @updatedAt @db.Timestamptz(3)
 
-  user             User         @relation(fields: [userId], references: [id], onDelete: Restrict)
-  conversation     Conversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
-  sourceAsset      Asset?       @relation("IntentSourceAsset", fields: [sourceAssetId], references: [id], onDelete: Restrict)
-  destinationAsset Asset?       @relation("IntentDestinationAsset", fields: [destinationAssetId], references: [id], onDelete: Restrict)
-  recipient        Recipient?   @relation(fields: [recipientId], references: [id], onDelete: Restrict)
-  quotes           Quote[]
-  routes           Route[]
-  executions       Execution[]
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Restrict)
+  conversation         Conversation          @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  sourceAsset          Asset?                @relation("IntentSourceAsset", fields: [sourceAssetId], references: [id], onDelete: Restrict)
+  destinationAsset     Asset?                @relation("IntentDestinationAsset", fields: [destinationAssetId], references: [id], onDelete: Restrict)
+  recipient            Recipient?            @relation(fields: [recipientId], references: [id], onDelete: Restrict)
+  preferredSourceAsset Asset?                @relation("IntentPreferredSourceAsset", fields: [preferredSourceAssetId], references: [id], onDelete: Restrict)
+  clarificationOptions ClarificationOption[]
+  quotes               Quote[]
+  routes               Route[]
+  executions           Execution[]
 
   @@index([userId, status])
   @@index([conversationId])
   @@index([recipientId])
+}
+
+/// One selectable answer to a clarification question. The row, never the client payload, is the
+/// source of truth: a choice is honoured only while it belongs to the conversation's open intent at
+/// the same revision, is part of the latest question, is unexpired and unused. `value` holds what the
+/// choice means (a resolved recipient, an asset) and is never sent to the channel.
+model ClarificationOption {
+  id             String    @id @db.Uuid
+  /// Options created for one question share a group; the newest group is the active question.
+  groupId        String    @db.Uuid
+  conversationId String    @db.Uuid
+  intentId       String    @db.Uuid
+  revision       Int
+  field          String
+  label          String
+  description    String?
+  value          Json
+  expiresAt      DateTime  @db.Timestamptz(3)
+  usedAt         DateTime? @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  intent       Intent       @relation(fields: [intentId], references: [id], onDelete: Cascade)
+
+  @@index([intentId, createdAt])
+  @@index([groupId])
 }
 
 model Recipient {

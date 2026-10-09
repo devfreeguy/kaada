@@ -73,6 +73,9 @@ with `randomUUID()` from `node:crypto`. Inserting without an id fails at the dat
 2. `20261009000001_money_and_asset_constraints` is hand-written: CHECK constraints and partial unique
    indexes that Prisma 7.10 cannot express. Prisma does not manage or drop these. Keep manual SQL in
    its own migration; never edit the generated one.
+3. `20261010000000_intent_revision_and_clarification_options` (Build 6): `Intent.revision` (with a
+   `>= 1` CHECK), `Intent.preferredSourceAssetId`, and the `ClarificationOption` table (server-side
+   meaning of selectable answers; cascades with its intent and conversation).
 
 ## Tradeoffs and decisions
 

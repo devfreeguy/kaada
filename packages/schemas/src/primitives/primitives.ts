@@ -20,8 +20,8 @@ export const humanAmountValueSchema = z
   .string()
   .refine(isHumanAmountValue, "must be a plain decimal number such as 20.50");
 
-/** An unresolved currency or asset label such as "USD" or "USDT". */
-export const assetLabelSchema = z.string().trim().min(1).max(32);
+/** An unresolved currency or asset label such as "USD" or "USDT", or a pinned asset id (a chosen option). */
+export const assetLabelSchema = z.string().trim().min(1).max(64);
 
 /**
  * ISO 3166-1 alpha-2. Known country names ("Brazil") and lowercase codes are normalised to the

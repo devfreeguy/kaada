@@ -7,7 +7,13 @@ import {
   toMessage,
 } from "../mappers/index.js";
 import { DataIntegrityError } from "../mappers/index.js";
+import type { Message as MessageRow } from "../generated/prisma/client.js";
 import type { Db } from "./db.js";
+
+/** A JSON value (or nothing) as the text of a jsonb parameter. */
+function jsonText(value: unknown): string | null {
+  return value === undefined || value === null ? null : JSON.stringify(value);
+}
 
 export function createConversationRepository(db: Db): ConversationRepository {
   return {
@@ -34,6 +40,17 @@ export function createConversationRepository(db: Db): ConversationRepository {
      * transaction (a failed INSERT would abort it).
      */
     async getOrCreateByExternalId(conversation) {
+      // Almost every call is for an existing conversation: one cheap read, no write.
+      const existing = await db.conversation.findUnique({
+        where: {
+          channel_externalConversationId: {
+            channel: conversation.channel,
+            externalConversationId: conversation.externalConversationId,
+          },
+        },
+      });
+      if (existing) return toConversation(existing);
+
       await db.conversation.createMany({
         data: [conversationCreateData(conversation)],
         skipDuplicates: true,
@@ -72,7 +89,17 @@ export function createMessageRepository(db: Db): MessageRepository {
       if (message.externalMessageId === undefined) {
         return { message: toMessage(await db.message.create({ data })), created: true };
       }
-      const { count } = await db.message.createMany({ data: [data], skipDuplicates: true });
+      // One statement for the normal case: insert and return the row, or insert nothing when this
+      // external message was already stored (then read the stored one).
+      const inserted = await db.$queryRaw<MessageRow[]>`
+        INSERT INTO "Message" ("id", "conversationId", "role", "content", "externalMessageId", "structuredData", "metadata")
+        VALUES (${message.id}::uuid, ${message.conversationId}::uuid, ${message.role}::"MessageRole", ${message.content},
+                ${message.externalMessageId}, ${jsonText(data.structuredData)}::jsonb, ${jsonText(data.metadata)}::jsonb)
+        ON CONFLICT ("conversationId", "externalMessageId") DO NOTHING
+        RETURNING *`;
+      const [fresh] = inserted;
+      if (fresh) return { message: toMessage(fresh), created: true };
+
       const row = await db.message.findUnique({
         where: {
           conversationId_externalMessageId: {
@@ -82,7 +109,14 @@ export function createMessageRepository(db: Db): MessageRepository {
         },
       });
       if (!row) throw new DataIntegrityError("message conflicted on id but has no external match");
-      return { message: toMessage(row), created: count === 1 };
+      return { message: toMessage(row), created: false };
+    },
+
+    async findByExternalId(conversationId, externalMessageId) {
+      const row = await db.message.findUnique({
+        where: { conversationId_externalMessageId: { conversationId, externalMessageId } },
+      });
+      return row ? toMessage(row) : null;
     },
 
     async findReply(conversationId, inboundMessageId) {

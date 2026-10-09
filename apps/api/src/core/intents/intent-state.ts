@@ -16,7 +16,8 @@ interface IntentStateInput {
 /**
  * The persisted shape of an intent after assessment: typed columns for what was resolved, the
  * human-level extraction in `parsed`, and the still-missing fields. Status is derived, never chosen
- * by the language model: RESOLVED means "ready to plan a route", nothing more.
+ * by the language model: RESOLVED means "ready to plan a route", nothing more. The revision is not
+ * decided here; commitIntent sets it.
  */
 export function buildIntentState(input: IntentStateInput): NewIntent {
   const { assessment, parsed } = input;
@@ -35,11 +36,13 @@ export function buildIntentState(input: IntentStateInput): NewIntent {
     ...(facts.amount && { amount: facts.amount }),
     ...(facts.sourceAssetId && { sourceAssetId: facts.sourceAssetId }),
     ...(facts.destinationAssetId && { destinationAssetId: facts.destinationAssetId }),
+    ...(facts.preferredSourceAssetId && { preferredSourceAssetId: facts.preferredSourceAssetId }),
     ...(facts.destinationCountry && { destinationCountry: facts.destinationCountry }),
     ...(input.recipientId && { recipientId: input.recipientId }),
     parsed,
     ...(parsed.constraints && { constraints: parsed.constraints }),
     missingFields: missing,
+    revision: 1,
   };
 }
 

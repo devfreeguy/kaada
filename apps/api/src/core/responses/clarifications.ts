@@ -1,5 +1,6 @@
 import type { MissingField } from "@kaada/domain";
 
+import type { ChoiceDraft } from "../intents/choices.js";
 import type {
   ClarificationOption,
   ClarificationReason,
@@ -7,6 +8,9 @@ import type {
 } from "./agent-response.js";
 
 export type Operation = "SEND" | "CONVERT" | "QUOTE";
+
+/** Longest list of options shown. Beyond this the user is asked to be more specific instead. */
+export const MAX_OPTIONS = 5;
 
 /** A question the agent needs answered before an intent can move on. Wording is derived from it. */
 export interface Clarification {
@@ -17,9 +21,10 @@ export interface Clarification {
   subject?: string;
   /** Extra detail for the wording, e.g. how many decimals a currency allows. */
   decimals?: number;
-  /** Why a recipient was not found, when that changes the wording. */
-  detail?: "INVALID_FORMAT" | "UNSUPPORTED_TYPE";
-  options?: ClarificationOption[];
+  /** Why a recipient was not found, or that too many matched to list. */
+  detail?: "INVALID_FORMAT" | "UNSUPPORTED_TYPE" | "TOO_MANY";
+  /** Answers the user can pick. They are stored server-side when the question is asked. */
+  choices?: ChoiceDraft[];
 }
 
 const VERB: Record<Operation, string> = {
@@ -44,6 +49,9 @@ export function clarificationText(clarification: Clarification): string {
 
     case "RECIPIENT":
       if (reason === "AMBIGUOUS") {
+        if (detail === "TOO_MANY") {
+          return `I found too many matches for ${subject ?? "that name"}. Can you give me their @username or full name?`;
+        }
         return `I found more than one ${subject ?? "match"}. Which one do you mean?`;
       }
       if (reason === "NOT_FOUND") {
@@ -58,14 +66,29 @@ export function clarificationText(clarification: Clarification): string {
       return "Who would you like to send it to?";
 
     case "SOURCE_ASSET":
-      return assetQuestion(reason, subject, "Which currency or token do you want to convert from?");
+      return assetQuestion(
+        reason,
+        detail,
+        subject,
+        "Which currency or token do you want to convert from?",
+      );
 
     case "DESTINATION_ASSET":
-      return assetQuestion(reason, subject, "Which currency or token do you want to receive?");
+      return assetQuestion(
+        reason,
+        detail,
+        subject,
+        "Which currency or token do you want to receive?",
+      );
 
     case "DESTINATION":
       if (reason === "NOT_FOUND" || reason === "AMBIGUOUS") {
-        return assetQuestion(reason, subject, "Which currency or country should they receive?");
+        return assetQuestion(
+          reason,
+          detail,
+          subject,
+          "Which currency or country should they receive?",
+        );
       }
       return "Which currency or country should they receive?";
 
@@ -76,6 +99,7 @@ export function clarificationText(clarification: Clarification): string {
 
 function assetQuestion(
   reason: ClarificationReason,
+  detail: Clarification["detail"],
   subject: string | undefined,
   missing: string,
 ): string {
@@ -83,14 +107,19 @@ function assetQuestion(
     return `I don't support ${subject ?? "that"} yet. Which currency would you like to use instead?`;
   }
   if (reason === "AMBIGUOUS") {
+    if (detail === "TOO_MANY") {
+      return `${subject ?? "That"} matches many assets. Please say which one, with its network.`;
+    }
     return `${subject ?? "That"} matches more than one asset. Which one do you mean?`;
   }
   return missing;
 }
 
+/** `options` are the stored, id-bearing form of `clarification.choices` (see issueChoices). */
 export function toClarificationResponse(
   clarification: Clarification,
   intentId: string,
+  options: ClarificationOption[] = [],
   prefix = "",
 ): ClarificationRequiredResponse {
   return {
@@ -99,6 +128,6 @@ export function toClarificationResponse(
     intentId,
     field: clarification.field,
     reason: clarification.reason,
-    ...(clarification.options && { options: clarification.options }),
+    ...(options.length > 0 && { options }),
   };
 }

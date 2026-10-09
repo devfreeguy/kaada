@@ -41,6 +41,7 @@ export const resolvedRecipientSchema = z.strictObject({
   recipientId: idSchema.optional(),
   linkedUserId: idSchema.optional(),
   displayName: z.string().max(200).optional(),
+  handle: z.string().max(100).optional(),
   walletAddress: z.string().max(256).optional(),
   destinationCountry: countryCodeSchema.optional(),
   preferredAssetId: idSchema.optional(),

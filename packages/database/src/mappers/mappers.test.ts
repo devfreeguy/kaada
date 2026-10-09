@@ -35,6 +35,8 @@ const intentRow = (overrides: Partial<IntentRow> = {}): IntentRow => ({
   normalizedData: {},
   constraints: null,
   missingFields: null,
+  preferredSourceAssetId: null,
+  revision: 1,
   createdAt: now,
   updatedAt: now,
   ...overrides,
@@ -145,6 +147,7 @@ describe("intent mapper", () => {
       },
       constraints: { maxSlippageBps: 50 },
       missingFields: ["RECIPIENT"],
+      revision: 1,
       createdAt: now,
       updatedAt: now,
     };
@@ -168,6 +171,7 @@ describe("intent mapper", () => {
       sourceAssetId: usd,
       destinationAssetId: brl,
       missingFields: [],
+      revision: 1,
       createdAt: now,
       updatedAt: now,
     };
@@ -178,7 +182,7 @@ describe("intent mapper", () => {
   });
 
   it("clears absent optional values on update instead of leaving stale ones", () => {
-    const data = intentUpdateData({ status: "DRAFT", missingFields: [] });
+    const data = intentUpdateData({ status: "DRAFT", missingFields: [], revision: 1 });
     assert.equal(data.amount, null);
     assert.equal(data.sourceAssetId, null);
     assert.equal(typeof data.constraints, "object", "DbNull sentinel for a cleared Json column");

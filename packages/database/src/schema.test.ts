@@ -65,6 +65,7 @@ const modelNames = [
   "Transaction",
   "RampSession",
   "AuditEvent",
+  "ClarificationOption",
 ];
 
 const enumValues: Record<string, string[]> = {
@@ -242,6 +243,34 @@ describe("prisma schema", () => {
     const key = models.get("Execution")?.find((field) => field.name === "idempotencyKey");
     assert.ok(key && !key.optional && key.attributes.includes("@unique"));
     assert.match(schema, /@@unique\(\[chainId, hash\]\)/);
+  });
+
+  it("versions intents and keeps the funding preference separate from the amount", () => {
+    const intent = models.get("Intent");
+    const revision = intent?.find((field) => field.name === "revision");
+    assert.equal(revision?.type, "Int");
+    assert.match(revision?.attributes ?? "", /@default\(1\)/);
+    const preference = intent?.find((field) => field.name === "preferredSourceAssetId");
+    assert.equal(preference?.type, "String");
+    assert.ok(preference?.optional && preference.attributes.includes("@db.Uuid"));
+  });
+
+  it("stores clarification options server-side, bound to an intent revision", () => {
+    const option = models.get("ClarificationOption");
+    const names = option?.map((field) => field.name) ?? [];
+    for (const field of [
+      "groupId",
+      "conversationId",
+      "intentId",
+      "revision",
+      "value",
+      "expiresAt",
+      "usedAt",
+    ]) {
+      assert.ok(names.includes(field), field);
+    }
+    assert.equal(option?.find((field) => field.name === "value")?.type, "Json");
+    assert.ok(option?.find((field) => field.name === "usedAt")?.optional);
   });
 
   it("keeps datasource URLs out of the schema (Prisma 7)", () => {

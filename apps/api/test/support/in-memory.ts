@@ -1,6 +1,7 @@
 import { OPEN_INTENT_STATUSES } from "@kaada/domain";
 import type {
   Asset,
+  ClarificationChoice,
   Conversation,
   Identity,
   Intent,
@@ -25,6 +26,7 @@ export interface InMemoryWorld {
   users: Map<string, User>;
   intents: Map<string, Intent>;
   messages: Message[];
+  clarificationChoices: ClarificationChoice[];
   recipients: Map<string, Recipient>;
   conversations: Map<string, Conversation>;
   addAsset(asset: Asset): void;
@@ -45,6 +47,7 @@ export function createInMemoryWorld(): InMemoryWorld {
   const conversations = new Map<string, Conversation>();
   const messages: Message[] = [];
   const intents = new Map<string, Intent>();
+  const clarificationChoices: ClarificationChoice[] = [];
   const recipients = new Map<string, Recipient>();
 
   const repositories: AgentRepositories = {
@@ -149,6 +152,12 @@ export function createInMemoryWorld(): InMemoryWorld {
         messages.push(message);
         return Promise.resolve({ message, created: true });
       },
+      findByExternalId: (conversationId, externalMessageId) =>
+        Promise.resolve(
+          messages.find(
+            (m) => m.conversationId === conversationId && m.externalMessageId === externalMessageId,
+          ) ?? null,
+        ),
       findReply: (conversationId, inboundMessageId) =>
         Promise.resolve(
           messages.find(
@@ -190,6 +199,29 @@ export function createInMemoryWorld(): InMemoryWorld {
         const saved: Intent = { ...current, ...update, updatedAt: stamp() };
         intents.set(id, saved);
         return Promise.resolve(saved);
+      },
+    },
+
+    clarifications: {
+      issue: (choices) => {
+        const created = choices.map((choice): ClarificationChoice => ({
+          ...choice,
+          createdAt: stamp(),
+        }));
+        clarificationChoices.push(...created);
+        return Promise.resolve(created);
+      },
+      findById: (id) => Promise.resolve(clarificationChoices.find((c) => c.id === id) ?? null),
+      latestGroupId: (intentId) => {
+        const latest = clarificationChoices.filter((c) => c.intentId === intentId).at(-1);
+        return Promise.resolve(latest?.groupId ?? null);
+      },
+      markUsed: (id, at) => {
+        const index = clarificationChoices.findIndex((c) => c.id === id);
+        const current = clarificationChoices[index];
+        if (!current || current.usedAt) return Promise.resolve(false);
+        clarificationChoices[index] = { ...current, usedAt: at };
+        return Promise.resolve(true);
       },
     },
 
@@ -240,6 +272,7 @@ export function createInMemoryWorld(): InMemoryWorld {
     users,
     intents,
     messages,
+    clarificationChoices,
     recipients,
     conversations,
     addAsset: (asset) => void assets.push(asset),

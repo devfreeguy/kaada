@@ -56,7 +56,7 @@ export class AgentController {
     if (!parsed.success) {
       throw new BadRequestException({ message: "invalid request", issues: parsed.error.issues });
     }
-    const { content, conversationId } = parsed.data;
+    const { conversationId } = parsed.data;
 
     // Development convenience: omit userId to get a throwaway user back.
     let userId = parsed.data.userId;
@@ -77,12 +77,12 @@ export class AgentController {
     }
 
     try {
-      const turn = await this.agent.handleMessage({
-        userId,
-        channel: "WEB",
-        externalConversationId,
-        content,
-      });
+      const conversation = { userId, channel: "WEB", externalConversationId } as const;
+      const turn = await this.agent.handle(
+        "optionId" in parsed.data
+          ? { kind: "CHOICE", ...conversation, optionId: parsed.data.optionId }
+          : { kind: "TEXT", ...conversation, content: parsed.data.content },
+      );
       return {
         userId,
         conversationId: turn.conversationId,

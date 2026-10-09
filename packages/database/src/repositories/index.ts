@@ -2,6 +2,7 @@ import { createAssetRegistry } from "@kaada/domain";
 import type {
   AssetRegistry,
   AssetRepository,
+  ClarificationChoiceRepository,
   ConversationRepository,
   ExecutionRepository,
   IdentityRepository,
@@ -17,6 +18,7 @@ import type {
 import type { Database } from "../client/index.js";
 import type { Db } from "./db.js";
 import { createAssetRepository } from "./assets.js";
+import { createClarificationChoiceRepository } from "./clarifications.js";
 import { createConversationRepository, createMessageRepository } from "./conversations.js";
 import { createIdentityRepository, createUserRepository } from "./identity.js";
 import { createIntentRepository } from "./intents.js";
@@ -40,6 +42,7 @@ export interface Repositories {
   quotes: QuoteRepository;
   routes: RouteRepository;
   executions: ExecutionRepository;
+  clarifications: ClarificationChoiceRepository;
 }
 
 function buildRepositories(db: Db): Repositories {
@@ -55,6 +58,7 @@ function buildRepositories(db: Db): Repositories {
     quotes: createQuoteRepository(db),
     routes: createRouteRepository(db),
     executions: createExecutionRepository(db),
+    clarifications: createClarificationChoiceRepository(db),
   };
 }
 

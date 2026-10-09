@@ -697,7 +697,8 @@ describe("Groq interpreter inside the Agent Core", () => {
       help: wire({ type: "HELP" }),
     });
     for (const message of ["balance?", "last payment?", "help"]) {
-      assert.equal((await h.say(message)).response.type, "MESSAGE", message);
+      const expected = message === "help" ? "MESSAGE" : "ERROR";
+      assert.equal((await h.say(message)).response.type, expected, message);
     }
     assert.equal(h.world.intents.size, 0);
   });

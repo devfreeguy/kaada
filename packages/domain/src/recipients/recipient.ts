@@ -47,6 +47,8 @@ export interface ResolvedRecipient {
   recipientId?: string;
   linkedUserId?: string;
   displayName?: string;
+  /** A public handle that helps tell people apart ("@daniel_o"). Never a private identifier. */
+  handle?: string;
   walletAddress?: string;
   destinationCountry?: string;
   preferredAssetId?: string;
