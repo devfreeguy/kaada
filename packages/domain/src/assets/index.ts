@@ -2,6 +2,8 @@ export { ASSET_KINDS, isFiatAsset, isOnChainAsset } from "./asset.js";
 export type { Asset, AssetKind } from "./asset.js";
 export { evmAddressCodec, evmOnlyResolver, isValidAddress, normalizeAddress } from "./address.js";
 export type { AddressCodec, ChainAddressResolver } from "./address.js";
+export { createCachedAssetRepository } from "./cached-repository.js";
+export type { CachedAssetRepository, CacheOptions } from "./cached-repository.js";
 export { createCountryDirectory, defaultCountryDirectory } from "./countries.js";
 export type { CountryDirectory, CountryEntry } from "./countries.js";
 export { createAssetRegistry } from "./registry.js";

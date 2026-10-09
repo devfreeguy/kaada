@@ -74,6 +74,7 @@ pnpm db:seed            # idempotent foundation seed
 pnpm db:studio
 pnpm --filter @kaada/database test:integration   # repository round trips (rolled back)
 pnpm --filter @kaada/api test:integration        # agent core on the real database
+pnpm --filter @kaada/api smoke:groq              # live Groq check (needs GROQ_API_KEY; not CI)
 ```
 
 Health: `GET /api/health` (liveness) and `GET /api/health/ready` (readiness, checks the database;
@@ -90,19 +91,22 @@ Configuration is validated at startup by `@kaada/config`; the API exits with a l
 invalid value. The API loads `.env` from the repository root if present. Real environment
 variables take precedence.
 
-| Variable                   | Default                 | Notes                                                  |
-| -------------------------- | ----------------------- | ------------------------------------------------------ |
-| `NODE_ENV`                 | `development`           | `development`, `test`, or `production`                 |
-| `PORT`                     | `4000`                  | API port                                               |
-| `API_HOST`                 | `0.0.0.0`               | API bind address                                       |
-| `WEB_URL`                  | `http://localhost:3000` | Public URL of the web app                              |
-| `CORS_ORIGINS`             | `WEB_URL`               | Comma-separated allowed origins                        |
-| `LOG_LEVEL`                | `info`                  | `fatal` … `trace`, or `silent`                         |
-| `DATABASE_URL`             | required                | Postgres URL; the Neon pooled connection               |
-| `DATABASE_DIRECT_URL`      | `DATABASE_URL`          | Prisma CLI migrations only (Neon direct connection)    |
-| `DATABASE_POOL_MAX`        | `10`                    | Runtime pool size                                      |
-| `DATABASE_POOL_TIMEOUT_MS` | `10000`                 | Connection timeout                                     |
-| `AGENT_INTERPRETER`        | `none`                  | `none` or `mock` (development only); see docs/agent.md |
+| Variable                   | Default                 | Notes                                                          |
+| -------------------------- | ----------------------- | -------------------------------------------------------------- |
+| `NODE_ENV`                 | `development`           | `development`, `test`, or `production`                         |
+| `PORT`                     | `4000`                  | API port                                                       |
+| `API_HOST`                 | `0.0.0.0`               | API bind address                                               |
+| `WEB_URL`                  | `http://localhost:3000` | Public URL of the web app                                      |
+| `CORS_ORIGINS`             | `WEB_URL`               | Comma-separated allowed origins                                |
+| `LOG_LEVEL`                | `info`                  | `fatal` … `trace`, or `silent`                                 |
+| `DATABASE_URL`             | required                | Postgres URL; the Neon pooled connection                       |
+| `DATABASE_DIRECT_URL`      | `DATABASE_URL`          | Prisma CLI migrations only (Neon direct connection)            |
+| `DATABASE_POOL_MAX`        | `10`                    | Runtime pool size                                              |
+| `DATABASE_POOL_TIMEOUT_MS` | `10000`                 | Connection timeout                                             |
+| `AGENT_INTERPRETER`        | `none`                  | `none`, `mock` (development only) or `groq`; see docs/agent.md |
+| `GROQ_API_KEY`             | none                    | Required when `AGENT_INTERPRETER=groq`                         |
+| `GROQ_MODEL`               | `openai/gpt-oss-20b`    | Must support strict structured output                          |
+| `GROQ_TIMEOUT_MS`          | `8000`                  | Per HTTP attempt                                               |
 
 Logs are pretty-printed in `development` and JSON otherwise. Authorization headers, cookies,
 and common secret fields (`password`, `token`, `apiKey`, ...) are redacted.

@@ -5,6 +5,7 @@ export {
   assertSmallestUnitAmount,
   isSmallestUnitAmount,
 } from "./amount.js";
+export { normalizeSpokenAmount } from "./spoken-amount.js";
 export { formatSmallestUnit, isHumanAmountValue, parseHumanAmount } from "./human-amount.js";
 export type { HumanAmount } from "./human-amount.js";
 export {

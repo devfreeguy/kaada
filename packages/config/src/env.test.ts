@@ -46,6 +46,56 @@ describe("loadConfig", () => {
     );
   });
 
+  it("requires a Groq key only when the Groq interpreter is selected", () => {
+    const base = { DATABASE_URL: databaseUrl };
+    assert.equal(loadConfig(base).agent.groq, undefined);
+    assert.equal(loadConfig({ ...base, AGENT_INTERPRETER: "mock" }).agent.groq, undefined);
+    assert.equal(loadConfig({ ...base, GROQ_API_KEY: "" }).agent.groq, undefined, "blank is unset");
+    assert.throws(() => loadConfig({ ...base, AGENT_INTERPRETER: "groq" }), ConfigError);
+    assert.throws(
+      () => loadConfig({ ...base, AGENT_INTERPRETER: "groq", GROQ_API_KEY: "   " }),
+      ConfigError,
+    );
+
+    const config = loadConfig({ ...base, AGENT_INTERPRETER: "groq", GROQ_API_KEY: "gsk_test" });
+    assert.deepEqual(config.agent, {
+      interpreter: "groq",
+      groq: { apiKey: "gsk_test", model: "openai/gpt-oss-20b", timeoutMs: 8000 },
+    });
+  });
+
+  it("allows Groq in production but never the mock, and bounds the Groq settings", () => {
+    const prod = { DATABASE_URL: databaseUrl, NODE_ENV: "production", GROQ_API_KEY: "gsk_test" };
+    assert.equal(loadConfig({ ...prod, AGENT_INTERPRETER: "groq" }).agent.interpreter, "groq");
+    assert.throws(() => loadConfig({ ...prod, AGENT_INTERPRETER: "mock" }), ConfigError);
+
+    const groq = { DATABASE_URL: databaseUrl, AGENT_INTERPRETER: "groq", GROQ_API_KEY: "gsk_test" };
+    const custom = loadConfig({
+      ...groq,
+      GROQ_MODEL: "openai/gpt-oss-120b",
+      GROQ_TIMEOUT_MS: "3000",
+    });
+    assert.equal(custom.agent.groq?.model, "openai/gpt-oss-120b");
+    assert.equal(custom.agent.groq?.timeoutMs, 3000);
+    assert.throws(() => loadConfig({ ...groq, GROQ_TIMEOUT_MS: "10" }), ConfigError);
+    assert.throws(() => loadConfig({ ...groq, GROQ_MODEL: " " }), ConfigError);
+  });
+
+  it("never echoes the Groq key in an error", () => {
+    try {
+      loadConfig({
+        DATABASE_URL: "mysql://nope",
+        AGENT_INTERPRETER: "groq",
+        GROQ_API_KEY: "gsk_super_secret_value",
+        GROQ_TIMEOUT_MS: "1",
+      });
+      assert.fail("expected ConfigError");
+    } catch (error) {
+      assert.ok(error instanceof ConfigError);
+      assert.ok(!error.message.includes("gsk_super_secret_value"));
+    }
+  });
+
   it("requires DATABASE_URL", () => {
     assert.throws(() => loadConfig({}), ConfigError);
   });

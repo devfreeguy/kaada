@@ -4,7 +4,7 @@ import type { Asset, Interpretation } from "@kaada/domain";
 import { AgentService } from "../../src/core/agent/agent-service.js";
 import type { AgentTurnResult } from "../../src/core/agent/agent-service.js";
 import { MockIntentInterpreter } from "../../src/core/agent/mock-interpreter.js";
-import type { InterpretationInput } from "../../src/core/agent/interpreter.js";
+import type { IntentInterpreter, InterpretationInput } from "../../src/core/agent/interpreter.js";
 import type { AgentLog } from "../../src/core/agent/ports.js";
 import { createInMemoryWorld } from "./in-memory.js";
 import type { InMemoryWorld } from "./in-memory.js";
@@ -51,7 +51,11 @@ export interface Harness {
 
 /** A ready-to-use world: seeded assets, a sender, and an interpreter driven by `script`. */
 export function createHarness(
-  options: { delayMs?: (input: InterpretationInput) => number } = {},
+  options: {
+    delayMs?: (input: InterpretationInput) => number;
+    /** Use a different interpreter (e.g. the Groq one over a fake transport) instead of the mock. */
+    interpreter?: IntentInterpreter;
+  } = {},
 ): Harness {
   const world = createInMemoryWorld();
   const assets = {
@@ -78,7 +82,11 @@ export function createHarness(
   const logs: Harness["logs"] = [];
   const log: AgentLog = (level, event, fields) => void logs.push({ level, event, fields });
 
-  const agent = new AgentService({ unitOfWork: world.unitOfWork, interpreter, log });
+  const agent = new AgentService({
+    unitOfWork: world.unitOfWork,
+    interpreter: options.interpreter ?? interpreter,
+    log,
+  });
   let chat = 0;
   const defaultChat = `chat-${++chat}`;
 

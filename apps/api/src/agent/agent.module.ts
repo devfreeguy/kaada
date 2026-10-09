@@ -1,5 +1,6 @@
 import { Logger, Module } from "@nestjs/common";
 import { createRepositories, withTransaction } from "@kaada/database";
+import { createCachedAssetRepository } from "@kaada/domain";
 import type { Database, Repositories } from "@kaada/database";
 import type { AppConfig } from "@kaada/config";
 
@@ -7,7 +8,10 @@ import { APP_CONFIG } from "../config/config.module.js";
 import { DATABASE } from "../database/database.module.js";
 import { AgentService } from "../core/agent/agent-service.js";
 import { createDevInterpreter } from "../core/agent/dev-fixtures.js";
+import type { IntentInterpreter } from "../core/agent/interpreter.js";
 import type { AgentLog } from "../core/agent/ports.js";
+import { createDefaultResolvers } from "../core/agent/resolvers.js";
+import { GroqIntentInterpreter, createGroqSdkTransport } from "../infrastructure/llm/index.js";
 import { AgentController } from "./agent.controller.js";
 import { AGENT_REPOSITORIES, AGENT_SERVICE } from "./agent.tokens.js";
 
@@ -19,6 +23,28 @@ function nestAgentLog(): AgentLog {
     else if (level === "warn") logger.warn(entry);
     else logger.error(entry);
   };
+}
+
+/** Picks the interpreter from configuration. Production can never get the mock: config rejects it. */
+function createInterpreter(config: AppConfig, log: AgentLog): IntentInterpreter | null {
+  switch (config.agent.interpreter) {
+    case "groq": {
+      const groq = config.agent.groq;
+      if (!groq) throw new Error("AGENT_INTERPRETER=groq requires Groq settings");
+      return new GroqIntentInterpreter(createGroqSdkTransport({ apiKey: groq.apiKey }), {
+        model: groq.model,
+        timeoutMs: groq.timeoutMs,
+        log,
+      });
+    }
+    case "mock":
+      if (config.nodeEnv === "production") {
+        throw new Error("the mock interpreter cannot be used in production");
+      }
+      return createDevInterpreter();
+    case "none":
+      return null;
+  }
 }
 
 @Module({
@@ -37,15 +63,20 @@ function nestAgentLog(): AgentLog {
         config: AppConfig,
         repositories: Repositories,
       ): AgentService | null => {
-        // Only the development interpreter exists until a real model is connected.
-        if (config.agent.interpreter !== "mock") return null;
+        const log = nestAgentLog();
+        const interpreter = createInterpreter(config, log);
+        if (!interpreter) return null;
+
+        // Assets change rarely, so lookups for interpretation share one short-lived snapshot.
+        const assets = createCachedAssetRepository(repositories.assets);
         return new AgentService({
-          interpreter: createDevInterpreter(),
+          interpreter,
           unitOfWork: {
             read: repositories,
             transaction: (work) => withTransaction(database, work),
           },
-          log: nestAgentLog(),
+          createResolvers: (transactional) => createDefaultResolvers({ ...transactional, assets }),
+          log,
         });
       },
     },

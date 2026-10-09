@@ -8,10 +8,15 @@
 import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
 
-import { createId, createMoney, isKaadaError } from "@kaada/domain";
+import { createCachedAssetRepository, createId, createMoney, isKaadaError } from "@kaada/domain";
 import type { AgentIntent } from "@kaada/domain";
 
-import { createDatabase, createDatabaseAssetRegistry, withTransaction } from "../src/index.js";
+import {
+  createDatabase,
+  createDatabaseAssetRegistry,
+  createRepositories,
+  withTransaction,
+} from "../src/index.js";
 import type { Database, Repositories } from "../src/index.js";
 
 try {
@@ -85,6 +90,24 @@ describe("repositories (database round trips, rolled back)", { skip }, () => {
     await assert.rejects(registry.requireActive(createId()), (e) =>
       isKaadaError(e, "ASSET_NOT_SUPPORTED"),
     );
+  });
+
+  it("lists every asset, and the cache answers like the live repository", async () => {
+    const live = createRepositories(database).assets;
+    const cached = createCachedAssetRepository(live);
+    const all = await live.listAll();
+    assert.ok(all.length >= 5 && all.every((asset) => asset.id));
+    assert.deepEqual(await cached.listAll(), all);
+
+    for (const code of ["USD", "ngn", " brl "]) {
+      assert.deepEqual(await cached.findByFiatCode(code), await live.findByFiatCode(code), code);
+    }
+    for (const symbol of ["USD", "usd", "NOPE"]) {
+      assert.deepEqual(await cached.findBySymbol(symbol), await live.findBySymbol(symbol), symbol);
+    }
+    const [usd] = await live.findByFiatCode("USD");
+    assert.deepEqual(await cached.findById(usd?.id ?? ""), usd ?? null);
+    assert.deepEqual(await cached.listActive(), await live.listActive());
   });
 
   it("serves seeded providers and no capabilities", async () => {

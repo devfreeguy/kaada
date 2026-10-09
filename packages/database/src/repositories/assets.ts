@@ -29,6 +29,13 @@ export function createAssetRepository(db: Db): AssetRepository {
       return rows.map(toAsset);
     },
 
+    async listAll() {
+      const rows = await db.asset.findMany({
+        orderBy: [{ symbol: "asc" }, { chainId: "asc" }, { id: "asc" }],
+      });
+      return rows.map(toAsset);
+    },
+
     async listActive() {
       const rows = await db.asset.findMany({
         where: { isActive: true },

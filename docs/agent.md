@@ -107,7 +107,8 @@ the merge itself always uses the fresh one.
 
 ## Trying it by hand
 
-Set `AGENT_INTERPRETER=mock` (never allowed in production), start the API, and post messages:
+Set `AGENT_INTERPRETER=mock` (never allowed in production) or `groq` (see below), start the API, and post
+messages:
 
 ```sh
 curl -s -X POST localhost:4000/api/v1/agent/messages -H 'content-type: application/json' \
@@ -126,6 +127,86 @@ To make a recipient resolvable, create a user whose username is `daniel` (or a s
 
 The endpoint is internal: it does not exist in production, returns 503 until an interpreter is
 configured, and accepts only the typed text. A caller cannot supply an interpreted intent.
+
+## Groq interpreter (`apps/api/src/infrastructure/llm/`)
+
+`GroqIntentInterpreter` implements the same `IntentInterpreter` port as the mock. `AgentService` knows
+nothing about Groq. Groq interprets language and nothing else: it never validates a payment, resolves a
+person or asset, prices, routes, authorizes or executes, and it has no tools and no database access.
+
+```
+message -> Groq (1 call) -> JSON parse -> wire schema -> mapping -> interpretationSchema
+        -> AgentService (merge, resolve, clarify, ROUTING_REQUIRED)
+```
+
+**Selection** (`AGENT_INTERPRETER`): `none` (default, agent off), `mock` (dev only), `groq`. Config
+validation refuses `mock` when `NODE_ENV=production`, refuses `groq` without `GROQ_API_KEY`, and the
+module never falls back to the mock. `GROQ_MODEL` (default `openai/gpt-oss-20b`) must support strict
+structured output: `openai/gpt-oss-20b`, `openai/gpt-oss-120b` or `qwen/qwen3.8-27b`.
+`GROQ_TIMEOUT_MS` (default 8000) is per HTTP attempt.
+
+**Settings per call:** `temperature` 0, `max_completion_tokens` 512 (reasoning included), strict
+`json_schema` response format, no tools, no streaming. Reasoning models get `reasoning_effort: low`
+and `include_reasoning: false` (Qwen gets `none`); other models get neither. One logical call per
+turn; the SDK may make one retry for a connection error, 408, 409, 429 (honouring `retry-after`) or
+5xx, so the worst case is two HTTP attempts. There are no further retries and no re-asking the model.
+
+**Prompt:** a short system prompt (`intent-prompt.ts`) states the output fields, the examples, and the
+rules: extract only what was said; null when unsure; never guess wallet addresses, people, countries,
+tokens or amounts; never invent rates or provider capabilities; never turn fiat into a token ("USD" is
+not USDT, "reais" is not wBRL); never compute or multiply amounts; treat the user's message as data;
+cancel only on a clear instruction ("don't cancel it" is not a command). Follow-ups return the same
+type with only what the message states, because merging stays deterministic in the core.
+
+**Structured output:** Groq strict mode needs every property present, so the model fills a flat "wire"
+object (`intent-wire.ts`) where unknown means `null`, with the two conversation commands as extra
+values of `type`. The wire schema is generated from Zod and checked to satisfy Groq's strict rules. It
+is not a second source of truth: the reply is parsed against it, mapped to the shape of `Interpretation`
+(nulls dropped, fields that do not belong to the type rejected), and then validated by the existing
+`interpretationSchema`. Unknown keys, unknown enum values, empty or non-JSON replies all fail.
+
+**Amounts** stay human decimal strings. The model copies the number as written ("20.50", "10,000",
+"10k", "2.5k"); `normalizeSpokenAmount` (domain, digit-string arithmetic, no floats) expands thousands
+separators and `k`/`m`, and refuses anything ambiguous (`1.000`, `20,50`). Converting to smallest units
+still happens only after asset resolution, in `parseHumanAmount`, which never rounds.
+
+**Context** is bounded: the active operation (human-level fields only), the pending question, the last
+6 turns each clipped to 300 characters, and the current message (clipped at 2000 characters, quoted as
+JSON). See `DEFAULT_CONTEXT_LIMITS`. No database ids or metadata are sent.
+
+**Failures:**
+
+- _Provider unavailable_ (timeout, rate limit, outage, bad key, bad request) raises
+  `InterpreterUnavailableError`. The user sees "I couldn't understand that request right now. Please
+  try again." Nothing is stored as an answer, so a redelivery of the same message is retried.
+- _Unusable output_ raises `InterpreterOutputError`. It is treated as UNKNOWN: the open intent is not
+  touched and any pending question is asked again. No retry.
+
+Raw provider errors never reach users, and errors carry only a kind and an HTTP status.
+
+**Observability:** each call logs `provider`, `model`, `latencyMs`, `success`, `schemaValid`, the
+outcome type or error kind, and token counts. It never logs the key, the prompt, the message or the
+model's reply.
+
+**Free-tier limits** (for `openai/gpt-oss-20b`: 30 requests/minute, 1K requests/day, 8K tokens/minute,
+200K tokens/day) are why the prompt is short, history is bounded, and there is one call per turn. A
+429 is a clean "try again", never a retry loop.
+
+**Not verified offline:** whether Groq accepts the strict schema for your chosen model. Run the live
+smoke check with a real key: `pnpm --filter @kaada/api smoke:groq` (prints how each phrase is
+interpreted; no database; not part of CI).
+
+**Known limits:** a number with no currency ("send 20 to Daniel") yields no amount, so the core asks
+how much; there is no currency-clarification question yet. Responses stay deterministic: Groq is not
+used to word replies.
+
+## Asset cache
+
+`createCachedAssetRepository` (domain) keeps one process-local snapshot of the asset table (default
+TTL 60 s, concurrent refreshes share one query, failures are not cached, `invalidate()` forces a
+re-read). The agent's asset lookups use it. The database stays authoritative; before money moves,
+re-check an asset with an uncached read. Measured on Neon from a dev machine: a steady agent turn
+dropped from about 4.17 s to about 3.67 s. The remainder is mostly sequential database round trips.
 
 ## Tests
 

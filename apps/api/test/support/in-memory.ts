@@ -61,6 +61,7 @@ export function createInMemoryWorld(): InMemoryWorld {
       findByFiatCode: (code) =>
         Promise.resolve(assets.filter((a) => a.fiatCode?.toLowerCase() === code.toLowerCase())),
       listActive: () => Promise.resolve(assets.filter((a) => a.isActive)),
+      listAll: () => Promise.resolve([...assets]),
     },
 
     users: {

@@ -9,6 +9,8 @@ export interface AssetRepository {
   /** Case-insensitive ISO 4217 code match. */
   findByFiatCode(code: string): Promise<Asset[]>;
   listActive(): Promise<Asset[]>;
+  /** Every asset including inactive ones; the table is small and changes rarely. */
+  listAll(): Promise<Asset[]>;
 }
 
 export interface FindAssetOptions {

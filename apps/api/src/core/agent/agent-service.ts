@@ -24,6 +24,7 @@ import { toClarificationResponse } from "../responses/clarifications.js";
 import { responseFromStored, responseToJson } from "../responses/serialize.js";
 import { routingRequiredResponse } from "../responses/summaries.js";
 import { ConversationAccessError } from "./errors.js";
+import { InterpreterOutputError } from "./interpreter.js";
 import type { IntentInterpreter } from "./interpreter.js";
 import type { AgentLog, AgentRepositories, AgentUnitOfWork } from "./ports.js";
 import { noopLog } from "./ports.js";
@@ -66,7 +67,7 @@ export interface AgentServiceDeps {
 
 const TROUBLE_RESPONSE: AgentResponse = {
   type: "MESSAGE",
-  text: "I'm having trouble understanding messages right now. Please try again in a moment.",
+  text: "I couldn't understand that request right now. Please try again.",
 };
 
 const HELP_TEXT =
@@ -190,14 +191,28 @@ export class AgentService {
         message: message.content,
         history: toHistory(context.recentMessages, message.id),
         ...(context.activeIntent?.parsed && { activeIntent: context.activeIntent.parsed }),
+        ...(context.pendingClarification && {
+          pendingClarification: context.pendingClarification,
+        }),
         now: this.now(),
       });
     } catch (error) {
+      if (error instanceof InterpreterOutputError) {
+        // Unusable output is never trusted or retried: treat it as "not understood". That leaves
+        // the open intent untouched and re-asks any pending question.
+        this.log("warn", "agent.interpretation.invalid", {
+          conversationId: conversation.id,
+          messageId: message.id,
+          reason: error.reason,
+        });
+        return { kind: "INTENT", intent: { type: "UNKNOWN" } };
+      }
       // Not stored as an answer, so a redelivery of this message is processed again.
       this.log("error", "agent.interpreter.failed", {
         conversationId: conversation.id,
         messageId: message.id,
         error: error instanceof Error ? error.name : "unknown",
+        kind: error instanceof Error && "kind" in error ? String(error.kind) : undefined,
       });
       return undefined;
     }

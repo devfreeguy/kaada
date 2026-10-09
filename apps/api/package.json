@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "node --import tsx --test \"src/**/*.test.ts\" \"test/*.test.ts\"",
-    "test:integration": "node --import tsx --test \"test/integration/*.test.ts\""
+    "test:integration": "node --import tsx --test \"test/integration/*.test.ts\"",
+    "smoke:groq": "node --import tsx scripts/groq-smoke.ts"
   },
   "dependencies": {
     "@kaada/config": "workspace:*",
@@ -21,6 +22,7 @@
     "@nestjs/common": "^12.1.2",
     "@nestjs/core": "^12.1.2",
     "@nestjs/platform-fastify": "^12.1.2",
+    "groq-sdk": "^1.6.0",
     "nestjs-pino": "^5.3.1",
     "pino": "catalog:",
     "pino-http": "^11.0.0",

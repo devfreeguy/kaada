@@ -35,6 +35,7 @@ const repository: AssetRepository = {
   findByFiatCode: (code) =>
     Promise.resolve(all.filter((a) => a.fiatCode?.toLowerCase() === code.toLowerCase())),
   listActive: () => Promise.resolve(all.filter((a) => a.isActive)),
+  listAll: () => Promise.resolve([...all]),
 };
 const registry = createAssetRegistry(repository);
 
