@@ -1,0 +1,17 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Shared versions. Workspace packages reference these as "catalog:".
+catalog:
+  "@types/node": ^24.0.0
+  eslint: ^9.39.0
+  pino: ^10.4.0
+  pino-pretty: ^13.2.0
+  typescript: ~6.0.3
+  zod: ^4.6.5
+
+# Dependency build scripts are denied unless listed here.
+# unrs-resolver (via eslint-config-next) ships prebuilt binaries; its postinstall is not needed.
+allowBuilds:
+  unrs-resolver: false

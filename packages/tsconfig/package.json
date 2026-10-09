@@ -1,0 +1,17 @@
+{
+  "name": "@kaada/tsconfig",
+  "version": "0.0.0",
+  "private": true,
+  "files": [
+    "base.json",
+    "node.json",
+    "nest.json",
+    "next.json"
+  ],
+  "exports": {
+    "./base.json": "./base.json",
+    "./node.json": "./node.json",
+    "./nest.json": "./nest.json",
+    "./next.json": "./next.json"
+  }
+}
