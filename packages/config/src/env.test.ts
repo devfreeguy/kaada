@@ -130,3 +130,21 @@ describe("loadConfig", () => {
     }
   });
 });
+
+describe("FX provider configuration", () => {
+  const dev = { DATABASE_URL: databaseUrl };
+
+  it("defaults to no pricing, and accepts the mock in development", () => {
+    assert.equal(loadConfig(dev).fx.provider, "none");
+    assert.equal(loadConfig({ ...dev, FX_PROVIDER: "mock" }).fx.provider, "mock");
+  });
+
+  it("rejects the mock FX provider in production, and unknown providers", () => {
+    assert.throws(
+      () => loadConfig({ ...dev, NODE_ENV: "production", FX_PROVIDER: "mock" }),
+      ConfigError,
+    );
+    assert.equal(loadConfig({ ...dev, NODE_ENV: "production" }).fx.provider, "none");
+    assert.throws(() => loadConfig({ ...dev, FX_PROVIDER: "textile" }), ConfigError);
+  });
+});

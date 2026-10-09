@@ -2075,6 +2075,7 @@ export type ProviderCapabilityScalarFieldEnum = (typeof ProviderCapabilityScalar
 export const QuoteScalarFieldEnum = {
   id: 'id',
   intentId: 'intentId',
+  intentRevision: 'intentRevision',
   providerId: 'providerId',
   inputAssetId: 'inputAssetId',
   outputAssetId: 'outputAssetId',
@@ -2095,6 +2096,7 @@ export type QuoteScalarFieldEnum = (typeof QuoteScalarFieldEnum)[keyof typeof Qu
 export const RouteScalarFieldEnum = {
   id: 'id',
   intentId: 'intentId',
+  intentRevision: 'intentRevision',
   status: 'status',
   inputAssetId: 'inputAssetId',
   outputAssetId: 'outputAssetId',

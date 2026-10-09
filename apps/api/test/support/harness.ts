@@ -7,6 +7,7 @@ import { MockIntentInterpreter } from "../../src/core/agent/mock-interpreter.js"
 import type { IntentInterpreter, InterpretationInput } from "../../src/core/agent/interpreter.js";
 import type { AgentLog } from "../../src/core/agent/ports.js";
 import type { OnIntentRevised } from "../../src/core/intents/intent-commit.js";
+import type { RoutingService } from "../../src/core/routing/routing-service.js";
 import { createInMemoryWorld } from "./in-memory.js";
 import type { InMemoryWorld } from "./in-memory.js";
 
@@ -65,6 +66,10 @@ export function createHarness(
     /** Use a different interpreter (e.g. the Groq one over a fake transport) instead of the mock. */
     interpreter?: IntentInterpreter;
     onIntentRevised?: OnIntentRevised;
+    /** Price ready requests with this service (built from the world). */
+    routing?: (world: InMemoryWorld) => RoutingService;
+    /** The clock the agent uses. */
+    now?: () => Date;
   } = {},
 ): Harness {
   const world = createInMemoryWorld();
@@ -99,6 +104,8 @@ export function createHarness(
     interpreter: options.interpreter ?? interpreter,
     log,
     ...(options.onIntentRevised && { onIntentRevised: options.onIntentRevised }),
+    ...(options.routing && { routing: options.routing(world) }),
+    ...(options.now && { now: options.now }),
   });
   let chat = 0;
   const defaultChat = `chat-${++chat}`;

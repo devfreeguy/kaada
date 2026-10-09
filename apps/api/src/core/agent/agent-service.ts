@@ -11,8 +11,10 @@ import { interpretationSchema } from "@kaada/schemas";
 import { loadConversationContext, toHistory } from "../conversations/context.js";
 import { IntentCoordinator } from "../intents/coordinator.js";
 import type { Applied } from "../intents/coordinator.js";
-import { noopOnIntentRevised } from "../intents/intent-commit.js";
+import { composeRevisionHooks, noopOnIntentRevised } from "../intents/intent-commit.js";
 import type { OnIntentRevised } from "../intents/intent-commit.js";
+import { invalidateRoutesOnRevision } from "../routing/invalidation.js";
+import type { RoutingService } from "../routing/routing-service.js";
 import type { AgentResponse } from "../responses/agent-response.js";
 import { responseFromStored, responseToJson } from "../responses/serialize.js";
 import { ConversationAccessError } from "./errors.js";
@@ -70,6 +72,11 @@ export interface AgentServiceDeps {
   now?: () => Date;
   /** The single hook run when an intent's financial details change (see commitIntent). */
   onIntentRevised?: OnIntentRevised;
+  /**
+   * Prices a ready request. When absent, the agent stops at ROUTING_REQUIRED (no pricing configured).
+   * It is called outside any transaction, like the interpreter.
+   */
+  routing?: RoutingService;
   /** How long the options of a question stay selectable. */
   choiceTtlMs?: number;
   /** How many earlier messages the interpreter sees as context. */
@@ -101,6 +108,7 @@ export class AgentService {
   private readonly unitOfWork: AgentUnitOfWork;
   private readonly interpreter: IntentInterpreter;
   private readonly coordinator: IntentCoordinator;
+  private readonly routing: RoutingService | undefined;
   private readonly log: AgentLog;
   private readonly now: () => Date;
   private readonly historyLimit: number;
@@ -109,12 +117,17 @@ export class AgentService {
     this.unitOfWork = deps.unitOfWork;
     this.interpreter = deps.interpreter;
     this.log = deps.log ?? noopLog;
+    this.routing = deps.routing;
     this.now = deps.now ?? (() => new Date());
     this.coordinator = new IntentCoordinator({
       createResolvers: deps.createResolvers ?? createDefaultResolvers,
       countries: deps.countries ?? defaultCountryDirectory,
       now: this.now,
-      onRevised: deps.onIntentRevised ?? noopOnIntentRevised,
+      // Routes built for an older revision are retired first, then any caller-supplied hook runs.
+      onRevised: composeRevisionHooks(
+        invalidateRoutesOnRevision,
+        deps.onIntentRevised ?? noopOnIntentRevised,
+      ),
       choiceTtlMs: deps.choiceTtlMs ?? 30 * 60 * 1000,
     });
     this.historyLimit = deps.historyLimit ?? 12;
@@ -145,14 +158,18 @@ export class AgentService {
         response: TROUBLE_RESPONSE,
       };
     }
-    return this.complete(conversation, message, interpretation, accepted.fresh);
+    return this.route(await this.complete(conversation, message, interpretation, accepted.fresh));
   }
 
   /**
    * A selected option is handled entirely from stored state, in one short transaction, without the
    * interpreter: lookup, verification and application are all deterministic.
    */
-  handleChoice(input: ChoiceInput): Promise<AgentTurnResult> {
+  async handleChoice(input: ChoiceInput): Promise<AgentTurnResult> {
+    return this.route(await this.applyChoiceTurn(input));
+  }
+
+  private applyChoiceTurn(input: ChoiceInput): Promise<AgentTurnResult> {
     return this.unitOfWork.transaction(async (repositories) => {
       const conversation = await repositories.conversations.getOrCreateByExternalId({
         id: createId(),
@@ -318,6 +335,51 @@ export class AgentService {
       );
       return this.finish(repositories, conversation, message, applied);
     });
+  }
+
+  /**
+   * When the turn ended in ROUTING_REQUIRED and pricing is configured, prices the request OUTSIDE any
+   * transaction, then writes the route and the answer in one short locked transaction. The
+   * understood-request answer already stored stays in the history; the priced answer follows it. If
+   * pricing itself breaks, the turn degrades to the ROUTING_REQUIRED answer it already had.
+   */
+  private async route(result: AgentTurnResult): Promise<AgentTurnResult> {
+    const routing = this.routing;
+    const response = result.response;
+    if (!routing || result.duplicate || response.type !== "ROUTING_REQUIRED") return result;
+
+    try {
+      const outcome = await routing.plan(response.request);
+      return await this.unitOfWork.transaction(async (repositories) => {
+        await repositories.conversations.lockForUpdate(result.conversationId);
+        const routed = await routing.commit(repositories, outcome);
+        await repositories.messages.append({
+          id: createId(),
+          conversationId: result.conversationId,
+          role: "ASSISTANT",
+          content: routed.text,
+          structuredData: responseToJson(routed),
+          metadata: {
+            inReplyTo: result.messageId,
+            intentId: response.intentId,
+            stage: "ROUTED",
+          },
+        });
+        this.log("info", "agent.turn.routed", {
+          conversationId: result.conversationId,
+          intentId: response.intentId,
+          responseType: routed.type,
+        });
+        return { ...result, response: routed };
+      });
+    } catch (error) {
+      this.log("error", "agent.routing.failed", {
+        conversationId: result.conversationId,
+        intentId: response.intentId,
+        error: error instanceof Error ? error.name : "unknown",
+      });
+      return result;
+    }
   }
 
   /** Stores the assistant's answer and describes the turn. */

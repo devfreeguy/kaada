@@ -20,13 +20,24 @@ export type RouteModel = runtime.Types.Result.DefaultSelection<Prisma.$RoutePayl
 
 export type AggregateRoute = {
   _count: RouteCountAggregateOutputType | null
+  _avg: RouteAvgAggregateOutputType | null
+  _sum: RouteSumAggregateOutputType | null
   _min: RouteMinAggregateOutputType | null
   _max: RouteMaxAggregateOutputType | null
+}
+
+export type RouteAvgAggregateOutputType = {
+  intentRevision: number | null
+}
+
+export type RouteSumAggregateOutputType = {
+  intentRevision: number | null
 }
 
 export type RouteMinAggregateOutputType = {
   id: string | null
   intentId: string | null
+  intentRevision: number | null
   status: $Enums.RouteStatus | null
   inputAssetId: string | null
   outputAssetId: string | null
@@ -41,6 +52,7 @@ export type RouteMinAggregateOutputType = {
 export type RouteMaxAggregateOutputType = {
   id: string | null
   intentId: string | null
+  intentRevision: number | null
   status: $Enums.RouteStatus | null
   inputAssetId: string | null
   outputAssetId: string | null
@@ -55,6 +67,7 @@ export type RouteMaxAggregateOutputType = {
 export type RouteCountAggregateOutputType = {
   id: number
   intentId: number
+  intentRevision: number
   status: number
   inputAssetId: number
   outputAssetId: number
@@ -68,9 +81,18 @@ export type RouteCountAggregateOutputType = {
 }
 
 
+export type RouteAvgAggregateInputType = {
+  intentRevision?: true
+}
+
+export type RouteSumAggregateInputType = {
+  intentRevision?: true
+}
+
 export type RouteMinAggregateInputType = {
   id?: true
   intentId?: true
+  intentRevision?: true
   status?: true
   inputAssetId?: true
   outputAssetId?: true
@@ -85,6 +107,7 @@ export type RouteMinAggregateInputType = {
 export type RouteMaxAggregateInputType = {
   id?: true
   intentId?: true
+  intentRevision?: true
   status?: true
   inputAssetId?: true
   outputAssetId?: true
@@ -99,6 +122,7 @@ export type RouteMaxAggregateInputType = {
 export type RouteCountAggregateInputType = {
   id?: true
   intentId?: true
+  intentRevision?: true
   status?: true
   inputAssetId?: true
   outputAssetId?: true
@@ -149,6 +173,18 @@ export type RouteAggregateArgs<ExtArgs extends runtime.Types.Extensions.Internal
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: RouteAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: RouteSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: RouteMinAggregateInputType
@@ -179,6 +215,8 @@ export type RouteGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
   take?: number
   skip?: number
   _count?: RouteCountAggregateInputType | true
+  _avg?: RouteAvgAggregateInputType
+  _sum?: RouteSumAggregateInputType
   _min?: RouteMinAggregateInputType
   _max?: RouteMaxAggregateInputType
 }
@@ -186,6 +224,7 @@ export type RouteGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
 export type RouteGroupByOutputType = {
   id: string
   intentId: string
+  intentRevision: number
   status: $Enums.RouteStatus
   inputAssetId: string
   outputAssetId: string
@@ -196,6 +235,8 @@ export type RouteGroupByOutputType = {
   expiresAt: Date | null
   createdAt: Date
   _count: RouteCountAggregateOutputType | null
+  _avg: RouteAvgAggregateOutputType | null
+  _sum: RouteSumAggregateOutputType | null
   _min: RouteMinAggregateOutputType | null
   _max: RouteMaxAggregateOutputType | null
 }
@@ -221,6 +262,7 @@ export type RouteWhereInput = {
   NOT?: Prisma.RouteWhereInput | Prisma.RouteWhereInput[]
   id?: Prisma.UuidFilter<"Route"> | string
   intentId?: Prisma.UuidFilter<"Route"> | string
+  intentRevision?: Prisma.IntFilter<"Route"> | number
   status?: Prisma.EnumRouteStatusFilter<"Route"> | $Enums.RouteStatus
   inputAssetId?: Prisma.UuidFilter<"Route"> | string
   outputAssetId?: Prisma.UuidFilter<"Route"> | string
@@ -241,6 +283,7 @@ export type RouteWhereInput = {
 export type RouteOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   intentId?: Prisma.SortOrder
+  intentRevision?: Prisma.SortOrder
   status?: Prisma.SortOrder
   inputAssetId?: Prisma.SortOrder
   outputAssetId?: Prisma.SortOrder
@@ -264,6 +307,7 @@ export type RouteWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.RouteWhereInput[]
   NOT?: Prisma.RouteWhereInput | Prisma.RouteWhereInput[]
   intentId?: Prisma.UuidFilter<"Route"> | string
+  intentRevision?: Prisma.IntFilter<"Route"> | number
   status?: Prisma.EnumRouteStatusFilter<"Route"> | $Enums.RouteStatus
   inputAssetId?: Prisma.UuidFilter<"Route"> | string
   outputAssetId?: Prisma.UuidFilter<"Route"> | string
@@ -284,6 +328,7 @@ export type RouteWhereUniqueInput = Prisma.AtLeast<{
 export type RouteOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   intentId?: Prisma.SortOrder
+  intentRevision?: Prisma.SortOrder
   status?: Prisma.SortOrder
   inputAssetId?: Prisma.SortOrder
   outputAssetId?: Prisma.SortOrder
@@ -294,8 +339,10 @@ export type RouteOrderByWithAggregationInput = {
   expiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.RouteCountOrderByAggregateInput
+  _avg?: Prisma.RouteAvgOrderByAggregateInput
   _max?: Prisma.RouteMaxOrderByAggregateInput
   _min?: Prisma.RouteMinOrderByAggregateInput
+  _sum?: Prisma.RouteSumOrderByAggregateInput
 }
 
 export type RouteScalarWhereWithAggregatesInput = {
@@ -304,6 +351,7 @@ export type RouteScalarWhereWithAggregatesInput = {
   NOT?: Prisma.RouteScalarWhereWithAggregatesInput | Prisma.RouteScalarWhereWithAggregatesInput[]
   id?: Prisma.UuidWithAggregatesFilter<"Route"> | string
   intentId?: Prisma.UuidWithAggregatesFilter<"Route"> | string
+  intentRevision?: Prisma.IntWithAggregatesFilter<"Route"> | number
   status?: Prisma.EnumRouteStatusWithAggregatesFilter<"Route"> | $Enums.RouteStatus
   inputAssetId?: Prisma.UuidWithAggregatesFilter<"Route"> | string
   outputAssetId?: Prisma.UuidWithAggregatesFilter<"Route"> | string
@@ -317,6 +365,7 @@ export type RouteScalarWhereWithAggregatesInput = {
 
 export type RouteCreateInput = {
   id: string
+  intentRevision: number
   status?: $Enums.RouteStatus
   estimatedInput: string
   estimatedOutput: string
@@ -334,6 +383,7 @@ export type RouteCreateInput = {
 export type RouteUncheckedCreateInput = {
   id: string
   intentId: string
+  intentRevision: number
   status?: $Enums.RouteStatus
   inputAssetId: string
   outputAssetId: string
@@ -349,6 +399,7 @@ export type RouteUncheckedCreateInput = {
 
 export type RouteUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
   estimatedInput?: Prisma.StringFieldUpdateOperationsInput | string
   estimatedOutput?: Prisma.StringFieldUpdateOperationsInput | string
@@ -366,6 +417,7 @@ export type RouteUpdateInput = {
 export type RouteUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
   inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -382,6 +434,7 @@ export type RouteUncheckedUpdateInput = {
 export type RouteCreateManyInput = {
   id: string
   intentId: string
+  intentRevision: number
   status?: $Enums.RouteStatus
   inputAssetId: string
   outputAssetId: string
@@ -395,6 +448,7 @@ export type RouteCreateManyInput = {
 
 export type RouteUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
   estimatedInput?: Prisma.StringFieldUpdateOperationsInput | string
   estimatedOutput?: Prisma.StringFieldUpdateOperationsInput | string
@@ -406,6 +460,7 @@ export type RouteUpdateManyMutationInput = {
 export type RouteUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
   inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -430,6 +485,7 @@ export type RouteOrderByRelationAggregateInput = {
 export type RouteCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   intentId?: Prisma.SortOrder
+  intentRevision?: Prisma.SortOrder
   status?: Prisma.SortOrder
   inputAssetId?: Prisma.SortOrder
   outputAssetId?: Prisma.SortOrder
@@ -441,9 +497,14 @@ export type RouteCountOrderByAggregateInput = {
   createdAt?: Prisma.SortOrder
 }
 
+export type RouteAvgOrderByAggregateInput = {
+  intentRevision?: Prisma.SortOrder
+}
+
 export type RouteMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   intentId?: Prisma.SortOrder
+  intentRevision?: Prisma.SortOrder
   status?: Prisma.SortOrder
   inputAssetId?: Prisma.SortOrder
   outputAssetId?: Prisma.SortOrder
@@ -458,6 +519,7 @@ export type RouteMaxOrderByAggregateInput = {
 export type RouteMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   intentId?: Prisma.SortOrder
+  intentRevision?: Prisma.SortOrder
   status?: Prisma.SortOrder
   inputAssetId?: Prisma.SortOrder
   outputAssetId?: Prisma.SortOrder
@@ -467,6 +529,10 @@ export type RouteMinOrderByAggregateInput = {
   totalFeeAssetId?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+}
+
+export type RouteSumOrderByAggregateInput = {
+  intentRevision?: Prisma.SortOrder
 }
 
 export type RouteScalarRelationFilter = {
@@ -676,6 +742,7 @@ export type RouteUpdateOneRequiredWithoutExecutionsNestedInput = {
 
 export type RouteCreateWithoutInputAssetInput = {
   id: string
+  intentRevision: number
   status?: $Enums.RouteStatus
   estimatedInput: string
   estimatedOutput: string
@@ -692,6 +759,7 @@ export type RouteCreateWithoutInputAssetInput = {
 export type RouteUncheckedCreateWithoutInputAssetInput = {
   id: string
   intentId: string
+  intentRevision: number
   status?: $Enums.RouteStatus
   outputAssetId: string
   estimatedInput: string
@@ -716,6 +784,7 @@ export type RouteCreateManyInputAssetInputEnvelope = {
 
 export type RouteCreateWithoutOutputAssetInput = {
   id: string
+  intentRevision: number
   status?: $Enums.RouteStatus
   estimatedInput: string
   estimatedOutput: string
@@ -732,6 +801,7 @@ export type RouteCreateWithoutOutputAssetInput = {
 export type RouteUncheckedCreateWithoutOutputAssetInput = {
   id: string
   intentId: string
+  intentRevision: number
   status?: $Enums.RouteStatus
   inputAssetId: string
   estimatedInput: string
@@ -756,6 +826,7 @@ export type RouteCreateManyOutputAssetInputEnvelope = {
 
 export type RouteCreateWithoutTotalFeeAssetInput = {
   id: string
+  intentRevision: number
   status?: $Enums.RouteStatus
   estimatedInput: string
   estimatedOutput: string
@@ -772,6 +843,7 @@ export type RouteCreateWithoutTotalFeeAssetInput = {
 export type RouteUncheckedCreateWithoutTotalFeeAssetInput = {
   id: string
   intentId: string
+  intentRevision: number
   status?: $Enums.RouteStatus
   inputAssetId: string
   outputAssetId: string
@@ -816,6 +888,7 @@ export type RouteScalarWhereInput = {
   NOT?: Prisma.RouteScalarWhereInput | Prisma.RouteScalarWhereInput[]
   id?: Prisma.UuidFilter<"Route"> | string
   intentId?: Prisma.UuidFilter<"Route"> | string
+  intentRevision?: Prisma.IntFilter<"Route"> | number
   status?: Prisma.EnumRouteStatusFilter<"Route"> | $Enums.RouteStatus
   inputAssetId?: Prisma.UuidFilter<"Route"> | string
   outputAssetId?: Prisma.UuidFilter<"Route"> | string
@@ -861,6 +934,7 @@ export type RouteUpdateManyWithWhereWithoutTotalFeeAssetInput = {
 
 export type RouteCreateWithoutIntentInput = {
   id: string
+  intentRevision: number
   status?: $Enums.RouteStatus
   estimatedInput: string
   estimatedOutput: string
@@ -876,6 +950,7 @@ export type RouteCreateWithoutIntentInput = {
 
 export type RouteUncheckedCreateWithoutIntentInput = {
   id: string
+  intentRevision: number
   status?: $Enums.RouteStatus
   inputAssetId: string
   outputAssetId: string
@@ -917,6 +992,7 @@ export type RouteUpdateManyWithWhereWithoutIntentInput = {
 
 export type RouteCreateWithoutStepsInput = {
   id: string
+  intentRevision: number
   status?: $Enums.RouteStatus
   estimatedInput: string
   estimatedOutput: string
@@ -933,6 +1009,7 @@ export type RouteCreateWithoutStepsInput = {
 export type RouteUncheckedCreateWithoutStepsInput = {
   id: string
   intentId: string
+  intentRevision: number
   status?: $Enums.RouteStatus
   inputAssetId: string
   outputAssetId: string
@@ -963,6 +1040,7 @@ export type RouteUpdateToOneWithWhereWithoutStepsInput = {
 
 export type RouteUpdateWithoutStepsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
   estimatedInput?: Prisma.StringFieldUpdateOperationsInput | string
   estimatedOutput?: Prisma.StringFieldUpdateOperationsInput | string
@@ -979,6 +1057,7 @@ export type RouteUpdateWithoutStepsInput = {
 export type RouteUncheckedUpdateWithoutStepsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
   inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -993,6 +1072,7 @@ export type RouteUncheckedUpdateWithoutStepsInput = {
 
 export type RouteCreateWithoutExecutionsInput = {
   id: string
+  intentRevision: number
   status?: $Enums.RouteStatus
   estimatedInput: string
   estimatedOutput: string
@@ -1009,6 +1089,7 @@ export type RouteCreateWithoutExecutionsInput = {
 export type RouteUncheckedCreateWithoutExecutionsInput = {
   id: string
   intentId: string
+  intentRevision: number
   status?: $Enums.RouteStatus
   inputAssetId: string
   outputAssetId: string
@@ -1039,6 +1120,7 @@ export type RouteUpdateToOneWithWhereWithoutExecutionsInput = {
 
 export type RouteUpdateWithoutExecutionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
   estimatedInput?: Prisma.StringFieldUpdateOperationsInput | string
   estimatedOutput?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1055,6 +1137,7 @@ export type RouteUpdateWithoutExecutionsInput = {
 export type RouteUncheckedUpdateWithoutExecutionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
   inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1070,6 +1153,7 @@ export type RouteUncheckedUpdateWithoutExecutionsInput = {
 export type RouteCreateManyInputAssetInput = {
   id: string
   intentId: string
+  intentRevision: number
   status?: $Enums.RouteStatus
   outputAssetId: string
   estimatedInput: string
@@ -1083,6 +1167,7 @@ export type RouteCreateManyInputAssetInput = {
 export type RouteCreateManyOutputAssetInput = {
   id: string
   intentId: string
+  intentRevision: number
   status?: $Enums.RouteStatus
   inputAssetId: string
   estimatedInput: string
@@ -1096,6 +1181,7 @@ export type RouteCreateManyOutputAssetInput = {
 export type RouteCreateManyTotalFeeAssetInput = {
   id: string
   intentId: string
+  intentRevision: number
   status?: $Enums.RouteStatus
   inputAssetId: string
   outputAssetId: string
@@ -1108,6 +1194,7 @@ export type RouteCreateManyTotalFeeAssetInput = {
 
 export type RouteUpdateWithoutInputAssetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
   estimatedInput?: Prisma.StringFieldUpdateOperationsInput | string
   estimatedOutput?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1124,6 +1211,7 @@ export type RouteUpdateWithoutInputAssetInput = {
 export type RouteUncheckedUpdateWithoutInputAssetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
   outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   estimatedInput?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1139,6 +1227,7 @@ export type RouteUncheckedUpdateWithoutInputAssetInput = {
 export type RouteUncheckedUpdateManyWithoutInputAssetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
   outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   estimatedInput?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1151,6 +1240,7 @@ export type RouteUncheckedUpdateManyWithoutInputAssetInput = {
 
 export type RouteUpdateWithoutOutputAssetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
   estimatedInput?: Prisma.StringFieldUpdateOperationsInput | string
   estimatedOutput?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1167,6 +1257,7 @@ export type RouteUpdateWithoutOutputAssetInput = {
 export type RouteUncheckedUpdateWithoutOutputAssetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
   inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   estimatedInput?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1182,6 +1273,7 @@ export type RouteUncheckedUpdateWithoutOutputAssetInput = {
 export type RouteUncheckedUpdateManyWithoutOutputAssetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
   inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   estimatedInput?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1194,6 +1286,7 @@ export type RouteUncheckedUpdateManyWithoutOutputAssetInput = {
 
 export type RouteUpdateWithoutTotalFeeAssetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
   estimatedInput?: Prisma.StringFieldUpdateOperationsInput | string
   estimatedOutput?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1210,6 +1303,7 @@ export type RouteUpdateWithoutTotalFeeAssetInput = {
 export type RouteUncheckedUpdateWithoutTotalFeeAssetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
   inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1225,6 +1319,7 @@ export type RouteUncheckedUpdateWithoutTotalFeeAssetInput = {
 export type RouteUncheckedUpdateManyWithoutTotalFeeAssetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
   inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1237,6 +1332,7 @@ export type RouteUncheckedUpdateManyWithoutTotalFeeAssetInput = {
 
 export type RouteCreateManyIntentInput = {
   id: string
+  intentRevision: number
   status?: $Enums.RouteStatus
   inputAssetId: string
   outputAssetId: string
@@ -1250,6 +1346,7 @@ export type RouteCreateManyIntentInput = {
 
 export type RouteUpdateWithoutIntentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
   estimatedInput?: Prisma.StringFieldUpdateOperationsInput | string
   estimatedOutput?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1265,6 +1362,7 @@ export type RouteUpdateWithoutIntentInput = {
 
 export type RouteUncheckedUpdateWithoutIntentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
   inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1280,6 +1378,7 @@ export type RouteUncheckedUpdateWithoutIntentInput = {
 
 export type RouteUncheckedUpdateManyWithoutIntentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
   inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1334,6 +1433,7 @@ export type RouteCountOutputTypeCountExecutionsArgs<ExtArgs extends runtime.Type
 export type RouteSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   intentId?: boolean
+  intentRevision?: boolean
   status?: boolean
   inputAssetId?: boolean
   outputAssetId?: boolean
@@ -1355,6 +1455,7 @@ export type RouteSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
 export type RouteSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   intentId?: boolean
+  intentRevision?: boolean
   status?: boolean
   inputAssetId?: boolean
   outputAssetId?: boolean
@@ -1373,6 +1474,7 @@ export type RouteSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
 export type RouteSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   intentId?: boolean
+  intentRevision?: boolean
   status?: boolean
   inputAssetId?: boolean
   outputAssetId?: boolean
@@ -1391,6 +1493,7 @@ export type RouteSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
 export type RouteSelectScalar = {
   id?: boolean
   intentId?: boolean
+  intentRevision?: boolean
   status?: boolean
   inputAssetId?: boolean
   outputAssetId?: boolean
@@ -1402,7 +1505,7 @@ export type RouteSelectScalar = {
   createdAt?: boolean
 }
 
-export type RouteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "intentId" | "status" | "inputAssetId" | "outputAssetId" | "estimatedInput" | "estimatedOutput" | "totalFeeAmount" | "totalFeeAssetId" | "expiresAt" | "createdAt", ExtArgs["result"]["route"]>
+export type RouteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "intentId" | "intentRevision" | "status" | "inputAssetId" | "outputAssetId" | "estimatedInput" | "estimatedOutput" | "totalFeeAmount" | "totalFeeAssetId" | "expiresAt" | "createdAt", ExtArgs["result"]["route"]>
 export type RouteInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   intent?: boolean | Prisma.IntentDefaultArgs<ExtArgs>
   inputAsset?: boolean | Prisma.AssetDefaultArgs<ExtArgs>
@@ -1438,6 +1541,7 @@ export type $RoutePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     intentId: string
+    intentRevision: number
     status: $Enums.RouteStatus
     inputAssetId: string
     outputAssetId: string
@@ -1878,6 +1982,7 @@ export interface Prisma__RouteClient<T, Null = never, ExtArgs extends runtime.Ty
 export interface RouteFieldRefs {
   readonly id: Prisma.FieldRef<"Route", 'String'>
   readonly intentId: Prisma.FieldRef<"Route", 'String'>
+  readonly intentRevision: Prisma.FieldRef<"Route", 'Int'>
   readonly status: Prisma.FieldRef<"Route", 'RouteStatus'>
   readonly inputAssetId: Prisma.FieldRef<"Route", 'String'>
   readonly outputAssetId: Prisma.FieldRef<"Route", 'String'>

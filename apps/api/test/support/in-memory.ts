@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { OPEN_INTENT_STATUSES } from "@kaada/domain";
 import type {
   Asset,
@@ -6,7 +8,12 @@ import type {
   Identity,
   Intent,
   Message,
+  PaymentRoute,
+  Provider,
+  ProviderCapability,
+  Quote,
   Recipient,
+  RouteStatus,
   User,
 } from "@kaada/domain";
 
@@ -27,6 +34,14 @@ export interface InMemoryWorld {
   intents: Map<string, Intent>;
   messages: Message[];
   clarificationChoices: ClarificationChoice[];
+  quotes: Quote[];
+  routes: Map<string, PaymentRoute>;
+  providers: Provider[];
+  capabilities: ProviderCapability[];
+  addProvider(provider: Partial<Provider> & { slug: string }): Provider;
+  addCapability(
+    capability: Partial<ProviderCapability> & Pick<ProviderCapability, "providerId" | "capability">,
+  ): ProviderCapability;
   recipients: Map<string, Recipient>;
   conversations: Map<string, Conversation>;
   addAsset(asset: Asset): void;
@@ -48,6 +63,10 @@ export function createInMemoryWorld(): InMemoryWorld {
   const messages: Message[] = [];
   const intents = new Map<string, Intent>();
   const clarificationChoices: ClarificationChoice[] = [];
+  const quotes: Quote[] = [];
+  const routes = new Map<string, PaymentRoute>();
+  const providers: Provider[] = [];
+  const capabilities: ProviderCapability[] = [];
   const recipients = new Map<string, Recipient>();
 
   const repositories: AgentRepositories = {
@@ -238,6 +257,67 @@ export function createInMemoryWorld(): InMemoryWorld {
       },
     },
 
+    quotes: {
+      create: (input) => {
+        const quote: Quote = { ...input, createdAt: stamp() };
+        quotes.push(quote);
+        return Promise.resolve(quote);
+      },
+      findById: (id) => Promise.resolve(quotes.find((q) => q.id === id) ?? null),
+      listByIntent: (intentId) =>
+        Promise.resolve(quotes.filter((q) => q.intentId === intentId).reverse()),
+    },
+
+    routes: {
+      createWithSteps: (input) => {
+        const createdAt = stamp();
+        const route: PaymentRoute = {
+          ...input,
+          createdAt,
+          steps: input.steps.map((step) => ({ ...step, createdAt })),
+        };
+        routes.set(route.id, route);
+        return Promise.resolve(route);
+      },
+      findById: (id) => Promise.resolve(routes.get(id) ?? null),
+      updateStatus: (id, status: RouteStatus) => {
+        const current = routes.get(id);
+        if (!current) return Promise.reject(new Error("route not found"));
+        const updated = { ...current, status };
+        routes.set(id, updated);
+        return Promise.resolve(updated);
+      },
+      listByIntent: (intentId) =>
+        Promise.resolve(
+          [...routes.values()]
+            .filter((r) => r.intentId === intentId)
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
+        ),
+      invalidateOlderThan: (intentId, currentRevision) => {
+        let count = 0;
+        for (const [id, route] of routes) {
+          if (
+            route.intentId === intentId &&
+            route.intentRevision < currentRevision &&
+            ["CREATED", "VALID", "SELECTED"].includes(route.status)
+          ) {
+            routes.set(id, { ...route, status: "INVALID" });
+            count += 1;
+          }
+        }
+        return Promise.resolve(count);
+      },
+    },
+
+    providers: {
+      findBySlug: (slug) => Promise.resolve(providers.find((p) => p.slug === slug) ?? null),
+      listActive: () => Promise.resolve(providers.filter((p) => p.isActive)),
+      listCapabilities: () => {
+        const active = new Set(providers.filter((p) => p.isActive).map((p) => p.id));
+        return Promise.resolve(capabilities.filter((c) => c.isActive && active.has(c.providerId)));
+      },
+    },
+
     recipients: {
       findById: (id) => Promise.resolve(recipients.get(id) ?? null),
       findByIdentifier: (ownerUserId, type, identifier) =>
@@ -286,6 +366,36 @@ export function createInMemoryWorld(): InMemoryWorld {
     intents,
     messages,
     clarificationChoices,
+    quotes,
+    routes,
+    providers,
+    capabilities,
+    addProvider: (partial) => {
+      const provider: Provider = {
+        id: randomUUID(),
+        name: partial.slug,
+        type: "FX",
+        isActive: true,
+        metadata: {},
+        createdAt: stamp(),
+        updatedAt: stamp(),
+        ...partial,
+      };
+      providers.push(provider);
+      return provider;
+    },
+    addCapability: (partial) => {
+      const capability: ProviderCapability = {
+        id: randomUUID(),
+        isActive: true,
+        metadata: {},
+        createdAt: stamp(),
+        updatedAt: stamp(),
+        ...partial,
+      };
+      capabilities.push(capability);
+      return capability;
+    },
     recipients,
     conversations,
     addAsset: (asset) => void assets.push(asset),

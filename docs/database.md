@@ -78,6 +78,9 @@ with `randomUUID()` from `node:crypto`. Inserting without an id fails at the dat
    meaning of selectable answers; cascades with its intent and conversation).
 4. `20261011000000_provider_capability_uniqueness` (Build 7, hand-written): a NULL-safe unique
    expression index over a capability's provider, type, chain, input, output and country.
+5. `20261012000000_quote_route_intent_revision` (Build 8): `Quote.intentRevision` and
+   `Route.intentRevision` (>= 1, no default) plus an index, binding every price and route to the intent
+   revision it was built for.
 
 ## Tradeoffs and decisions
 

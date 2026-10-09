@@ -62,6 +62,27 @@ export function createRouteRepository(db: Db): RouteRepository {
       });
       return toRoute(row);
     },
+
+    async listByIntent(intentId) {
+      const rows = await db.route.findMany({
+        where: { intentId },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        include: { steps: { orderBy: { position: "asc" } } },
+      });
+      return rows.map(toRoute);
+    },
+
+    async invalidateOlderThan(intentId, currentRevision) {
+      const { count } = await db.route.updateMany({
+        where: {
+          intentId,
+          intentRevision: { lt: currentRevision },
+          status: { in: ["CREATED", "VALID", "SELECTED"] },
+        },
+        data: { status: "INVALID" },
+      });
+      return count;
+    },
   };
 }
 

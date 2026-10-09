@@ -1,0 +1,392 @@
+import {
+  aggregateFees,
+  assertRouteUsable,
+  bpsOf,
+  createId,
+  createMoney,
+  formatSmallestUnit,
+  isKaadaError,
+  validatePaymentRoute,
+} from "@kaada/domain";
+import type {
+  Asset,
+  AssetRegistry,
+  Money,
+  PaymentRoute,
+  PlannedRoute,
+  Quote,
+  RoutePlanner,
+  RoutingCandidateResolver,
+  RoutingRequest,
+} from "@kaada/domain";
+
+import type { AgentLog, AgentRepositories } from "../agent/ports.js";
+import { noopLog } from "../agent/ports.js";
+import type {
+  AgentResponse,
+  MoneyView,
+  PaymentReadyResponse,
+  QuoteResultResponse,
+  RouteSummary,
+} from "../responses/agent-response.js";
+
+/**
+ * What planning a RoutingRequest produced, before anything is written.
+ * - PLANNED: a fresh best route (plus the candidate set it came from).
+ * - REUSED:  a route already stored for this exact revision, with every quote still valid.
+ * - FAILED:  nothing usable, with the response to give the user.
+ */
+export type RoutingOutcome =
+  | { status: "PLANNED"; request: RoutingRequest; route: PlannedRoute }
+  | { status: "REUSED"; request: RoutingRequest; route: PaymentRoute; quotes: Quote[] }
+  | { status: "FAILED"; request: RoutingRequest; response: AgentResponse };
+
+export interface RoutingServiceDeps {
+  candidates: RoutingCandidateResolver;
+  planner: RoutePlanner;
+  assets: AssetRegistry;
+  /** Reads for route reuse; a transaction is not needed. */
+  read: Pick<AgentRepositories, "routes" | "quotes">;
+  now?: () => Date;
+  log?: AgentLog;
+}
+
+/** "92.250000" -> "92.25", "500.000000000000000000" -> "500". For people only. */
+export function formatAmount(amount: string, decimals: number): string {
+  const exact = formatSmallestUnit(amount, decimals);
+  return exact.includes(".") ? exact.replace(/\.?0+$/, "") : exact;
+}
+
+/** Whole seconds until `at`, never negative. Integer arithmetic only. */
+function secondsUntil(at: Date, now: Date): number {
+  const ms = at.getTime() - now.getTime();
+  if (ms <= 0) return 0;
+  const rounded = ms + 999;
+  return (rounded - (rounded % 1000)) / 1000;
+}
+
+/**
+ * Turns a RoutingRequest into a priced route and, separately, writes it. Application orchestration
+ * only: asset discovery, route search, pricing, validation and ranking live in the domain
+ * (RoutingCandidateResolver, RoutePlanner); the agent calls this after it has an unambiguous
+ * request. Pricing happens in `plan` (no transaction); `commit` is the short write.
+ *
+ * Nothing here authorizes or executes a payment, and nothing assumes the user holds any asset.
+ */
+export class RoutingService {
+  private readonly now: () => Date;
+  private readonly log: AgentLog;
+
+  constructor(private readonly deps: RoutingServiceDeps) {
+    this.now = deps.now ?? (() => new Date());
+    this.log = deps.log ?? noopLog;
+  }
+
+  async plan(request: RoutingRequest): Promise<RoutingOutcome> {
+    const now = this.now();
+
+    // Reuse only a stored route for THIS revision whose quotes are all still valid.
+    const reused = await this.findReusable(request, now);
+    if (reused) return { status: "REUSED", request, ...reused };
+
+    const discovery = await this.deps.candidates.resolve(request);
+    if (discovery.status === "UNSUPPORTED") {
+      return {
+        status: "FAILED",
+        request,
+        response: { type: "ERROR", code: "ROUTING_UNSUPPORTED", text: discovery.text },
+      };
+    }
+
+    const result = await this.deps.planner.plan(request, discovery.set);
+    this.log("info", "routing.planned", {
+      intentId: request.intentId,
+      revision: request.intentRevision,
+      status: result.status,
+      failures: result.failures.length,
+    });
+    switch (result.status) {
+      case "SUCCESS": {
+        const [best] = result.routes;
+        if (!best) return failed(request, "NO_ROUTE", "I couldn't find a route for that.");
+        return { status: "PLANNED", request, route: best };
+      }
+      case "NO_ROUTE":
+        return failed(request, "NO_ROUTE", "I couldn't find a route for that right now.");
+      case "PROVIDER_UNAVAILABLE":
+        return failed(
+          request,
+          "ROUTING_UNAVAILABLE",
+          "I can't reach a pricing provider right now. Please try again in a moment.",
+        );
+      case "QUOTE_FAILED":
+        return failed(
+          request,
+          "ROUTING_UNAVAILABLE",
+          "I couldn't get a usable price right now. Please try again in a moment.",
+        );
+    }
+  }
+
+  /**
+   * Writes the planned route (its quotes first, then the route and steps) in the caller's
+   * transaction, bound to the intent revision, and retires older routes. If the intent has moved on
+   * since planning, nothing is written and a stale error is returned.
+   */
+  async commit(repositories: AgentRepositories, outcome: RoutingOutcome): Promise<AgentResponse> {
+    if (outcome.status === "FAILED") return outcome.response;
+    const { request } = outcome;
+
+    const intent = await repositories.intents.findById(request.intentId);
+    if (!intent || intent.revision !== request.intentRevision || intent.status !== "RESOLVED") {
+      return {
+        type: "ERROR",
+        code: "ROUTING_STALE",
+        text: "That request changed while I was pricing it, so I discarded the prices. Please check the latest details.",
+      };
+    }
+
+    let route: PaymentRoute;
+    let quotes: Quote[];
+    if (outcome.status === "REUSED") {
+      ({ route, quotes } = outcome);
+    } else {
+      ({ route, quotes } = await this.persist(repositories, request, outcome.route));
+    }
+    return this.respond(request, route, quotes);
+  }
+
+  private async persist(
+    repositories: AgentRepositories,
+    request: RoutingRequest,
+    planned: PlannedRoute,
+  ): Promise<{ route: PaymentRoute; quotes: Quote[] }> {
+    const quotes: Quote[] = [];
+    const providerIds = new Map<string, string>();
+    for (const hop of planned.hops) {
+      let providerId = providerIds.get(hop.providerId);
+      if (!providerId) {
+        const provider = await repositories.providers.findBySlug(hop.providerId);
+        if (!provider) throw new Error(`pricing provider ${hop.providerId} has no Provider record`);
+        providerId = provider.id;
+        providerIds.set(hop.providerId, providerId);
+      }
+      quotes.push(
+        await repositories.quotes.create({
+          id: hop.quote.id,
+          intentId: request.intentId,
+          intentRevision: request.intentRevision,
+          providerId,
+          input: hop.quote.input,
+          output: hop.quote.output,
+          ...(hop.quote.fee && { fee: hop.quote.fee }),
+          ...(hop.quote.slippageBps !== undefined && { slippageBps: hop.quote.slippageBps }),
+          ...(hop.quote.providerQuoteId && { providerQuoteId: hop.quote.providerQuoteId }),
+          ...(hop.quote.expiresAt && { expiresAt: hop.quote.expiresAt }),
+          // Which adapter priced it travels with the quote, so a stored route can be explained later.
+          rawProviderData: { ...hop.quote.metadata, adapter: hop.providerId },
+        }),
+      );
+    }
+
+    const routeId = createId();
+    const fees = planned.fees;
+    const created = await repositories.routes.createWithSteps({
+      id: routeId,
+      intentId: request.intentId,
+      intentRevision: request.intentRevision,
+      status: "VALID",
+      input: planned.input,
+      output: planned.output,
+      // A single total only when every fee is in one asset; otherwise the per-quote fees stand alone.
+      ...(fees.length === 1 && fees[0] && { totalFee: fees[0] }),
+      ...(planned.expiresAt && { expiresAt: planned.expiresAt }),
+      steps:
+        planned.kind === "TRANSFER"
+          ? [
+              {
+                id: createId(),
+                routeId,
+                position: 0,
+                type: "TRANSFER",
+                input: planned.input,
+                output: planned.output,
+              },
+            ]
+          : planned.hops.map((hop, position) => {
+              const providerId = providerIds.get(hop.providerId);
+              return {
+                id: createId(),
+                routeId,
+                position,
+                type: "SWAP" as const,
+                input: hop.input,
+                output: hop.output,
+                ...(providerId && { providerId }),
+                quoteId: hop.quote.id,
+              };
+            }),
+    });
+    validatePaymentRoute(created);
+
+    // Anything older is superseded: other revisions by revision, same-revision leftovers by status.
+    await repositories.routes.invalidateOlderThan(request.intentId, request.intentRevision);
+    for (const other of await repositories.routes.listByIntent(request.intentId)) {
+      if (other.id !== created.id && other.status === "VALID") {
+        await repositories.routes.updateStatus(other.id, "INVALID");
+      }
+    }
+    return { route: created, quotes };
+  }
+
+  private async findReusable(
+    request: RoutingRequest,
+    now: Date,
+  ): Promise<{ route: PaymentRoute; quotes: Quote[] } | undefined> {
+    const routes = await this.deps.read.routes.listByIntent(request.intentId);
+    for (const route of routes) {
+      if (route.status !== "VALID") continue;
+      try {
+        assertRouteUsable(route, { intentRevision: request.intentRevision, now });
+      } catch (error) {
+        if (isKaadaError(error)) continue;
+        throw error;
+      }
+      const quotes: Quote[] = [];
+      for (const step of route.steps) {
+        if (!step.quoteId) continue;
+        const quote = await this.deps.read.quotes.findById(step.quoteId);
+        quotes.push(...(quote ? [quote] : []));
+      }
+      const expected = route.steps.filter((step) => step.quoteId).length;
+      const live = quotes.every(
+        (quote) =>
+          quote.intentRevision === request.intentRevision &&
+          quote.expiresAt !== undefined &&
+          quote.expiresAt.getTime() > now.getTime(),
+      );
+      if (quotes.length === expected && live) return { route, quotes };
+    }
+    return undefined;
+  }
+
+  private async view(money: Money, assets: Map<string, Asset>): Promise<MoneyView> {
+    let asset = assets.get(money.assetId);
+    if (!asset) {
+      const found = await this.deps.assets.getById(money.assetId);
+      if (!found) throw new Error(`unknown asset ${money.assetId}`);
+      asset = found;
+      assets.set(asset.id, asset);
+    }
+    return {
+      amount: money.amount,
+      assetId: money.assetId,
+      symbol: asset.symbol,
+      display: `${formatAmount(money.amount, asset.decimals)} ${asset.symbol}`,
+    };
+  }
+
+  /** The user-facing answer for a stored route: PAYMENT_READY, or QUOTE_RESULT for a quote. */
+  private async respond(
+    request: RoutingRequest,
+    route: PaymentRoute,
+    quotes: Quote[],
+  ): Promise<AgentResponse> {
+    const assets = new Map<string, Asset>();
+    const slippageBps = quotes.reduce((sum, quote) => sum + (quote.slippageBps ?? 0), 0);
+    const fees = await Promise.all(
+      aggregateFees(quotes.map((quote) => quote.fee)).map((fee) => this.view(fee, assets)),
+    );
+    const routeSummary: RouteSummary = {
+      hops: await Promise.all(
+        route.steps
+          .filter((step) => step.type === "SWAP")
+          .map(async (step) => ({
+            provider: adapterOf(quotes.find((q) => q.id === step.quoteId)),
+            from: (await this.view(step.input, assets)).symbol,
+            to: (await this.view(step.output, assets)).symbol,
+          })),
+      ),
+    };
+    const mock = quotes.some((quote) => quote.rawProviderData?.["mock"] === true);
+    const expiresAt = (route.expiresAt ?? this.now()).toISOString();
+    const seconds = route.expiresAt ? secondsUntil(route.expiresAt, this.now()) : 0;
+    const fine = mock ? " (mock pricing, development only, not a real price)" : "";
+    const feeText = fees.length > 0 ? fees.map((fee) => fee.display).join(" + ") : "none";
+    const expiry = `The prices expire in ${seconds} seconds.`;
+
+    const input = await this.view(route.input, assets);
+    const output = await this.view(route.output, assets);
+
+    if (request.purpose === "QUOTE") {
+      const response: QuoteResultResponse = {
+        type: "QUOTE_RESULT",
+        text:
+          request.amountMode === "EXACT_INPUT"
+            ? `${input.display} currently gives approximately ${output.display}${fine}. Fees: ${feeText}. ${expiry} Nothing was sent.`
+            : `To get ${output.display} you would need approximately ${input.display}${fine}. Fees: ${feeText}. ${expiry} Nothing was sent.`,
+        intentId: request.intentId,
+        revision: request.intentRevision,
+        routeId: route.id,
+        source: input,
+        destination: output,
+        fees,
+        slippageBps,
+        expiresAt,
+        route: routeSummary,
+        ...(mock && { mock }),
+      };
+      return response;
+    }
+
+    // Slippage bounds: spending is capped upward and receiving floored downward, never the reverse.
+    const bps = BigInt(slippageBps);
+    const exactInput = request.amountMode === "EXACT_INPUT";
+    const max = exactInput
+      ? route.input
+      : createMoney(
+          (BigInt(route.input.amount) + bpsOf(BigInt(route.input.amount), bps, "UP")).toString(),
+          route.input.assetId,
+        );
+    const min = exactInput
+      ? createMoney(
+          (BigInt(route.output.amount) - bpsOf(BigInt(route.output.amount), bps, "UP")).toString(),
+          route.output.assetId,
+        )
+      : route.output;
+    const recipient = request.recipient?.displayName;
+    const who = recipient ?? "The recipient";
+    const response: PaymentReadyResponse = {
+      type: "PAYMENT_READY",
+      text: exactInput
+        ? `You spend exactly ${input.display}; ${who} receives about ${output.display}${fine}. Fees: ${feeText}. ${expiry}`
+        : `${who} receives exactly ${output.display}; estimated spend ${input.display}${fine}. Fees: ${feeText}. ${expiry}`,
+      intentId: request.intentId,
+      revision: request.intentRevision,
+      routeId: route.id,
+      senderSpends: { expected: input, max: await this.view(max, assets) },
+      recipientReceives: { expected: output, min: await this.view(min, assets) },
+      fees,
+      slippageBps,
+      expiresAt,
+      route: routeSummary,
+      ...(recipient && { recipient }),
+      ...(mock && { mock }),
+    };
+    return response;
+  }
+}
+
+/** Which adapter priced a stored quote (recorded with it), or "" if unknown. */
+function adapterOf(quote: Quote | undefined): string {
+  const adapter = quote?.rawProviderData?.["adapter"];
+  return typeof adapter === "string" ? adapter : "";
+}
+
+function failed(
+  request: RoutingRequest,
+  code: "NO_ROUTE" | "ROUTING_UNAVAILABLE",
+  text: string,
+): RoutingOutcome {
+  return { status: "FAILED", request, response: { type: "ERROR", code, text } };
+}

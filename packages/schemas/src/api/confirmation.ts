@@ -27,6 +27,7 @@ const routeStepSchema = z.strictObject({
 export const paymentRouteSchema = z.strictObject({
   id: idSchema,
   intentId: idSchema,
+  intentRevision: z.number().int().min(1),
   status: z.enum(ROUTE_STATUSES),
   input: moneySchema,
   output: moneySchema,

@@ -5,7 +5,10 @@ import type {
   IdentityRepository,
   IntentRepository,
   MessageRepository,
+  ProviderRepository,
+  QuoteRepository,
   RecipientRepository,
+  RouteRepository,
   UserRepository,
 } from "@kaada/domain";
 
@@ -19,6 +22,9 @@ export interface AgentRepositories {
   recipients: RecipientRepository;
   assets: AssetRepository;
   clarifications: ClarificationChoiceRepository;
+  quotes: QuoteRepository;
+  routes: RouteRepository;
+  providers: ProviderRepository;
 }
 
 /**

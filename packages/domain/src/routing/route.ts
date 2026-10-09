@@ -59,6 +59,8 @@ export type RouteStep =
 export interface PaymentRoute {
   id: string;
   intentId: string;
+  /** The intent revision this route was built for. A route is unusable once the intent moves on. */
+  intentRevision: number;
   status: RouteStatus;
   /** What the sender pays, as estimated when the route was built. */
   input: Money;
@@ -105,5 +107,38 @@ export function validatePaymentRoute(route: RouteShape): void {
         details: { routeId: route.id, position: current.position },
       });
     }
+  }
+  // No asset may be revisited along the path (a cycle). A step that keeps its asset (a transfer or
+  // fee hand-off) does not count as leaving it, so consecutive repeats are collapsed first.
+  const path = [first.input.assetId, ...ordered.map((step) => step.output.assetId)].filter(
+    (assetId, index, all) => index === 0 || assetId !== all[index - 1],
+  );
+  if (new Set(path).size !== path.length) {
+    throw new KaadaError("ASSET_MISMATCH", "route revisits an asset", {
+      details: { routeId: route.id },
+    });
+  }
+}
+
+/**
+ * A route may only be used for the intent revision it was built for, and only while it has not
+ * expired or been invalidated. Anything else is stale and must be re-planned, never reused.
+ */
+export function assertRouteUsable(
+  route: Pick<PaymentRoute, "id" | "intentRevision" | "status" | "expiresAt">,
+  context: { intentRevision: number; now: Date },
+): void {
+  if (route.intentRevision !== context.intentRevision) {
+    throw new KaadaError("NO_ROUTE_AVAILABLE", "route was built for another intent revision", {
+      details: { routeId: route.id, routeRevision: route.intentRevision },
+    });
+  }
+  if (route.status === "INVALID" || route.status === "EXPIRED") {
+    throw new KaadaError("NO_ROUTE_AVAILABLE", "route is no longer valid", {
+      details: { routeId: route.id, status: route.status },
+    });
+  }
+  if (route.expiresAt === undefined || route.expiresAt.getTime() <= context.now.getTime()) {
+    throw new KaadaError("QUOTE_EXPIRED", "route has expired", { details: { routeId: route.id } });
   }
 }

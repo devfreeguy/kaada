@@ -193,6 +193,7 @@ describe("quote mapper", () => {
   const row = (overrides: Partial<QuoteRow> = {}): QuoteRow => ({
     id: randomUUID(),
     intentId: randomUUID(),
+    intentRevision: 1,
     providerId: randomUUID(),
     inputAssetId: usd,
     outputAssetId: brl,
@@ -252,6 +253,7 @@ describe("route mapper", () => {
   const routeRow: RouteRow = {
     id: routeId,
     intentId: randomUUID(),
+    intentRevision: 1,
     status: "VALID",
     inputAssetId: usd,
     outputAssetId: brl,

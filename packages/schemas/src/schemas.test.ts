@@ -254,6 +254,7 @@ describe("provider and confirmation schemas", () => {
     const route = {
       id: randomUUID(),
       intentId: randomUUID(),
+      intentRevision: 1,
       status: "VALID",
       input: money,
       output: money,

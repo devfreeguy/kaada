@@ -19,6 +19,11 @@ export interface RoutingCandidateResolverDeps {
   capabilities: ProviderCapabilityRegistry;
   countries: CountryDirectory;
   chainId?: number;
+  /**
+   * Most provider steps a conversion may take: 1 (default) keeps only pairs a provider serves
+   * directly; 2 also keeps pairs reachable through one intermediate asset (USDC -> USDT -> wBRL).
+   */
+  maxHops?: 1 | 2;
 }
 
 /**
@@ -54,6 +59,7 @@ export function createRoutingCandidateResolver(
   deps: RoutingCandidateResolverDeps,
 ): RoutingCandidateResolver {
   const chainId = deps.chainId ?? CELO_CHAIN_ID;
+  const maxHops = deps.maxHops ?? 1;
 
   const fail = (
     code: CandidateUnsupported["code"],
@@ -248,6 +254,7 @@ export function createRoutingCandidateResolver(
               sourceAssetId: from.id,
               destinationAssetId: to.id,
               kind: "DIRECT",
+              hops: 0,
               providers: [],
             });
             continue;
@@ -265,11 +272,50 @@ export function createRoutingCandidateResolver(
               sourceAssetId: from.id,
               destinationAssetId: to.id,
               kind: "CONVERSION",
+              hops: 1,
               providers: qualifying.map((support) => ({
                 slug: support.providerSlug,
                 capabilities: support.capabilities,
               })),
             });
+          } else if (maxHops >= 2) {
+            // Through one intermediate asset: from -> via is a qualifying step, and via -> to too.
+            const via: string[] = [];
+            const providers = new Map<string, CandidatePair["providers"][number]>();
+            for (const edge of await deps.capabilities.getPairsFrom({
+              chainId,
+              inputAssetId: from.id,
+            })) {
+              if (edge.outputAssetId === to.id || edge.outputAssetId === from.id) continue;
+              if (!required.every((capability) => edge.capabilities.includes(capability))) continue;
+              const onward = (
+                await deps.capabilities.getCapabilitiesForPair({
+                  chainId,
+                  inputAssetId: edge.outputAssetId,
+                  outputAssetId: to.id,
+                })
+              ).filter((support) =>
+                required.every((capability) => support.capabilities.includes(capability)),
+              );
+              if (onward.length === 0) continue;
+              if (!via.includes(edge.outputAssetId)) via.push(edge.outputAssetId);
+              for (const support of [edge, ...onward]) {
+                providers.set(support.providerSlug, {
+                  slug: support.providerSlug,
+                  capabilities: support.capabilities,
+                });
+              }
+            }
+            if (via.length > 0) {
+              pairs.push({
+                sourceAssetId: from.id,
+                destinationAssetId: to.id,
+                kind: "CONVERSION",
+                hops: 2,
+                via: via.sort(),
+                providers: [...providers.values()].sort((a, b) => a.slug.localeCompare(b.slug)),
+              });
+            }
           }
           for (const support of supports) {
             const missing = required.filter(

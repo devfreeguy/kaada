@@ -21,6 +21,7 @@ import type { Interpretation } from "@kaada/domain";
 import { AppModule } from "../../src/app.module.js";
 import { configureApp } from "../../src/app.setup.js";
 import { AgentService } from "../../src/core/agent/agent-service.js";
+import { createRoutingService } from "../../src/infrastructure/fx/pricing.js";
 import { MockIntentInterpreter } from "../../src/core/agent/mock-interpreter.js";
 
 try {
@@ -50,6 +51,17 @@ describe("agent core on the real database", { skip }, () => {
 
   after(async () => {
     const where = { in: createdUsers };
+    // Routes and quotes reference the intent (restricted), so they go first, steps before routes.
+    const owned = {
+      intentId: {
+        in: (
+          await database.client.intent.findMany({ where: { userId: where }, select: { id: true } })
+        ).map((row) => row.id),
+      },
+    };
+    await database.client.routeStep.deleteMany({ where: { route: owned } });
+    await database.client.route.deleteMany({ where: owned });
+    await database.client.quote.deleteMany({ where: owned });
     await database.client.intent.deleteMany({ where: { userId: where } });
     await database.client.recipient.deleteMany({ where: { ownerUserId: where } });
     await database.client.conversation.deleteMany({ where: { userId: where } });
@@ -423,6 +435,112 @@ describe("agent core on the real database", { skip }, () => {
       stored = await repositories.intents.findById(first.intentId ?? "");
       assert.equal(stored?.preferredSourceAssetId, undefined);
       assert.equal(stored?.revision, 3);
+    });
+  });
+
+  describe("routing with mock pricing on the real database", () => {
+    const joao = { type: "SAVED_BENEFICIARY" as const, value: "João" };
+    const exactOutput = intent({
+      type: "SEND",
+      recipient: joao,
+      amount: { value: "500", currencyOrAsset: "BRL", mode: "EXACT_OUTPUT" },
+      sourceAsset: "USDT",
+    });
+
+    async function routedAgent(label: string) {
+      const sender = await newUser(label);
+      await repositories.recipients.create({
+        id: createId(),
+        ownerUserId: sender.id,
+        type: "SAVED_BENEFICIARY",
+        identifier: "joao",
+        displayName: "João Silva",
+        isSaved: true,
+        destinationCountry: "BR",
+      });
+      const routing = createRoutingService(
+        { nodeEnv: "test", fx: { provider: "mock" } },
+        { assets: repositories.assets, providers: repositories.providers, read: repositories },
+      );
+      assert.ok(routing);
+      const interpreter = new MockIntentInterpreter((input) => {
+        if (input.message === "make it 40") {
+          return Promise.resolve(
+            intent({ type: "SEND", amount: { value: "40", currencyOrAsset: "BRL" } }),
+          );
+        }
+        return Promise.resolve(exactOutput);
+      });
+      const agent = new AgentService({
+        interpreter,
+        routing,
+        unitOfWork: {
+          read: repositories,
+          transaction: (work) => withTransaction(database, work, { timeoutMs: 60_000 }),
+        },
+      });
+      return { sender, agent, routing };
+    }
+
+    it("prices, persists bound to the revision, reuses within it, and retires the route on an edit", async () => {
+      const { sender, agent } = await routedAgent("router");
+      const chat = `chat-${run}-route`;
+
+      const first = await say(agent, sender.id, chat, "send joão exactly r$500 using usdt");
+      assert.equal(first.response.type, "PAYMENT_READY", JSON.stringify(first.response));
+      if (first.response.type !== "PAYMENT_READY") return;
+      assert.equal(first.response.recipientReceives.expected.display, "500 wBRL");
+      assert.equal(first.response.senderSpends.expected.amount, "92260150");
+      assert.equal(first.response.revision, 1);
+      assert.equal(first.response.mock, true);
+
+      // Stored: one quote, one route and one SWAP step, all bound to revision 1 and to the mock record.
+      const intentId = first.intentId ?? "";
+      const quotes = await database.client.quote.findMany({ where: { intentId } });
+      const routes = await database.client.route.findMany({
+        where: { intentId },
+        include: { steps: true },
+      });
+      assert.equal(quotes.length, 1);
+      assert.equal(routes.length, 1);
+      assert.equal(routes[0]?.intentRevision, 1);
+      assert.equal(routes[0]?.status, "VALID");
+      assert.equal(routes[0]?.steps.length, 1);
+      assert.equal(quotes[0]?.intentRevision, 1);
+      const mockProvider = await repositories.providers.findBySlug("mock-textile");
+      assert.equal(quotes[0]?.providerId, mockProvider?.id);
+      const domainRoute = await repositories.routes.findById(first.response.routeId);
+      assert.equal(domainRoute?.steps[0]?.quoteId, quotes[0]?.id);
+
+      // The same request again inside the revision reuses the stored route: no new rows.
+      const again = await say(agent, sender.id, chat, "send joão exactly r$500 using usdt");
+      assert.equal(again.response.type, "PAYMENT_READY");
+      assert.equal(
+        again.response.type === "PAYMENT_READY" && again.response.routeId,
+        first.response.routeId,
+      );
+      assert.equal(await database.client.quote.count({ where: { intentId } }), 1);
+      assert.equal(await database.client.route.count({ where: { intentId } }), 1);
+
+      // An edit moves the revision: the old route is retired (kept), a new one is bound to revision 2.
+      const edited = await say(agent, sender.id, chat, "make it 40");
+      assert.equal(edited.response.type, "PAYMENT_READY", JSON.stringify(edited.response));
+      const after = await database.client.route.findMany({
+        where: { intentId },
+        orderBy: { createdAt: "asc" },
+      });
+      assert.deepEqual(
+        after.map((route) => [route.intentRevision, route.status]),
+        [
+          [1, "INVALID"],
+          [2, "VALID"],
+        ],
+      );
+      assert.equal(await database.client.quote.count({ where: { intentId } }), 2);
+      const oldQuote = await database.client.quote.findUnique({
+        where: { id: quotes[0]?.id ?? "" },
+      });
+      assert.equal(oldQuote?.inputAmount, "92260150", "quotes are immutable history");
     });
   });
 

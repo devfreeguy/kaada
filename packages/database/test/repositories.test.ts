@@ -260,6 +260,7 @@ describe("repositories (database round trips, rolled back)", { skip }, () => {
       const quote = await repos.quotes.create({
         id: createId(),
         intentId: intent.id,
+        intentRevision: 1,
         providerId: textile.id,
         input: createMoney("2000", usd.id),
         output: createMoney("3000000", ngn.id),
@@ -291,6 +292,7 @@ describe("repositories (database round trips, rolled back)", { skip }, () => {
       const route = await repos.routes.createWithSteps({
         id: routeId,
         intentId: intent.id,
+        intentRevision: 1,
         status: "VALID",
         input: createMoney("2000", usd.id),
         output: createMoney("3000000", ngn.id),
@@ -313,11 +315,25 @@ describe("repositories (database round trips, rolled back)", { skip }, () => {
       );
       assert.deepEqual(await repos.routes.findById(routeId), route);
       assert.equal((await repos.routes.updateStatus(routeId, "SELECTED")).status, "SELECTED");
+      assert.deepEqual(
+        (await repos.routes.listByIntent(intent.id)).map((r) => r.id),
+        [routeId],
+      );
+      assert.equal(await repos.routes.invalidateOlderThan(intent.id, 1), 0, "same revision stays");
+      assert.equal(
+        await repos.routes.invalidateOlderThan(intent.id, 2),
+        1,
+        "older revision retired",
+      );
+      assert.equal((await repos.routes.findById(routeId))?.status, "INVALID");
+      assert.equal(await repos.routes.invalidateOlderThan(intent.id, 2), 0, "already retired");
+      assert.equal((await repos.quotes.findById(quote.id))?.intentRevision, 1, "quotes are kept");
 
       await assert.rejects(
         repos.routes.createWithSteps({
           id: createId(),
           intentId: intent.id,
+          intentRevision: 1,
           status: "CREATED",
           input: createMoney("1", usd.id),
           output: createMoney("1", ngn.id),

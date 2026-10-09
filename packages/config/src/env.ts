@@ -26,6 +26,9 @@ const envSchema = z
     DATABASE_POOL_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60_000).default(10_000),
     // Which IntentInterpreter the agent uses. "none" disables the agent.
     AGENT_INTERPRETER: z.enum(["none", "mock", "groq"]).default("none"),
+    // Which price source routing uses. "none" disables pricing (the agent stops at ROUTING_REQUIRED);
+    // "mock" is made-up fixture pricing for development and tests. No real provider yet.
+    FX_PROVIDER: z.enum(["none", "mock"]).default("none"),
     // Only needed when AGENT_INTERPRETER=groq. An empty value counts as unset.
     GROQ_API_KEY: z
       .string()
@@ -39,6 +42,10 @@ const envSchema = z
   .refine((env) => !(env.NODE_ENV === "production" && env.AGENT_INTERPRETER === "mock"), {
     message: "the mock interpreter cannot be used in production",
     path: ["AGENT_INTERPRETER"],
+  })
+  .refine((env) => !(env.NODE_ENV === "production" && env.FX_PROVIDER === "mock"), {
+    message: "the mock FX provider cannot be used in production",
+    path: ["FX_PROVIDER"],
   })
   .refine((env) => env.AGENT_INTERPRETER !== "groq" || env.GROQ_API_KEY !== undefined, {
     message: "GROQ_API_KEY is required when AGENT_INTERPRETER=groq",
@@ -62,6 +69,7 @@ const envSchema = z
           },
         }),
     },
+    fx: { provider: env.FX_PROVIDER },
     database: {
       url: env.DATABASE_URL,
       ...(env.DATABASE_DIRECT_URL && { directUrl: env.DATABASE_DIRECT_URL }),

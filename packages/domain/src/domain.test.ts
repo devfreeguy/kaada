@@ -179,6 +179,7 @@ describe("validatePaymentRoute", () => {
   const route = (steps: RouteStep[], output = "c"): PaymentRoute => ({
     id: "r",
     intentId: "i",
+    intentRevision: 1,
     status: "CREATED",
     input: createMoney("10", "a"),
     output: createMoney("9", output),

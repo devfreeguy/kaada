@@ -19,3 +19,13 @@ export {
   subtractMoney,
 } from "./money.js";
 export type { Money } from "./money.js";
+export {
+  bpsOf,
+  divRoundDown,
+  divRoundUp,
+  inputForOutput,
+  mulDiv,
+  outputForInput,
+  rescaleAmount,
+} from "./rounding.js";
+export type { Rate, RoundingMode } from "./rounding.js";

@@ -43,6 +43,11 @@ export interface CandidatePair {
   sourceAssetId: string;
   destinationAssetId: string;
   kind: "DIRECT" | "CONVERSION";
+  /** Conversion steps needed: 0 for DIRECT, 1 for one provider step, 2 through an intermediate asset. */
+  hops: 0 | 1 | 2;
+  /** Intermediate assets of the two-step ways to make the conversion (hops = 2 only). */
+  via?: string[];
+  /** Providers that serve the pair. For a two-step pair, the providers of either step. */
   providers: { slug: string; capabilities: CapabilityType[] }[];
 }
 

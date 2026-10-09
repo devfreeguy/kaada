@@ -72,6 +72,8 @@ export interface FxQuote {
 export interface Quote {
   id: string;
   intentId: string;
+  /** The intent revision this price was asked for. A quote is stale once the intent moves on. */
+  intentRevision: number;
   providerId: string;
   input: Money;
   output: Money;

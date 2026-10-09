@@ -32,6 +32,8 @@ export interface RoutingRequest {
     walletAddress?: string;
   };
   destinationCountry?: string;
+  /** Limits the user set that routing must respect. */
+  constraints?: { maxSlippageBps?: number };
 }
 
 /** The few recipient fields a routing request carries. A stored Recipient satisfies it. */
@@ -74,5 +76,8 @@ export function buildRoutingRequest(
       },
     }),
     ...(intent.destinationCountry && { destinationCountry: intent.destinationCountry }),
+    ...(intent.constraints?.maxSlippageBps !== undefined && {
+      constraints: { maxSlippageBps: intent.constraints.maxSlippageBps },
+    }),
   };
 }

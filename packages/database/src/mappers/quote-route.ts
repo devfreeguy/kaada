@@ -13,6 +13,7 @@ export function toQuote(row: QuoteRow): Quote {
   return {
     id: row.id,
     intentId: row.intentId,
+    intentRevision: row.intentRevision,
     providerId: row.providerId,
     input: createMoney(row.inputAmount, row.inputAssetId),
     output: createMoney(row.outputAmount, row.outputAssetId),
@@ -29,6 +30,7 @@ export function quoteCreateData(quote: NewQuote): Prisma.QuoteUncheckedCreateInp
   return {
     id: quote.id,
     intentId: quote.intentId,
+    intentRevision: quote.intentRevision,
     providerId: quote.providerId,
     inputAssetId: quote.input.assetId,
     outputAssetId: quote.output.assetId,
@@ -64,6 +66,7 @@ export function toRoute(row: RouteRowWithSteps): PaymentRoute {
   return {
     id: row.id,
     intentId: row.intentId,
+    intentRevision: row.intentRevision,
     status: row.status,
     input: createMoney(row.estimatedInput, row.inputAssetId),
     output: createMoney(row.estimatedOutput, row.outputAssetId),
@@ -82,6 +85,7 @@ export function routeCreateData(route: NewRoute): Prisma.RouteUncheckedCreateInp
   return {
     id: route.id,
     intentId: route.intentId,
+    intentRevision: route.intentRevision,
     status: route.status,
     inputAssetId: route.input.assetId,
     outputAssetId: route.output.assetId,

@@ -14,6 +14,7 @@ import { composeRevisionHooks } from "../core/intents/intent-commit.js";
 import { createDefaultResolvers } from "../core/agent/resolvers.js";
 import { GroqIntentInterpreter, createGroqSdkTransport } from "../infrastructure/llm/index.js";
 import { AgentController } from "./agent.controller.js";
+import { createRoutingService } from "../infrastructure/fx/pricing.js";
 import { createCandidateServices } from "../core/routing/candidate-services.js";
 import type { CandidateServices } from "../core/routing/candidate-services.js";
 import { AGENT_REPOSITORIES, AGENT_SERVICE, CANDIDATE_SERVICES } from "./agent.tokens.js";
@@ -83,6 +84,13 @@ function createInterpreter(config: AppConfig, log: AgentLog): IntentInterpreter 
 
         // Assets change rarely, so lookups for interpretation share one short-lived snapshot.
         const assets = createCachedAssetRepository(repositories.assets);
+        const service = createRoutingService(config, {
+          assets,
+          providers: repositories.providers,
+          read: repositories,
+          log,
+        });
+        const routing = () => (service ? { routing: service } : {});
         return new AgentService({
           interpreter,
           unitOfWork: {
@@ -90,6 +98,8 @@ function createInterpreter(config: AppConfig, log: AgentLog): IntentInterpreter 
             transaction: (work) => withTransaction(database, work),
           },
           createResolvers: (transactional) => createDefaultResolvers({ ...transactional, assets }),
+          // Null when FX_PROVIDER=none: the agent then stops at ROUTING_REQUIRED.
+          ...routing(),
           // The one place anything derived from an earlier revision is discarded. Candidate sets
           // are recomputed on demand and bound to a revision (isCandidateSetCurrent), so nothing is
           // persisted yet; a later build that stores candidates, quotes or routes adds its

@@ -1,6 +1,7 @@
 import { createDatabase } from "../src/client/index.js";
 import { seedCeloAssets } from "../src/seed/celo-assets.js";
 import { seedProviderCapabilities } from "../src/seed/capabilities.js";
+import { seedDevelopmentProviders } from "../src/seed/development.js";
 import { seedFoundation } from "../src/seed/foundation.js";
 
 // Run through `prisma db seed` (pnpm db:seed) so prisma.config.ts loads the repo-root .env first.
@@ -12,6 +13,8 @@ try {
   await seedFoundation(database.client);
   await seedCeloAssets(database.client);
   const capabilities = await seedProviderCapabilities(database.client);
+  // The mock FX provider exists for development only and is never seeded in production.
+  if (process.env["NODE_ENV"] !== "production") await seedDevelopmentProviders(database.client);
   console.log(
     `Seeded foundation records and verified Celo assets; capabilities: ${capabilities.created} created, ${capabilities.existing} existing, ${capabilities.skipped.length} skipped.`,
   );

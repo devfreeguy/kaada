@@ -47,6 +47,14 @@ export interface ProviderCapabilityRegistry {
   supportsPair(
     query: PairQuery & { capability: CapabilityType; alsoRequire?: readonly CapabilityType[] },
   ): Promise<boolean>;
+  /**
+   * Every asset reachable from `inputAssetId` in ONE provider step, with what each provider offers for
+   * that directed pair. The edges a bounded route search walks; reverse edges are not implied.
+   */
+  getPairsFrom(query: {
+    chainId: number;
+    inputAssetId: string;
+  }): Promise<(ProviderPairSupport & { outputAssetId: string })[]>;
   /** Every active capability of one provider (by slug). */
   getCapabilitiesForProvider(providerSlug: string): Promise<ProviderCapabilityEntry[]>;
   /** Ramp and payout style capabilities, narrowed by asset and country. */
@@ -141,6 +149,27 @@ export function createProviderCapabilityRegistry(
     getProvidersForPair,
     async supportsPair(query) {
       return (await getProvidersForPair(query)).length > 0;
+    },
+    async getPairsFrom({ chainId, inputAssetId }) {
+      const edges = new Map<string, ProviderPairSupport & { outputAssetId: string }>();
+      for (const entry of await entries()) {
+        if (entry.chainId !== chainId || entry.inputAssetId !== inputAssetId) continue;
+        if (entry.outputAssetId === undefined) continue;
+        const key = `${entry.outputAssetId}|${entry.providerId}`;
+        const edge = edges.get(key) ?? {
+          providerId: entry.providerId,
+          providerSlug: entry.providerSlug,
+          outputAssetId: entry.outputAssetId,
+          capabilities: [],
+        };
+        if (!edge.capabilities.includes(entry.capability)) edge.capabilities.push(entry.capability);
+        edges.set(key, edge);
+      }
+      return [...edges.values()].sort(
+        (a, b) =>
+          a.outputAssetId.localeCompare(b.outputAssetId) ||
+          a.providerSlug.localeCompare(b.providerSlug),
+      );
     },
     async getCapabilitiesForProvider(providerSlug) {
       return (await entries()).filter((entry) => entry.providerSlug === providerSlug);

@@ -27,16 +27,19 @@ export type AggregateQuote = {
 }
 
 export type QuoteAvgAggregateOutputType = {
+  intentRevision: number | null
   slippageBps: number | null
 }
 
 export type QuoteSumAggregateOutputType = {
+  intentRevision: number | null
   slippageBps: number | null
 }
 
 export type QuoteMinAggregateOutputType = {
   id: string | null
   intentId: string | null
+  intentRevision: number | null
   providerId: string | null
   inputAssetId: string | null
   outputAssetId: string | null
@@ -53,6 +56,7 @@ export type QuoteMinAggregateOutputType = {
 export type QuoteMaxAggregateOutputType = {
   id: string | null
   intentId: string | null
+  intentRevision: number | null
   providerId: string | null
   inputAssetId: string | null
   outputAssetId: string | null
@@ -69,6 +73,7 @@ export type QuoteMaxAggregateOutputType = {
 export type QuoteCountAggregateOutputType = {
   id: number
   intentId: number
+  intentRevision: number
   providerId: number
   inputAssetId: number
   outputAssetId: number
@@ -86,16 +91,19 @@ export type QuoteCountAggregateOutputType = {
 
 
 export type QuoteAvgAggregateInputType = {
+  intentRevision?: true
   slippageBps?: true
 }
 
 export type QuoteSumAggregateInputType = {
+  intentRevision?: true
   slippageBps?: true
 }
 
 export type QuoteMinAggregateInputType = {
   id?: true
   intentId?: true
+  intentRevision?: true
   providerId?: true
   inputAssetId?: true
   outputAssetId?: true
@@ -112,6 +120,7 @@ export type QuoteMinAggregateInputType = {
 export type QuoteMaxAggregateInputType = {
   id?: true
   intentId?: true
+  intentRevision?: true
   providerId?: true
   inputAssetId?: true
   outputAssetId?: true
@@ -128,6 +137,7 @@ export type QuoteMaxAggregateInputType = {
 export type QuoteCountAggregateInputType = {
   id?: true
   intentId?: true
+  intentRevision?: true
   providerId?: true
   inputAssetId?: true
   outputAssetId?: true
@@ -232,6 +242,7 @@ export type QuoteGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
 export type QuoteGroupByOutputType = {
   id: string
   intentId: string
+  intentRevision: number
   providerId: string
   inputAssetId: string
   outputAssetId: string
@@ -272,6 +283,7 @@ export type QuoteWhereInput = {
   NOT?: Prisma.QuoteWhereInput | Prisma.QuoteWhereInput[]
   id?: Prisma.UuidFilter<"Quote"> | string
   intentId?: Prisma.UuidFilter<"Quote"> | string
+  intentRevision?: Prisma.IntFilter<"Quote"> | number
   providerId?: Prisma.UuidFilter<"Quote"> | string
   inputAssetId?: Prisma.UuidFilter<"Quote"> | string
   outputAssetId?: Prisma.UuidFilter<"Quote"> | string
@@ -295,6 +307,7 @@ export type QuoteWhereInput = {
 export type QuoteOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   intentId?: Prisma.SortOrder
+  intentRevision?: Prisma.SortOrder
   providerId?: Prisma.SortOrder
   inputAssetId?: Prisma.SortOrder
   outputAssetId?: Prisma.SortOrder
@@ -321,6 +334,7 @@ export type QuoteWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.QuoteWhereInput[]
   NOT?: Prisma.QuoteWhereInput | Prisma.QuoteWhereInput[]
   intentId?: Prisma.UuidFilter<"Quote"> | string
+  intentRevision?: Prisma.IntFilter<"Quote"> | number
   providerId?: Prisma.UuidFilter<"Quote"> | string
   inputAssetId?: Prisma.UuidFilter<"Quote"> | string
   outputAssetId?: Prisma.UuidFilter<"Quote"> | string
@@ -344,6 +358,7 @@ export type QuoteWhereUniqueInput = Prisma.AtLeast<{
 export type QuoteOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   intentId?: Prisma.SortOrder
+  intentRevision?: Prisma.SortOrder
   providerId?: Prisma.SortOrder
   inputAssetId?: Prisma.SortOrder
   outputAssetId?: Prisma.SortOrder
@@ -369,6 +384,7 @@ export type QuoteScalarWhereWithAggregatesInput = {
   NOT?: Prisma.QuoteScalarWhereWithAggregatesInput | Prisma.QuoteScalarWhereWithAggregatesInput[]
   id?: Prisma.UuidWithAggregatesFilter<"Quote"> | string
   intentId?: Prisma.UuidWithAggregatesFilter<"Quote"> | string
+  intentRevision?: Prisma.IntWithAggregatesFilter<"Quote"> | number
   providerId?: Prisma.UuidWithAggregatesFilter<"Quote"> | string
   inputAssetId?: Prisma.UuidWithAggregatesFilter<"Quote"> | string
   outputAssetId?: Prisma.UuidWithAggregatesFilter<"Quote"> | string
@@ -385,6 +401,7 @@ export type QuoteScalarWhereWithAggregatesInput = {
 
 export type QuoteCreateInput = {
   id: string
+  intentRevision: number
   inputAmount: string
   outputAmount: string
   feeAmount?: string | null
@@ -404,6 +421,7 @@ export type QuoteCreateInput = {
 export type QuoteUncheckedCreateInput = {
   id: string
   intentId: string
+  intentRevision: number
   providerId: string
   inputAssetId: string
   outputAssetId: string
@@ -421,6 +439,7 @@ export type QuoteUncheckedCreateInput = {
 
 export type QuoteUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   inputAmount?: Prisma.StringFieldUpdateOperationsInput | string
   outputAmount?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -440,6 +459,7 @@ export type QuoteUpdateInput = {
 export type QuoteUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   providerId?: Prisma.StringFieldUpdateOperationsInput | string
   inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -458,6 +478,7 @@ export type QuoteUncheckedUpdateInput = {
 export type QuoteCreateManyInput = {
   id: string
   intentId: string
+  intentRevision: number
   providerId: string
   inputAssetId: string
   outputAssetId: string
@@ -474,6 +495,7 @@ export type QuoteCreateManyInput = {
 
 export type QuoteUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   inputAmount?: Prisma.StringFieldUpdateOperationsInput | string
   outputAmount?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -487,6 +509,7 @@ export type QuoteUpdateManyMutationInput = {
 export type QuoteUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   providerId?: Prisma.StringFieldUpdateOperationsInput | string
   inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -514,6 +537,7 @@ export type QuoteOrderByRelationAggregateInput = {
 export type QuoteCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   intentId?: Prisma.SortOrder
+  intentRevision?: Prisma.SortOrder
   providerId?: Prisma.SortOrder
   inputAssetId?: Prisma.SortOrder
   outputAssetId?: Prisma.SortOrder
@@ -529,12 +553,14 @@ export type QuoteCountOrderByAggregateInput = {
 }
 
 export type QuoteAvgOrderByAggregateInput = {
+  intentRevision?: Prisma.SortOrder
   slippageBps?: Prisma.SortOrder
 }
 
 export type QuoteMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   intentId?: Prisma.SortOrder
+  intentRevision?: Prisma.SortOrder
   providerId?: Prisma.SortOrder
   inputAssetId?: Prisma.SortOrder
   outputAssetId?: Prisma.SortOrder
@@ -551,6 +577,7 @@ export type QuoteMaxOrderByAggregateInput = {
 export type QuoteMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   intentId?: Prisma.SortOrder
+  intentRevision?: Prisma.SortOrder
   providerId?: Prisma.SortOrder
   inputAssetId?: Prisma.SortOrder
   outputAssetId?: Prisma.SortOrder
@@ -565,6 +592,7 @@ export type QuoteMinOrderByAggregateInput = {
 }
 
 export type QuoteSumOrderByAggregateInput = {
+  intentRevision?: Prisma.SortOrder
   slippageBps?: Prisma.SortOrder
 }
 
@@ -801,6 +829,7 @@ export type QuoteUpdateOneWithoutRouteStepsNestedInput = {
 
 export type QuoteCreateWithoutInputAssetInput = {
   id: string
+  intentRevision: number
   inputAmount: string
   outputAmount: string
   feeAmount?: string | null
@@ -819,6 +848,7 @@ export type QuoteCreateWithoutInputAssetInput = {
 export type QuoteUncheckedCreateWithoutInputAssetInput = {
   id: string
   intentId: string
+  intentRevision: number
   providerId: string
   outputAssetId: string
   inputAmount: string
@@ -845,6 +875,7 @@ export type QuoteCreateManyInputAssetInputEnvelope = {
 
 export type QuoteCreateWithoutOutputAssetInput = {
   id: string
+  intentRevision: number
   inputAmount: string
   outputAmount: string
   feeAmount?: string | null
@@ -863,6 +894,7 @@ export type QuoteCreateWithoutOutputAssetInput = {
 export type QuoteUncheckedCreateWithoutOutputAssetInput = {
   id: string
   intentId: string
+  intentRevision: number
   providerId: string
   inputAssetId: string
   inputAmount: string
@@ -889,6 +921,7 @@ export type QuoteCreateManyOutputAssetInputEnvelope = {
 
 export type QuoteCreateWithoutFeeAssetInput = {
   id: string
+  intentRevision: number
   inputAmount: string
   outputAmount: string
   feeAmount?: string | null
@@ -907,6 +940,7 @@ export type QuoteCreateWithoutFeeAssetInput = {
 export type QuoteUncheckedCreateWithoutFeeAssetInput = {
   id: string
   intentId: string
+  intentRevision: number
   providerId: string
   inputAssetId: string
   outputAssetId: string
@@ -953,6 +987,7 @@ export type QuoteScalarWhereInput = {
   NOT?: Prisma.QuoteScalarWhereInput | Prisma.QuoteScalarWhereInput[]
   id?: Prisma.UuidFilter<"Quote"> | string
   intentId?: Prisma.UuidFilter<"Quote"> | string
+  intentRevision?: Prisma.IntFilter<"Quote"> | number
   providerId?: Prisma.UuidFilter<"Quote"> | string
   inputAssetId?: Prisma.UuidFilter<"Quote"> | string
   outputAssetId?: Prisma.UuidFilter<"Quote"> | string
@@ -1001,6 +1036,7 @@ export type QuoteUpdateManyWithWhereWithoutFeeAssetInput = {
 
 export type QuoteCreateWithoutIntentInput = {
   id: string
+  intentRevision: number
   inputAmount: string
   outputAmount: string
   feeAmount?: string | null
@@ -1018,6 +1054,7 @@ export type QuoteCreateWithoutIntentInput = {
 
 export type QuoteUncheckedCreateWithoutIntentInput = {
   id: string
+  intentRevision: number
   providerId: string
   inputAssetId: string
   outputAssetId: string
@@ -1061,6 +1098,7 @@ export type QuoteUpdateManyWithWhereWithoutIntentInput = {
 
 export type QuoteCreateWithoutProviderInput = {
   id: string
+  intentRevision: number
   inputAmount: string
   outputAmount: string
   feeAmount?: string | null
@@ -1079,6 +1117,7 @@ export type QuoteCreateWithoutProviderInput = {
 export type QuoteUncheckedCreateWithoutProviderInput = {
   id: string
   intentId: string
+  intentRevision: number
   inputAssetId: string
   outputAssetId: string
   inputAmount: string
@@ -1121,6 +1160,7 @@ export type QuoteUpdateManyWithWhereWithoutProviderInput = {
 
 export type QuoteCreateWithoutRouteStepsInput = {
   id: string
+  intentRevision: number
   inputAmount: string
   outputAmount: string
   feeAmount?: string | null
@@ -1139,6 +1179,7 @@ export type QuoteCreateWithoutRouteStepsInput = {
 export type QuoteUncheckedCreateWithoutRouteStepsInput = {
   id: string
   intentId: string
+  intentRevision: number
   providerId: string
   inputAssetId: string
   outputAssetId: string
@@ -1171,6 +1212,7 @@ export type QuoteUpdateToOneWithWhereWithoutRouteStepsInput = {
 
 export type QuoteUpdateWithoutRouteStepsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   inputAmount?: Prisma.StringFieldUpdateOperationsInput | string
   outputAmount?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1189,6 +1231,7 @@ export type QuoteUpdateWithoutRouteStepsInput = {
 export type QuoteUncheckedUpdateWithoutRouteStepsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   providerId?: Prisma.StringFieldUpdateOperationsInput | string
   inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1206,6 +1249,7 @@ export type QuoteUncheckedUpdateWithoutRouteStepsInput = {
 export type QuoteCreateManyInputAssetInput = {
   id: string
   intentId: string
+  intentRevision: number
   providerId: string
   outputAssetId: string
   inputAmount: string
@@ -1222,6 +1266,7 @@ export type QuoteCreateManyInputAssetInput = {
 export type QuoteCreateManyOutputAssetInput = {
   id: string
   intentId: string
+  intentRevision: number
   providerId: string
   inputAssetId: string
   inputAmount: string
@@ -1238,6 +1283,7 @@ export type QuoteCreateManyOutputAssetInput = {
 export type QuoteCreateManyFeeAssetInput = {
   id: string
   intentId: string
+  intentRevision: number
   providerId: string
   inputAssetId: string
   outputAssetId: string
@@ -1253,6 +1299,7 @@ export type QuoteCreateManyFeeAssetInput = {
 
 export type QuoteUpdateWithoutInputAssetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   inputAmount?: Prisma.StringFieldUpdateOperationsInput | string
   outputAmount?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1271,6 +1318,7 @@ export type QuoteUpdateWithoutInputAssetInput = {
 export type QuoteUncheckedUpdateWithoutInputAssetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   providerId?: Prisma.StringFieldUpdateOperationsInput | string
   outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   inputAmount?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1288,6 +1336,7 @@ export type QuoteUncheckedUpdateWithoutInputAssetInput = {
 export type QuoteUncheckedUpdateManyWithoutInputAssetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   providerId?: Prisma.StringFieldUpdateOperationsInput | string
   outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   inputAmount?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1303,6 +1352,7 @@ export type QuoteUncheckedUpdateManyWithoutInputAssetInput = {
 
 export type QuoteUpdateWithoutOutputAssetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   inputAmount?: Prisma.StringFieldUpdateOperationsInput | string
   outputAmount?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1321,6 +1371,7 @@ export type QuoteUpdateWithoutOutputAssetInput = {
 export type QuoteUncheckedUpdateWithoutOutputAssetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   providerId?: Prisma.StringFieldUpdateOperationsInput | string
   inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   inputAmount?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1338,6 +1389,7 @@ export type QuoteUncheckedUpdateWithoutOutputAssetInput = {
 export type QuoteUncheckedUpdateManyWithoutOutputAssetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   providerId?: Prisma.StringFieldUpdateOperationsInput | string
   inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   inputAmount?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1353,6 +1405,7 @@ export type QuoteUncheckedUpdateManyWithoutOutputAssetInput = {
 
 export type QuoteUpdateWithoutFeeAssetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   inputAmount?: Prisma.StringFieldUpdateOperationsInput | string
   outputAmount?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1371,6 +1424,7 @@ export type QuoteUpdateWithoutFeeAssetInput = {
 export type QuoteUncheckedUpdateWithoutFeeAssetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   providerId?: Prisma.StringFieldUpdateOperationsInput | string
   inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1388,6 +1442,7 @@ export type QuoteUncheckedUpdateWithoutFeeAssetInput = {
 export type QuoteUncheckedUpdateManyWithoutFeeAssetInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   providerId?: Prisma.StringFieldUpdateOperationsInput | string
   inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1403,6 +1458,7 @@ export type QuoteUncheckedUpdateManyWithoutFeeAssetInput = {
 
 export type QuoteCreateManyIntentInput = {
   id: string
+  intentRevision: number
   providerId: string
   inputAssetId: string
   outputAssetId: string
@@ -1419,6 +1475,7 @@ export type QuoteCreateManyIntentInput = {
 
 export type QuoteUpdateWithoutIntentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   inputAmount?: Prisma.StringFieldUpdateOperationsInput | string
   outputAmount?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1436,6 +1493,7 @@ export type QuoteUpdateWithoutIntentInput = {
 
 export type QuoteUncheckedUpdateWithoutIntentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   providerId?: Prisma.StringFieldUpdateOperationsInput | string
   inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1453,6 +1511,7 @@ export type QuoteUncheckedUpdateWithoutIntentInput = {
 
 export type QuoteUncheckedUpdateManyWithoutIntentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   providerId?: Prisma.StringFieldUpdateOperationsInput | string
   inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1470,6 +1529,7 @@ export type QuoteUncheckedUpdateManyWithoutIntentInput = {
 export type QuoteCreateManyProviderInput = {
   id: string
   intentId: string
+  intentRevision: number
   inputAssetId: string
   outputAssetId: string
   inputAmount: string
@@ -1485,6 +1545,7 @@ export type QuoteCreateManyProviderInput = {
 
 export type QuoteUpdateWithoutProviderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   inputAmount?: Prisma.StringFieldUpdateOperationsInput | string
   outputAmount?: Prisma.StringFieldUpdateOperationsInput | string
   feeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1503,6 +1564,7 @@ export type QuoteUpdateWithoutProviderInput = {
 export type QuoteUncheckedUpdateWithoutProviderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   inputAmount?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1520,6 +1582,7 @@ export type QuoteUncheckedUpdateWithoutProviderInput = {
 export type QuoteUncheckedUpdateManyWithoutProviderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
   inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   inputAmount?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1567,6 +1630,7 @@ export type QuoteCountOutputTypeCountRouteStepsArgs<ExtArgs extends runtime.Type
 export type QuoteSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   intentId?: boolean
+  intentRevision?: boolean
   providerId?: boolean
   inputAssetId?: boolean
   outputAssetId?: boolean
@@ -1591,6 +1655,7 @@ export type QuoteSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
 export type QuoteSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   intentId?: boolean
+  intentRevision?: boolean
   providerId?: boolean
   inputAssetId?: boolean
   outputAssetId?: boolean
@@ -1613,6 +1678,7 @@ export type QuoteSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
 export type QuoteSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   intentId?: boolean
+  intentRevision?: boolean
   providerId?: boolean
   inputAssetId?: boolean
   outputAssetId?: boolean
@@ -1635,6 +1701,7 @@ export type QuoteSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
 export type QuoteSelectScalar = {
   id?: boolean
   intentId?: boolean
+  intentRevision?: boolean
   providerId?: boolean
   inputAssetId?: boolean
   outputAssetId?: boolean
@@ -1649,7 +1716,7 @@ export type QuoteSelectScalar = {
   createdAt?: boolean
 }
 
-export type QuoteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "intentId" | "providerId" | "inputAssetId" | "outputAssetId" | "inputAmount" | "outputAmount" | "feeAmount" | "feeAssetId" | "slippageBps" | "providerQuoteId" | "expiresAt" | "rawProviderData" | "createdAt", ExtArgs["result"]["quote"]>
+export type QuoteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "intentId" | "intentRevision" | "providerId" | "inputAssetId" | "outputAssetId" | "inputAmount" | "outputAmount" | "feeAmount" | "feeAssetId" | "slippageBps" | "providerQuoteId" | "expiresAt" | "rawProviderData" | "createdAt", ExtArgs["result"]["quote"]>
 export type QuoteInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   intent?: boolean | Prisma.IntentDefaultArgs<ExtArgs>
   provider?: boolean | Prisma.ProviderDefaultArgs<ExtArgs>
@@ -1687,6 +1754,7 @@ export type $QuotePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     intentId: string
+    intentRevision: number
     providerId: string
     inputAssetId: string
     outputAssetId: string
@@ -2130,6 +2198,7 @@ export interface Prisma__QuoteClient<T, Null = never, ExtArgs extends runtime.Ty
 export interface QuoteFieldRefs {
   readonly id: Prisma.FieldRef<"Quote", 'String'>
   readonly intentId: Prisma.FieldRef<"Quote", 'String'>
+  readonly intentRevision: Prisma.FieldRef<"Quote", 'Int'>
   readonly providerId: Prisma.FieldRef<"Quote", 'String'>
   readonly inputAssetId: Prisma.FieldRef<"Quote", 'String'>
   readonly outputAssetId: Prisma.FieldRef<"Quote", 'String'>

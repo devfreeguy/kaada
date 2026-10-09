@@ -491,6 +491,7 @@ model ProviderCapability {
 model Quote {
   id              String    @id @db.Uuid
   intentId        String    @db.Uuid
+  intentRevision  Int
   providerId      String    @db.Uuid
   inputAssetId    String    @db.Uuid
   outputAssetId   String    @db.Uuid
@@ -519,6 +520,7 @@ model Quote {
 model Route {
   id              String      @id @db.Uuid
   intentId        String      @db.Uuid
+  intentRevision  Int
   status          RouteStatus @default(CREATED)
   inputAssetId    String      @db.Uuid
   outputAssetId   String      @db.Uuid
@@ -537,6 +539,7 @@ model Route {
   executions    Execution[]
 
   @@index([intentId, status])
+  @@index([intentId, intentRevision, status])
 }
 
 model RouteStep {
