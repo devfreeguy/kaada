@@ -1,3 +1,5 @@
+import { AGENT_COMMANDS } from "@kaada/domain";
+import type { Interpretation } from "@kaada/domain";
 import { z } from "zod";
 
 import { agentIntentSchema } from "../intents/index.js";
@@ -12,3 +14,11 @@ export const llmIntentOutputSchema = agentIntentSchema;
 export function llmIntentJsonSchema(): Record<string, unknown> {
   return z.toJSONSchema(llmIntentOutputSchema, { io: "input" });
 }
+
+export const agentCommandSchema = z.enum(AGENT_COMMANDS);
+
+/** What an interpreter returns for one message: an intent, or a conversation command. */
+export const interpretationSchema = z.discriminatedUnion("kind", [
+  z.strictObject({ kind: z.literal("INTENT"), intent: agentIntentSchema }),
+  z.strictObject({ kind: z.literal("COMMAND"), command: agentCommandSchema }),
+]) satisfies z.ZodType<Interpretation>;

@@ -23,6 +23,12 @@ export function createIntentRepository(db: Db): IntentRepository {
       return row ? toIntent(row) : null;
     },
 
+    async save(intent) {
+      return toIntent(
+        await db.intent.update({ where: { id: intent.id }, data: intentUpdateData(intent) }),
+      );
+    },
+
     /**
      * Read-merge-write so the amount/asset consistency rule is checked on the final state. Callers
      * that update the same intent concurrently should serialise per conversation.

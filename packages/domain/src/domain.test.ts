@@ -46,7 +46,7 @@ describe("findMissingFields", () => {
       findMissingFields({ type: "SEND", amount: { value: "20", currencyOrAsset: "USD" } }),
       ["RECIPIENT"],
     );
-    assert.deepEqual(findMissingFields({ type: "SEND" }), ["RECIPIENT", "AMOUNT"]);
+    assert.deepEqual(findMissingFields({ type: "SEND" }), ["AMOUNT", "RECIPIENT"]);
     assert.deepEqual(
       findMissingFields({
         type: "SEND",
@@ -77,6 +77,17 @@ describe("findMissingFields", () => {
       }),
       [],
     );
+  });
+
+  it("lets the amount's currency name the fixed side of a CONVERT or QUOTE", () => {
+    const amount = { value: "100", currencyOrAsset: "USDC" } as const;
+    // Input fixed (default): the amount is the source, only the target is needed.
+    assert.deepEqual(findMissingFields({ type: "CONVERT", amount }), ["DESTINATION_ASSET"]);
+    assert.deepEqual(findMissingFields({ type: "QUOTE", amount }), ["DESTINATION"]);
+    // Output fixed: the amount is the target, only the source is needed.
+    const exactOutput = { ...amount, mode: "EXACT_OUTPUT" } as const;
+    assert.deepEqual(findMissingFields({ type: "CONVERT", amount: exactOutput }), ["SOURCE_ASSET"]);
+    assert.deepEqual(findMissingFields({ type: "QUOTE", amount: exactOutput }), ["SOURCE_ASSET"]);
   });
 
   it("needs nothing for informational intents", () => {

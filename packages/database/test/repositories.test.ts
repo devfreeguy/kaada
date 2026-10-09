@@ -324,6 +324,119 @@ describe("repositories (database round trips, rolled back)", { skip }, () => {
     });
   });
 
+  it("supports the operations the agent core needs", async () => {
+    await rolledBack(async (repos) => {
+      const { usd } = await seeded(repos);
+      const { userId, conversation } = await newConversation(repos);
+
+      // Get-or-create returns the existing conversation instead of failing on the unique key.
+      const again = await repos.conversations.getOrCreateByExternalId({
+        id: createId(),
+        userId,
+        channel: "TELEGRAM",
+        status: "ACTIVE",
+        externalConversationId: `chat-${userId}`,
+      });
+      assert.equal(again.id, conversation.id);
+      const fresh = await repos.conversations.getOrCreateByExternalId({
+        id: createId(),
+        userId,
+        channel: "TELEGRAM",
+        status: "ACTIVE",
+        externalConversationId: `other-${userId}`,
+      });
+      assert.notEqual(fresh.id, conversation.id);
+      await repos.conversations.lockForUpdate(conversation.id);
+
+      // A reply is found by the message it answers.
+      const inbound = await repos.messages.append({
+        id: createId(),
+        conversationId: conversation.id,
+        role: "USER",
+        content: "hi",
+        externalMessageId: "in-1",
+      });
+      assert.equal(await repos.messages.findReply(conversation.id, inbound.message.id), null);
+      const reply = await repos.messages.append({
+        id: createId(),
+        conversationId: conversation.id,
+        role: "ASSISTANT",
+        content: "hello",
+        metadata: { inReplyTo: inbound.message.id },
+      });
+      assert.equal(
+        (await repos.messages.findReply(conversation.id, inbound.message.id))?.id,
+        reply.message.id,
+      );
+
+      // save() overwrites, including clearing values that are no longer set.
+      const recipient = await repos.recipients.create({
+        id: createId(),
+        ownerUserId: userId,
+        type: "WALLET_ADDRESS",
+        identifier: "0xabc",
+        walletAddress: "0xabc",
+        isSaved: false,
+      });
+      assert.equal(
+        (await repos.recipients.findByIdentifier(userId, "WALLET_ADDRESS", "0xabc"))?.id,
+        recipient.id,
+      );
+      assert.equal(await repos.recipients.findByIdentifier(userId, "USERNAME", "0xabc"), null);
+      assert.deepEqual(
+        await repos.recipients.listSavedByOwner(userId),
+        [],
+        "unsaved recipients are not listed",
+      );
+
+      const intent = await repos.intents.create({
+        id: createId(),
+        userId,
+        conversationId: conversation.id,
+        type: "SEND",
+        status: "RESOLVED",
+        amount: { money: createMoney("2000", usd.id), mode: "EXACT_INPUT" },
+        sourceAssetId: usd.id,
+        recipientId: recipient.id,
+        constraints: { maxSlippageBps: 10 },
+        parsed: { type: "SEND" },
+        missingFields: [],
+      });
+      const cleared = await repos.intents.save({
+        ...intent,
+        status: "AWAITING_DETAILS",
+        missingFields: ["RECIPIENT"],
+      });
+      assert.equal(cleared.status, "AWAITING_DETAILS");
+      const { amount: _a, sourceAssetId: _s, recipientId: _r, constraints: _c, ...rest } = intent;
+      const wiped = await repos.intents.save({ ...rest, status: "CANCELLED", missingFields: [] });
+      assert.equal(wiped.amount, undefined);
+      assert.equal(wiped.sourceAssetId, undefined);
+      assert.equal(wiped.recipientId, undefined);
+      assert.equal(wiped.constraints, undefined);
+      assert.equal(wiped.status, "CANCELLED");
+      assert.equal(await repos.intents.findOpenByConversation(conversation.id), null);
+
+      // Users and identities by name.
+      const created = await repos.users.create({
+        id: createId(),
+        username: `solo-${userId.slice(0, 8)}`,
+      });
+      assert.equal((await repos.users.findByUsername(created.username ?? ""))?.id, created.id);
+      await repos.identities.add({
+        id: createId(),
+        userId: created.id,
+        type: "TELEGRAM",
+        externalId: `tg2-${userId}`,
+        username: "MixedCase",
+      });
+      const found = await repos.identities.findByUsername("TELEGRAM", "mixedcase");
+      assert.equal(found.length, 1, "channel usernames are matched case-insensitively");
+      assert.equal(found[0]?.userId, created.id);
+      assert.deepEqual(await repos.identities.findByUsername("EMAIL", "mixedcase"), []);
+    });
+  });
+
   it("commits nothing: a rolled-back run leaves no rows behind", async () => {
     let userId = "";
     await rolledBack(async (repos) => {

@@ -16,6 +16,10 @@ export function createUserRepository(db: Db): UserRepository {
       return row ? toUser(row) : null;
     },
 
+    async create(user) {
+      return toUser(await db.user.create({ data: userCreateData(user) }));
+    },
+
     /**
      * One atomic write. A unique conflict on (type, externalId) or username rejects the whole call
      * with Prisma error P2002; callers racing on the same account should re-read the identity.
@@ -43,6 +47,14 @@ export function createIdentityRepository(db: Db): IdentityRepository {
         where: { type_externalId: { type, externalId } },
       });
       return row ? toIdentity(row) : null;
+    },
+
+    async findByUsername(type, username) {
+      const rows = await db.identity.findMany({
+        where: { type, username: { equals: username, mode: "insensitive" } },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      });
+      return rows.map(toIdentity);
     },
 
     async listForUser(userId) {

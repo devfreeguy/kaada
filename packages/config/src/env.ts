@@ -24,6 +24,12 @@ const envSchema = z
     DATABASE_DIRECT_URL: postgresUrl.optional(),
     DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),
     DATABASE_POOL_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60_000).default(10_000),
+    // Which IntentInterpreter the agent uses. "none" disables the agent until a real one exists.
+    AGENT_INTERPRETER: z.enum(["none", "mock"]).default("none"),
+  })
+  .refine((env) => !(env.NODE_ENV === "production" && env.AGENT_INTERPRETER === "mock"), {
+    message: "the mock interpreter cannot be used in production",
+    path: ["AGENT_INTERPRETER"],
   })
   .transform((env) => ({
     nodeEnv: env.NODE_ENV,
@@ -32,6 +38,7 @@ const envSchema = z
     webUrl: env.WEB_URL,
     corsOrigins: parseOrigins(env.CORS_ORIGINS, env.WEB_URL),
     logLevel: env.LOG_LEVEL,
+    agent: { interpreter: env.AGENT_INTERPRETER },
     database: {
       url: env.DATABASE_URL,
       ...(env.DATABASE_DIRECT_URL && { directUrl: env.DATABASE_DIRECT_URL }),

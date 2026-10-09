@@ -11,7 +11,8 @@
     "DATABASE_URL",
     "DATABASE_DIRECT_URL",
     "DATABASE_POOL_MAX",
-    "DATABASE_POOL_TIMEOUT_MS"
+    "DATABASE_POOL_TIMEOUT_MS",
+    "AGENT_INTERPRETER"
   ],
   "tasks": {
     "build": {

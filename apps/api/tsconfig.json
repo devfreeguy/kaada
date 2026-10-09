@@ -2,7 +2,7 @@
   "extends": "@kaada/tsconfig/nest.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "."
   },
-  "include": ["src"]
+  "include": ["src", "test"]
 }

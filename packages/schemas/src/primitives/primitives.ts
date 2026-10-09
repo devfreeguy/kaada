@@ -1,4 +1,4 @@
-import { isHumanAmountValue, isSmallestUnitAmount } from "@kaada/domain";
+import { defaultCountryDirectory, isHumanAmountValue, isSmallestUnitAmount } from "@kaada/domain";
 import type { JsonObject, JsonValue } from "@kaada/domain";
 import { z } from "zod";
 
@@ -23,12 +23,15 @@ export const humanAmountValueSchema = z
 /** An unresolved currency or asset label such as "USD" or "USDT". */
 export const assetLabelSchema = z.string().trim().min(1).max(32);
 
-/** ISO 3166-1 alpha-2. Lowercase input is accepted and upper-cased. */
+/**
+ * ISO 3166-1 alpha-2. Known country names ("Brazil") and lowercase codes are normalised to the
+ * code; anything else must already be two letters.
+ */
 export const countryCodeSchema = z
   .string()
   .trim()
-  .toUpperCase()
-  .regex(/^[A-Z]{2}$/, "must be a two-letter country code");
+  .transform((value) => defaultCountryDirectory.normalize(value) ?? value.toUpperCase())
+  .pipe(z.string().regex(/^[A-Z]{2}$/, "must be a two-letter country code"));
 
 /** A Date, or an ISO 8601 timestamp with offset (what JSON carries). Always yields a Date. */
 export const dateSchema = z.union([

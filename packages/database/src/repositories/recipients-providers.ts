@@ -16,6 +16,14 @@ export function createRecipientRepository(db: Db): RecipientRepository {
       return row ? toRecipient(row) : null;
     },
 
+    async findByIdentifier(ownerUserId, type, identifier) {
+      const row = await db.recipient.findFirst({
+        where: { ownerUserId, type, identifier },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      });
+      return row ? toRecipient(row) : null;
+    },
+
     async listSavedByOwner(ownerUserId) {
       const rows = await db.recipient.findMany({
         where: { ownerUserId, isSaved: true },

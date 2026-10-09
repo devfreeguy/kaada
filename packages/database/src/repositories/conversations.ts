@@ -29,6 +29,32 @@ export function createConversationRepository(db: Db): ConversationRepository {
       );
     },
 
+    /**
+     * ON CONFLICT DO NOTHING keeps this safe under concurrent first messages and inside a larger
+     * transaction (a failed INSERT would abort it).
+     */
+    async getOrCreateByExternalId(conversation) {
+      await db.conversation.createMany({
+        data: [conversationCreateData(conversation)],
+        skipDuplicates: true,
+      });
+      const row = await db.conversation.findUnique({
+        where: {
+          channel_externalConversationId: {
+            channel: conversation.channel,
+            externalConversationId: conversation.externalConversationId,
+          },
+        },
+      });
+      if (!row)
+        throw new DataIntegrityError("conversation conflicted on id but has no external match");
+      return toConversation(row);
+    },
+
+    async lockForUpdate(id) {
+      await db.$queryRaw`SELECT id FROM "Conversation" WHERE id = ${id}::uuid FOR UPDATE`;
+    },
+
     async updateStatus(id, status) {
       return toConversation(await db.conversation.update({ where: { id }, data: { status } }));
     },
@@ -57,6 +83,18 @@ export function createMessageRepository(db: Db): MessageRepository {
       });
       if (!row) throw new DataIntegrityError("message conflicted on id but has no external match");
       return { message: toMessage(row), created: count === 1 };
+    },
+
+    async findReply(conversationId, inboundMessageId) {
+      const row = await db.message.findFirst({
+        where: {
+          conversationId,
+          role: "ASSISTANT",
+          metadata: { path: ["inReplyTo"], equals: inboundMessageId },
+        },
+        orderBy: { createdAt: "asc" },
+      });
+      return row ? toMessage(row) : null;
     },
 
     async listRecent(conversationId, limit) {

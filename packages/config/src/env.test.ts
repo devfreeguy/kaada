@@ -25,6 +25,27 @@ describe("loadConfig", () => {
     assert.equal(config.database.poolTimeoutMs, 2000);
   });
 
+  it("keeps the agent disabled by default and rejects the mock interpreter in production", () => {
+    assert.equal(loadConfig({ DATABASE_URL: databaseUrl }).agent.interpreter, "none");
+    assert.equal(
+      loadConfig({ DATABASE_URL: databaseUrl, AGENT_INTERPRETER: "mock" }).agent.interpreter,
+      "mock",
+    );
+    assert.throws(
+      () =>
+        loadConfig({
+          DATABASE_URL: databaseUrl,
+          AGENT_INTERPRETER: "mock",
+          NODE_ENV: "production",
+        }),
+      ConfigError,
+    );
+    assert.throws(
+      () => loadConfig({ DATABASE_URL: databaseUrl, AGENT_INTERPRETER: "gpt" }),
+      ConfigError,
+    );
+  });
+
   it("requires DATABASE_URL", () => {
     assert.throws(() => loadConfig({}), ConfigError);
   });

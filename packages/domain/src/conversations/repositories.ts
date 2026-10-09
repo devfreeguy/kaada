@@ -11,6 +11,18 @@ export interface ConversationRepository {
     externalConversationId: string,
   ): Promise<Conversation | null>;
   create(conversation: NewConversation): Promise<Conversation>;
+  /**
+   * Returns the conversation bound to the channel chat, creating it when none exists. Safe under
+   * concurrent first messages: exactly one row is created and every caller receives it.
+   */
+  getOrCreateByExternalId(
+    conversation: NewConversation & { externalConversationId: string },
+  ): Promise<Conversation>;
+  /**
+   * Takes a row lock on the conversation until the surrounding transaction ends, serialising
+   * everything that changes the conversation state. Only meaningful inside a transaction.
+   */
+  lockForUpdate(id: string): Promise<void>;
   updateStatus(id: string, status: ConversationStatus): Promise<Conversation>;
 }
 
@@ -23,6 +35,8 @@ export interface AppendMessageResult {
 export interface MessageRepository {
   /** Stores a message, or returns the existing one if its externalMessageId was already seen. */
   append(message: NewMessage): Promise<AppendMessageResult>;
+  /** The assistant message that answered `inboundMessageId`, if one was stored. */
+  findReply(conversationId: string, inboundMessageId: string): Promise<Message | null>;
   /** The latest `limit` messages, in chronological order (oldest first). */
   listRecent(conversationId: string, limit: number): Promise<Message[]>;
 }
