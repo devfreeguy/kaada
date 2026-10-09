@@ -34,16 +34,31 @@ function compact<T extends object>(value: T): T {
   return Object.fromEntries(entries.filter(([, entry]) => entry !== undefined)) as unknown as T;
 }
 
-/** A replacement amount wins; it keeps the earlier mode only when it is the same currency. */
+const sameCurrency = (a: string | undefined, b: string | undefined): boolean =>
+  a !== undefined && b !== undefined && a.trim().toLowerCase() === b.trim().toLowerCase();
+
+/**
+ * A replacement amount wins. When it names no currency ("make it 40") it keeps the earlier amount's
+ * currency; and it keeps the earlier mode unless it states one or changes currency.
+ */
 function mergeAmount(
   previous: IntentAmount | undefined,
   next: IntentAmount | undefined,
 ): IntentAmount | undefined {
   if (!next) return previous;
-  if (next.mode !== undefined || !previous?.mode) return next;
-  const sameCurrency =
-    previous.currencyOrAsset.trim().toLowerCase() === next.currencyOrAsset.trim().toLowerCase();
-  return sameCurrency ? { ...next, mode: previous.mode } : next;
+  if (!previous) return next;
+
+  const currencyOrAsset = next.currencyOrAsset ?? previous.currencyOrAsset;
+  const keepMode =
+    next.mode === undefined &&
+    previous.mode !== undefined &&
+    (next.currencyOrAsset === undefined ||
+      sameCurrency(previous.currencyOrAsset, next.currencyOrAsset));
+  return compact({
+    value: next.value,
+    currencyOrAsset,
+    mode: keepMode ? previous.mode : next.mode,
+  });
 }
 
 function mergeDestination(

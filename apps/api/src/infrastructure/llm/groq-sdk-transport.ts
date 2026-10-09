@@ -36,6 +36,18 @@ function tokenCount(usage: unknown, key: string): number | undefined {
   return typeof value === "number" ? value : undefined;
 }
 
+/** True when Groq says the model's generation did not satisfy the schema. Reads the body defensively. */
+function isSchemaRejection(body: unknown): boolean {
+  if (body === null || typeof body !== "object") return false;
+  const record: Record<string, unknown> = Object.fromEntries(Object.entries(body));
+  const inner: unknown = record["error"];
+  const code: unknown =
+    inner !== null && typeof inner === "object"
+      ? Object.fromEntries(Object.entries(inner))["code"]
+      : record["code"];
+  return code === "json_validate_failed";
+}
+
 function toTransportError(error: unknown): GroqTransportError {
   if (error instanceof APIConnectionTimeoutError) return new GroqTransportError("TIMEOUT");
   if (error instanceof APIError) {
@@ -46,6 +58,9 @@ function toTransportError(error: unknown): GroqTransportError {
     if (status === 408) return new GroqTransportError("TIMEOUT", status);
     if (status === 401 || status === 403) return new GroqTransportError("AUTH", status);
     if (status >= 500) return new GroqTransportError("UNAVAILABLE", status);
+    if (status === 400 && isSchemaRejection(error.error)) {
+      return new GroqTransportError("INVALID_OUTPUT", status);
+    }
     return new GroqTransportError("BAD_REQUEST", status);
   }
   return new GroqTransportError("UNAVAILABLE");

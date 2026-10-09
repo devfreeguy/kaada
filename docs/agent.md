@@ -165,6 +165,15 @@ is not a second source of truth: the reply is parsed against it, mapped to the s
 (nulls dropped, fields that do not belong to the type rejected), and then validated by the existing
 `interpretationSchema`. Unknown keys, unknown enum values, empty or non-JSON replies all fail.
 
+Verified live (see below): Groq accepts this schema in strict mode. Two things were learned there and are
+reflected in the schema. First, a number with no currency ("send 20 to Daniel") makes the model write
+`currencyOrAsset: null`; when the wire schema required a string there, Groq rejected the model's own
+output with HTTP 400 `json_validate_failed`. The amount's `value` and `currencyOrAsset` are therefore
+nullable on the wire, and a schema rejection by Groq is reported as unusable output (not an outage).
+Second, `constraints` (slippage, route preference, max fee), `reason` and `topic` are not part of the
+model-facing schema: nothing consumes them yet and they cost tokens on every call. The domain and the app
+schema still support constraints; expose them on the wire when routing needs them.
+
 **Amounts** stay human decimal strings. The model copies the number as written ("20.50", "10,000",
 "10k", "2.5k"); `normalizeSpokenAmount` (domain, digit-string arithmetic, no floats) expands thousands
 separators and `k`/`m`, and refuses anything ambiguous (`1.000`, `20,50`). Converting to smallest units
@@ -192,13 +201,23 @@ model's reply.
 200K tokens/day) are why the prompt is short, history is bounded, and there is one call per turn. A
 429 is a clean "try again", never a retry loop.
 
-**Not verified offline:** whether Groq accepts the strict schema for your chosen model. Run the live
-smoke check with a real key: `pnpm --filter @kaada/api smoke:groq` (prints how each phrase is
-interpreted; no database; not part of CI).
+**Live check:** `pnpm --filter @kaada/api smoke:groq` runs 21 phrases (single messages and follow-ups
+with context) against the real API and prints each interpretation with its latency, HTTP attempts and
+token usage. It uses no database and is not part of CI. It paces calls (`SMOKE_DELAY_MS`, default 7000;
+use 0 on a paid tier) and `SMOKE_ONLY="phrase|phrase"` runs a subset.
 
-**Known limits:** a number with no currency ("send 20 to Daniel") yields no amount, so the core asks
-how much; there is no currency-clarification question yet. Responses stay deterministic: Groq is not
-used to word replies.
+**Number without a currency** ("send 20 to Daniel"): `IntentAmount.currencyOrAsset` is optional, the
+core records no canonical amount, and `findMissingFields` reports `CURRENCY`. The agent asks "What
+currency is the 20 in?" (deterministic wording, response `field: "CURRENCY"`). The model is never asked
+to guess the currency. When the user answers ("dollars"), the model returns the active amount's value
+with the stated currency (prompt rule 3), and the deterministic merge completes the intent; a later
+"make it 40" keeps the earlier currency. Responses stay deterministic: Groq is not used to word replies.
+
+**Token cost and rate limits** (measured live on `openai/gpt-oss-20b`): about 1,270 prompt tokens and
+about 115 completion tokens per call, 0.45 to 1.5 s, one HTTP attempt. About 40% of the prompt is the
+schema Groq injects. The free tier allows 8K tokens per minute, so roughly five turns per minute per key;
+beyond that the SDK's single retry waits out the 429 and a turn takes 5 to 6 s. Before trimming, the
+prompt was about 1,675 tokens and the limit was reached after four calls.
 
 ## Asset cache
 

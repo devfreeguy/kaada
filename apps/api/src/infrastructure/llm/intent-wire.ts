@@ -3,7 +3,6 @@ import {
   AMOUNT_MODES,
   INTENT_TYPES,
   RECIPIENT_TYPES,
-  ROUTE_PREFERENCES,
   normalizeSpokenAmount,
 } from "@kaada/domain";
 import type { IntentType } from "@kaada/domain";
@@ -21,18 +20,25 @@ import { InterpreterOutputError } from "../../core/agent/interpreter.js";
  * decides what is a valid intent.
  */
 
+/*
+ * Constraints (max slippage, route preference, max fee) are deliberately not part of the model-facing
+ * schema yet: nothing consumes them until routing exists, and they cost schema tokens on every call.
+ * The domain and the app schema still support them; expose them here when routing needs them.
+ */
+
 export const WIRE_TYPES = [...INTENT_TYPES, ...AGENT_COMMANDS] as const;
 
 const maybeText = z.string().nullable();
-const wireMoney = z.strictObject({ value: z.string(), currencyOrAsset: z.string() });
-
+// "value" and "currencyOrAsset" may each be unknown ("send 20 to Daniel" has no currency). Allowing
+// null here, rather than forcing the model to invent a string or drop the whole object, is what keeps
+// Groq's strict validation from rejecting an honest answer.
 export const wireInterpretationSchema = z.strictObject({
   type: z.enum(WIRE_TYPES),
   recipient: z.strictObject({ type: z.enum(RECIPIENT_TYPES), value: z.string() }).nullable(),
   amount: z
     .strictObject({
-      value: z.string(),
-      currencyOrAsset: z.string(),
+      value: z.string().nullable(),
+      currencyOrAsset: maybeText,
       mode: z.enum(AMOUNT_MODES).nullable(),
     })
     .nullable(),
@@ -41,17 +47,8 @@ export const wireInterpretationSchema = z.strictObject({
   toAsset: maybeText,
   asset: maybeText,
   reference: maybeText,
-  topic: maybeText,
-  reason: maybeText,
   destination: z
     .strictObject({ country: maybeText, currency: maybeText, asset: maybeText })
-    .nullable(),
-  constraints: z
-    .strictObject({
-      maxSlippageBps: z.int().nullable(),
-      routePreference: z.enum(ROUTE_PREFERENCES).nullable(),
-      maxFee: wireMoney.nullable(),
-    })
     .nullable(),
 });
 
@@ -135,22 +132,19 @@ const FIELDS = [
   "toAsset",
   "asset",
   "reference",
-  "topic",
-  "reason",
   "destination",
-  "constraints",
 ] as const;
 type Field = (typeof FIELDS)[number];
 
 /** Which fields each intent may carry. Anything else being non-null means the model was confused. */
 const ALLOWED_FIELDS: Record<IntentType, readonly Field[]> = {
-  SEND: ["recipient", "amount", "sourceAsset", "destination", "constraints"],
-  CONVERT: ["amount", "fromAsset", "toAsset", "constraints"],
-  QUOTE: ["amount", "fromAsset", "toAsset", "destination", "constraints"],
+  SEND: ["recipient", "amount", "sourceAsset", "destination"],
+  CONVERT: ["amount", "fromAsset", "toAsset"],
+  QUOTE: ["amount", "fromAsset", "toAsset", "destination"],
   BALANCE: ["asset"],
   TRANSACTION_STATUS: ["reference"],
-  HELP: ["topic"],
-  UNKNOWN: ["reason"],
+  HELP: [],
+  UNKNOWN: [],
 };
 
 const isCommand = (type: WireInterpretation["type"]): type is (typeof AGENT_COMMANDS)[number] =>
@@ -185,22 +179,18 @@ export function wireToCandidate(wire: WireInterpretation): unknown {
   const intent: Record<string, unknown> = { type: wire.type };
 
   if (wire.recipient) intent["recipient"] = wire.recipient;
-  if (wire.amount) {
+  // No number means there is no amount to record. A number with no currency is kept as such: the
+  // application asks which currency it is in.
+  const amountText = text(wire.amount?.value ?? null);
+  if (wire.amount && amountText !== undefined) {
+    const currency = text(wire.amount.currencyOrAsset);
     intent["amount"] = {
-      value: amountValue(wire.amount.value),
-      currencyOrAsset: wire.amount.currencyOrAsset,
+      value: amountValue(amountText),
+      ...(currency !== undefined && { currencyOrAsset: currency }),
       ...(wire.amount.mode && { mode: wire.amount.mode }),
     };
   }
-  for (const field of [
-    "sourceAsset",
-    "fromAsset",
-    "toAsset",
-    "asset",
-    "reference",
-    "topic",
-    "reason",
-  ] as const) {
+  for (const field of ["sourceAsset", "fromAsset", "toAsset", "asset", "reference"] as const) {
     const value = text(wire[field]);
     if (value !== undefined) intent[field] = value;
   }
@@ -212,18 +202,6 @@ export function wireToCandidate(wire: WireInterpretation): unknown {
       ...(text(wire.destination.asset) && { asset: text(wire.destination.asset) }),
     };
     if (Object.keys(destination).length > 0) intent["destination"] = destination;
-  }
-
-  if (wire.constraints) {
-    const { maxSlippageBps, routePreference, maxFee } = wire.constraints;
-    const constraints = {
-      ...(maxSlippageBps !== null && { maxSlippageBps }),
-      ...(routePreference !== null && { routePreference }),
-      ...(maxFee && {
-        maxFee: { value: amountValue(maxFee.value), currencyOrAsset: maxFee.currencyOrAsset },
-      }),
-    };
-    if (Object.keys(constraints).length > 0) intent["constraints"] = constraints;
   }
 
   return { kind: "INTENT", intent };

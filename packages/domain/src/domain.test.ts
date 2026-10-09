@@ -90,6 +90,36 @@ describe("findMissingFields", () => {
     assert.deepEqual(findMissingFields({ type: "QUOTE", amount: exactOutput }), ["SOURCE_ASSET"]);
   });
 
+  it("asks for the currency when a number has none, for every operation", () => {
+    const amount = { value: "20" };
+    assert.deepEqual(
+      findMissingFields({ type: "SEND", amount, recipient: { type: "USERNAME", value: "daniel" } }),
+      ["CURRENCY"],
+    );
+    assert.deepEqual(findMissingFields({ type: "SEND", amount }), ["CURRENCY", "RECIPIENT"]);
+    assert.deepEqual(findMissingFields({ type: "CONVERT", amount, toAsset: "wBRL" }), [
+      "CURRENCY",
+      "SOURCE_ASSET",
+    ]);
+    assert.deepEqual(
+      findMissingFields({
+        type: "QUOTE",
+        amount,
+        fromAsset: "USDT",
+        destination: { country: "BR" },
+      }),
+      ["CURRENCY"],
+    );
+    assert.deepEqual(
+      findMissingFields({
+        type: "SEND",
+        amount: { value: "20", currencyOrAsset: "USD" },
+        recipient: { type: "USERNAME", value: "daniel" },
+      }),
+      [],
+    );
+  });
+
   it("needs nothing for informational intents", () => {
     const informational: AgentIntent[] = [
       { type: "BALANCE" },

@@ -39,6 +39,9 @@ export function clarificationText(clarification: Clarification): string {
       }
       return `How much would you like to ${VERB[operation]}?`;
 
+    case "CURRENCY":
+      return `What currency is the ${subject ?? "amount"} in?`;
+
     case "RECIPIENT":
       if (reason === "AMBIGUOUS") {
         return `I found more than one ${subject ?? "match"}. Which one do you mean?`;

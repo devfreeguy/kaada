@@ -22,6 +22,7 @@ const storedResponseSchema = z.discriminatedUnion("type", [
     field: z.enum([
       "RECIPIENT",
       "AMOUNT",
+      "CURRENCY",
       "SOURCE_ASSET",
       "DESTINATION_ASSET",
       "DESTINATION",

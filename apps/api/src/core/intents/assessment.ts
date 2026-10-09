@@ -43,6 +43,7 @@ export interface AssessmentDeps {
 
 const FIELD_PRIORITY: readonly MissingField[] = [
   "AMOUNT",
+  "CURRENCY",
   "RECIPIENT",
   "SOURCE_ASSET",
   "DESTINATION_ASSET",
@@ -101,7 +102,14 @@ export async function assessIntent(
     if (!duplicate) issues.push({ operation, ...issue });
   };
 
-  for (const field of findMissingFields(intent)) raise({ field, reason: "MISSING" });
+  for (const field of findMissingFields(intent)) {
+    // A number without a currency is asked about by its value: "What currency is the 20 in?"
+    raise({
+      field,
+      reason: "MISSING",
+      ...(field === "CURRENCY" && intent.amount && { subject: intent.amount.value }),
+    });
+  }
 
   // Recipient
   if (intent.type === "SEND" && intent.recipient) {
@@ -141,10 +149,13 @@ export async function assessIntent(
   const destinationLabel = destinationLabelOf(intent);
   const destinationCurrency =
     destinationLabel ?? (country ? deps.countries.currencyOf(country) : undefined);
-  const amount = intent.amount;
-  const mode = amount
-    ? (amount.mode ?? deriveAmountMode(amount.currencyOrAsset, destinationCurrency))
-    : undefined;
+  // An amount without a currency cannot be interpreted yet; its question was raised above.
+  const amount = intent.amount?.currencyOrAsset ? intent.amount : undefined;
+  const amountLabel = amount?.currencyOrAsset;
+  const mode =
+    amount && amountLabel !== undefined
+      ? (amount.mode ?? deriveAmountMode(amountLabel, destinationCurrency))
+      : undefined;
 
   const resolveLabel = async (
     label: string | undefined,
@@ -168,9 +179,9 @@ export async function assessIntent(
 
   // Amount: its currency decides the asset it is denominated in
   let amountAsset: Asset | undefined;
-  if (amount && mode) {
+  if (amount && amountLabel !== undefined && mode) {
     const field = mode === "EXACT_OUTPUT" ? "DESTINATION_ASSET" : "SOURCE_ASSET";
-    amountAsset = await resolveLabel(amount.currencyOrAsset, field);
+    amountAsset = await resolveLabel(amountLabel, field);
     if (amountAsset) {
       try {
         const money = moneyFromHuman(amount.value, amountAsset);

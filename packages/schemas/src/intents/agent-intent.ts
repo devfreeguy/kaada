@@ -31,9 +31,10 @@ export const humanAmountSchema = z.strictObject({
   currencyOrAsset: assetLabelSchema,
 });
 
+/** A number, usually with its currency. The currency is optional: it is asked for, never guessed. */
 export const intentAmountSchema = z.strictObject({
   value: humanAmountValueSchema,
-  currencyOrAsset: assetLabelSchema,
+  currencyOrAsset: assetLabelSchema.optional(),
   mode: z.enum(AMOUNT_MODES).optional(),
 });
 

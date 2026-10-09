@@ -51,6 +51,26 @@ describe("mergeAgentIntent", () => {
     assert.deepEqual(outcome.intent, { type: "SEND", amount: usd("40", "EXACT_OUTPUT") });
   });
 
+  it("lets a currency-less amount keep the earlier currency and mode ('make it 40')", () => {
+    const outcome = mergeAgentIntent(
+      send({ amount: usd("20", "EXACT_INPUT") }),
+      send({ amount: { value: "40" } }),
+    );
+    assert.deepEqual(outcome.intent, { type: "SEND", amount: usd("40", "EXACT_INPUT") });
+  });
+
+  it("completes an amount whose currency was missing once the currency arrives", () => {
+    const outcome = mergeAgentIntent(
+      send({ amount: { value: "20" }, recipient: { type: "USERNAME", value: "Daniel" } }),
+      send({ amount: { value: "20", currencyOrAsset: "USD" } }),
+    );
+    assert.deepEqual(outcome.intent, {
+      type: "SEND",
+      amount: { value: "20", currencyOrAsset: "USD" },
+      recipient: { type: "USERNAME", value: "Daniel" },
+    });
+  });
+
   it("does not carry the mode across a currency change", () => {
     const outcome = mergeAgentIntent(
       send({ amount: usd("20", "EXACT_OUTPUT") }),

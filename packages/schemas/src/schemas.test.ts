@@ -97,7 +97,14 @@ describe("agentIntentSchema", () => {
     }
     bad(agentIntentSchema, { type: "SEND", amount: { value: 20, currencyOrAsset: "USD" } });
     bad(agentIntentSchema, { type: "SEND", amount: { value: "20", currencyOrAsset: "" } });
-    bad(agentIntentSchema, { type: "SEND", amount: { value: "20" } });
+    bad(agentIntentSchema, { type: "SEND", amount: { currencyOrAsset: "USD" } });
+  });
+
+  it("accepts a number without a currency, but never an empty one", () => {
+    ok(agentIntentSchema, { type: "SEND", amount: { value: "20" } });
+    ok(agentIntentSchema, { type: "SEND", amount: { value: "20", mode: "EXACT_INPUT" } });
+    bad(agentIntentSchema, { type: "SEND", amount: { value: "20", currencyOrAsset: "" } });
+    bad(agentIntentSchema, { type: "SEND", amount: { value: "20", currencyOrAsset: "  " } });
   });
 
   it("rejects unknown keys at every level", () => {

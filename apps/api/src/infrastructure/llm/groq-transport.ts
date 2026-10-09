@@ -28,7 +28,13 @@ export interface GroqTransport {
 }
 
 export type GroqTransportErrorKind =
-  "TIMEOUT" | "RATE_LIMITED" | "UNAVAILABLE" | "AUTH" | "BAD_REQUEST";
+  | "TIMEOUT"
+  | "RATE_LIMITED"
+  | "UNAVAILABLE"
+  | "AUTH"
+  | "BAD_REQUEST"
+  /** Groq rejected what the model generated for not matching the schema (json_validate_failed). */
+  | "INVALID_OUTPUT";
 
 /** A failed call to Groq, reduced to a kind and status. It deliberately carries no request data. */
 export class GroqTransportError extends Error {

@@ -72,6 +72,8 @@ export class GroqIntentInterpreter implements IntentInterpreter {
     } catch (error) {
       const kind = error instanceof GroqTransportError ? error.kind : "UNAVAILABLE";
       this.record(started, { success: false, errorKind: kind });
+      // The model answered, but Groq refused the answer as off-schema: unusable output, not an outage.
+      if (kind === "INVALID_OUTPUT") throw new InterpreterOutputError("PROVIDER_SCHEMA_REJECTED");
       throw new InterpreterUnavailableError(kind);
     }
 

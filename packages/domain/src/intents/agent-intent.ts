@@ -11,8 +11,14 @@ import type { AmountMode } from "../quotes/amount-mode.js";
  * Optional properties accept explicit `undefined` so that Zod-parsed output is assignable.
  */
 
-/** A human amount plus which side of the trade it fixes, when the speaker made that clear. */
-export interface IntentAmount extends HumanAmount {
+/**
+ * What the speaker said about an amount: the number, usually its currency, and which side of the
+ * trade it fixes when that was clear. The currency is optional because people say "send 20 to Daniel"
+ * without one; it must then be asked for, never guessed.
+ */
+export interface IntentAmount {
+  value: string;
+  currencyOrAsset?: string | undefined;
   mode?: AmountMode | undefined;
 }
 

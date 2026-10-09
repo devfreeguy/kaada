@@ -178,6 +178,21 @@ describe("Groq SDK transport: failures and retries", () => {
     );
   });
 
+  it("tells a schema rejection by Groq apart from other bad requests, without keeping the generation", async () => {
+    const rejection = json(400, {
+      error: {
+        message: "Generated JSON does not match the expected schema.",
+        type: "invalid_request_error",
+        code: "json_validate_failed",
+        failed_generation: '{"type":"SEND","recipient":{"value":"PrivateName"}}',
+      },
+    });
+    const result = await kindOf([rejection]);
+    assert.deepEqual([result.kind, result.status, result.calls], ["INVALID_OUTPUT", 400, 1]);
+    const text = `${result.error.message} ${JSON.stringify(result.error)}`;
+    assert.ok(!text.includes("PrivateName"), "the model's output is not carried in the error");
+  });
+
   it("reports a timeout without waiting beyond the configured budget plus one retry", async () => {
     let calls = 0;
     // Like a real fetch, a hung request ends when the SDK aborts it at the timeout.

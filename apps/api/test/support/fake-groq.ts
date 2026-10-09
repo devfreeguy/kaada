@@ -17,18 +17,15 @@ export function wire(
     toAsset: null,
     asset: null,
     reference: null,
-    topic: null,
-    reason: null,
     destination: null,
-    constraints: null,
     ...fields,
   };
   return JSON.stringify(full);
 }
 
 export const amount = (
-  value: string,
-  currencyOrAsset: string,
+  value: string | null,
+  currencyOrAsset: string | null,
   mode: "EXACT_INPUT" | "EXACT_OUTPUT" | null = null,
 ) => ({ value, currencyOrAsset, mode });
 
