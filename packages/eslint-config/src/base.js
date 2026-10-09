@@ -22,6 +22,14 @@ export default tseslint.config(
     },
   },
   {
+    // node:test's describe/it return promises that the runner tracks itself.
+    files: ["**/*.test.ts"],
+    rules: {
+      "@typescript-eslint/no-floating-promises": "off",
+      "@typescript-eslint/no-misused-promises": "off",
+    },
+  },
+  {
     files: ["**/*.{js,mjs,cjs}"],
     extends: [tseslint.configs.disableTypeChecked],
   },

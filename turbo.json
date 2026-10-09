@@ -1,22 +1,39 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "concurrency": "20",
-  "globalPassThroughEnv": ["NODE_ENV", "PORT", "API_HOST", "WEB_URL", "CORS_ORIGINS", "LOG_LEVEL"],
+  "globalPassThroughEnv": [
+    "NODE_ENV",
+    "PORT",
+    "API_HOST",
+    "WEB_URL",
+    "CORS_ORIGINS",
+    "LOG_LEVEL",
+    "DATABASE_URL",
+    "DATABASE_DIRECT_URL",
+    "DATABASE_POOL_MAX",
+    "DATABASE_POOL_TIMEOUT_MS"
+  ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "generate"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
     },
     "typecheck": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build", "generate"]
     },
     "lint": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build", "generate"]
     },
     "dev": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "generate"],
       "cache": false,
       "persistent": true
+    },
+    "generate": {
+      "outputs": ["src/generated/**"]
+    },
+    "test": {
+      "dependsOn": ["^build", "generate"]
     }
   }
 }

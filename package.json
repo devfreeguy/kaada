@@ -15,7 +15,15 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test": "turbo run test",
+    "db:generate": "pnpm --filter @kaada/database generate",
+    "db:validate": "pnpm --filter @kaada/database db:validate",
+    "db:migrate": "pnpm --filter @kaada/database db:migrate",
+    "db:migrate:deploy": "pnpm --filter @kaada/database db:migrate:deploy",
+    "db:migrate:status": "pnpm --filter @kaada/database db:migrate:status",
+    "db:seed": "pnpm --filter @kaada/database db:seed",
+    "db:studio": "pnpm --filter @kaada/database db:studio"
   },
   "devDependencies": {
     "prettier": "^3.9.9",

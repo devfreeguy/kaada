@@ -4,8 +4,8 @@ Kaada is an agentic cross-border payment router built on Celo. It turns a paymen
 (from an agent or a chat channel) into a quoted, policy-checked route across FX and fiat
 on/off-ramp providers, and executes it on-chain.
 
-This repository currently contains only the monorepo foundation: tooling, package boundaries,
-and a minimal API and web app. There is no business logic or database schema yet.
+This repository currently contains the monorepo foundation and the persistence layer (Prisma schema,
+migrations, seed). There is no business logic yet.
 
 ## Architecture
 
@@ -47,8 +47,10 @@ apps  →  shared packages  →  domain
 
 ```sh
 pnpm install
-cp .env.example .env
+cp .env.example .env   # then set DATABASE_URL (and DATABASE_DIRECT_URL) in .env
 ```
+
+The API requires a PostgreSQL database (Neon): `DATABASE_URL` is mandatory at startup.
 
 ## Development
 
@@ -59,9 +61,21 @@ pnpm lint         # ESLint (type-aware)
 pnpm typecheck    # tsc --noEmit in every package
 pnpm format       # Prettier write
 pnpm format:check # Prettier check
+pnpm test         # unit tests (config, database)
 ```
 
-Health check: `GET http://localhost:4000/api/health`.
+Database (see [docs/database.md](docs/database.md)):
+
+```sh
+pnpm db:generate        # generate the Prisma client
+pnpm db:migrate         # create/apply migrations in development
+pnpm db:migrate:deploy  # apply committed migrations (Neon / CI)
+pnpm db:seed            # idempotent foundation seed
+pnpm db:studio
+```
+
+Health: `GET /api/health` (liveness) and `GET /api/health/ready` (readiness, checks the database;
+503 when it is unreachable).
 
 Workspace packages are consumed from their built `dist/`. Turbo builds dependencies before
 `dev`, `lint`, and `typecheck`, and each package's `dev` task rebuilds on change. The API restarts

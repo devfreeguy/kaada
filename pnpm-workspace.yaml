@@ -8,10 +8,15 @@ catalog:
   eslint: ^9.39.0
   pino: ^10.4.0
   pino-pretty: ^13.2.0
+  tsx: ^4.23.15
   typescript: ~6.0.3
   zod: ^4.6.5
 
 # Dependency build scripts are denied unless listed here.
-# unrs-resolver (via eslint-config-next) ships prebuilt binaries; its postinstall is not needed.
+# Prisma downloads its schema (migration) engine in the @prisma/engines postinstall.
+# unrs-resolver (eslint-config-next) and esbuild (tsx) ship prebuilt binaries; no postinstall needed.
 allowBuilds:
+  "@prisma/engines": true
+  prisma: true
+  esbuild: false
   unrs-resolver: false

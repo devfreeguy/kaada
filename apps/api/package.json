@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@kaada/config": "workspace:*",
+    "@kaada/database": "workspace:*",
     "@kaada/logger": "workspace:*",
     "@nestjs/common": "^12.1.2",
     "@nestjs/core": "^12.1.2",
