@@ -72,23 +72,39 @@ side; several USD stablecoins are interchangeable and are all returned), `NO_PRO
 
 ## Seeded data and provenance
 
-`pnpm db:seed` also runs `seedCeloAssets` and `seedProviderCapabilities` (idempotent).
+`pnpm db:seed` also runs `seedCeloAssets` and `seedProviderCapabilities` (both idempotent and cheap to
+re-run). Source: Textile's official address book for its live Celo deployment (chain 42220); every
+address and `decimals()` was also read on chain from `https://forno.celo.org` on 2026-10-09.
 
-| Asset | Address (Celo 42220)                         | Decimals | Source                                                                                                      |
-| ----- | -------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------- |
-| USDT  | `0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e` | 6        | Celo announcement "Tether Token (USDT) Is Now Available on Celo"; on-chain name `Tether USD`, symbol `USD₮` |
-| USDC  | `0xceba9300f2b948710d2653dd7b07f33a8b32118c` | 6        | Circle developer docs, USDC contract addresses (Celo mainnet); on-chain name/symbol `USDC`                  |
+| Asset | Address                                      | Decimals | fiatCode | Country | Kind             |
+| ----- | -------------------------------------------- | -------- | -------- | ------- | ---------------- |
+| USDT  | `0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e` | 6        | USD      |         | USD_STABLECOIN   |
+| USDC  | `0xceba9300f2b948710d2653dd7b07f33a8b32118c` | 6        | USD      |         | USD_STABLECOIN   |
+| cNGN  | `0xf6829d7393dae24509eb1e52ee8e572e2e271a4f` | 6        | NGN      | NG      | LOCAL_STABLECOIN |
+| wARS  | `0x0dc4f92879b7670e5f4e4e6e3c801d229129d90d` | 18       | ARS      | AR      | LOCAL_STABLECOIN |
+| wBRL  | `0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e0` | 18       | BRL      | BR      | LOCAL_STABLECOIN |
+| IDRX  | `0x18bc5bcc660cf2b9ce3cd51a404afe1a0cbd3c22` | 2        | IDR      | ID      | LOCAL_STABLECOIN |
 
-Both were also confirmed on chain on 2026-10-09 (eth_call to `https://forno.celo.org`: chain id, contract
-code, `name()`, `symbol()`, `decimals()`), and both carry `fiatCode = USD`. "USDT" is Kaada's canonical
-label; the on-chain symbol is the Tether sign.
+Addresses are stored lowercase. "USDT" is Kaada's canonical label; its on-chain symbol is `USD₮`.
+**cNGN is the Textile token above.** The separate Mento Nigerian Naira token
+(`0xe2702bd97ee33c88c8f6f92da3b733608aa76f71`, on-chain symbol NGNm) is a different asset and is not seeded.
 
-**Not seeded (blocker: no authoritative address or decimals found; none may be guessed)**: wBRL, wARS,
-wMXN, wCOP, wPEN, wCLP, cNGN, IDRX, USA₮. **No provider capability is seeded**: the Textile corridors and
-their directions and exact modes, and Ripio's on/off-ramp and payout coverage, could not be confirmed
-from the providers' own documentation or API. `verifiedCapabilities` in `seed/capabilities.ts` is empty
-until each entry can be cited; a capability whose assets are missing is skipped, never invented. As a
-consequence, every real send currently resolves to `NO_SETTLEMENT_ASSET` / `NO_PROVIDER_FOR_PAIR`.
+**Textile capabilities (40 rows)**: cNGN, USDC, wARS, wBRL and IDRX each trade against USDT. Both
+directions of each corridor are separate rows, each with `QUOTE`, `SWAP`, `EXACT_INPUT` (sellAmount) and
+`EXACT_OUTPUT` (buyAmount), from the Textile v2 RFQ documentation: 5 x 2 x 4 = 40. `CONDITIONAL_EXECUTION`
+and Textile `ON_RAMP` / `OFF_RAMP` / `BANK_PAYOUT` (the separate Ramp API) are not seeded. Ripio capabilities
+are not seeded.
+
+**Documented, not persisted or used** (Celo, Textile): LimitOrderReactor
+`0xa9AA0a64769cBed4d3B1Ceb4Df01CdE915C235b3`, fee controller `0x7b005466F905DD882A959888154587fA76cd3Ea7`,
+Permit2 `0x000000000022D473030F116dDEE9F6B43aC78BA3`, fee 1 bps (`textileCeloContracts` in
+`celo-assets.ts`). Nothing executes against them yet.
+
+**Not seeded (unverified)**: wMXN, wCOP, wPEN, wCLP, USA₮. They have no Textile support in Kaada.
+
+With this data: BRL resolves to wBRL, ARS to wARS, NGN to cNGN, IDR to IDRX, and USD to USDT + USDC
+(offered, not chosen). A candidate set exists for each of those destinations from USDT; USDC has no
+corridor to the local tokens, so it is not offered for them.
 
 Capability uniqueness: migration `20261011000000_provider_capability_uniqueness` adds a NULL-safe unique
 expression index over provider, type, chain, input, output and country, so duplicates are impossible

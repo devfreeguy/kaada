@@ -130,6 +130,6 @@ ignores the manual CHECKs and partial indexes when diffing.
 `pnpm db:seed` upserts providers (`textile` FX, `ripio` RAMP, `celo` RPC) and the fiat assets
 USD, NGN, ARS, BRL, IDR (ISO 4217, 2 decimals). It never changes the decimals of an existing asset.
 
-It also seeds the verified Celo tokens USDT and USDC and the (currently empty) verified provider
-capabilities. Everything else (wFIAT tokens, cNGN, IDRX, every Textile and Ripio capability) stays
-unseeded until its facts are verified; see [settlement.md](settlement.md) for provenance and blockers.
+It also seeds the verified Celo tokens (USDT, USDC, cNGN, wARS, wBRL, IDRX) and the 40 verified Textile
+RFQ capabilities (both directions of each USDT corridor). wMXN, wCOP, wPEN, wCLP, USA₮ and every Ripio and
+Textile ramp capability stay unseeded; see [settlement.md](settlement.md) for provenance.

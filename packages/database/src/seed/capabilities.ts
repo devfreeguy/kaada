@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { evmAddressCodec } from "@kaada/domain";
+import { CELO_CHAIN_ID, evmAddressCodec } from "@kaada/domain";
 import type { CapabilityType } from "@kaada/domain";
 
 import type { PrismaClient } from "../generated/prisma/client.js";
@@ -22,19 +22,57 @@ export interface CapabilityDefinition {
   source: string;
 }
 
+const celoToken = (contractAddress: string): AssetRef => ({
+  chainId: CELO_CHAIN_ID,
+  contractAddress,
+});
+
+const USDT = celoToken("0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e");
+
+/** Textile's live Celo corridors, each against USDT (official Textile address book). */
+const TEXTILE_CELO_COUNTERPARTS = {
+  cNGN: celoToken("0xF6829D7393dAe24509eb1E52eE8e572e2E271a4f"),
+  USDC: celoToken("0xcebA9300f2b948710d2653dD7B07f33A8B32118C"),
+  wARS: celoToken("0x0DC4F92879B7670e5f4e4e6e3c801D229129D90D"),
+  wBRL: celoToken("0xD76f5Faf6888e24D9F04Bf92a0c8B921FE4390e0"),
+  IDRX: celoToken("0x18Bc5bcC660cf2B9cE3cd51a404aFe1a0cBD3C22"),
+} as const;
+
+/** What Textile v2 RFQ supports: firm quote, swap, exact input (sellAmount), exact output (buyAmount). */
+const TEXTILE_RFQ_CAPABILITIES = ["QUOTE", "SWAP", "EXACT_INPUT", "EXACT_OUTPUT"] as const;
+
+const TEXTILE_SOURCE =
+  "Textile official address book (live Celo corridors) and Textile v2 RFQ documentation";
+
 /**
- * Provider capabilities that have been VERIFIED against the provider itself. Each directed pair and
- * each capability type is its own entry; nothing implies another (QUOTE is not SWAP, one direction
- * is not the reverse, SWAP is not EXACT_OUTPUT).
+ * Provider capabilities VERIFIED against the provider. Each directed pair and each capability type is
+ * its own row; nothing implies another (one direction is not the reverse, QUOTE is not SWAP).
  *
- * Empty on purpose. The Textile corridors under discussion (USDC/USDT, cNGN, wARS, wBRL, IDRX) were
- * reported as working, but neither their token addresses nor the supported directions and exact
- * modes could be confirmed from Textile's documentation or API in this build, and the wFIAT/cNGN/IDRX
- * assets themselves are not seeded (see celo-assets.ts). A capability whose assets are missing is
- * skipped, never invented. Ripio's ON_RAMP / OFF_RAMP / BANK_PAYOUT likewise wait for verification of
- * the country and asset coverage of each mode.
+ * Textile, Celo: cNGN, USDC, wARS, wBRL and IDRX each trade against USDT, listed in BOTH directions
+ * explicitly (5 corridors x 2 directions x 4 capabilities = 40 rows). CONDITIONAL_EXECUTION is not
+ * seeded: the RFQ capabilities above do not establish it. Textile ON_RAMP / OFF_RAMP / BANK_PAYOUT
+ * belong to the separate Ramp API and are not seeded here. Nothing is seeded for wMXN, wCOP, wPEN,
+ * wCLP or USA₮.
+ *
+ * Documented only (settlement contracts, fee 1 bps): see `textileCeloContracts` in celo-assets.ts.
  */
-export const verifiedCapabilities: readonly CapabilityDefinition[] = [];
+export const verifiedCapabilities: readonly CapabilityDefinition[] = Object.values(
+  TEXTILE_CELO_COUNTERPARTS,
+).flatMap((counterpart) =>
+  [
+    { input: USDT, output: counterpart },
+    { input: counterpart, output: USDT },
+  ].flatMap((direction) =>
+    TEXTILE_RFQ_CAPABILITIES.map((capability): CapabilityDefinition => ({
+      provider: "textile",
+      capability,
+      chainId: CELO_CHAIN_ID,
+      input: direction.input,
+      output: direction.output,
+      source: TEXTILE_SOURCE,
+    })),
+  ),
+);
 
 export interface CapabilitySeedReport {
   created: number;
@@ -65,14 +103,28 @@ export async function seedProviderCapabilities(
 ): Promise<CapabilitySeedReport> {
   const report: CapabilitySeedReport = { created: 0, existing: 0, skipped: [] };
 
+  // Providers and assets repeat across definitions; look each up once per run.
+  const providerMemo = new Map<string, Promise<{ id: string } | null>>();
+  const assetMemo = new Map<string, Promise<string | undefined>>();
+  const providerFor = (slug: string) => {
+    if (!providerMemo.has(slug))
+      providerMemo.set(slug, db.provider.findUnique({ where: { slug } }));
+    return providerMemo.get(slug) as Promise<{ id: string } | null>;
+  };
+  const assetFor = (ref: AssetRef) => {
+    const key = JSON.stringify(ref);
+    if (!assetMemo.has(key)) assetMemo.set(key, resolveAsset(db, ref));
+    return assetMemo.get(key) as Promise<string | undefined>;
+  };
+
   for (const definition of definitions) {
-    const provider = await db.provider.findUnique({ where: { slug: definition.provider } });
+    const provider = await providerFor(definition.provider);
     if (!provider) {
       report.skipped.push({ definition, reason: `provider ${definition.provider} is not seeded` });
       continue;
     }
-    const inputAssetId = definition.input ? await resolveAsset(db, definition.input) : undefined;
-    const outputAssetId = definition.output ? await resolveAsset(db, definition.output) : undefined;
+    const inputAssetId = definition.input ? await assetFor(definition.input) : undefined;
+    const outputAssetId = definition.output ? await assetFor(definition.output) : undefined;
     if (definition.input && !inputAssetId) {
       report.skipped.push({ definition, reason: "input asset is not seeded" });
       continue;

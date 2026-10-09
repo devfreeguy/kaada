@@ -110,11 +110,13 @@ describe("repositories (database round trips, rolled back)", { skip }, () => {
     assert.deepEqual(await cached.listActive(), await live.listActive());
   });
 
-  it("serves seeded providers and no capabilities", async () => {
+  it("serves seeded providers and only the verified Textile capabilities", async () => {
     await rolledBack(async (repos) => {
       const slugs = (await repos.providers.listActive()).map((p) => p.slug);
       assert.deepEqual(slugs, ["celo", "ripio", "textile"]);
-      assert.deepEqual(await repos.providers.listCapabilities(), []);
+      const capabilities = await repos.providers.listCapabilities();
+      assert.equal(capabilities.length, 40);
+      assert.equal(new Set(capabilities.map((c) => c.providerId)).size, 1, "all Textile");
     });
   });
 
