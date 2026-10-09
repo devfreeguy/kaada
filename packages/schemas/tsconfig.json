@@ -2,7 +2,11 @@
   "extends": "@kaada/tsconfig/node.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    // Zod types optional keys as `key?: T | undefined`, but parsed output never contains explicit
+    // undefined keys. Without this, `satisfies z.ZodType<DomainType>` conformance checks fail on
+    // domain types that use exact optional properties.
+    "exactOptionalPropertyTypes": false
   },
   "include": ["src"]
 }

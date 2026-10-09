@@ -61,7 +61,7 @@ pnpm lint         # ESLint (type-aware)
 pnpm typecheck    # tsc --noEmit in every package
 pnpm format       # Prettier write
 pnpm format:check # Prettier check
-pnpm test         # unit tests (config, database)
+pnpm test         # unit tests (domain, schemas, config, database)
 ```
 
 Database (see [docs/database.md](docs/database.md)):
@@ -72,6 +72,7 @@ pnpm db:migrate         # create/apply migrations in development
 pnpm db:migrate:deploy  # apply committed migrations (Neon / CI)
 pnpm db:seed            # idempotent foundation seed
 pnpm db:studio
+pnpm --filter @kaada/database test:integration   # repository round trips (rolled back)
 ```
 
 Health: `GET /api/health` (liveness) and `GET /api/health/ready` (readiness, checks the database;

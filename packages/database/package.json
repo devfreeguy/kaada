@@ -25,7 +25,8 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:migrate:status": "prisma migrate status",
     "db:seed": "prisma db seed",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "test:integration": "node --import tsx --test \"test/**/*.test.ts\""
   },
   "devDependencies": {
     "@kaada/eslint-config": "workspace:*",
@@ -37,7 +38,10 @@
     "typescript": "catalog:"
   },
   "dependencies": {
+    "@kaada/domain": "workspace:*",
+    "@kaada/schemas": "workspace:*",
     "@prisma/adapter-pg": "~7.10.0",
-    "@prisma/client": "~7.10.0"
+    "@prisma/client": "~7.10.0",
+    "zod": "catalog:"
   }
 }
