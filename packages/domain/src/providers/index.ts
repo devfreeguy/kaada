@@ -26,3 +26,12 @@ export type {
 } from "./provider.js";
 export { RAMP_STATUSES, RAMP_TYPES } from "./ramp.js";
 export type { RampRequest, RampSession, RampSessionResult, RampStatus, RampType } from "./ramp.js";
+export { createProviderCapabilityRegistry } from "./capability-registry.js";
+export type {
+  CapabilityCacheOptions,
+  PairQuery,
+  ProviderCapabilityEntry,
+  ProviderCapabilityRegistry,
+  ProviderPairSupport,
+  SettlementCapabilityQuery,
+} from "./capability-registry.js";

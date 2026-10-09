@@ -29,6 +29,7 @@ const token = (symbol: string, chainId: number, contractAddress: string): Asset 
   name: symbol,
   kind: "USD_STABLECOIN",
   decimals: 6,
+  fiatCode: "USD",
   chainId,
   contractAddress,
   isActive: true,

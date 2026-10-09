@@ -6,8 +6,16 @@ export interface AssetRepository {
   findById(id: string): Promise<Asset | null>;
   /** Case-insensitive symbol match. */
   findBySymbol(symbol: string, options?: { chainId?: number }): Promise<Asset[]>;
-  /** Case-insensitive ISO 4217 code match. */
+  /**
+   * The FIAT asset(s) for an ISO 4217 code (case-insensitive). Tokens that merely represent a
+   * currency are NOT returned: "BRL" is the real, never wBRL. See findByDenomination.
+   */
   findByFiatCode(code: string): Promise<Asset[]>;
+  /**
+   * Tokens whose metadata says they represent a currency (fiatCode set on a non-FIAT asset), e.g. a
+   * BRL stablecoin. Optionally narrowed to one chain. Explicit data, never inferred from symbols.
+   */
+  findByDenomination(code: string, options?: { chainId?: number }): Promise<Asset[]>;
   listActive(): Promise<Asset[]>;
   /** Every asset including inactive ones; the table is small and changes rarely. */
   listAll(): Promise<Asset[]>;
@@ -30,6 +38,11 @@ export interface AssetRegistry {
   findByFiatCode(
     code: string,
     options?: Pick<FindAssetOptions, "includeInactive">,
+  ): Promise<Asset[]>;
+  /** Active (by default) tokens that represent the currency `code`, e.g. on-chain USD or BRL assets. */
+  findByDenomination(
+    code: string,
+    options?: Pick<FindAssetOptions, "chainId" | "includeInactive">,
   ): Promise<Asset[]>;
   /** The asset, or ASSET_NOT_SUPPORTED when it does not exist or is inactive. */
   requireActive(id: string): Promise<Asset>;
@@ -58,6 +71,16 @@ export function createAssetRegistry(repository: AssetRepository): AssetRegistry 
 
     async findByFiatCode(code, options = {}) {
       return visible(await repository.findByFiatCode(code), options);
+    },
+
+    async findByDenomination(code, options = {}) {
+      return visible(
+        await repository.findByDenomination(
+          code,
+          options.chainId === undefined ? undefined : { chainId: options.chainId },
+        ),
+        options,
+      );
     },
 
     async requireActive(id) {

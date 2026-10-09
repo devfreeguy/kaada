@@ -107,6 +107,39 @@ const cases: Case[] = [
       ],
     },
   },
+  // Build 6 corrections and negations (a short regression set; run with SMOKE_ONLY).
+  {
+    say: "Use USDT.",
+    context: {
+      activeIntent: { ...sendWithAmount, recipient: { type: "USERNAME", value: "Daniel" } },
+    },
+  },
+  {
+    say: "No, use USDC.",
+    context: {
+      activeIntent: {
+        ...sendWithAmount,
+        recipient: { type: "USERNAME", value: "Daniel" },
+        sourceAsset: "USDT",
+      },
+    },
+  },
+  {
+    say: "Don't use USDT.",
+    context: {
+      activeIntent: {
+        ...sendWithAmount,
+        recipient: { type: "USERNAME", value: "Daniel" },
+        sourceAsset: "USDT",
+      },
+    },
+  },
+  {
+    say: "Not Daniel, João.",
+    context: {
+      activeIntent: { ...sendWithAmount, recipient: { type: "USERNAME", value: "Daniel" } },
+    },
+  },
   { say: "Send 20 USDT to 0x1234567890abcdef1234567890abcdef12345678." },
   { say: "tell me a joke" },
 ];

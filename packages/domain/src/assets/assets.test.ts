@@ -33,7 +33,18 @@ const repository: AssetRepository = {
       ),
     ),
   findByFiatCode: (code) =>
-    Promise.resolve(all.filter((a) => a.fiatCode?.toLowerCase() === code.toLowerCase())),
+    Promise.resolve(
+      all.filter((a) => a.kind === "FIAT" && a.fiatCode?.toLowerCase() === code.toLowerCase()),
+    ),
+  findByDenomination: (code, options) =>
+    Promise.resolve(
+      all.filter(
+        (a) =>
+          a.kind !== "FIAT" &&
+          a.fiatCode?.toLowerCase() === code.toLowerCase() &&
+          (options?.chainId === undefined || a.chainId === options.chainId),
+      ),
+    ),
   listActive: () => Promise.resolve(all.filter((a) => a.isActive)),
   listAll: () => Promise.resolve([...all]),
 };

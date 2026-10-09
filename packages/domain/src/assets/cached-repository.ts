@@ -70,7 +70,18 @@ export function createCachedAssetRepository(
     async findByFiatCode(code) {
       const wanted = code.trim().toLowerCase();
       return (await assets())
-        .filter((asset) => asset.fiatCode?.toLowerCase() === wanted)
+        .filter((asset) => asset.kind === "FIAT" && asset.fiatCode?.toLowerCase() === wanted)
+        .sort(byChainThenId);
+    },
+    async findByDenomination(code, lookup) {
+      const wanted = code.trim().toLowerCase();
+      return (await assets())
+        .filter(
+          (asset) =>
+            asset.kind !== "FIAT" &&
+            asset.fiatCode?.toLowerCase() === wanted &&
+            (lookup?.chainId === undefined || asset.chainId === lookup.chainId),
+        )
         .sort(byChainThenId);
     },
     async listActive() {

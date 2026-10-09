@@ -5,9 +5,8 @@ import type { PrismaClient } from "../generated/prisma/client.js";
 export type SeedClient = Pick<PrismaClient, "provider" | "asset">;
 
 /**
- * Stable foundation records only. Deliberately absent until confirmed:
- * - blockchain assets (no token addresses or decimals are established yet)
- * - provider capabilities (each one needs its assets defined first)
+ * Stable foundation records only: providers and fiat currencies. Verified Celo tokens are seeded by
+ * celo-assets.ts and provider capabilities by capabilities.ts, each only once its facts are verified.
  */
 export const providers = [
   { slug: "textile", name: "Textile", type: "FX" },

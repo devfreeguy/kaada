@@ -23,8 +23,20 @@ export function createAssetRepository(db: Db): AssetRepository {
 
     async findByFiatCode(code) {
       const rows = await db.asset.findMany({
-        where: { fiatCode: { equals: code.trim(), mode: "insensitive" } },
+        where: { kind: "FIAT", fiatCode: { equals: code.trim(), mode: "insensitive" } },
         orderBy: { id: "asc" },
+      });
+      return rows.map(toAsset);
+    },
+
+    async findByDenomination(code, options) {
+      const rows = await db.asset.findMany({
+        where: {
+          kind: { not: "FIAT" },
+          fiatCode: { equals: code.trim(), mode: "insensitive" },
+          ...(options?.chainId !== undefined && { chainId: options.chainId }),
+        },
+        orderBy: [{ chainId: "asc" }, { id: "asc" }],
       });
       return rows.map(toAsset);
     },

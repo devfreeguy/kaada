@@ -64,6 +64,8 @@ pnpm format:check # Prettier check
 pnpm test         # unit tests (domain, schemas, config, database)
 ```
 
+Settlement assets and provider capabilities: see [docs/settlement.md](docs/settlement.md).
+
 Database (see [docs/database.md](docs/database.md)):
 
 ```sh

@@ -62,7 +62,20 @@ export function createInMemoryWorld(): InMemoryWorld {
           ),
         ),
       findByFiatCode: (code) =>
-        Promise.resolve(assets.filter((a) => a.fiatCode?.toLowerCase() === code.toLowerCase())),
+        Promise.resolve(
+          assets.filter(
+            (a) => a.kind === "FIAT" && a.fiatCode?.toLowerCase() === code.toLowerCase(),
+          ),
+        ),
+      findByDenomination: (code, options) =>
+        Promise.resolve(
+          assets.filter(
+            (a) =>
+              a.kind !== "FIAT" &&
+              a.fiatCode?.toLowerCase() === code.toLowerCase() &&
+              (options?.chainId === undefined || a.chainId === options.chainId),
+          ),
+        ),
       listActive: () => Promise.resolve(assets.filter((a) => a.isActive)),
       listAll: () => Promise.resolve([...assets]),
     },

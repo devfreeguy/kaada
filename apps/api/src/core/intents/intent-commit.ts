@@ -51,3 +51,10 @@ export async function commitIntent(
   if (revised) await args.onRevised(repositories, intent, previous.revision);
   return { intent, revised };
 }
+
+/** Runs every hook, in order, whenever an intent is revised. */
+export function composeRevisionHooks(...hooks: OnIntentRevised[]): OnIntentRevised {
+  return async (repositories, intent, previousRevision) => {
+    for (const hook of hooks) await hook(repositories, intent, previousRevision);
+  };
+}

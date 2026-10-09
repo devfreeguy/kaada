@@ -85,7 +85,8 @@ export type Provider = Prisma.ProviderModel
  * Model ProviderCapability
  * Data-driven corridor support: what a provider can do, for which assets/chain/country.
  * Nothing is assumed supported unless a row says so. The nullable columns make a natural
- * composite unique key impossible, so seeding is responsible for not inserting duplicates.
+ * composite unique key impossible; the manual migration 20261011000000 adds an expression index
+ * (NULL-safe) that makes duplicates impossible.
  */
 export type ProviderCapability = Prisma.ProviderCapabilityModel
 /**

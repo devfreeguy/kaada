@@ -76,6 +76,8 @@ with `randomUUID()` from `node:crypto`. Inserting without an id fails at the dat
 3. `20261010000000_intent_revision_and_clarification_options` (Build 6): `Intent.revision` (with a
    `>= 1` CHECK), `Intent.preferredSourceAssetId`, and the `ClarificationOption` table (server-side
    meaning of selectable answers; cascades with its intent and conversation).
+4. `20261011000000_provider_capability_uniqueness` (Build 7, hand-written): a NULL-safe unique
+   expression index over a capability's provider, type, chain, input, output and country.
 
 ## Tradeoffs and decisions
 
@@ -128,6 +130,6 @@ ignores the manual CHECKs and partial indexes when diffing.
 `pnpm db:seed` upserts providers (`textile` FX, `ripio` RAMP, `celo` RPC) and the fiat assets
 USD, NGN, ARS, BRL, IDR (ISO 4217, 2 decimals). It never changes the decimals of an existing asset.
 
-Intentionally not seeded until confirmed: blockchain assets (no token addresses or decimals are
-established in the repo), and every `ProviderCapability` (each needs its assets defined first,
-including the Textile corridors cNGN/wARS/wBRL/IDRX/USDC ↔ USDT).
+It also seeds the verified Celo tokens USDT and USDC and the (currently empty) verified provider
+capabilities. Everything else (wFIAT tokens, cNGN, IDRX, every Textile and Ripio capability) stays
+unseeded until its facts are verified; see [settlement.md](settlement.md) for provenance and blockers.

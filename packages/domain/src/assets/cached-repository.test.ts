@@ -21,6 +21,7 @@ function countingSource(rows: Asset[]) {
     findById: () => Promise.reject(new Error("the cache must not call this")),
     findBySymbol: () => Promise.reject(new Error("the cache must not call this")),
     findByFiatCode: () => Promise.reject(new Error("the cache must not call this")),
+    findByDenomination: () => Promise.reject(new Error("the cache must not call this")),
     listActive: () => Promise.reject(new Error("the cache must not call this")),
     listAll: () => {
       state.reads += 1;
