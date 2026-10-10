@@ -13,6 +13,7 @@ import type { AppConfig } from "@kaada/config";
 import type { AgentLog, AgentRepositories } from "../../core/agent/ports.js";
 import type { WalletFundingResolver } from "../../core/routing/funding-resolver.js";
 import { RoutingService } from "../../core/routing/routing-service.js";
+import type { AuthorizationGate } from "../../core/routing/routing-service.js";
 import { MockFxProvider } from "./mock-fx-provider.js";
 import { TextileClient, TextileFxProvider, createFetchTransport } from "./textile/index.js";
 
@@ -31,6 +32,8 @@ export function createRoutingService(
     read: Pick<AgentRepositories, "routes" | "quotes">;
     /** Balance-aware funding for payments; omit when no wallet provider is configured. */
     funding?: WalletFundingResolver;
+    /** Payment authorization (PIN step); omit when no wallet provider is configured. */
+    authorization?: AuthorizationGate;
     log?: AgentLog;
     now?: () => Date;
   },
@@ -80,6 +83,7 @@ export function createRoutingService(
     read: deps.read,
     now,
     ...(deps.funding && { funding: deps.funding }),
+    ...(deps.authorization && { authorization: deps.authorization }),
     ...(deps.log && { log: deps.log }),
   });
 }

@@ -171,6 +171,26 @@ export const WalletSetupStatus = {
 export type WalletSetupStatus = (typeof WalletSetupStatus)[keyof typeof WalletSetupStatus]
 
 
+export const AuthorizationSessionStatus = {
+  PENDING: 'PENDING',
+  AUTHORIZED: 'AUTHORIZED',
+  EXPIRED: 'EXPIRED',
+  CANCELLED: 'CANCELLED'
+} as const
+
+export type AuthorizationSessionStatus = (typeof AuthorizationSessionStatus)[keyof typeof AuthorizationSessionStatus]
+
+
+export const PaymentAuthorizationStatus = {
+  ACTIVE: 'ACTIVE',
+  CONSUMED: 'CONSUMED',
+  REVOKED: 'REVOKED',
+  EXPIRED: 'EXPIRED'
+} as const
+
+export type PaymentAuthorizationStatus = (typeof PaymentAuthorizationStatus)[keyof typeof PaymentAuthorizationStatus]
+
+
 export const PasskeyChallengePurpose = {
   REGISTRATION: 'REGISTRATION',
   AUTHENTICATION: 'AUTHENTICATION'

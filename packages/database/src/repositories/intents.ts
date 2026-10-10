@@ -10,6 +10,10 @@ export function createIntentRepository(db: Db): IntentRepository {
       return toIntent(await db.intent.create({ data: intentCreateData(intent) }));
     },
 
+    async lockForUpdate(id) {
+      await db.$queryRaw`SELECT id FROM "Intent" WHERE id = ${id}::uuid FOR UPDATE`;
+    },
+
     async findById(id) {
       const row = await db.intent.findUnique({ where: { id } });
       return row ? toIntent(row) : null;

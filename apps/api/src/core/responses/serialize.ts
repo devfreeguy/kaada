@@ -20,7 +20,7 @@ const option = z.object({
 /**
  * The responses the core produces that can be answered again from storage. Only the fields a
  * duplicate delivery needs are checked; the routing request is rebuilt from the intent, not trusted
- * from this copy. AUTHORIZATION_REQUIRED has no producer yet.
+ * from this copy.
  */
 const storedResponseSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("MESSAGE"), text: z.string() }),
@@ -47,6 +47,16 @@ const storedResponseSchema = z.discriminatedUnion("type", [
     intentId: z.string(),
     revision: z.number().int(),
     routeId: z.string(),
+  }),
+  z.looseObject({
+    type: z.literal("AUTHORIZATION_REQUIRED"),
+    text: z.string(),
+    intentId: z.string(),
+    revision: z.number().int(),
+    routeId: z.string(),
+    authorizationSessionId: z.string(),
+    expiresAt: z.string(),
+    summary: z.looseObject({}),
   }),
   z.looseObject({
     type: z.literal("QUOTE_RESULT"),

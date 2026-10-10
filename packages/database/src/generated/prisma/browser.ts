@@ -54,6 +54,27 @@ export type PasskeyCredential = Prisma.PasskeyCredentialModel
  */
 export type WalletSetupSession = Prisma.WalletSetupSessionModel
 /**
+ * Model TransactionPinSecurity
+ * The 4-digit transaction PIN state of one user. Only an Argon2id hash is stored. Attempts are counted
+ * in a single atomic UPDATE, so guessing is bounded no matter how many requests arrive at once.
+ */
+export type TransactionPinSecurity = Prisma.TransactionPinSecurityModel
+/**
+ * Model AuthorizationSession
+ * The short-lived UI interaction in which a person enters their PIN for one priced payment. Created
+ * without a token; the secure link is issued at render time and only its SHA-256 is stored.
+ */
+export type AuthorizationSession = Prisma.AuthorizationSessionModel
+/**
+ * Model PaymentAuthorization
+ * The durable, immutable record of WHAT a person approved: bounded amounts, parties, assets and
+ * route shape, bound to an intent revision. Not a provider quote. Short-lived and single-use.
+ * Amounts are canonical smallest-unit strings: EXACT_INPUT spends at most maxInputAmount (the
+ * authorized input) and must receive at least minOutputAmount; EXACT_OUTPUT must deliver at least
+ * minOutputAmount (the exact output) for at most maxInputAmount.
+ */
+export type PaymentAuthorization = Prisma.PaymentAuthorizationModel
+/**
  * Model PasskeyChallenge
  * A one-time, short-lived WebAuthn challenge. Claimed with a single UPDATE so a replay gets nothing.
  */

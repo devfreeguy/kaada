@@ -57,6 +57,9 @@ export const ModelName = {
   Wallet: 'Wallet',
   PasskeyCredential: 'PasskeyCredential',
   WalletSetupSession: 'WalletSetupSession',
+  TransactionPinSecurity: 'TransactionPinSecurity',
+  AuthorizationSession: 'AuthorizationSession',
+  PaymentAuthorization: 'PaymentAuthorization',
   PasskeyChallenge: 'PasskeyChallenge',
   DelegatedPermission: 'DelegatedPermission',
   Asset: 'Asset',
@@ -181,6 +184,72 @@ export const WalletSetupSessionScalarFieldEnum = {
 } as const
 
 export type WalletSetupSessionScalarFieldEnum = (typeof WalletSetupSessionScalarFieldEnum)[keyof typeof WalletSetupSessionScalarFieldEnum]
+
+
+export const TransactionPinSecurityScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  pinHash: 'pinHash',
+  failedAttempts: 'failedAttempts',
+  lockLevel: 'lockLevel',
+  lockedUntil: 'lockedUntil',
+  changedAt: 'changedAt',
+  resetRequired: 'resetRequired',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TransactionPinSecurityScalarFieldEnum = (typeof TransactionPinSecurityScalarFieldEnum)[keyof typeof TransactionPinSecurityScalarFieldEnum]
+
+
+export const AuthorizationSessionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  walletId: 'walletId',
+  intentId: 'intentId',
+  intentRevision: 'intentRevision',
+  routeId: 'routeId',
+  tokenHash: 'tokenHash',
+  tokenIssuedAt: 'tokenIssuedAt',
+  status: 'status',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  cancelReason: 'cancelReason',
+  createdAt: 'createdAt'
+} as const
+
+export type AuthorizationSessionScalarFieldEnum = (typeof AuthorizationSessionScalarFieldEnum)[keyof typeof AuthorizationSessionScalarFieldEnum]
+
+
+export const PaymentAuthorizationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  walletId: 'walletId',
+  intentId: 'intentId',
+  intentRevision: 'intentRevision',
+  routeId: 'routeId',
+  sessionId: 'sessionId',
+  status: 'status',
+  operation: 'operation',
+  chainId: 'chainId',
+  recipientId: 'recipientId',
+  recipientAddress: 'recipientAddress',
+  destinationCountry: 'destinationCountry',
+  amountMode: 'amountMode',
+  inputAssetId: 'inputAssetId',
+  outputAssetId: 'outputAssetId',
+  maxInputAmount: 'maxInputAmount',
+  minOutputAmount: 'minOutputAmount',
+  routeAssetPath: 'routeAssetPath',
+  routeProviders: 'routeProviders',
+  expiresAt: 'expiresAt',
+  consumedAt: 'consumedAt',
+  revokedAt: 'revokedAt',
+  revocationReason: 'revocationReason',
+  createdAt: 'createdAt'
+} as const
+
+export type PaymentAuthorizationScalarFieldEnum = (typeof PaymentAuthorizationScalarFieldEnum)[keyof typeof PaymentAuthorizationScalarFieldEnum]
 
 
 export const PasskeyChallengeScalarFieldEnum = {

@@ -49,6 +49,13 @@ const envSchema = z
     PASSKEY_ORIGIN: z.url().optional(),
     // The name an authenticator shows for this service.
     PASSKEY_RP_NAME: z.string().trim().min(1).max(64).default("Kaada"),
+    // Payment authorization. The session is the time to open the link and enter the PIN; the
+    // authorization is how long an approved payment may still be executed. Both are deliberately short.
+    AUTHORIZATION_SESSION_TTL_SECONDS: z.coerce.number().int().min(30).max(900).default(300),
+    PAYMENT_AUTHORIZATION_TTL_SECONDS: z.coerce.number().int().min(30).max(600).default(180),
+    // A server-side secret mixed into every PIN hash (Argon2 "secret"). With only 10,000 possible
+    // PINs, a leaked database alone must not be enough to recover them. Required in production.
+    PIN_PEPPER: optionalSecret,
     // Which IntentInterpreter the agent uses. "none" disables the agent.
     AGENT_INTERPRETER: z.enum(["none", "mock", "groq"]).default("none"),
     // Which price source routing uses. "none" disables pricing (the agent stops at ROUTING_REQUIRED);
@@ -153,6 +160,16 @@ const envSchema = z
       path: ["TEXTILE_LIVE_API_KEY"],
     },
   )
+  .refine(
+    (env) =>
+      env.NODE_ENV !== "production" ||
+      env.WALLET_PROVIDER !== "kernel" ||
+      (env.PIN_PEPPER !== undefined && env.PIN_PEPPER.length >= 32),
+    {
+      message: "production wallets need a PIN_PEPPER of at least 32 characters",
+      path: ["PIN_PEPPER"],
+    },
+  )
   .refine((env) => env.AGENT_INTERPRETER !== "groq" || env.GROQ_API_KEY !== undefined, {
     message: "GROQ_API_KEY is required when AGENT_INTERPRETER=groq",
     path: ["GROQ_API_KEY"],
@@ -188,6 +205,11 @@ const envSchema = z
             origin: env.PASSKEY_ORIGIN,
           },
         }),
+    },
+    authorization: {
+      sessionTtlMs: env.AUTHORIZATION_SESSION_TTL_SECONDS * 1000,
+      paymentTtlMs: env.PAYMENT_AUTHORIZATION_TTL_SECONDS * 1000,
+      ...(env.PIN_PEPPER !== undefined && { pinPepper: env.PIN_PEPPER }),
     },
     fx: {
       provider: env.FX_PROVIDER,

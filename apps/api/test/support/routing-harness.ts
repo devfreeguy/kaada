@@ -15,6 +15,7 @@ import type { Asset, AssetRegistry, CapabilityType, FxProvider } from "@kaada/do
 import { MOCK_FX_FIXTURES, MockFxProvider } from "../../src/infrastructure/fx/mock-fx-provider.js";
 import type { MockPairFixture } from "../../src/infrastructure/fx/mock-fx-provider.js";
 import type { WalletFundingResolver } from "../../src/core/routing/funding-resolver.js";
+import type { AuthorizationGate } from "../../src/core/routing/routing-service.js";
 import { RoutingService } from "../../src/core/routing/routing-service.js";
 import { createHarness, SENDER } from "./harness.js";
 import type { Harness } from "./harness.js";
@@ -77,6 +78,12 @@ export function createRoutingHarness(
     pricing?: (context: { assets: AssetRegistry; now: () => Date }) => FxProvider;
     /** Balance-aware funding for payments, built from the asset registry. */
     funding?: (registry: AssetRegistry) => WalletFundingResolver;
+    /** Payment authorization (PIN step), built from the world and the clock. */
+    authorization?: (
+      world: InMemoryWorld,
+      registry: AssetRegistry,
+      now: () => Date,
+    ) => AuthorizationGate;
   } = {},
 ): RoutingHarness {
   const clock = {
@@ -138,6 +145,9 @@ export function createRoutingHarness(
         read: world.repositories,
         now: () => clock.now,
         ...(options.funding && { funding: options.funding(registry) }),
+        ...(options.authorization && {
+          authorization: options.authorization(world, registry, () => clock.now),
+        }),
       });
       holder.routing = routing;
       return routing;

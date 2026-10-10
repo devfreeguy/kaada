@@ -1,4 +1,4 @@
-import { bpsOf, createMoney, expressFixedAmount } from "@kaada/domain";
+import { expressFixedAmount } from "@kaada/domain";
 import type {
   AssetRegistry,
   Money,
@@ -8,6 +8,7 @@ import type {
 } from "@kaada/domain";
 
 import type { AgentResponse } from "../responses/agent-response.js";
+import { maxSpend } from "../authorization/bounds.js";
 import { formatAmount } from "./format.js";
 
 /**
@@ -15,8 +16,8 @@ import { formatAmount } from "./format.js";
  * balance reader; routing never sees a wallet record, a provider or a signer.
  */
 export interface WalletFundingPort {
-  /** The address of the user's ACTIVE wallet, or null when they have none (not set up yet). */
-  activeAddress(userId: string): Promise<string | null>;
+  /** The user's ACTIVE wallet (id and address), or null when they have none (not set up yet). */
+  activeWallet(userId: string): Promise<{ id: string; address: string } | null>;
   /** Fresh on-chain balances, smallest units, by asset id. Throws when the chain cannot be read. */
   balancesOf(address: string, assetIds: string[]): Promise<Map<string, bigint>>;
 }
@@ -43,19 +44,6 @@ export type FundingPick =
 
 const SETUP_TEXT = "You need to set up your Kaada wallet first.";
 
-/** The most a priced route can take from the wallet: slippage only ever raises what is spent. */
-export function maxSpend(
-  route: { input: Money; slippageBps: number },
-  mode: RoutingRequest["amountMode"],
-): Money {
-  if (mode === "EXACT_INPUT") return route.input;
-  const spend = BigInt(route.input.amount);
-  return createMoney(
-    (spend + bpsOf(spend, BigInt(route.slippageBps), "UP")).toString(),
-    route.input.assetId,
-  );
-}
-
 /**
  * Decides which funding assets a payment can still use, from what the wallet actually holds. It
  * sits between candidate discovery and route planning, so the planner never sees a wallet and
@@ -80,8 +68,8 @@ export class WalletFundingResolver {
   ) {}
 
   /** Wallet-required check for a payment, before anything else is done. */
-  async requireWallet(userId: string): Promise<string | null> {
-    return this.deps.wallet.activeAddress(userId);
+  async requireWallet(userId: string): Promise<{ id: string; address: string } | null> {
+    return this.deps.wallet.activeWallet(userId);
   }
 
   setupRequired(): AgentResponse {
@@ -161,7 +149,7 @@ export class WalletFundingResolver {
     balances: ReadonlyMap<string, bigint>,
   ): Promise<FundingPick> {
     for (const route of routes) {
-      const spend = BigInt(maxSpend(route, request.amountMode).amount);
+      const spend = BigInt(maxSpend(route, route.slippageBps, request.amountMode).amount);
       if ((balances.get(route.sourceAssetId) ?? 0n) >= spend) return { status: "OK", route };
     }
     const [best] = routes;
@@ -177,7 +165,7 @@ export class WalletFundingResolver {
     }
     const asset = await this.deps.assets.getById(best.sourceAssetId);
     const symbol = asset?.symbol ?? "that asset";
-    const spend = maxSpend(best, request.amountMode);
+    const spend = maxSpend(best, best.slippageBps, request.amountMode);
     const have = balances.get(best.sourceAssetId) ?? 0n;
     const decimals = asset?.decimals ?? 0;
     return {
@@ -200,7 +188,7 @@ export class WalletFundingResolver {
     address: string,
   ): Promise<AgentResponse | undefined> {
     const balances = await this.deps.wallet.balancesOf(address, [route.input.assetId]);
-    const spend = BigInt(maxSpend(route, request.amountMode).amount);
+    const spend = BigInt(maxSpend(route, route.slippageBps, request.amountMode).amount);
     if ((balances.get(route.input.assetId) ?? 0n) >= spend) return undefined;
     const asset = await this.deps.assets.getById(route.input.assetId);
     return {

@@ -143,6 +143,20 @@ enum WalletSetupStatus {
   REVOKED
 }
 
+enum AuthorizationSessionStatus {
+  PENDING
+  AUTHORIZED
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentAuthorizationStatus {
+  ACTIVE
+  CONSUMED
+  REVOKED
+  EXPIRED
+}
+
 enum PasskeyChallengePurpose {
   REGISTRATION
   AUTHENTICATION
@@ -247,6 +261,10 @@ model User {
   passkeyChallenges    PasskeyChallenge[]
   delegatedPermissions DelegatedPermission[]
   walletSetupSessions  WalletSetupSession[]
+
+  transactionPin        TransactionPinSecurity?
+  authorizationSessions AuthorizationSession[]
+  paymentAuthorizations PaymentAuthorization[]
 }
 
 /// An external identity (Telegram account, phone, email, ...) attached to one Kaada user.
@@ -307,8 +325,10 @@ model Wallet {
   createdAt         DateTime         @default(now()) @db.Timestamptz(3)
   updatedAt         DateTime         @updatedAt @db.Timestamptz(3)
 
-  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  delegatedPermissions DelegatedPermission[]
+  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  delegatedPermissions  DelegatedPermission[]
+  authorizationSessions AuthorizationSession[]
+  paymentAuthorizations PaymentAuthorization[]
 
   @@unique([chainId, address])
   @@index([userId])
@@ -346,6 +366,94 @@ model WalletSetupSession {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
+}
+
+/// The 4-digit transaction PIN state of one user. Only an Argon2id hash is stored. Attempts are counted
+/// in a single atomic UPDATE, so guessing is bounded no matter how many requests arrive at once.
+model TransactionPinSecurity {
+  id             String    @id @db.Uuid
+  userId         String    @unique @db.Uuid
+  pinHash        String
+  failedAttempts Int       @default(0)
+  lockLevel      Int       @default(0)
+  lockedUntil    DateTime? @db.Timestamptz(3)
+  changedAt      DateTime  @db.Timestamptz(3)
+  resetRequired  Boolean   @default(false)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// The short-lived UI interaction in which a person enters their PIN for one priced payment. Created
+/// without a token; the secure link is issued at render time and only its SHA-256 is stored.
+model AuthorizationSession {
+  id             String                     @id @db.Uuid
+  userId         String                     @db.Uuid
+  walletId       String                     @db.Uuid
+  intentId       String                     @db.Uuid
+  intentRevision Int
+  routeId        String                     @db.Uuid
+  tokenHash      String?                    @unique @db.Char(64)
+  tokenIssuedAt  DateTime?                  @db.Timestamptz(3)
+  status         AuthorizationSessionStatus @default(PENDING)
+  expiresAt      DateTime                   @db.Timestamptz(3)
+  usedAt         DateTime?                  @db.Timestamptz(3)
+  cancelReason   String?
+  createdAt      DateTime                   @default(now()) @db.Timestamptz(3)
+
+  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet                Wallet                 @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  intent                Intent                 @relation(fields: [intentId], references: [id], onDelete: Restrict)
+  route                 Route                  @relation(fields: [routeId], references: [id], onDelete: Restrict)
+  paymentAuthorizations PaymentAuthorization[]
+
+  @@index([userId, status])
+  @@index([intentId, status])
+}
+
+/// The durable, immutable record of WHAT a person approved: bounded amounts, parties, assets and
+/// route shape, bound to an intent revision. Not a provider quote. Short-lived and single-use.
+/// Amounts are canonical smallest-unit strings: EXACT_INPUT spends at most maxInputAmount (the
+/// authorized input) and must receive at least minOutputAmount; EXACT_OUTPUT must deliver at least
+/// minOutputAmount (the exact output) for at most maxInputAmount.
+model PaymentAuthorization {
+  id                 String                     @id @db.Uuid
+  userId             String                     @db.Uuid
+  walletId           String                     @db.Uuid
+  intentId           String                     @db.Uuid
+  intentRevision     Int
+  routeId            String                     @db.Uuid
+  sessionId          String?                    @db.Uuid
+  status             PaymentAuthorizationStatus @default(ACTIVE)
+  operation          IntentType
+  chainId            Int
+  recipientId        String?                    @db.Uuid
+  recipientAddress   String?
+  destinationCountry String?
+  amountMode         AmountMode
+  inputAssetId       String                     @db.Uuid
+  outputAssetId      String                     @db.Uuid
+  maxInputAmount     String
+  minOutputAmount    String
+  routeAssetPath     String[]                   @db.Uuid
+  routeProviders     String[]
+  expiresAt          DateTime                   @db.Timestamptz(3)
+  consumedAt         DateTime?                  @db.Timestamptz(3)
+  revokedAt          DateTime?                  @db.Timestamptz(3)
+  revocationReason   String?
+  createdAt          DateTime                   @default(now()) @db.Timestamptz(3)
+
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet      Wallet                @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  intent      Intent                @relation(fields: [intentId], references: [id], onDelete: Restrict)
+  route       Route                 @relation(fields: [routeId], references: [id], onDelete: Restrict)
+  session     AuthorizationSession? @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  inputAsset  Asset                 @relation("AuthorizationInputAsset", fields: [inputAssetId], references: [id], onDelete: Restrict)
+  outputAsset Asset                 @relation("AuthorizationOutputAsset", fields: [outputAssetId], references: [id], onDelete: Restrict)
+
+  @@index([userId, status])
+  @@index([intentId, status])
 }
 
 /// A one-time, short-lived WebAuthn challenge. Claimed with a single UPDATE so a replay gets nothing.
@@ -423,25 +531,27 @@ model Asset {
 
   // Back-relations only (no columns). Every asset reference in the schema is a real foreign key
   // with onDelete: Restrict; assets are deactivated (isActive), never deleted.
-  intentsAsSource           Intent[]              @relation("IntentSourceAsset")
-  intentsAsDestination      Intent[]              @relation("IntentDestinationAsset")
-  intentsAsPreferredSource  Intent[]              @relation("IntentPreferredSourceAsset")
-  recipientsPreferring      Recipient[]           @relation("RecipientPreferredAsset")
-  capabilitiesAsInput       ProviderCapability[]  @relation("CapabilityInputAsset")
-  capabilitiesAsOutput      ProviderCapability[]  @relation("CapabilityOutputAsset")
-  quotesAsInput             Quote[]               @relation("QuoteInputAsset")
-  quotesAsOutput            Quote[]               @relation("QuoteOutputAsset")
-  quotesAsFee               Quote[]               @relation("QuoteFeeAsset")
-  routesAsInput             Route[]               @relation("RouteInputAsset")
-  routesAsOutput            Route[]               @relation("RouteOutputAsset")
-  routesAsFee               Route[]               @relation("RouteFeeAsset")
-  routeStepsAsInput         RouteStep[]           @relation("RouteStepInputAsset")
-  routeStepsAsOutput        RouteStep[]           @relation("RouteStepOutputAsset")
-  transactionsAsTransferred Transaction[]         @relation("TransactionAsset")
-  transactionsAsGas         Transaction[]         @relation("TransactionGasAsset")
+  intentsAsSource           Intent[]               @relation("IntentSourceAsset")
+  intentsAsDestination      Intent[]               @relation("IntentDestinationAsset")
+  intentsAsPreferredSource  Intent[]               @relation("IntentPreferredSourceAsset")
+  recipientsPreferring      Recipient[]            @relation("RecipientPreferredAsset")
+  capabilitiesAsInput       ProviderCapability[]   @relation("CapabilityInputAsset")
+  capabilitiesAsOutput      ProviderCapability[]   @relation("CapabilityOutputAsset")
+  quotesAsInput             Quote[]                @relation("QuoteInputAsset")
+  quotesAsOutput            Quote[]                @relation("QuoteOutputAsset")
+  quotesAsFee               Quote[]                @relation("QuoteFeeAsset")
+  authorizationsAsInput     PaymentAuthorization[] @relation("AuthorizationInputAsset")
+  authorizationsAsOutput    PaymentAuthorization[] @relation("AuthorizationOutputAsset")
+  routesAsInput             Route[]                @relation("RouteInputAsset")
+  routesAsOutput            Route[]                @relation("RouteOutputAsset")
+  routesAsFee               Route[]                @relation("RouteFeeAsset")
+  routeStepsAsInput         RouteStep[]            @relation("RouteStepInputAsset")
+  routeStepsAsOutput        RouteStep[]            @relation("RouteStepOutputAsset")
+  transactionsAsTransferred Transaction[]          @relation("TransactionAsset")
+  transactionsAsGas         Transaction[]          @relation("TransactionGasAsset")
   rampSessions              RampSession[]
-  permissionsPerTransaction DelegatedPermission[] @relation("PermissionPerTransactionAsset")
-  permissionsCumulative     DelegatedPermission[] @relation("PermissionCumulativeAsset")
+  permissionsPerTransaction DelegatedPermission[]  @relation("PermissionPerTransactionAsset")
+  permissionsCumulative     DelegatedPermission[]  @relation("PermissionCumulativeAsset")
 
   // Postgres treats NULLs as distinct, so this only constrains tokens (both columns set);
   // fiat and native rows are covered by the partial indexes in the manual migration.
@@ -517,16 +627,18 @@ model Intent {
   createdAt              DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt              DateTime     @updatedAt @db.Timestamptz(3)
 
-  user                 User                  @relation(fields: [userId], references: [id], onDelete: Restrict)
-  conversation         Conversation          @relation(fields: [conversationId], references: [id], onDelete: Restrict)
-  sourceAsset          Asset?                @relation("IntentSourceAsset", fields: [sourceAssetId], references: [id], onDelete: Restrict)
-  destinationAsset     Asset?                @relation("IntentDestinationAsset", fields: [destinationAssetId], references: [id], onDelete: Restrict)
-  recipient            Recipient?            @relation(fields: [recipientId], references: [id], onDelete: Restrict)
-  preferredSourceAsset Asset?                @relation("IntentPreferredSourceAsset", fields: [preferredSourceAssetId], references: [id], onDelete: Restrict)
-  clarificationOptions ClarificationOption[]
-  quotes               Quote[]
-  routes               Route[]
-  executions           Execution[]
+  user                  User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  conversation          Conversation           @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  sourceAsset           Asset?                 @relation("IntentSourceAsset", fields: [sourceAssetId], references: [id], onDelete: Restrict)
+  destinationAsset      Asset?                 @relation("IntentDestinationAsset", fields: [destinationAssetId], references: [id], onDelete: Restrict)
+  recipient             Recipient?             @relation(fields: [recipientId], references: [id], onDelete: Restrict)
+  preferredSourceAsset  Asset?                 @relation("IntentPreferredSourceAsset", fields: [preferredSourceAssetId], references: [id], onDelete: Restrict)
+  clarificationOptions  ClarificationOption[]
+  quotes                Quote[]
+  routes                Route[]
+  executions            Execution[]
+  authorizationSessions AuthorizationSession[]
+  paymentAuthorizations PaymentAuthorization[]
 
   @@index([userId, status])
   @@index([conversationId])
@@ -674,12 +786,14 @@ model Route {
   expiresAt       DateTime?   @db.Timestamptz(3)
   createdAt       DateTime    @default(now()) @db.Timestamptz(3)
 
-  intent        Intent      @relation(fields: [intentId], references: [id], onDelete: Restrict)
-  inputAsset    Asset       @relation("RouteInputAsset", fields: [inputAssetId], references: [id], onDelete: Restrict)
-  outputAsset   Asset       @relation("RouteOutputAsset", fields: [outputAssetId], references: [id], onDelete: Restrict)
-  totalFeeAsset Asset?      @relation("RouteFeeAsset", fields: [totalFeeAssetId], references: [id], onDelete: Restrict)
-  steps         RouteStep[]
-  executions    Execution[]
+  intent                Intent                 @relation(fields: [intentId], references: [id], onDelete: Restrict)
+  inputAsset            Asset                  @relation("RouteInputAsset", fields: [inputAssetId], references: [id], onDelete: Restrict)
+  outputAsset           Asset                  @relation("RouteOutputAsset", fields: [outputAssetId], references: [id], onDelete: Restrict)
+  totalFeeAsset         Asset?                 @relation("RouteFeeAsset", fields: [totalFeeAssetId], references: [id], onDelete: Restrict)
+  steps                 RouteStep[]
+  executions            Execution[]
+  authorizationSessions AuthorizationSession[]
+  paymentAuthorizations PaymentAuthorization[]
 
   @@index([intentId, status])
   @@index([intentId, intentRevision, status])

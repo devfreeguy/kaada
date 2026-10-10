@@ -1,9 +1,7 @@
 import {
   aggregateFees,
   assertRouteUsable,
-  bpsOf,
   createId,
-  createMoney,
   isKaadaError,
   validatePaymentRoute,
 } from "@kaada/domain";
@@ -21,10 +19,12 @@ import type {
 
 import type { AgentLog, AgentRepositories } from "../agent/ports.js";
 import { formatAmount } from "./format.js";
+import { maxSpend, minReceive } from "../authorization/bounds.js";
 import type { WalletFundingResolver } from "./funding-resolver.js";
 import { noopLog } from "../agent/ports.js";
 import type {
   AgentResponse,
+  AuthorizationRequiredResponse,
   MoneyView,
   PaymentReadyResponse,
   QuoteResultResponse,
@@ -38,8 +38,14 @@ import type {
  * - FAILED:  nothing usable, with the response to give the user.
  */
 export type RoutingOutcome =
-  | { status: "PLANNED"; request: RoutingRequest; route: PlannedRoute }
-  | { status: "REUSED"; request: RoutingRequest; route: PaymentRoute; quotes: Quote[] }
+  | { status: "PLANNED"; request: RoutingRequest; route: PlannedRoute; walletId?: string }
+  | {
+      status: "REUSED";
+      request: RoutingRequest;
+      route: PaymentRoute;
+      quotes: Quote[];
+      walletId?: string;
+    }
   | { status: "FAILED"; request: RoutingRequest; response: AgentResponse };
 
 export interface RoutingServiceDeps {
@@ -54,11 +60,36 @@ export interface RoutingServiceDeps {
    * use it.
    */
   funding?: WalletFundingResolver;
+  /**
+   * Payment authorization. When present, a priced PAYMENT for a user with a wallet is answered with
+   * AUTHORIZATION_REQUIRED (a session reference, never a link) instead of PAYMENT_READY, and a replaced
+   * route retires whatever was built on the old one.
+   */
+  authorization?: AuthorizationGate;
   now?: () => Date;
   log?: AgentLog;
 }
 
 export { formatAmount };
+
+/** What routing needs from payment authorization, and nothing more. */
+export interface AuthorizationGate {
+  begin(
+    repositories: AgentRepositories,
+    input: {
+      userId: string;
+      walletId: string;
+      intentId: string;
+      intentRevision: number;
+      routeId: string;
+    },
+  ): Promise<{ sessionId: string; expiresAt: Date }>;
+  routeReplaced(
+    repositories: AgentRepositories,
+    intentId: string,
+    keep: { revision: number; routeId: string },
+  ): Promise<void>;
+}
 
 /** Whole seconds until `at`, never negative. Integer arithmetic only. */
 function secondsUntil(at: Date, now: Date): number {
@@ -91,14 +122,14 @@ export class RoutingService {
     // Only a payment spends the user's funds, so only a payment needs a wallet. A quote is a price
     // question and works without one.
     const funding = request.purpose === "PAYMENT" ? this.deps.funding : undefined;
-    let address: string | null = null;
+    let wallet: { id: string; address: string } | null = null;
     if (funding) {
       try {
-        address = await funding.requireWallet(request.userId);
+        wallet = await funding.requireWallet(request.userId);
       } catch (error) {
         return this.fundingUnavailable(request, error);
       }
-      if (address === null) {
+      if (wallet === null) {
         return { status: "FAILED", request, response: funding.setupRequired() };
       }
     }
@@ -106,7 +137,7 @@ export class RoutingService {
     // Reuse only a stored route for THIS revision whose quotes are all still valid.
     const reused = await this.findReusable(request, now);
     if (reused) {
-      if (funding && address !== null) {
+      if (funding && wallet !== null) {
         try {
           const slippageBps = reused.quotes.reduce(
             (sum, quote) => sum + (quote.slippageBps ?? 0),
@@ -115,14 +146,14 @@ export class RoutingService {
           const short = await funding.confirmStored(
             request,
             { input: reused.route.input, slippageBps },
-            address,
+            wallet.address,
           );
           if (short) return { status: "FAILED", request, response: short };
         } catch (error) {
           return this.fundingUnavailable(request, error);
         }
       }
-      return { status: "REUSED", request, ...reused };
+      return { status: "REUSED", request, ...reused, ...(wallet && { walletId: wallet.id }) };
     }
 
     const discovery = await this.deps.candidates.resolve(request);
@@ -138,9 +169,9 @@ export class RoutingService {
     // for a price, and an explicit asset is never swapped for another.
     let candidates = discovery.set;
     let balances: ReadonlyMap<string, bigint> | undefined;
-    if (funding && address !== null) {
+    if (funding && wallet !== null) {
       try {
-        const filtered = await funding.filter(request, candidates, address);
+        const filtered = await funding.filter(request, candidates, wallet.address);
         if (filtered.status === "REJECTED") {
           return { status: "FAILED", request, response: filtered.response };
         }
@@ -169,11 +200,16 @@ export class RoutingService {
           if (picked.status === "REJECTED") {
             return { status: "FAILED", request, response: picked.response };
           }
-          return { status: "PLANNED", request, route: picked.route };
+          return {
+            status: "PLANNED",
+            request,
+            route: picked.route,
+            ...(wallet && { walletId: wallet.id }),
+          };
         }
         const [best] = result.routes;
         if (!best) return failed(request, "NO_ROUTE", "I couldn't find a route for that.");
-        return { status: "PLANNED", request, route: best };
+        return { status: "PLANNED", request, route: best, ...(wallet && { walletId: wallet.id }) };
       }
       case "NO_ROUTE":
         return failed(request, "NO_ROUTE", "I couldn't find a route for that right now.");
@@ -230,7 +266,10 @@ export class RoutingService {
     } else {
       ({ route, quotes } = await this.persist(repositories, request, outcome.route));
     }
-    return this.respond(request, route, quotes);
+    return this.respond(request, route, quotes, {
+      repositories,
+      ...(outcome.walletId && { walletId: outcome.walletId }),
+    });
   }
 
   private async persist(
@@ -313,6 +352,10 @@ export class RoutingService {
         await repositories.routes.updateStatus(other.id, "INVALID");
       }
     }
+    await this.deps.authorization?.routeReplaced(repositories, request.intentId, {
+      revision: request.intentRevision,
+      routeId: created.id,
+    });
     return { route: created, quotes };
   }
 
@@ -368,6 +411,7 @@ export class RoutingService {
     request: RoutingRequest,
     route: PaymentRoute,
     quotes: Quote[],
+    authorization: { repositories: AgentRepositories; walletId?: string },
   ): Promise<AgentResponse> {
     const assets = new Map<string, Asset>();
     const slippageBps = quotes.reduce((sum, quote) => sum + (quote.slippageBps ?? 0), 0);
@@ -422,23 +466,49 @@ export class RoutingService {
       return response;
     }
 
-    // Slippage bounds: spending is capped upward and receiving floored downward, never the reverse.
-    const bps = BigInt(slippageBps);
+    // The same limits an authorization will bind (bounds.ts), so what is shown is what is approved.
     const exactInput = request.amountMode === "EXACT_INPUT";
-    const max = exactInput
-      ? route.input
-      : createMoney(
-          (BigInt(route.input.amount) + bpsOf(BigInt(route.input.amount), bps, "UP")).toString(),
-          route.input.assetId,
-        );
-    const min = exactInput
-      ? createMoney(
-          (BigInt(route.output.amount) - bpsOf(BigInt(route.output.amount), bps, "UP")).toString(),
-          route.output.assetId,
-        )
-      : route.output;
+    const max = maxSpend(route, slippageBps, request.amountMode);
+    const min = minReceive(route, slippageBps, request.amountMode);
     const recipient = request.recipient?.displayName;
     const who = recipient ?? "The recipient";
+    const gate = this.deps.authorization;
+    if (gate && authorization.walletId) {
+      const session = await gate.begin(authorization.repositories, {
+        userId: request.userId,
+        walletId: authorization.walletId,
+        intentId: request.intentId,
+        intentRevision: request.intentRevision,
+        routeId: route.id,
+      });
+      const maximum = await this.view(max, assets);
+      const minimum = await this.view(min, assets);
+      const required: AuthorizationRequiredResponse = {
+        type: "AUTHORIZATION_REQUIRED",
+        text: exactInput
+          ? `You spend exactly ${input.display}; ${who} receives about ${output.display} (at least ${minimum.display})${fine}. Fees: ${feeText}. Confirm with your PIN to authorize this payment. The final price is confirmed just before it is sent.`
+          : `${who} receives exactly ${output.display}; you spend about ${input.display} (at most ${maximum.display})${fine}. Fees: ${feeText}. Confirm with your PIN to authorize this payment. The final price is confirmed just before it is sent.`,
+        intentId: request.intentId,
+        revision: request.intentRevision,
+        routeId: route.id,
+        authorizationSessionId: session.sessionId,
+        expiresAt: session.expiresAt.toISOString(),
+        summary: {
+          amountMode: request.amountMode,
+          ...(recipient && { recipient }),
+          senderSpends: input,
+          maximumSpend: maximum,
+          recipientReceives: output,
+          minimumReceive: minimum,
+        },
+        fees,
+        slippageBps,
+        ...(mock && { mock }),
+        ...(indicative && { indicative }),
+      };
+      return required;
+    }
+
     const response: PaymentReadyResponse = {
       type: "PAYMENT_READY",
       text: exactInput

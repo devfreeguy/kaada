@@ -90,6 +90,10 @@ with `randomUUID()` from `node:crypto`. Inserting without an id fails at the dat
    and canonical amounts, with lower-case contract addresses.
 7. `20261015000000_wallet_setup_sessions` (Build 10.1, hand-written): `WalletSetupSession` (only a SHA-256 token hash is
    stored; CHECKs enforce the digest shape, `usedAt` set iff `COMPLETED`, and expiry after creation).
+8. `20261016000000_pin_and_payment_authorization` (Build 11, Prisma-generated) and
+   `20261016000001_authorization_constraints` (hand-written): `TransactionPinSecurity` (Argon2id hash only,
+   attempt counters, lock), `AuthorizationSession` (token stored as SHA-256 only, one PENDING per payment),
+   `PaymentAuthorization` (canonical positive amounts, one ACTIVE per intent, terminal fields consistent).
 
 ## Tradeoffs and decisions
 

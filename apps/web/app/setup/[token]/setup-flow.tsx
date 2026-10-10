@@ -3,6 +3,8 @@
 import { browserSupportsWebAuthn, startRegistration } from "@simplewebauthn/browser";
 import { useCallback, useEffect, useState } from "react";
 
+import { PinSetup } from "./pin-setup";
+
 interface WalletInfo {
   address: string | null;
   status: string;
@@ -276,6 +278,7 @@ export function SetupFlow({ token }: { token: string }) {
           <p className="text-xs text-neutral-500">
             You can close this page and return to your chat.
           </p>
+          <PinSetup token={token} />
         </section>
       )}
     </main>

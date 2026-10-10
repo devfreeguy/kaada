@@ -13,7 +13,10 @@ import { IntentCoordinator } from "../intents/coordinator.js";
 import type { Applied } from "../intents/coordinator.js";
 import { composeRevisionHooks, noopOnIntentRevised } from "../intents/intent-commit.js";
 import type { OnIntentRevised } from "../intents/intent-commit.js";
-import { invalidateRoutesOnRevision } from "../routing/invalidation.js";
+import {
+  invalidateAuthorizationOnRevision,
+  invalidateRoutesOnRevision,
+} from "../routing/invalidation.js";
 import type { RoutingService } from "../routing/routing-service.js";
 import type { AgentResponse } from "../responses/agent-response.js";
 import { responseFromStored, responseToJson } from "../responses/serialize.js";
@@ -126,6 +129,7 @@ export class AgentService {
       // Routes built for an older revision are retired first, then any caller-supplied hook runs.
       onRevised: composeRevisionHooks(
         invalidateRoutesOnRevision,
+        invalidateAuthorizationOnRevision(this.now),
         deps.onIntentRevised ?? noopOnIntentRevised,
       ),
       choiceTtlMs: deps.choiceTtlMs ?? 30 * 60 * 1000,

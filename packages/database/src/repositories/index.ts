@@ -4,6 +4,9 @@ import type {
   AssetRepository,
   AuditRepository,
   WalletSetupSessionRepository,
+  AuthorizationSessionRepository,
+  PaymentAuthorizationRepository,
+  TransactionPinRepository,
   DelegatedPermissionRepository,
   PasskeyRepository,
   WalletRepository,
@@ -23,6 +26,11 @@ import type {
 import type { Database } from "../client/index.js";
 import type { Db } from "./db.js";
 import { createAssetRepository } from "./assets.js";
+import {
+  createAuthorizationSessionRepository,
+  createPaymentAuthorizationRepository,
+  createTransactionPinRepository,
+} from "./authorization.js";
 import { createClarificationChoiceRepository } from "./clarifications.js";
 import { createConversationRepository, createMessageRepository } from "./conversations.js";
 import { createIdentityRepository, createUserRepository } from "./identity.js";
@@ -60,6 +68,9 @@ export interface Repositories {
   delegatedPermissions: DelegatedPermissionRepository;
   audit: AuditRepository;
   walletSetupSessions: WalletSetupSessionRepository;
+  transactionPins: TransactionPinRepository;
+  authorizationSessions: AuthorizationSessionRepository;
+  paymentAuthorizations: PaymentAuthorizationRepository;
 }
 
 function buildRepositories(db: Db): Repositories {
@@ -81,6 +92,9 @@ function buildRepositories(db: Db): Repositories {
     delegatedPermissions: createDelegatedPermissionRepository(db),
     audit: createAuditRepository(db),
     walletSetupSessions: createWalletSetupSessionRepository(db),
+    transactionPins: createTransactionPinRepository(db),
+    authorizationSessions: createAuthorizationSessionRepository(db),
+    paymentAuthorizations: createPaymentAuthorizationRepository(db),
   };
 }
 

@@ -1,4 +1,4 @@
-import type { AmountMode, MissingField, PaymentConfirmation, RoutingRequest } from "@kaada/domain";
+import type { AmountMode, MissingField, RoutingRequest } from "@kaada/domain";
 
 /**
  * The channel-independent result of one agent turn. Telegram, WhatsApp and web each render these
@@ -65,15 +65,45 @@ export interface RoutingRequiredResponse {
 }
 
 /**
- * CONTRACT ONLY - nothing produces this yet. A later build returns it once a route has been priced
- * and a payment summary exists, to ask the user to authorize that specific payment.
+ * What a person is asked to authorize with their PIN, in channel-neutral terms. Every figure is the
+ * same number the authorization will bind: the maximum spend and the minimum receive are the limits a
+ * later execution may not cross.
+ */
+export interface AuthorizationSummary {
+  amountMode: AmountMode;
+  recipient?: string;
+  /** The estimated spend (EXACT_INPUT: exactly this). */
+  senderSpends: MoneyView;
+  /** The most that may leave the wallet. */
+  maximumSpend: MoneyView;
+  /** The estimated amount received (EXACT_OUTPUT: exactly this). */
+  recipientReceives: MoneyView;
+  /** The least the recipient receives. */
+  minimumReceive: MoneyView;
+}
+
+/**
+ * A priced PAYMENT is ready and now needs the person's PIN. This replaces PAYMENT_READY whenever a
+ * wallet is configured. It carries a REFERENCE to the authorization session, never a link or token:
+ * those are bearer secrets, and this response is stored in the conversation history. The channel asks
+ * for a link (AuthorizationSessionService.issueLink) when it renders its "Authorize payment" button.
+ * The price is indicative; a firm price is only requested after authorization.
  */
 export interface AuthorizationRequiredResponse {
   type: "AUTHORIZATION_REQUIRED";
   text: string;
   intentId: string;
-  /** What the user is being asked to approve. */
-  confirmation: PaymentConfirmation;
+  revision: number;
+  routeId: string;
+  authorizationSessionId: string;
+  /** ISO time after which the session (and so the PIN screen) can no longer be used. */
+  expiresAt: string;
+  summary: AuthorizationSummary;
+  fees: MoneyView[];
+  slippageBps: number;
+  /** True when the prices came from the development mock provider and are not real. */
+  mock?: boolean;
+  indicative?: boolean;
 }
 
 /** An amount for display, with the exact smallest-unit value and asset it came from. */

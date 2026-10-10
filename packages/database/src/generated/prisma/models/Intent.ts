@@ -318,6 +318,8 @@ export type IntentWhereInput = {
   quotes?: Prisma.QuoteListRelationFilter
   routes?: Prisma.RouteListRelationFilter
   executions?: Prisma.ExecutionListRelationFilter
+  authorizationSessions?: Prisma.AuthorizationSessionListRelationFilter
+  paymentAuthorizations?: Prisma.PaymentAuthorizationListRelationFilter
 }
 
 export type IntentOrderByWithRelationInput = {
@@ -349,6 +351,8 @@ export type IntentOrderByWithRelationInput = {
   quotes?: Prisma.QuoteOrderByRelationAggregateInput
   routes?: Prisma.RouteOrderByRelationAggregateInput
   executions?: Prisma.ExecutionOrderByRelationAggregateInput
+  authorizationSessions?: Prisma.AuthorizationSessionOrderByRelationAggregateInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationOrderByRelationAggregateInput
 }
 
 export type IntentWhereUniqueInput = Prisma.AtLeast<{
@@ -383,6 +387,8 @@ export type IntentWhereUniqueInput = Prisma.AtLeast<{
   quotes?: Prisma.QuoteListRelationFilter
   routes?: Prisma.RouteListRelationFilter
   executions?: Prisma.ExecutionListRelationFilter
+  authorizationSessions?: Prisma.AuthorizationSessionListRelationFilter
+  paymentAuthorizations?: Prisma.PaymentAuthorizationListRelationFilter
 }, "id">
 
 export type IntentOrderByWithAggregationInput = {
@@ -458,6 +464,8 @@ export type IntentCreateInput = {
   quotes?: Prisma.QuoteCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutIntentInput
 }
 
 export type IntentUncheckedCreateInput = {
@@ -483,6 +491,8 @@ export type IntentUncheckedCreateInput = {
   quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteUncheckedCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutIntentInput
 }
 
 export type IntentUpdateInput = {
@@ -508,6 +518,8 @@ export type IntentUpdateInput = {
   quotes?: Prisma.QuoteUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutIntentNestedInput
 }
 
 export type IntentUncheckedUpdateInput = {
@@ -533,6 +545,8 @@ export type IntentUncheckedUpdateInput = {
   quotes?: Prisma.QuoteUncheckedUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUncheckedUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutIntentNestedInput
 }
 
 export type IntentCreateManyInput = {
@@ -602,6 +616,11 @@ export type IntentOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
+export type IntentScalarRelationFilter = {
+  is?: Prisma.IntentWhereInput
+  isNot?: Prisma.IntentWhereInput
+}
+
 export type IntentCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
@@ -667,11 +686,6 @@ export type IntentSumOrderByAggregateInput = {
   revision?: Prisma.SortOrder
 }
 
-export type IntentScalarRelationFilter = {
-  is?: Prisma.IntentWhereInput
-  isNot?: Prisma.IntentWhereInput
-}
-
 export type IntentCreateNestedManyWithoutUserInput = {
   create?: Prisma.XOR<Prisma.IntentCreateWithoutUserInput, Prisma.IntentUncheckedCreateWithoutUserInput> | Prisma.IntentCreateWithoutUserInput[] | Prisma.IntentUncheckedCreateWithoutUserInput[]
   connectOrCreate?: Prisma.IntentCreateOrConnectWithoutUserInput | Prisma.IntentCreateOrConnectWithoutUserInput[]
@@ -712,6 +726,34 @@ export type IntentUncheckedUpdateManyWithoutUserNestedInput = {
   update?: Prisma.IntentUpdateWithWhereUniqueWithoutUserInput | Prisma.IntentUpdateWithWhereUniqueWithoutUserInput[]
   updateMany?: Prisma.IntentUpdateManyWithWhereWithoutUserInput | Prisma.IntentUpdateManyWithWhereWithoutUserInput[]
   deleteMany?: Prisma.IntentScalarWhereInput | Prisma.IntentScalarWhereInput[]
+}
+
+export type IntentCreateNestedOneWithoutAuthorizationSessionsInput = {
+  create?: Prisma.XOR<Prisma.IntentCreateWithoutAuthorizationSessionsInput, Prisma.IntentUncheckedCreateWithoutAuthorizationSessionsInput>
+  connectOrCreate?: Prisma.IntentCreateOrConnectWithoutAuthorizationSessionsInput
+  connect?: Prisma.IntentWhereUniqueInput
+}
+
+export type IntentUpdateOneRequiredWithoutAuthorizationSessionsNestedInput = {
+  create?: Prisma.XOR<Prisma.IntentCreateWithoutAuthorizationSessionsInput, Prisma.IntentUncheckedCreateWithoutAuthorizationSessionsInput>
+  connectOrCreate?: Prisma.IntentCreateOrConnectWithoutAuthorizationSessionsInput
+  upsert?: Prisma.IntentUpsertWithoutAuthorizationSessionsInput
+  connect?: Prisma.IntentWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.IntentUpdateToOneWithWhereWithoutAuthorizationSessionsInput, Prisma.IntentUpdateWithoutAuthorizationSessionsInput>, Prisma.IntentUncheckedUpdateWithoutAuthorizationSessionsInput>
+}
+
+export type IntentCreateNestedOneWithoutPaymentAuthorizationsInput = {
+  create?: Prisma.XOR<Prisma.IntentCreateWithoutPaymentAuthorizationsInput, Prisma.IntentUncheckedCreateWithoutPaymentAuthorizationsInput>
+  connectOrCreate?: Prisma.IntentCreateOrConnectWithoutPaymentAuthorizationsInput
+  connect?: Prisma.IntentWhereUniqueInput
+}
+
+export type IntentUpdateOneRequiredWithoutPaymentAuthorizationsNestedInput = {
+  create?: Prisma.XOR<Prisma.IntentCreateWithoutPaymentAuthorizationsInput, Prisma.IntentUncheckedCreateWithoutPaymentAuthorizationsInput>
+  connectOrCreate?: Prisma.IntentCreateOrConnectWithoutPaymentAuthorizationsInput
+  upsert?: Prisma.IntentUpsertWithoutPaymentAuthorizationsInput
+  connect?: Prisma.IntentWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.IntentUpdateToOneWithWhereWithoutPaymentAuthorizationsInput, Prisma.IntentUpdateWithoutPaymentAuthorizationsInput>, Prisma.IntentUncheckedUpdateWithoutPaymentAuthorizationsInput>
 }
 
 export type IntentCreateNestedManyWithoutSourceAssetInput = {
@@ -882,10 +924,6 @@ export type IntentUncheckedUpdateManyWithoutConversationNestedInput = {
   deleteMany?: Prisma.IntentScalarWhereInput | Prisma.IntentScalarWhereInput[]
 }
 
-export type EnumIntentTypeFieldUpdateOperationsInput = {
-  set?: $Enums.IntentType
-}
-
 export type EnumIntentStatusFieldUpdateOperationsInput = {
   set?: $Enums.IntentStatus
 }
@@ -1014,6 +1052,8 @@ export type IntentCreateWithoutUserInput = {
   quotes?: Prisma.QuoteCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutIntentInput
 }
 
 export type IntentUncheckedCreateWithoutUserInput = {
@@ -1038,6 +1078,8 @@ export type IntentUncheckedCreateWithoutUserInput = {
   quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteUncheckedCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutIntentInput
 }
 
 export type IntentCreateOrConnectWithoutUserInput = {
@@ -1090,6 +1132,246 @@ export type IntentScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Intent"> | Date | string
 }
 
+export type IntentCreateWithoutAuthorizationSessionsInput = {
+  id: string
+  type: $Enums.IntentType
+  status?: $Enums.IntentStatus
+  amount?: string | null
+  amountMode?: $Enums.AmountMode | null
+  destinationCountry?: string | null
+  revision?: number
+  normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutIntentsInput
+  conversation: Prisma.ConversationCreateNestedOneWithoutIntentsInput
+  sourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsSourceInput
+  destinationAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsDestinationInput
+  recipient?: Prisma.RecipientCreateNestedOneWithoutIntentsInput
+  preferredSourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsPreferredSourceInput
+  clarificationOptions?: Prisma.ClarificationOptionCreateNestedManyWithoutIntentInput
+  quotes?: Prisma.QuoteCreateNestedManyWithoutIntentInput
+  routes?: Prisma.RouteCreateNestedManyWithoutIntentInput
+  executions?: Prisma.ExecutionCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutIntentInput
+}
+
+export type IntentUncheckedCreateWithoutAuthorizationSessionsInput = {
+  id: string
+  userId: string
+  conversationId: string
+  type: $Enums.IntentType
+  status?: $Enums.IntentStatus
+  amount?: string | null
+  amountMode?: $Enums.AmountMode | null
+  sourceAssetId?: string | null
+  destinationAssetId?: string | null
+  recipientId?: string | null
+  destinationCountry?: string | null
+  preferredSourceAssetId?: string | null
+  revision?: number
+  normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedCreateNestedManyWithoutIntentInput
+  quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutIntentInput
+  routes?: Prisma.RouteUncheckedCreateNestedManyWithoutIntentInput
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutIntentInput
+}
+
+export type IntentCreateOrConnectWithoutAuthorizationSessionsInput = {
+  where: Prisma.IntentWhereUniqueInput
+  create: Prisma.XOR<Prisma.IntentCreateWithoutAuthorizationSessionsInput, Prisma.IntentUncheckedCreateWithoutAuthorizationSessionsInput>
+}
+
+export type IntentUpsertWithoutAuthorizationSessionsInput = {
+  update: Prisma.XOR<Prisma.IntentUpdateWithoutAuthorizationSessionsInput, Prisma.IntentUncheckedUpdateWithoutAuthorizationSessionsInput>
+  create: Prisma.XOR<Prisma.IntentCreateWithoutAuthorizationSessionsInput, Prisma.IntentUncheckedCreateWithoutAuthorizationSessionsInput>
+  where?: Prisma.IntentWhereInput
+}
+
+export type IntentUpdateToOneWithWhereWithoutAuthorizationSessionsInput = {
+  where?: Prisma.IntentWhereInput
+  data: Prisma.XOR<Prisma.IntentUpdateWithoutAuthorizationSessionsInput, Prisma.IntentUncheckedUpdateWithoutAuthorizationSessionsInput>
+}
+
+export type IntentUpdateWithoutAuthorizationSessionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumIntentTypeFieldUpdateOperationsInput | $Enums.IntentType
+  status?: Prisma.EnumIntentStatusFieldUpdateOperationsInput | $Enums.IntentStatus
+  amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  amountMode?: Prisma.NullableEnumAmountModeFieldUpdateOperationsInput | $Enums.AmountMode | null
+  destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutIntentsNestedInput
+  conversation?: Prisma.ConversationUpdateOneRequiredWithoutIntentsNestedInput
+  sourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsSourceNestedInput
+  destinationAsset?: Prisma.AssetUpdateOneWithoutIntentsAsDestinationNestedInput
+  recipient?: Prisma.RecipientUpdateOneWithoutIntentsNestedInput
+  preferredSourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsPreferredSourceNestedInput
+  clarificationOptions?: Prisma.ClarificationOptionUpdateManyWithoutIntentNestedInput
+  quotes?: Prisma.QuoteUpdateManyWithoutIntentNestedInput
+  routes?: Prisma.RouteUpdateManyWithoutIntentNestedInput
+  executions?: Prisma.ExecutionUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutIntentNestedInput
+}
+
+export type IntentUncheckedUpdateWithoutAuthorizationSessionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  conversationId?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumIntentTypeFieldUpdateOperationsInput | $Enums.IntentType
+  status?: Prisma.EnumIntentStatusFieldUpdateOperationsInput | $Enums.IntentStatus
+  amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  amountMode?: Prisma.NullableEnumAmountModeFieldUpdateOperationsInput | $Enums.AmountMode | null
+  sourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destinationAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recipientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredSourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedUpdateManyWithoutIntentNestedInput
+  quotes?: Prisma.QuoteUncheckedUpdateManyWithoutIntentNestedInput
+  routes?: Prisma.RouteUncheckedUpdateManyWithoutIntentNestedInput
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutIntentNestedInput
+}
+
+export type IntentCreateWithoutPaymentAuthorizationsInput = {
+  id: string
+  type: $Enums.IntentType
+  status?: $Enums.IntentStatus
+  amount?: string | null
+  amountMode?: $Enums.AmountMode | null
+  destinationCountry?: string | null
+  revision?: number
+  normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutIntentsInput
+  conversation: Prisma.ConversationCreateNestedOneWithoutIntentsInput
+  sourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsSourceInput
+  destinationAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsDestinationInput
+  recipient?: Prisma.RecipientCreateNestedOneWithoutIntentsInput
+  preferredSourceAsset?: Prisma.AssetCreateNestedOneWithoutIntentsAsPreferredSourceInput
+  clarificationOptions?: Prisma.ClarificationOptionCreateNestedManyWithoutIntentInput
+  quotes?: Prisma.QuoteCreateNestedManyWithoutIntentInput
+  routes?: Prisma.RouteCreateNestedManyWithoutIntentInput
+  executions?: Prisma.ExecutionCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutIntentInput
+}
+
+export type IntentUncheckedCreateWithoutPaymentAuthorizationsInput = {
+  id: string
+  userId: string
+  conversationId: string
+  type: $Enums.IntentType
+  status?: $Enums.IntentStatus
+  amount?: string | null
+  amountMode?: $Enums.AmountMode | null
+  sourceAssetId?: string | null
+  destinationAssetId?: string | null
+  recipientId?: string | null
+  destinationCountry?: string | null
+  preferredSourceAssetId?: string | null
+  revision?: number
+  normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedCreateNestedManyWithoutIntentInput
+  quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutIntentInput
+  routes?: Prisma.RouteUncheckedCreateNestedManyWithoutIntentInput
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutIntentInput
+}
+
+export type IntentCreateOrConnectWithoutPaymentAuthorizationsInput = {
+  where: Prisma.IntentWhereUniqueInput
+  create: Prisma.XOR<Prisma.IntentCreateWithoutPaymentAuthorizationsInput, Prisma.IntentUncheckedCreateWithoutPaymentAuthorizationsInput>
+}
+
+export type IntentUpsertWithoutPaymentAuthorizationsInput = {
+  update: Prisma.XOR<Prisma.IntentUpdateWithoutPaymentAuthorizationsInput, Prisma.IntentUncheckedUpdateWithoutPaymentAuthorizationsInput>
+  create: Prisma.XOR<Prisma.IntentCreateWithoutPaymentAuthorizationsInput, Prisma.IntentUncheckedCreateWithoutPaymentAuthorizationsInput>
+  where?: Prisma.IntentWhereInput
+}
+
+export type IntentUpdateToOneWithWhereWithoutPaymentAuthorizationsInput = {
+  where?: Prisma.IntentWhereInput
+  data: Prisma.XOR<Prisma.IntentUpdateWithoutPaymentAuthorizationsInput, Prisma.IntentUncheckedUpdateWithoutPaymentAuthorizationsInput>
+}
+
+export type IntentUpdateWithoutPaymentAuthorizationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumIntentTypeFieldUpdateOperationsInput | $Enums.IntentType
+  status?: Prisma.EnumIntentStatusFieldUpdateOperationsInput | $Enums.IntentStatus
+  amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  amountMode?: Prisma.NullableEnumAmountModeFieldUpdateOperationsInput | $Enums.AmountMode | null
+  destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutIntentsNestedInput
+  conversation?: Prisma.ConversationUpdateOneRequiredWithoutIntentsNestedInput
+  sourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsSourceNestedInput
+  destinationAsset?: Prisma.AssetUpdateOneWithoutIntentsAsDestinationNestedInput
+  recipient?: Prisma.RecipientUpdateOneWithoutIntentsNestedInput
+  preferredSourceAsset?: Prisma.AssetUpdateOneWithoutIntentsAsPreferredSourceNestedInput
+  clarificationOptions?: Prisma.ClarificationOptionUpdateManyWithoutIntentNestedInput
+  quotes?: Prisma.QuoteUpdateManyWithoutIntentNestedInput
+  routes?: Prisma.RouteUpdateManyWithoutIntentNestedInput
+  executions?: Prisma.ExecutionUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutIntentNestedInput
+}
+
+export type IntentUncheckedUpdateWithoutPaymentAuthorizationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  conversationId?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumIntentTypeFieldUpdateOperationsInput | $Enums.IntentType
+  status?: Prisma.EnumIntentStatusFieldUpdateOperationsInput | $Enums.IntentStatus
+  amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  amountMode?: Prisma.NullableEnumAmountModeFieldUpdateOperationsInput | $Enums.AmountMode | null
+  sourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destinationAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recipientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  destinationCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredSourceAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  normalizedData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  constraints?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  missingFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  clarificationOptions?: Prisma.ClarificationOptionUncheckedUpdateManyWithoutIntentNestedInput
+  quotes?: Prisma.QuoteUncheckedUpdateManyWithoutIntentNestedInput
+  routes?: Prisma.RouteUncheckedUpdateManyWithoutIntentNestedInput
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutIntentNestedInput
+}
+
 export type IntentCreateWithoutSourceAssetInput = {
   id: string
   type: $Enums.IntentType
@@ -1112,6 +1394,8 @@ export type IntentCreateWithoutSourceAssetInput = {
   quotes?: Prisma.QuoteCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutIntentInput
 }
 
 export type IntentUncheckedCreateWithoutSourceAssetInput = {
@@ -1136,6 +1420,8 @@ export type IntentUncheckedCreateWithoutSourceAssetInput = {
   quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteUncheckedCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutIntentInput
 }
 
 export type IntentCreateOrConnectWithoutSourceAssetInput = {
@@ -1170,6 +1456,8 @@ export type IntentCreateWithoutDestinationAssetInput = {
   quotes?: Prisma.QuoteCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutIntentInput
 }
 
 export type IntentUncheckedCreateWithoutDestinationAssetInput = {
@@ -1194,6 +1482,8 @@ export type IntentUncheckedCreateWithoutDestinationAssetInput = {
   quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteUncheckedCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutIntentInput
 }
 
 export type IntentCreateOrConnectWithoutDestinationAssetInput = {
@@ -1228,6 +1518,8 @@ export type IntentCreateWithoutPreferredSourceAssetInput = {
   quotes?: Prisma.QuoteCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutIntentInput
 }
 
 export type IntentUncheckedCreateWithoutPreferredSourceAssetInput = {
@@ -1252,6 +1544,8 @@ export type IntentUncheckedCreateWithoutPreferredSourceAssetInput = {
   quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteUncheckedCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutIntentInput
 }
 
 export type IntentCreateOrConnectWithoutPreferredSourceAssetInput = {
@@ -1334,6 +1628,8 @@ export type IntentCreateWithoutConversationInput = {
   quotes?: Prisma.QuoteCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutIntentInput
 }
 
 export type IntentUncheckedCreateWithoutConversationInput = {
@@ -1358,6 +1654,8 @@ export type IntentUncheckedCreateWithoutConversationInput = {
   quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteUncheckedCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutIntentInput
 }
 
 export type IntentCreateOrConnectWithoutConversationInput = {
@@ -1408,6 +1706,8 @@ export type IntentCreateWithoutClarificationOptionsInput = {
   quotes?: Prisma.QuoteCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutIntentInput
 }
 
 export type IntentUncheckedCreateWithoutClarificationOptionsInput = {
@@ -1432,6 +1732,8 @@ export type IntentUncheckedCreateWithoutClarificationOptionsInput = {
   quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteUncheckedCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutIntentInput
 }
 
 export type IntentCreateOrConnectWithoutClarificationOptionsInput = {
@@ -1472,6 +1774,8 @@ export type IntentUpdateWithoutClarificationOptionsInput = {
   quotes?: Prisma.QuoteUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutIntentNestedInput
 }
 
 export type IntentUncheckedUpdateWithoutClarificationOptionsInput = {
@@ -1496,6 +1800,8 @@ export type IntentUncheckedUpdateWithoutClarificationOptionsInput = {
   quotes?: Prisma.QuoteUncheckedUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUncheckedUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutIntentNestedInput
 }
 
 export type IntentCreateWithoutRecipientInput = {
@@ -1520,6 +1826,8 @@ export type IntentCreateWithoutRecipientInput = {
   quotes?: Prisma.QuoteCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutIntentInput
 }
 
 export type IntentUncheckedCreateWithoutRecipientInput = {
@@ -1544,6 +1852,8 @@ export type IntentUncheckedCreateWithoutRecipientInput = {
   quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteUncheckedCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutIntentInput
 }
 
 export type IntentCreateOrConnectWithoutRecipientInput = {
@@ -1594,6 +1904,8 @@ export type IntentCreateWithoutQuotesInput = {
   clarificationOptions?: Prisma.ClarificationOptionCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutIntentInput
 }
 
 export type IntentUncheckedCreateWithoutQuotesInput = {
@@ -1618,6 +1930,8 @@ export type IntentUncheckedCreateWithoutQuotesInput = {
   clarificationOptions?: Prisma.ClarificationOptionUncheckedCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteUncheckedCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutIntentInput
 }
 
 export type IntentCreateOrConnectWithoutQuotesInput = {
@@ -1658,6 +1972,8 @@ export type IntentUpdateWithoutQuotesInput = {
   clarificationOptions?: Prisma.ClarificationOptionUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutIntentNestedInput
 }
 
 export type IntentUncheckedUpdateWithoutQuotesInput = {
@@ -1682,6 +1998,8 @@ export type IntentUncheckedUpdateWithoutQuotesInput = {
   clarificationOptions?: Prisma.ClarificationOptionUncheckedUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUncheckedUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutIntentNestedInput
 }
 
 export type IntentCreateWithoutRoutesInput = {
@@ -1706,6 +2024,8 @@ export type IntentCreateWithoutRoutesInput = {
   clarificationOptions?: Prisma.ClarificationOptionCreateNestedManyWithoutIntentInput
   quotes?: Prisma.QuoteCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutIntentInput
 }
 
 export type IntentUncheckedCreateWithoutRoutesInput = {
@@ -1730,6 +2050,8 @@ export type IntentUncheckedCreateWithoutRoutesInput = {
   clarificationOptions?: Prisma.ClarificationOptionUncheckedCreateNestedManyWithoutIntentInput
   quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutIntentInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutIntentInput
 }
 
 export type IntentCreateOrConnectWithoutRoutesInput = {
@@ -1770,6 +2092,8 @@ export type IntentUpdateWithoutRoutesInput = {
   clarificationOptions?: Prisma.ClarificationOptionUpdateManyWithoutIntentNestedInput
   quotes?: Prisma.QuoteUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutIntentNestedInput
 }
 
 export type IntentUncheckedUpdateWithoutRoutesInput = {
@@ -1794,6 +2118,8 @@ export type IntentUncheckedUpdateWithoutRoutesInput = {
   clarificationOptions?: Prisma.ClarificationOptionUncheckedUpdateManyWithoutIntentNestedInput
   quotes?: Prisma.QuoteUncheckedUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutIntentNestedInput
 }
 
 export type IntentCreateWithoutExecutionsInput = {
@@ -1818,6 +2144,8 @@ export type IntentCreateWithoutExecutionsInput = {
   clarificationOptions?: Prisma.ClarificationOptionCreateNestedManyWithoutIntentInput
   quotes?: Prisma.QuoteCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutIntentInput
 }
 
 export type IntentUncheckedCreateWithoutExecutionsInput = {
@@ -1842,6 +2170,8 @@ export type IntentUncheckedCreateWithoutExecutionsInput = {
   clarificationOptions?: Prisma.ClarificationOptionUncheckedCreateNestedManyWithoutIntentInput
   quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutIntentInput
   routes?: Prisma.RouteUncheckedCreateNestedManyWithoutIntentInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutIntentInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutIntentInput
 }
 
 export type IntentCreateOrConnectWithoutExecutionsInput = {
@@ -1882,6 +2212,8 @@ export type IntentUpdateWithoutExecutionsInput = {
   clarificationOptions?: Prisma.ClarificationOptionUpdateManyWithoutIntentNestedInput
   quotes?: Prisma.QuoteUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutIntentNestedInput
 }
 
 export type IntentUncheckedUpdateWithoutExecutionsInput = {
@@ -1906,6 +2238,8 @@ export type IntentUncheckedUpdateWithoutExecutionsInput = {
   clarificationOptions?: Prisma.ClarificationOptionUncheckedUpdateManyWithoutIntentNestedInput
   quotes?: Prisma.QuoteUncheckedUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUncheckedUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutIntentNestedInput
 }
 
 export type IntentCreateManyUserInput = {
@@ -1950,6 +2284,8 @@ export type IntentUpdateWithoutUserInput = {
   quotes?: Prisma.QuoteUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutIntentNestedInput
 }
 
 export type IntentUncheckedUpdateWithoutUserInput = {
@@ -1974,6 +2310,8 @@ export type IntentUncheckedUpdateWithoutUserInput = {
   quotes?: Prisma.QuoteUncheckedUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUncheckedUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutIntentNestedInput
 }
 
 export type IntentUncheckedUpdateManyWithoutUserInput = {
@@ -2078,6 +2416,8 @@ export type IntentUpdateWithoutSourceAssetInput = {
   quotes?: Prisma.QuoteUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutIntentNestedInput
 }
 
 export type IntentUncheckedUpdateWithoutSourceAssetInput = {
@@ -2102,6 +2442,8 @@ export type IntentUncheckedUpdateWithoutSourceAssetInput = {
   quotes?: Prisma.QuoteUncheckedUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUncheckedUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutIntentNestedInput
 }
 
 export type IntentUncheckedUpdateManyWithoutSourceAssetInput = {
@@ -2146,6 +2488,8 @@ export type IntentUpdateWithoutDestinationAssetInput = {
   quotes?: Prisma.QuoteUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutIntentNestedInput
 }
 
 export type IntentUncheckedUpdateWithoutDestinationAssetInput = {
@@ -2170,6 +2514,8 @@ export type IntentUncheckedUpdateWithoutDestinationAssetInput = {
   quotes?: Prisma.QuoteUncheckedUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUncheckedUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutIntentNestedInput
 }
 
 export type IntentUncheckedUpdateManyWithoutDestinationAssetInput = {
@@ -2214,6 +2560,8 @@ export type IntentUpdateWithoutPreferredSourceAssetInput = {
   quotes?: Prisma.QuoteUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutIntentNestedInput
 }
 
 export type IntentUncheckedUpdateWithoutPreferredSourceAssetInput = {
@@ -2238,6 +2586,8 @@ export type IntentUncheckedUpdateWithoutPreferredSourceAssetInput = {
   quotes?: Prisma.QuoteUncheckedUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUncheckedUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutIntentNestedInput
 }
 
 export type IntentUncheckedUpdateManyWithoutPreferredSourceAssetInput = {
@@ -2302,6 +2652,8 @@ export type IntentUpdateWithoutConversationInput = {
   quotes?: Prisma.QuoteUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutIntentNestedInput
 }
 
 export type IntentUncheckedUpdateWithoutConversationInput = {
@@ -2326,6 +2678,8 @@ export type IntentUncheckedUpdateWithoutConversationInput = {
   quotes?: Prisma.QuoteUncheckedUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUncheckedUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutIntentNestedInput
 }
 
 export type IntentUncheckedUpdateManyWithoutConversationInput = {
@@ -2390,6 +2744,8 @@ export type IntentUpdateWithoutRecipientInput = {
   quotes?: Prisma.QuoteUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutIntentNestedInput
 }
 
 export type IntentUncheckedUpdateWithoutRecipientInput = {
@@ -2414,6 +2770,8 @@ export type IntentUncheckedUpdateWithoutRecipientInput = {
   quotes?: Prisma.QuoteUncheckedUpdateManyWithoutIntentNestedInput
   routes?: Prisma.RouteUncheckedUpdateManyWithoutIntentNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutIntentNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutIntentNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutIntentNestedInput
 }
 
 export type IntentUncheckedUpdateManyWithoutRecipientInput = {
@@ -2446,6 +2804,8 @@ export type IntentCountOutputType = {
   quotes: number
   routes: number
   executions: number
+  authorizationSessions: number
+  paymentAuthorizations: number
 }
 
 export type IntentCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2453,6 +2813,8 @@ export type IntentCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions
   quotes?: boolean | IntentCountOutputTypeCountQuotesArgs
   routes?: boolean | IntentCountOutputTypeCountRoutesArgs
   executions?: boolean | IntentCountOutputTypeCountExecutionsArgs
+  authorizationSessions?: boolean | IntentCountOutputTypeCountAuthorizationSessionsArgs
+  paymentAuthorizations?: boolean | IntentCountOutputTypeCountPaymentAuthorizationsArgs
 }
 
 /**
@@ -2493,6 +2855,20 @@ export type IntentCountOutputTypeCountExecutionsArgs<ExtArgs extends runtime.Typ
   where?: Prisma.ExecutionWhereInput
 }
 
+/**
+ * IntentCountOutputType without action
+ */
+export type IntentCountOutputTypeCountAuthorizationSessionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AuthorizationSessionWhereInput
+}
+
+/**
+ * IntentCountOutputType without action
+ */
+export type IntentCountOutputTypeCountPaymentAuthorizationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PaymentAuthorizationWhereInput
+}
+
 
 export type IntentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -2523,6 +2899,8 @@ export type IntentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   quotes?: boolean | Prisma.Intent$quotesArgs<ExtArgs>
   routes?: boolean | Prisma.Intent$routesArgs<ExtArgs>
   executions?: boolean | Prisma.Intent$executionsArgs<ExtArgs>
+  authorizationSessions?: boolean | Prisma.Intent$authorizationSessionsArgs<ExtArgs>
+  paymentAuthorizations?: boolean | Prisma.Intent$paymentAuthorizationsArgs<ExtArgs>
   _count?: boolean | Prisma.IntentCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["intent"]>
 
@@ -2613,6 +2991,8 @@ export type IntentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   quotes?: boolean | Prisma.Intent$quotesArgs<ExtArgs>
   routes?: boolean | Prisma.Intent$routesArgs<ExtArgs>
   executions?: boolean | Prisma.Intent$executionsArgs<ExtArgs>
+  authorizationSessions?: boolean | Prisma.Intent$authorizationSessionsArgs<ExtArgs>
+  paymentAuthorizations?: boolean | Prisma.Intent$paymentAuthorizationsArgs<ExtArgs>
   _count?: boolean | Prisma.IntentCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type IntentIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2645,6 +3025,8 @@ export type $IntentPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     quotes: Prisma.$QuotePayload<ExtArgs>[]
     routes: Prisma.$RoutePayload<ExtArgs>[]
     executions: Prisma.$ExecutionPayload<ExtArgs>[]
+    authorizationSessions: Prisma.$AuthorizationSessionPayload<ExtArgs>[]
+    paymentAuthorizations: Prisma.$PaymentAuthorizationPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -3079,6 +3461,8 @@ export interface Prisma__IntentClient<T, Null = never, ExtArgs extends runtime.T
   quotes<T extends Prisma.Intent$quotesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Intent$quotesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$QuotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   routes<T extends Prisma.Intent$routesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Intent$routesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RoutePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   executions<T extends Prisma.Intent$executionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Intent$executionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ExecutionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  authorizationSessions<T extends Prisma.Intent$authorizationSessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Intent$authorizationSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AuthorizationSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  paymentAuthorizations<T extends Prisma.Intent$paymentAuthorizationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Intent$paymentAuthorizationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PaymentAuthorizationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3696,6 +4080,54 @@ export type Intent$executionsArgs<ExtArgs extends runtime.Types.Extensions.Inter
   take?: number
   skip?: number
   distinct?: Prisma.ExecutionScalarFieldEnum | Prisma.ExecutionScalarFieldEnum[]
+}
+
+/**
+ * Intent.authorizationSessions
+ */
+export type Intent$authorizationSessionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AuthorizationSession
+   */
+  select?: Prisma.AuthorizationSessionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the AuthorizationSession
+   */
+  omit?: Prisma.AuthorizationSessionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AuthorizationSessionInclude<ExtArgs> | null
+  where?: Prisma.AuthorizationSessionWhereInput
+  orderBy?: Prisma.AuthorizationSessionOrderByWithRelationInput | Prisma.AuthorizationSessionOrderByWithRelationInput[]
+  cursor?: Prisma.AuthorizationSessionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.AuthorizationSessionScalarFieldEnum | Prisma.AuthorizationSessionScalarFieldEnum[]
+}
+
+/**
+ * Intent.paymentAuthorizations
+ */
+export type Intent$paymentAuthorizationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PaymentAuthorization
+   */
+  select?: Prisma.PaymentAuthorizationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PaymentAuthorization
+   */
+  omit?: Prisma.PaymentAuthorizationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PaymentAuthorizationInclude<ExtArgs> | null
+  where?: Prisma.PaymentAuthorizationWhereInput
+  orderBy?: Prisma.PaymentAuthorizationOrderByWithRelationInput | Prisma.PaymentAuthorizationOrderByWithRelationInput[]
+  cursor?: Prisma.PaymentAuthorizationWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PaymentAuthorizationScalarFieldEnum | Prisma.PaymentAuthorizationScalarFieldEnum[]
 }
 
 /**

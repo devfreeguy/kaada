@@ -22,6 +22,11 @@ const sensitiveKeys = [
   "cookie",
   "privateKey",
   "mnemonic",
+  "pin",
+  "pinHash",
+  "tokenHash",
+  "newPin",
+  "challenge",
 ];
 
 /** Request/response header paths plus sensitive keys at the top level and one level deep. */

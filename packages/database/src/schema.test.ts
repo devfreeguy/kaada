@@ -54,6 +54,9 @@ const modelNames = [
   "PasskeyCredential",
   "PasskeyChallenge",
   "WalletSetupSession",
+  "TransactionPinSecurity",
+  "AuthorizationSession",
+  "PaymentAuthorization",
   "DelegatedPermission",
   "Asset",
   "Conversation",
@@ -118,6 +121,8 @@ const enumValues: Record<string, string[]> = {
   PermissionStatus: ["PENDING", "ACTIVE", "REVOKED", "EXPIRED"],
   PasskeyChallengePurpose: ["REGISTRATION", "AUTHENTICATION"],
   WalletSetupStatus: ["PENDING", "COMPLETED", "REVOKED"],
+  AuthorizationSessionStatus: ["PENDING", "AUTHORIZED", "EXPIRED", "CANCELLED"],
+  PaymentAuthorizationStatus: ["ACTIVE", "CONSUMED", "REVOKED", "EXPIRED"],
   RouteStatus: ["CREATED", "VALID", "EXPIRED", "SELECTED", "INVALID"],
   RouteStepType: ["TRANSFER", "SWAP", "BRIDGE", "ON_RAMP", "OFF_RAMP", "BANK_PAYOUT"],
   ExecutionStatus: [
@@ -167,6 +172,9 @@ const moneyColumns: Record<string, string[]> = {
 /** Wallet-related money columns: their CHECKs live in the wallet constraints migration. */
 const permissionMoneyColumns = ["perTransactionAmount", "cumulativeAmount"];
 
+/** Payment authorization limits: canonical positive smallest-unit strings, checked in their own migration. */
+const authorizationMoneyColumns = ["maxInputAmount", "minOutputAmount"];
+
 describe("prisma schema", () => {
   it("defines every required model and enum", () => {
     assert.deepEqual([...models.keys()].sort(), [...modelNames].sort());
@@ -199,6 +207,7 @@ describe("prisma schema", () => {
         columns.map((column) => `${model}.${column}`),
       ),
       ...permissionMoneyColumns.map((column) => `DelegatedPermission.${column}`),
+      ...authorizationMoneyColumns.map((column) => `PaymentAuthorization.${column}`),
     ]);
     for (const [model, fields] of models) {
       for (const field of fields) {
@@ -255,6 +264,38 @@ describe("prisma schema", () => {
     assert.ok(sql.includes(`"tokenHash" ~ '^[0-9a-f]{64}$'`));
     assert.ok(sql.includes(`("status" = 'COMPLETED') = ("usedAt" IS NOT NULL)`));
     assert.ok(sql.includes('"expiresAt" > "createdAt"'));
+  });
+
+  it("keeps the PIN hashed and authorizations bounded, immutable and single-use in the database", () => {
+    const sql = readFileSync(
+      new URL(
+        "../prisma/migrations/20261016000001_authorization_constraints/migration.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    const read = (name: string) => {
+      const start = schema.indexOf(`model ${name}`);
+      return schema.slice(start, schema.indexOf("}", start));
+    };
+    // No plaintext PIN column, only a hash, and only an Argon2id one may be stored.
+    assert.ok(/pinHash\s+String/.test(read("TransactionPinSecurity")));
+    assert.ok(!/^\s*pin\s/m.test(read("TransactionPinSecurity")));
+    assert.ok(sql.includes(`"pinHash" LIKE '$argon2id$%'`));
+    assert.ok(sql.includes('"failedAttempts" >= 0'));
+    // Sessions: digest-only token, terminal fields consistent, one live session per payment.
+    assert.ok(sql.includes(`"tokenHash" ~ '^[0-9a-f]{64}$'`));
+    assert.ok(sql.includes(`("status" = 'AUTHORIZED') = ("usedAt" IS NOT NULL)`));
+    assert.ok(sql.includes('"AuthorizationSession_one_pending_key"'));
+    // Approvals: canonical positive amounts, short life, one active per intent, route shape matches assets.
+    for (const column of authorizationMoneyColumns)
+      assert.ok(sql.includes(`"${column}" ~ '^[1-9][0-9]*$'`), column);
+    assert.ok(sql.includes('"expiresAt" > "createdAt"'));
+    assert.ok(sql.includes(`("status" = 'CONSUMED') = ("consumedAt" IS NOT NULL)`));
+    assert.ok(sql.includes('"PaymentAuthorization_one_active_per_intent_key"'));
+    assert.ok(sql.includes('"routeAssetPath"[1] = "inputAssetId"'));
+    // An approval is bound to a quote by nothing: there is no quote column to bind to.
+    assert.ok(!/bquoteIdb/.test(read("PaymentAuthorization")));
   });
 
   it("uses application-generated UUID primary keys", () => {

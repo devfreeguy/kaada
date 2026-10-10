@@ -21,6 +21,12 @@ export { intentCreateData, intentUpdateData, toIntent } from "./intent.js";
 export { toProvider, toProviderCapability } from "./provider.js";
 export { quoteCreateData, routeCreateData, toQuote, toRoute, toRouteStep } from "./quote-route.js";
 export { recipientCreateData, toRecipient } from "./recipient.js";
+export {
+  paymentAuthorizationCreateData,
+  toAuthorizationSession,
+  toPaymentAuthorization,
+  toTransactionPinSecurity,
+} from "./authorization.js";
 export { DataIntegrityError } from "./support.js";
 export {
   permissionCreateData,

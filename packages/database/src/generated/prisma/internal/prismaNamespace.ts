@@ -403,6 +403,9 @@ export const ModelName = {
   Wallet: 'Wallet',
   PasskeyCredential: 'PasskeyCredential',
   WalletSetupSession: 'WalletSetupSession',
+  TransactionPinSecurity: 'TransactionPinSecurity',
+  AuthorizationSession: 'AuthorizationSession',
+  PaymentAuthorization: 'PaymentAuthorization',
   PasskeyChallenge: 'PasskeyChallenge',
   DelegatedPermission: 'DelegatedPermission',
   Asset: 'Asset',
@@ -435,7 +438,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent"
+    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "transactionPinSecurity" | "authorizationSession" | "paymentAuthorization" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -880,6 +883,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.WalletSetupSessionCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.WalletSetupSessionCountAggregateOutputType> | number
+        }
+      }
+    }
+    TransactionPinSecurity: {
+      payload: Prisma.$TransactionPinSecurityPayload<ExtArgs>
+      fields: Prisma.TransactionPinSecurityFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TransactionPinSecurityFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TransactionPinSecurityPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TransactionPinSecurityFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TransactionPinSecurityPayload>
+        }
+        findFirst: {
+          args: Prisma.TransactionPinSecurityFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TransactionPinSecurityPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TransactionPinSecurityFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TransactionPinSecurityPayload>
+        }
+        findMany: {
+          args: Prisma.TransactionPinSecurityFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TransactionPinSecurityPayload>[]
+        }
+        create: {
+          args: Prisma.TransactionPinSecurityCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TransactionPinSecurityPayload>
+        }
+        createMany: {
+          args: Prisma.TransactionPinSecurityCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TransactionPinSecurityCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TransactionPinSecurityPayload>[]
+        }
+        delete: {
+          args: Prisma.TransactionPinSecurityDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TransactionPinSecurityPayload>
+        }
+        update: {
+          args: Prisma.TransactionPinSecurityUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TransactionPinSecurityPayload>
+        }
+        deleteMany: {
+          args: Prisma.TransactionPinSecurityDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TransactionPinSecurityUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TransactionPinSecurityUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TransactionPinSecurityPayload>[]
+        }
+        upsert: {
+          args: Prisma.TransactionPinSecurityUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TransactionPinSecurityPayload>
+        }
+        aggregate: {
+          args: Prisma.TransactionPinSecurityAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTransactionPinSecurity>
+        }
+        groupBy: {
+          args: Prisma.TransactionPinSecurityGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TransactionPinSecurityGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TransactionPinSecurityCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TransactionPinSecurityCountAggregateOutputType> | number
+        }
+      }
+    }
+    AuthorizationSession: {
+      payload: Prisma.$AuthorizationSessionPayload<ExtArgs>
+      fields: Prisma.AuthorizationSessionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AuthorizationSessionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthorizationSessionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AuthorizationSessionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthorizationSessionPayload>
+        }
+        findFirst: {
+          args: Prisma.AuthorizationSessionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthorizationSessionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AuthorizationSessionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthorizationSessionPayload>
+        }
+        findMany: {
+          args: Prisma.AuthorizationSessionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthorizationSessionPayload>[]
+        }
+        create: {
+          args: Prisma.AuthorizationSessionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthorizationSessionPayload>
+        }
+        createMany: {
+          args: Prisma.AuthorizationSessionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AuthorizationSessionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthorizationSessionPayload>[]
+        }
+        delete: {
+          args: Prisma.AuthorizationSessionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthorizationSessionPayload>
+        }
+        update: {
+          args: Prisma.AuthorizationSessionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthorizationSessionPayload>
+        }
+        deleteMany: {
+          args: Prisma.AuthorizationSessionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AuthorizationSessionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AuthorizationSessionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthorizationSessionPayload>[]
+        }
+        upsert: {
+          args: Prisma.AuthorizationSessionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AuthorizationSessionPayload>
+        }
+        aggregate: {
+          args: Prisma.AuthorizationSessionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAuthorizationSession>
+        }
+        groupBy: {
+          args: Prisma.AuthorizationSessionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AuthorizationSessionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AuthorizationSessionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AuthorizationSessionCountAggregateOutputType> | number
+        }
+      }
+    }
+    PaymentAuthorization: {
+      payload: Prisma.$PaymentAuthorizationPayload<ExtArgs>
+      fields: Prisma.PaymentAuthorizationFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PaymentAuthorizationFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentAuthorizationPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PaymentAuthorizationFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentAuthorizationPayload>
+        }
+        findFirst: {
+          args: Prisma.PaymentAuthorizationFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentAuthorizationPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PaymentAuthorizationFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentAuthorizationPayload>
+        }
+        findMany: {
+          args: Prisma.PaymentAuthorizationFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentAuthorizationPayload>[]
+        }
+        create: {
+          args: Prisma.PaymentAuthorizationCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentAuthorizationPayload>
+        }
+        createMany: {
+          args: Prisma.PaymentAuthorizationCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PaymentAuthorizationCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentAuthorizationPayload>[]
+        }
+        delete: {
+          args: Prisma.PaymentAuthorizationDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentAuthorizationPayload>
+        }
+        update: {
+          args: Prisma.PaymentAuthorizationUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentAuthorizationPayload>
+        }
+        deleteMany: {
+          args: Prisma.PaymentAuthorizationDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PaymentAuthorizationUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PaymentAuthorizationUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentAuthorizationPayload>[]
+        }
+        upsert: {
+          args: Prisma.PaymentAuthorizationUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentAuthorizationPayload>
+        }
+        aggregate: {
+          args: Prisma.PaymentAuthorizationAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePaymentAuthorization>
+        }
+        groupBy: {
+          args: Prisma.PaymentAuthorizationGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PaymentAuthorizationGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PaymentAuthorizationCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PaymentAuthorizationCountAggregateOutputType> | number
         }
       }
     }
@@ -2271,6 +2496,72 @@ export const WalletSetupSessionScalarFieldEnum = {
 export type WalletSetupSessionScalarFieldEnum = (typeof WalletSetupSessionScalarFieldEnum)[keyof typeof WalletSetupSessionScalarFieldEnum]
 
 
+export const TransactionPinSecurityScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  pinHash: 'pinHash',
+  failedAttempts: 'failedAttempts',
+  lockLevel: 'lockLevel',
+  lockedUntil: 'lockedUntil',
+  changedAt: 'changedAt',
+  resetRequired: 'resetRequired',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TransactionPinSecurityScalarFieldEnum = (typeof TransactionPinSecurityScalarFieldEnum)[keyof typeof TransactionPinSecurityScalarFieldEnum]
+
+
+export const AuthorizationSessionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  walletId: 'walletId',
+  intentId: 'intentId',
+  intentRevision: 'intentRevision',
+  routeId: 'routeId',
+  tokenHash: 'tokenHash',
+  tokenIssuedAt: 'tokenIssuedAt',
+  status: 'status',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  cancelReason: 'cancelReason',
+  createdAt: 'createdAt'
+} as const
+
+export type AuthorizationSessionScalarFieldEnum = (typeof AuthorizationSessionScalarFieldEnum)[keyof typeof AuthorizationSessionScalarFieldEnum]
+
+
+export const PaymentAuthorizationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  walletId: 'walletId',
+  intentId: 'intentId',
+  intentRevision: 'intentRevision',
+  routeId: 'routeId',
+  sessionId: 'sessionId',
+  status: 'status',
+  operation: 'operation',
+  chainId: 'chainId',
+  recipientId: 'recipientId',
+  recipientAddress: 'recipientAddress',
+  destinationCountry: 'destinationCountry',
+  amountMode: 'amountMode',
+  inputAssetId: 'inputAssetId',
+  outputAssetId: 'outputAssetId',
+  maxInputAmount: 'maxInputAmount',
+  minOutputAmount: 'minOutputAmount',
+  routeAssetPath: 'routeAssetPath',
+  routeProviders: 'routeProviders',
+  expiresAt: 'expiresAt',
+  consumedAt: 'consumedAt',
+  revokedAt: 'revokedAt',
+  revocationReason: 'revocationReason',
+  createdAt: 'createdAt'
+} as const
+
+export type PaymentAuthorizationScalarFieldEnum = (typeof PaymentAuthorizationScalarFieldEnum)[keyof typeof PaymentAuthorizationScalarFieldEnum]
+
+
 export const PasskeyChallengeScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -2770,6 +3061,62 @@ export type ListEnumWalletSetupStatusFieldRefInput<$PrismaModel> = FieldRefInput
 
 
 /**
+ * Reference to a field of type 'AuthorizationSessionStatus'
+ */
+export type EnumAuthorizationSessionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AuthorizationSessionStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'AuthorizationSessionStatus[]'
+ */
+export type ListEnumAuthorizationSessionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AuthorizationSessionStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'PaymentAuthorizationStatus'
+ */
+export type EnumPaymentAuthorizationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentAuthorizationStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'PaymentAuthorizationStatus[]'
+ */
+export type ListEnumPaymentAuthorizationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentAuthorizationStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'IntentType'
+ */
+export type EnumIntentTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'IntentType'>
+    
+
+
+/**
+ * Reference to a field of type 'IntentType[]'
+ */
+export type ListEnumIntentTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'IntentType[]'>
+    
+
+
+/**
+ * Reference to a field of type 'AmountMode'
+ */
+export type EnumAmountModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AmountMode'>
+    
+
+
+/**
+ * Reference to a field of type 'AmountMode[]'
+ */
+export type ListEnumAmountModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AmountMode[]'>
+    
+
+
+/**
  * Reference to a field of type 'PasskeyChallengePurpose'
  */
 export type EnumPasskeyChallengePurposeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PasskeyChallengePurpose'>
@@ -2854,20 +3201,6 @@ export type ListEnumMessageRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$
 
 
 /**
- * Reference to a field of type 'IntentType'
- */
-export type EnumIntentTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'IntentType'>
-    
-
-
-/**
- * Reference to a field of type 'IntentType[]'
- */
-export type ListEnumIntentTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'IntentType[]'>
-    
-
-
-/**
  * Reference to a field of type 'IntentStatus'
  */
 export type EnumIntentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'IntentStatus'>
@@ -2878,20 +3211,6 @@ export type EnumIntentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$Pri
  * Reference to a field of type 'IntentStatus[]'
  */
 export type ListEnumIntentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'IntentStatus[]'>
-    
-
-
-/**
- * Reference to a field of type 'AmountMode'
- */
-export type EnumAmountModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AmountMode'>
-    
-
-
-/**
- * Reference to a field of type 'AmountMode[]'
- */
-export type ListEnumAmountModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AmountMode[]'>
     
 
 
@@ -3205,6 +3524,9 @@ export type GlobalOmitConfig = {
   wallet?: Prisma.WalletOmit
   passkeyCredential?: Prisma.PasskeyCredentialOmit
   walletSetupSession?: Prisma.WalletSetupSessionOmit
+  transactionPinSecurity?: Prisma.TransactionPinSecurityOmit
+  authorizationSession?: Prisma.AuthorizationSessionOmit
+  paymentAuthorization?: Prisma.PaymentAuthorizationOmit
   passkeyChallenge?: Prisma.PasskeyChallengeOmit
   delegatedPermission?: Prisma.DelegatedPermissionOmit
   asset?: Prisma.AssetOmit

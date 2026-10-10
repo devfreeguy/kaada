@@ -100,12 +100,17 @@ export class WalletSetupService {
    * Called by a trusted channel that has already identified the user. Retires the user's earlier
    * unused links so only the newest works. Refuses a user whose wallet is already set up.
    */
-  async createSession(userId: string): Promise<CreatedSetupSession> {
+  async createSession(
+    userId: string,
+    options: { existingWallet?: boolean } = {},
+  ): Promise<CreatedSetupSession> {
     if (!(await this.deps.users.findById(userId))) {
       throw new KaadaError("SETUP_SESSION_INVALID", "no such user");
     }
     const wallet = await this.deps.wallets.getWallet(userId);
-    if (wallet?.status === "ACTIVE") {
+    // `existingWallet` is for a security link (set or change the PIN) for someone whose wallet is
+    // already active. It still cannot register a passkey: that path refuses an active wallet.
+    if (wallet?.status === "ACTIVE" && !options.existingWallet) {
       throw new KaadaError("WALLET_ALREADY_SETUP", "this user's wallet is already set up");
     }
 

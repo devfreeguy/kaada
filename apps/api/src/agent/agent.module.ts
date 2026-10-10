@@ -21,6 +21,9 @@ import { WalletFundingResolver } from "../core/routing/funding-resolver.js";
 import type { WalletBalanceService } from "../core/wallets/balance-service.js";
 import { WalletServiceFundingPort } from "../core/wallets/funding-port.js";
 import type { WalletService } from "../core/wallets/wallet-service.js";
+import { AuthorizationModule } from "../authorization/authorization.module.js";
+import { AUTHORIZATION_SESSION_SERVICE } from "../authorization/authorization.tokens.js";
+import type { AuthorizationSessionService } from "../core/authorization/session-service.js";
 import { WalletModule } from "../wallet/wallet.module.js";
 import { WALLET_BALANCE_SERVICE, WALLET_SERVICE } from "../wallet/wallet.tokens.js";
 import { AGENT_REPOSITORIES, AGENT_SERVICE, CANDIDATE_SERVICES } from "./agent.tokens.js";
@@ -58,7 +61,7 @@ function createInterpreter(config: AppConfig, log: AgentLog): IntentInterpreter 
 }
 
 @Module({
-  imports: [WalletModule],
+  imports: [WalletModule, AuthorizationModule],
   controllers: [AgentController],
   providers: [
     {
@@ -79,13 +82,21 @@ function createInterpreter(config: AppConfig, log: AgentLog): IntentInterpreter 
     },
     {
       provide: AGENT_SERVICE,
-      inject: [DATABASE, APP_CONFIG, AGENT_REPOSITORIES, WALLET_SERVICE, WALLET_BALANCE_SERVICE],
+      inject: [
+        DATABASE,
+        APP_CONFIG,
+        AGENT_REPOSITORIES,
+        WALLET_SERVICE,
+        WALLET_BALANCE_SERVICE,
+        AUTHORIZATION_SESSION_SERVICE,
+      ],
       useFactory: (
         database: Database,
         config: AppConfig,
         repositories: Repositories,
         wallets: WalletService | null,
         balances: WalletBalanceService | null,
+        authorization: AuthorizationSessionService | null,
       ): AgentService | null => {
         const log = nestAgentLog();
         const interpreter = createInterpreter(config, log);
@@ -107,6 +118,8 @@ function createInterpreter(config: AppConfig, log: AgentLog): IntentInterpreter 
           providers: repositories.providers,
           read: repositories,
           ...(funding && { funding }),
+          // Payments end in AUTHORIZATION_REQUIRED (a PIN step) only when a wallet and PIN service exist.
+          ...(funding && authorization && { authorization }),
           log,
         });
         const routing = () => (service ? { routing: service } : {});

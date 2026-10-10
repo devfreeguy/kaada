@@ -1,10 +1,13 @@
 import type {
   AssetRepository,
+  AuditRepository,
+  AuthorizationSessionRepository,
   ClarificationChoiceRepository,
   ConversationRepository,
   IdentityRepository,
   IntentRepository,
   MessageRepository,
+  PaymentAuthorizationRepository,
   ProviderRepository,
   QuoteRepository,
   RecipientRepository,
@@ -25,6 +28,10 @@ export interface AgentRepositories {
   quotes: QuoteRepository;
   routes: RouteRepository;
   providers: ProviderRepository;
+  /** Payment authorization (PIN approvals). The agent only creates sessions and revokes stale ones. */
+  authorizationSessions: AuthorizationSessionRepository;
+  paymentAuthorizations: PaymentAuthorizationRepository;
+  audit: AuditRepository;
 }
 
 /**

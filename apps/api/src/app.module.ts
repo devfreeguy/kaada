@@ -4,6 +4,7 @@ import type { AppConfig } from "@kaada/config";
 import { LoggerModule } from "nestjs-pino";
 
 import { AgentModule } from "./agent/agent.module.js";
+import { AuthorizationModule } from "./authorization/authorization.module.js";
 import { AppConfigModule, APP_CONFIG } from "./config/config.module.js";
 import { DatabaseModule } from "./database/database.module.js";
 import { HealthModule } from "./health/health.module.js";
@@ -25,6 +26,7 @@ import { WalletModule } from "./wallet/wallet.module.js";
     HealthModule,
     AgentModule,
     WalletModule,
+    AuthorizationModule,
   ],
 })
 export class AppModule {}

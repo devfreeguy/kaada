@@ -14,9 +14,11 @@ export class WalletServiceFundingPort implements WalletFundingPort {
     },
   ) {}
 
-  async activeAddress(userId: string): Promise<string | null> {
+  async activeWallet(userId: string): Promise<{ id: string; address: string } | null> {
     const wallet = await this.deps.wallets.getWallet(userId);
-    return wallet?.status === "ACTIVE" && wallet.address !== undefined ? wallet.address : null;
+    return wallet?.status === "ACTIVE" && wallet.address !== undefined
+      ? { id: wallet.id, address: wallet.address }
+      : null;
   }
 
   balancesOf(address: string, assetIds: string[]): Promise<Map<string, bigint>> {

@@ -318,10 +318,54 @@ describe("wallet configuration", () => {
     };
     assert.equal(loadConfig(local).wallet.provider, "kernel");
     assert.throws(() => loadConfig({ ...local, NODE_ENV: "production" }), /https/);
-    assert.equal(loadConfig({ ...kernel, NODE_ENV: "production" }).wallet.provider, "kernel");
+    const production = { ...kernel, NODE_ENV: "production", PIN_PEPPER: "p".repeat(32) };
+    assert.equal(loadConfig(production).wallet.provider, "kernel");
+    assert.throws(() => loadConfig({ ...production, CELO_RPC_URL: "http://rpc.example" }), /https/);
+  });
+});
+
+describe("payment authorization configuration", () => {
+  const base = { DATABASE_URL: databaseUrl };
+  const kernel = {
+    ...base,
+    WALLET_PROVIDER: "kernel",
+    PASSKEY_RP_ID: "kaada.app",
+    PASSKEY_ORIGIN: "https://app.kaada.app",
+  };
+
+  it("defaults to short lifetimes and no pepper in development", () => {
+    const { authorization } = loadConfig(base);
+    assert.equal(authorization.sessionTtlMs, 300_000);
+    assert.equal(authorization.paymentTtlMs, 180_000);
+    assert.equal("pinPepper" in authorization, false);
+  });
+
+  it("keeps the lifetimes short: a half-hour authorization is refused", () => {
+    assert.equal(
+      loadConfig({ ...base, PAYMENT_AUTHORIZATION_TTL_SECONDS: "120" }).authorization.paymentTtlMs,
+      120_000,
+    );
     assert.throws(
-      () => loadConfig({ ...kernel, NODE_ENV: "production", CELO_RPC_URL: "http://rpc.example" }),
-      /https/,
+      () => loadConfig({ ...base, PAYMENT_AUTHORIZATION_TTL_SECONDS: "1800" }),
+      ConfigError,
+    );
+    assert.throws(
+      () => loadConfig({ ...base, PAYMENT_AUTHORIZATION_TTL_SECONDS: "5" }),
+      ConfigError,
+    );
+    assert.throws(
+      () => loadConfig({ ...base, AUTHORIZATION_SESSION_TTL_SECONDS: "3600" }),
+      ConfigError,
+    );
+  });
+
+  it("requires a PIN pepper of at least 32 characters in production wallets", () => {
+    const production = { ...kernel, NODE_ENV: "production" };
+    assert.throws(() => loadConfig(production), /PIN_PEPPER/);
+    assert.throws(() => loadConfig({ ...production, PIN_PEPPER: "short" }), /PIN_PEPPER/);
+    assert.equal(
+      loadConfig({ ...production, PIN_PEPPER: "p".repeat(32) }).authorization.pinPepper,
+      "p".repeat(32),
     );
   });
 });

@@ -1,3 +1,4 @@
+import { retireAuthorization } from "../authorization/retire.js";
 import type { OnIntentRevised } from "../intents/intent-commit.js";
 
 /**
@@ -9,3 +10,14 @@ import type { OnIntentRevised } from "../intents/intent-commit.js";
 export const invalidateRoutesOnRevision: OnIntentRevised = async (repositories, intent) => {
   await repositories.routes.invalidateOlderThan(intent.id, intent.revision);
 };
+
+/**
+ * Run whenever an intent's financial details change: every authorization session and approval built
+ * for the old details is retired (cancelled / revoked, never deleted). An approval for the old
+ * amount, recipient or asset can therefore never be used for the new one.
+ */
+export function invalidateAuthorizationOnRevision(now: () => Date): OnIntentRevised {
+  return async (repositories, intent) => {
+    await retireAuthorization(repositories, intent.id, null, "INTENT_REVISED", now());
+  };
+}

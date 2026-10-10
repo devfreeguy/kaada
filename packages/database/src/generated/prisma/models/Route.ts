@@ -278,6 +278,8 @@ export type RouteWhereInput = {
   totalFeeAsset?: Prisma.XOR<Prisma.AssetNullableScalarRelationFilter, Prisma.AssetWhereInput> | null
   steps?: Prisma.RouteStepListRelationFilter
   executions?: Prisma.ExecutionListRelationFilter
+  authorizationSessions?: Prisma.AuthorizationSessionListRelationFilter
+  paymentAuthorizations?: Prisma.PaymentAuthorizationListRelationFilter
 }
 
 export type RouteOrderByWithRelationInput = {
@@ -299,6 +301,8 @@ export type RouteOrderByWithRelationInput = {
   totalFeeAsset?: Prisma.AssetOrderByWithRelationInput
   steps?: Prisma.RouteStepOrderByRelationAggregateInput
   executions?: Prisma.ExecutionOrderByRelationAggregateInput
+  authorizationSessions?: Prisma.AuthorizationSessionOrderByRelationAggregateInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationOrderByRelationAggregateInput
 }
 
 export type RouteWhereUniqueInput = Prisma.AtLeast<{
@@ -323,6 +327,8 @@ export type RouteWhereUniqueInput = Prisma.AtLeast<{
   totalFeeAsset?: Prisma.XOR<Prisma.AssetNullableScalarRelationFilter, Prisma.AssetWhereInput> | null
   steps?: Prisma.RouteStepListRelationFilter
   executions?: Prisma.ExecutionListRelationFilter
+  authorizationSessions?: Prisma.AuthorizationSessionListRelationFilter
+  paymentAuthorizations?: Prisma.PaymentAuthorizationListRelationFilter
 }, "id">
 
 export type RouteOrderByWithAggregationInput = {
@@ -378,6 +384,8 @@ export type RouteCreateInput = {
   totalFeeAsset?: Prisma.AssetCreateNestedOneWithoutRoutesAsFeeInput
   steps?: Prisma.RouteStepCreateNestedManyWithoutRouteInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutRouteInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutRouteInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutRouteInput
 }
 
 export type RouteUncheckedCreateInput = {
@@ -395,6 +403,8 @@ export type RouteUncheckedCreateInput = {
   createdAt?: Date | string
   steps?: Prisma.RouteStepUncheckedCreateNestedManyWithoutRouteInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutRouteInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutRouteInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutRouteInput
 }
 
 export type RouteUpdateInput = {
@@ -412,6 +422,8 @@ export type RouteUpdateInput = {
   totalFeeAsset?: Prisma.AssetUpdateOneWithoutRoutesAsFeeNestedInput
   steps?: Prisma.RouteStepUpdateManyWithoutRouteNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutRouteNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutRouteNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutRouteNestedInput
 }
 
 export type RouteUncheckedUpdateInput = {
@@ -429,6 +441,8 @@ export type RouteUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   steps?: Prisma.RouteStepUncheckedUpdateManyWithoutRouteNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutRouteNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutRouteNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutRouteNestedInput
 }
 
 export type RouteCreateManyInput = {
@@ -470,6 +484,11 @@ export type RouteUncheckedUpdateManyInput = {
   totalFeeAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type RouteScalarRelationFilter = {
+  is?: Prisma.RouteWhereInput
+  isNot?: Prisma.RouteWhereInput
 }
 
 export type RouteListRelationFilter = {
@@ -535,9 +554,32 @@ export type RouteSumOrderByAggregateInput = {
   intentRevision?: Prisma.SortOrder
 }
 
-export type RouteScalarRelationFilter = {
-  is?: Prisma.RouteWhereInput
-  isNot?: Prisma.RouteWhereInput
+export type RouteCreateNestedOneWithoutAuthorizationSessionsInput = {
+  create?: Prisma.XOR<Prisma.RouteCreateWithoutAuthorizationSessionsInput, Prisma.RouteUncheckedCreateWithoutAuthorizationSessionsInput>
+  connectOrCreate?: Prisma.RouteCreateOrConnectWithoutAuthorizationSessionsInput
+  connect?: Prisma.RouteWhereUniqueInput
+}
+
+export type RouteUpdateOneRequiredWithoutAuthorizationSessionsNestedInput = {
+  create?: Prisma.XOR<Prisma.RouteCreateWithoutAuthorizationSessionsInput, Prisma.RouteUncheckedCreateWithoutAuthorizationSessionsInput>
+  connectOrCreate?: Prisma.RouteCreateOrConnectWithoutAuthorizationSessionsInput
+  upsert?: Prisma.RouteUpsertWithoutAuthorizationSessionsInput
+  connect?: Prisma.RouteWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.RouteUpdateToOneWithWhereWithoutAuthorizationSessionsInput, Prisma.RouteUpdateWithoutAuthorizationSessionsInput>, Prisma.RouteUncheckedUpdateWithoutAuthorizationSessionsInput>
+}
+
+export type RouteCreateNestedOneWithoutPaymentAuthorizationsInput = {
+  create?: Prisma.XOR<Prisma.RouteCreateWithoutPaymentAuthorizationsInput, Prisma.RouteUncheckedCreateWithoutPaymentAuthorizationsInput>
+  connectOrCreate?: Prisma.RouteCreateOrConnectWithoutPaymentAuthorizationsInput
+  connect?: Prisma.RouteWhereUniqueInput
+}
+
+export type RouteUpdateOneRequiredWithoutPaymentAuthorizationsNestedInput = {
+  create?: Prisma.XOR<Prisma.RouteCreateWithoutPaymentAuthorizationsInput, Prisma.RouteUncheckedCreateWithoutPaymentAuthorizationsInput>
+  connectOrCreate?: Prisma.RouteCreateOrConnectWithoutPaymentAuthorizationsInput
+  upsert?: Prisma.RouteUpsertWithoutPaymentAuthorizationsInput
+  connect?: Prisma.RouteWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.RouteUpdateToOneWithWhereWithoutPaymentAuthorizationsInput, Prisma.RouteUpdateWithoutPaymentAuthorizationsInput>, Prisma.RouteUncheckedUpdateWithoutPaymentAuthorizationsInput>
 }
 
 export type RouteCreateNestedManyWithoutInputAssetInput = {
@@ -740,6 +782,182 @@ export type RouteUpdateOneRequiredWithoutExecutionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.RouteUpdateToOneWithWhereWithoutExecutionsInput, Prisma.RouteUpdateWithoutExecutionsInput>, Prisma.RouteUncheckedUpdateWithoutExecutionsInput>
 }
 
+export type RouteCreateWithoutAuthorizationSessionsInput = {
+  id: string
+  intentRevision: number
+  status?: $Enums.RouteStatus
+  estimatedInput: string
+  estimatedOutput: string
+  totalFeeAmount?: string | null
+  expiresAt?: Date | string | null
+  createdAt?: Date | string
+  intent: Prisma.IntentCreateNestedOneWithoutRoutesInput
+  inputAsset: Prisma.AssetCreateNestedOneWithoutRoutesAsInputInput
+  outputAsset: Prisma.AssetCreateNestedOneWithoutRoutesAsOutputInput
+  totalFeeAsset?: Prisma.AssetCreateNestedOneWithoutRoutesAsFeeInput
+  steps?: Prisma.RouteStepCreateNestedManyWithoutRouteInput
+  executions?: Prisma.ExecutionCreateNestedManyWithoutRouteInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutRouteInput
+}
+
+export type RouteUncheckedCreateWithoutAuthorizationSessionsInput = {
+  id: string
+  intentId: string
+  intentRevision: number
+  status?: $Enums.RouteStatus
+  inputAssetId: string
+  outputAssetId: string
+  estimatedInput: string
+  estimatedOutput: string
+  totalFeeAmount?: string | null
+  totalFeeAssetId?: string | null
+  expiresAt?: Date | string | null
+  createdAt?: Date | string
+  steps?: Prisma.RouteStepUncheckedCreateNestedManyWithoutRouteInput
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutRouteInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutRouteInput
+}
+
+export type RouteCreateOrConnectWithoutAuthorizationSessionsInput = {
+  where: Prisma.RouteWhereUniqueInput
+  create: Prisma.XOR<Prisma.RouteCreateWithoutAuthorizationSessionsInput, Prisma.RouteUncheckedCreateWithoutAuthorizationSessionsInput>
+}
+
+export type RouteUpsertWithoutAuthorizationSessionsInput = {
+  update: Prisma.XOR<Prisma.RouteUpdateWithoutAuthorizationSessionsInput, Prisma.RouteUncheckedUpdateWithoutAuthorizationSessionsInput>
+  create: Prisma.XOR<Prisma.RouteCreateWithoutAuthorizationSessionsInput, Prisma.RouteUncheckedCreateWithoutAuthorizationSessionsInput>
+  where?: Prisma.RouteWhereInput
+}
+
+export type RouteUpdateToOneWithWhereWithoutAuthorizationSessionsInput = {
+  where?: Prisma.RouteWhereInput
+  data: Prisma.XOR<Prisma.RouteUpdateWithoutAuthorizationSessionsInput, Prisma.RouteUncheckedUpdateWithoutAuthorizationSessionsInput>
+}
+
+export type RouteUpdateWithoutAuthorizationSessionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  estimatedInput?: Prisma.StringFieldUpdateOperationsInput | string
+  estimatedOutput?: Prisma.StringFieldUpdateOperationsInput | string
+  totalFeeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  intent?: Prisma.IntentUpdateOneRequiredWithoutRoutesNestedInput
+  inputAsset?: Prisma.AssetUpdateOneRequiredWithoutRoutesAsInputNestedInput
+  outputAsset?: Prisma.AssetUpdateOneRequiredWithoutRoutesAsOutputNestedInput
+  totalFeeAsset?: Prisma.AssetUpdateOneWithoutRoutesAsFeeNestedInput
+  steps?: Prisma.RouteStepUpdateManyWithoutRouteNestedInput
+  executions?: Prisma.ExecutionUpdateManyWithoutRouteNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutRouteNestedInput
+}
+
+export type RouteUncheckedUpdateWithoutAuthorizationSessionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
+  outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
+  estimatedInput?: Prisma.StringFieldUpdateOperationsInput | string
+  estimatedOutput?: Prisma.StringFieldUpdateOperationsInput | string
+  totalFeeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalFeeAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  steps?: Prisma.RouteStepUncheckedUpdateManyWithoutRouteNestedInput
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutRouteNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutRouteNestedInput
+}
+
+export type RouteCreateWithoutPaymentAuthorizationsInput = {
+  id: string
+  intentRevision: number
+  status?: $Enums.RouteStatus
+  estimatedInput: string
+  estimatedOutput: string
+  totalFeeAmount?: string | null
+  expiresAt?: Date | string | null
+  createdAt?: Date | string
+  intent: Prisma.IntentCreateNestedOneWithoutRoutesInput
+  inputAsset: Prisma.AssetCreateNestedOneWithoutRoutesAsInputInput
+  outputAsset: Prisma.AssetCreateNestedOneWithoutRoutesAsOutputInput
+  totalFeeAsset?: Prisma.AssetCreateNestedOneWithoutRoutesAsFeeInput
+  steps?: Prisma.RouteStepCreateNestedManyWithoutRouteInput
+  executions?: Prisma.ExecutionCreateNestedManyWithoutRouteInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutRouteInput
+}
+
+export type RouteUncheckedCreateWithoutPaymentAuthorizationsInput = {
+  id: string
+  intentId: string
+  intentRevision: number
+  status?: $Enums.RouteStatus
+  inputAssetId: string
+  outputAssetId: string
+  estimatedInput: string
+  estimatedOutput: string
+  totalFeeAmount?: string | null
+  totalFeeAssetId?: string | null
+  expiresAt?: Date | string | null
+  createdAt?: Date | string
+  steps?: Prisma.RouteStepUncheckedCreateNestedManyWithoutRouteInput
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutRouteInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutRouteInput
+}
+
+export type RouteCreateOrConnectWithoutPaymentAuthorizationsInput = {
+  where: Prisma.RouteWhereUniqueInput
+  create: Prisma.XOR<Prisma.RouteCreateWithoutPaymentAuthorizationsInput, Prisma.RouteUncheckedCreateWithoutPaymentAuthorizationsInput>
+}
+
+export type RouteUpsertWithoutPaymentAuthorizationsInput = {
+  update: Prisma.XOR<Prisma.RouteUpdateWithoutPaymentAuthorizationsInput, Prisma.RouteUncheckedUpdateWithoutPaymentAuthorizationsInput>
+  create: Prisma.XOR<Prisma.RouteCreateWithoutPaymentAuthorizationsInput, Prisma.RouteUncheckedCreateWithoutPaymentAuthorizationsInput>
+  where?: Prisma.RouteWhereInput
+}
+
+export type RouteUpdateToOneWithWhereWithoutPaymentAuthorizationsInput = {
+  where?: Prisma.RouteWhereInput
+  data: Prisma.XOR<Prisma.RouteUpdateWithoutPaymentAuthorizationsInput, Prisma.RouteUncheckedUpdateWithoutPaymentAuthorizationsInput>
+}
+
+export type RouteUpdateWithoutPaymentAuthorizationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  estimatedInput?: Prisma.StringFieldUpdateOperationsInput | string
+  estimatedOutput?: Prisma.StringFieldUpdateOperationsInput | string
+  totalFeeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  intent?: Prisma.IntentUpdateOneRequiredWithoutRoutesNestedInput
+  inputAsset?: Prisma.AssetUpdateOneRequiredWithoutRoutesAsInputNestedInput
+  outputAsset?: Prisma.AssetUpdateOneRequiredWithoutRoutesAsOutputNestedInput
+  totalFeeAsset?: Prisma.AssetUpdateOneWithoutRoutesAsFeeNestedInput
+  steps?: Prisma.RouteStepUpdateManyWithoutRouteNestedInput
+  executions?: Prisma.ExecutionUpdateManyWithoutRouteNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutRouteNestedInput
+}
+
+export type RouteUncheckedUpdateWithoutPaymentAuthorizationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  intentRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.EnumRouteStatusFieldUpdateOperationsInput | $Enums.RouteStatus
+  inputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
+  outputAssetId?: Prisma.StringFieldUpdateOperationsInput | string
+  estimatedInput?: Prisma.StringFieldUpdateOperationsInput | string
+  estimatedOutput?: Prisma.StringFieldUpdateOperationsInput | string
+  totalFeeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalFeeAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  steps?: Prisma.RouteStepUncheckedUpdateManyWithoutRouteNestedInput
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutRouteNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutRouteNestedInput
+}
+
 export type RouteCreateWithoutInputAssetInput = {
   id: string
   intentRevision: number
@@ -754,6 +972,8 @@ export type RouteCreateWithoutInputAssetInput = {
   totalFeeAsset?: Prisma.AssetCreateNestedOneWithoutRoutesAsFeeInput
   steps?: Prisma.RouteStepCreateNestedManyWithoutRouteInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutRouteInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutRouteInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutRouteInput
 }
 
 export type RouteUncheckedCreateWithoutInputAssetInput = {
@@ -770,6 +990,8 @@ export type RouteUncheckedCreateWithoutInputAssetInput = {
   createdAt?: Date | string
   steps?: Prisma.RouteStepUncheckedCreateNestedManyWithoutRouteInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutRouteInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutRouteInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutRouteInput
 }
 
 export type RouteCreateOrConnectWithoutInputAssetInput = {
@@ -796,6 +1018,8 @@ export type RouteCreateWithoutOutputAssetInput = {
   totalFeeAsset?: Prisma.AssetCreateNestedOneWithoutRoutesAsFeeInput
   steps?: Prisma.RouteStepCreateNestedManyWithoutRouteInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutRouteInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutRouteInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutRouteInput
 }
 
 export type RouteUncheckedCreateWithoutOutputAssetInput = {
@@ -812,6 +1036,8 @@ export type RouteUncheckedCreateWithoutOutputAssetInput = {
   createdAt?: Date | string
   steps?: Prisma.RouteStepUncheckedCreateNestedManyWithoutRouteInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutRouteInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutRouteInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutRouteInput
 }
 
 export type RouteCreateOrConnectWithoutOutputAssetInput = {
@@ -838,6 +1064,8 @@ export type RouteCreateWithoutTotalFeeAssetInput = {
   outputAsset: Prisma.AssetCreateNestedOneWithoutRoutesAsOutputInput
   steps?: Prisma.RouteStepCreateNestedManyWithoutRouteInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutRouteInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutRouteInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutRouteInput
 }
 
 export type RouteUncheckedCreateWithoutTotalFeeAssetInput = {
@@ -854,6 +1082,8 @@ export type RouteUncheckedCreateWithoutTotalFeeAssetInput = {
   createdAt?: Date | string
   steps?: Prisma.RouteStepUncheckedCreateNestedManyWithoutRouteInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutRouteInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutRouteInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutRouteInput
 }
 
 export type RouteCreateOrConnectWithoutTotalFeeAssetInput = {
@@ -946,6 +1176,8 @@ export type RouteCreateWithoutIntentInput = {
   totalFeeAsset?: Prisma.AssetCreateNestedOneWithoutRoutesAsFeeInput
   steps?: Prisma.RouteStepCreateNestedManyWithoutRouteInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutRouteInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutRouteInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutRouteInput
 }
 
 export type RouteUncheckedCreateWithoutIntentInput = {
@@ -962,6 +1194,8 @@ export type RouteUncheckedCreateWithoutIntentInput = {
   createdAt?: Date | string
   steps?: Prisma.RouteStepUncheckedCreateNestedManyWithoutRouteInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutRouteInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutRouteInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutRouteInput
 }
 
 export type RouteCreateOrConnectWithoutIntentInput = {
@@ -1004,6 +1238,8 @@ export type RouteCreateWithoutStepsInput = {
   outputAsset: Prisma.AssetCreateNestedOneWithoutRoutesAsOutputInput
   totalFeeAsset?: Prisma.AssetCreateNestedOneWithoutRoutesAsFeeInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutRouteInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutRouteInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutRouteInput
 }
 
 export type RouteUncheckedCreateWithoutStepsInput = {
@@ -1020,6 +1256,8 @@ export type RouteUncheckedCreateWithoutStepsInput = {
   expiresAt?: Date | string | null
   createdAt?: Date | string
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutRouteInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutRouteInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutRouteInput
 }
 
 export type RouteCreateOrConnectWithoutStepsInput = {
@@ -1052,6 +1290,8 @@ export type RouteUpdateWithoutStepsInput = {
   outputAsset?: Prisma.AssetUpdateOneRequiredWithoutRoutesAsOutputNestedInput
   totalFeeAsset?: Prisma.AssetUpdateOneWithoutRoutesAsFeeNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutRouteNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutRouteNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutRouteNestedInput
 }
 
 export type RouteUncheckedUpdateWithoutStepsInput = {
@@ -1068,6 +1308,8 @@ export type RouteUncheckedUpdateWithoutStepsInput = {
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutRouteNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutRouteNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutRouteNestedInput
 }
 
 export type RouteCreateWithoutExecutionsInput = {
@@ -1084,6 +1326,8 @@ export type RouteCreateWithoutExecutionsInput = {
   outputAsset: Prisma.AssetCreateNestedOneWithoutRoutesAsOutputInput
   totalFeeAsset?: Prisma.AssetCreateNestedOneWithoutRoutesAsFeeInput
   steps?: Prisma.RouteStepCreateNestedManyWithoutRouteInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutRouteInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutRouteInput
 }
 
 export type RouteUncheckedCreateWithoutExecutionsInput = {
@@ -1100,6 +1344,8 @@ export type RouteUncheckedCreateWithoutExecutionsInput = {
   expiresAt?: Date | string | null
   createdAt?: Date | string
   steps?: Prisma.RouteStepUncheckedCreateNestedManyWithoutRouteInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutRouteInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutRouteInput
 }
 
 export type RouteCreateOrConnectWithoutExecutionsInput = {
@@ -1132,6 +1378,8 @@ export type RouteUpdateWithoutExecutionsInput = {
   outputAsset?: Prisma.AssetUpdateOneRequiredWithoutRoutesAsOutputNestedInput
   totalFeeAsset?: Prisma.AssetUpdateOneWithoutRoutesAsFeeNestedInput
   steps?: Prisma.RouteStepUpdateManyWithoutRouteNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutRouteNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutRouteNestedInput
 }
 
 export type RouteUncheckedUpdateWithoutExecutionsInput = {
@@ -1148,6 +1396,8 @@ export type RouteUncheckedUpdateWithoutExecutionsInput = {
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   steps?: Prisma.RouteStepUncheckedUpdateManyWithoutRouteNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutRouteNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutRouteNestedInput
 }
 
 export type RouteCreateManyInputAssetInput = {
@@ -1206,6 +1456,8 @@ export type RouteUpdateWithoutInputAssetInput = {
   totalFeeAsset?: Prisma.AssetUpdateOneWithoutRoutesAsFeeNestedInput
   steps?: Prisma.RouteStepUpdateManyWithoutRouteNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutRouteNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutRouteNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutRouteNestedInput
 }
 
 export type RouteUncheckedUpdateWithoutInputAssetInput = {
@@ -1222,6 +1474,8 @@ export type RouteUncheckedUpdateWithoutInputAssetInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   steps?: Prisma.RouteStepUncheckedUpdateManyWithoutRouteNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutRouteNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutRouteNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutRouteNestedInput
 }
 
 export type RouteUncheckedUpdateManyWithoutInputAssetInput = {
@@ -1252,6 +1506,8 @@ export type RouteUpdateWithoutOutputAssetInput = {
   totalFeeAsset?: Prisma.AssetUpdateOneWithoutRoutesAsFeeNestedInput
   steps?: Prisma.RouteStepUpdateManyWithoutRouteNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutRouteNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutRouteNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutRouteNestedInput
 }
 
 export type RouteUncheckedUpdateWithoutOutputAssetInput = {
@@ -1268,6 +1524,8 @@ export type RouteUncheckedUpdateWithoutOutputAssetInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   steps?: Prisma.RouteStepUncheckedUpdateManyWithoutRouteNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutRouteNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutRouteNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutRouteNestedInput
 }
 
 export type RouteUncheckedUpdateManyWithoutOutputAssetInput = {
@@ -1298,6 +1556,8 @@ export type RouteUpdateWithoutTotalFeeAssetInput = {
   outputAsset?: Prisma.AssetUpdateOneRequiredWithoutRoutesAsOutputNestedInput
   steps?: Prisma.RouteStepUpdateManyWithoutRouteNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutRouteNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutRouteNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutRouteNestedInput
 }
 
 export type RouteUncheckedUpdateWithoutTotalFeeAssetInput = {
@@ -1314,6 +1574,8 @@ export type RouteUncheckedUpdateWithoutTotalFeeAssetInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   steps?: Prisma.RouteStepUncheckedUpdateManyWithoutRouteNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutRouteNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutRouteNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutRouteNestedInput
 }
 
 export type RouteUncheckedUpdateManyWithoutTotalFeeAssetInput = {
@@ -1358,6 +1620,8 @@ export type RouteUpdateWithoutIntentInput = {
   totalFeeAsset?: Prisma.AssetUpdateOneWithoutRoutesAsFeeNestedInput
   steps?: Prisma.RouteStepUpdateManyWithoutRouteNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutRouteNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutRouteNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutRouteNestedInput
 }
 
 export type RouteUncheckedUpdateWithoutIntentInput = {
@@ -1374,6 +1638,8 @@ export type RouteUncheckedUpdateWithoutIntentInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   steps?: Prisma.RouteStepUncheckedUpdateManyWithoutRouteNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutRouteNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutRouteNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutRouteNestedInput
 }
 
 export type RouteUncheckedUpdateManyWithoutIntentInput = {
@@ -1398,11 +1664,15 @@ export type RouteUncheckedUpdateManyWithoutIntentInput = {
 export type RouteCountOutputType = {
   steps: number
   executions: number
+  authorizationSessions: number
+  paymentAuthorizations: number
 }
 
 export type RouteCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   steps?: boolean | RouteCountOutputTypeCountStepsArgs
   executions?: boolean | RouteCountOutputTypeCountExecutionsArgs
+  authorizationSessions?: boolean | RouteCountOutputTypeCountAuthorizationSessionsArgs
+  paymentAuthorizations?: boolean | RouteCountOutputTypeCountPaymentAuthorizationsArgs
 }
 
 /**
@@ -1429,6 +1699,20 @@ export type RouteCountOutputTypeCountExecutionsArgs<ExtArgs extends runtime.Type
   where?: Prisma.ExecutionWhereInput
 }
 
+/**
+ * RouteCountOutputType without action
+ */
+export type RouteCountOutputTypeCountAuthorizationSessionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AuthorizationSessionWhereInput
+}
+
+/**
+ * RouteCountOutputType without action
+ */
+export type RouteCountOutputTypeCountPaymentAuthorizationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PaymentAuthorizationWhereInput
+}
+
 
 export type RouteSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1449,6 +1733,8 @@ export type RouteSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   totalFeeAsset?: boolean | Prisma.Route$totalFeeAssetArgs<ExtArgs>
   steps?: boolean | Prisma.Route$stepsArgs<ExtArgs>
   executions?: boolean | Prisma.Route$executionsArgs<ExtArgs>
+  authorizationSessions?: boolean | Prisma.Route$authorizationSessionsArgs<ExtArgs>
+  paymentAuthorizations?: boolean | Prisma.Route$paymentAuthorizationsArgs<ExtArgs>
   _count?: boolean | Prisma.RouteCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["route"]>
 
@@ -1513,6 +1799,8 @@ export type RouteInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   totalFeeAsset?: boolean | Prisma.Route$totalFeeAssetArgs<ExtArgs>
   steps?: boolean | Prisma.Route$stepsArgs<ExtArgs>
   executions?: boolean | Prisma.Route$executionsArgs<ExtArgs>
+  authorizationSessions?: boolean | Prisma.Route$authorizationSessionsArgs<ExtArgs>
+  paymentAuthorizations?: boolean | Prisma.Route$paymentAuthorizationsArgs<ExtArgs>
   _count?: boolean | Prisma.RouteCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type RouteIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1537,6 +1825,8 @@ export type $RoutePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     totalFeeAsset: Prisma.$AssetPayload<ExtArgs> | null
     steps: Prisma.$RouteStepPayload<ExtArgs>[]
     executions: Prisma.$ExecutionPayload<ExtArgs>[]
+    authorizationSessions: Prisma.$AuthorizationSessionPayload<ExtArgs>[]
+    paymentAuthorizations: Prisma.$PaymentAuthorizationPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1951,6 +2241,8 @@ export interface Prisma__RouteClient<T, Null = never, ExtArgs extends runtime.Ty
   totalFeeAsset<T extends Prisma.Route$totalFeeAssetArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Route$totalFeeAssetArgs<ExtArgs>>): Prisma.Prisma__AssetClient<runtime.Types.Result.GetResult<Prisma.$AssetPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   steps<T extends Prisma.Route$stepsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Route$stepsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RouteStepPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   executions<T extends Prisma.Route$executionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Route$executionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ExecutionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  authorizationSessions<T extends Prisma.Route$authorizationSessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Route$authorizationSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AuthorizationSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  paymentAuthorizations<T extends Prisma.Route$paymentAuthorizationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Route$paymentAuthorizationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PaymentAuthorizationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2457,6 +2749,54 @@ export type Route$executionsArgs<ExtArgs extends runtime.Types.Extensions.Intern
   take?: number
   skip?: number
   distinct?: Prisma.ExecutionScalarFieldEnum | Prisma.ExecutionScalarFieldEnum[]
+}
+
+/**
+ * Route.authorizationSessions
+ */
+export type Route$authorizationSessionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AuthorizationSession
+   */
+  select?: Prisma.AuthorizationSessionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the AuthorizationSession
+   */
+  omit?: Prisma.AuthorizationSessionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AuthorizationSessionInclude<ExtArgs> | null
+  where?: Prisma.AuthorizationSessionWhereInput
+  orderBy?: Prisma.AuthorizationSessionOrderByWithRelationInput | Prisma.AuthorizationSessionOrderByWithRelationInput[]
+  cursor?: Prisma.AuthorizationSessionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.AuthorizationSessionScalarFieldEnum | Prisma.AuthorizationSessionScalarFieldEnum[]
+}
+
+/**
+ * Route.paymentAuthorizations
+ */
+export type Route$paymentAuthorizationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PaymentAuthorization
+   */
+  select?: Prisma.PaymentAuthorizationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PaymentAuthorization
+   */
+  omit?: Prisma.PaymentAuthorizationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PaymentAuthorizationInclude<ExtArgs> | null
+  where?: Prisma.PaymentAuthorizationWhereInput
+  orderBy?: Prisma.PaymentAuthorizationOrderByWithRelationInput | Prisma.PaymentAuthorizationOrderByWithRelationInput[]
+  cursor?: Prisma.PaymentAuthorizationWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PaymentAuthorizationScalarFieldEnum | Prisma.PaymentAuthorizationScalarFieldEnum[]
 }
 
 /**

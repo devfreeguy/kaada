@@ -1,16 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { KaadaError } from "@kaada/domain";
-import type { FxProvider, QuoteRequest } from "@kaada/domain";
-
-import { WalletFundingResolver } from "../src/core/routing/funding-resolver.js";
-import type { WalletFundingPort } from "../src/core/routing/funding-resolver.js";
-import type { AgentResponse } from "../src/core/responses/agent-response.js";
-import { MockFxProvider } from "../src/infrastructure/fx/mock-fx-provider.js";
 import { intent } from "./support/harness.js";
-import { createRoutingHarness } from "./support/routing-harness.js";
-import type { RoutingHarness } from "./support/routing-harness.js";
+import { joao, setup } from "./support/payment-world.js";
+import type { AgentResponse } from "../src/core/responses/agent-response.js";
 
 /*
  * Balance-aware routing against MOCK / TEST price fixtures and a fake wallet. Nothing here reads a
@@ -18,118 +11,7 @@ import type { RoutingHarness } from "./support/routing-harness.js";
  * (at most 92.306281 after slippage); via USDC it costs more.
  */
 
-const joao = { type: "SAVED_BENEFICIARY" as const, value: "João" };
 const USDT = 10n ** 6n;
-
-class FakePort implements WalletFundingPort {
-  address: string | null = "0x00000000000000000000000000000000000000aa";
-  held = new Map<string, bigint>();
-  lookups = 0;
-  reads = 0;
-  failReads = false;
-
-  activeAddress(): Promise<string | null> {
-    this.lookups += 1;
-    return Promise.resolve(this.address);
-  }
-
-  balancesOf(_address: string, assetIds: string[]): Promise<Map<string, bigint>> {
-    this.reads += 1;
-    if (this.failReads) return Promise.reject(new Error("rpc is down"));
-    return Promise.resolve(new Map(assetIds.map((id) => [id, this.held.get(id) ?? 0n])));
-  }
-}
-
-interface World {
-  r: RoutingHarness;
-  port: FakePort;
-  /** Every priced pair, as "<input symbol>><output symbol>". */
-  priced: string[];
-  /** Whole tokens (both have 6 decimals). */
-  fund(symbol: "USDT" | "USDC", whole: bigint): void;
-}
-
-function setup(options: { noMakersFrom?: "USDC" } = {}): World {
-  const port = new FakePort();
-  const priced: string[] = [];
-  const holder: { r?: RoutingHarness } = {};
-  const symbolOf = (id: string): string => {
-    const r = holder.r as RoutingHarness;
-    const all = [r.h.assets.USDT, r.h.assets.USDC_CELO, ...Object.values(r.tokens)];
-    return all.find((asset) => asset.id === id)?.symbol ?? id;
-  };
-
-  const r = createRoutingHarness({
-    funding: (registry) => new WalletFundingResolver({ wallet: port, assets: registry }),
-    pricing: ({ assets, now }): FxProvider => {
-      const inner = new MockFxProvider({ assets, now, quoteTtlMs: 30_000 });
-      return {
-        id: inner.id,
-        supports: (request: QuoteRequest) => inner.supports(request),
-        execute: (quote, context) => inner.execute(quote, context),
-        status: (id) => inner.status(id),
-        quote: (request: QuoteRequest) => {
-          priced.push(`${symbolOf(request.inputAssetId)}>${symbolOf(request.outputAssetId)}`);
-          if (options.noMakersFrom && symbolOf(request.inputAssetId) === options.noMakersFrom) {
-            return Promise.reject(
-              new KaadaError("NO_ROUTE_AVAILABLE", "no quote", {
-                details: { providerReason: "no_makers_online" },
-              }),
-            );
-          }
-          return inner.quote(request);
-        },
-      };
-    },
-  });
-  holder.r = r;
-
-  const amount = (
-    value: string,
-    currencyOrAsset: string,
-    mode: "EXACT_INPUT" | "EXACT_OUTPUT",
-  ) => ({
-    value,
-    currencyOrAsset,
-    mode,
-  });
-  const script = (text: string, extra: Parameters<typeof intent>[0]) =>
-    r.h.script.set(text, intent(extra));
-  script("pay 500 brl", {
-    type: "SEND",
-    recipient: joao,
-    amount: amount("500", "BRL", "EXACT_OUTPUT"),
-  });
-  script("pay 500 brl with usdt", {
-    type: "SEND",
-    recipient: joao,
-    amount: amount("500", "BRL", "EXACT_OUTPUT"),
-    sourceAsset: "USDT",
-  });
-  script("spend 20 usdt", {
-    type: "SEND",
-    recipient: joao,
-    amount: amount("20", "USD", "EXACT_INPUT"),
-    sourceAsset: "USDT",
-  });
-  script("spend 20", { type: "SEND", recipient: joao, amount: amount("20", "USD", "EXACT_INPUT") });
-  script("quote", {
-    type: "QUOTE",
-    amount: amount("50", "USDT", "EXACT_INPUT"),
-    fromAsset: "USDT",
-    destination: { country: "BR" },
-  });
-
-  return {
-    r,
-    port,
-    priced,
-    fund(symbol, whole) {
-      const asset = symbol === "USDT" ? r.h.assets.USDT : r.h.assets.USDC_CELO;
-      port.held.set(asset.id, whole * USDT);
-    },
-  };
-}
 
 function errorOf(response: AgentResponse): { code: string; text: string } {
   assert.equal(response.type, "ERROR", JSON.stringify(response));

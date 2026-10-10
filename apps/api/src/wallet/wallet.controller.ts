@@ -61,7 +61,11 @@ const registrationResponseSchema = z.looseObject({
   }),
 });
 
-const devSessionSchema = z.strictObject({ userId: z.uuid().optional() });
+const devSessionSchema = z.strictObject({
+  userId: z.uuid().optional(),
+  /** SECURITY: a link for someone whose wallet is already active (to set or change the PIN). */
+  purpose: z.enum(["SETUP", "SECURITY"]).optional(),
+});
 
 /** The bearer token of a setup link. It is the ONLY identity these endpoints accept. */
 function bearer(header: string | undefined): string {
@@ -211,7 +215,9 @@ export class WalletController {
       await this.repositories.users.create({ id: userId, displayName: "Dev user" });
     }
     try {
-      const created = await this.service().createSession(userId);
+      const created = await this.service().createSession(userId, {
+        existingWallet: parsed.data.purpose === "SECURITY",
+      });
       return { userId, url: created.url, expiresAt: created.expiresAt.toISOString() };
     } catch (error) {
       return httpError(error);

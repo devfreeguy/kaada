@@ -18,6 +18,8 @@ import type {
 } from "@kaada/domain";
 
 import type { AgentRepositories, AgentUnitOfWork } from "../../src/core/agent/ports.js";
+import { createAuthorizationStores } from "./authorization-memory.js";
+import type { AuthorizationStores } from "./authorization-memory.js";
 
 /**
  * In-memory implementations of the domain repository ports, for fast behaviour tests of the agent
@@ -26,6 +28,8 @@ import type { AgentRepositories, AgentUnitOfWork } from "../../src/core/agent/po
  */
 export interface InMemoryWorld {
   repositories: AgentRepositories;
+  /** PIN, authorization-session, payment-authorization and audit stores. */
+  authorization: AuthorizationStores;
   unitOfWork: AgentUnitOfWork;
   /** True while a transaction callback is running. */
   readonly inTransaction: boolean;
@@ -69,7 +73,11 @@ export function createInMemoryWorld(): InMemoryWorld {
   const capabilities: ProviderCapability[] = [];
   const recipients = new Map<string, Recipient>();
 
+  const authorization = createAuthorizationStores(stamp);
   const repositories: AgentRepositories = {
+    authorizationSessions: authorization.repositories.authorizationSessions,
+    paymentAuthorizations: authorization.repositories.paymentAuthorizations,
+    audit: authorization.repositories.audit,
     assets: {
       findById: (id) => Promise.resolve(assets.find((a) => a.id === id) ?? null),
       findBySymbol: (symbol, options) =>
@@ -210,6 +218,7 @@ export function createInMemoryWorld(): InMemoryWorld {
         return Promise.resolve(intent);
       },
       findById: (id) => Promise.resolve(intents.get(id) ?? null),
+      lockForUpdate: () => Promise.resolve(),
       findOpenByConversation: (conversationId) => {
         const open = [...intents.values()]
           .filter(
@@ -342,6 +351,7 @@ export function createInMemoryWorld(): InMemoryWorld {
   let chain: Promise<unknown> = Promise.resolve();
   const world: InMemoryWorld = {
     repositories,
+    authorization,
     unitOfWork: {
       read: repositories,
       transaction: <T>(work: (repos: AgentRepositories) => Promise<T>): Promise<T> => {
