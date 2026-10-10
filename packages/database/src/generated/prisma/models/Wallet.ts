@@ -14,7 +14,13 @@ import type * as Prisma from "../internal/prismaNamespace.js"
 
 /**
  * Model Wallet
- * A wallet address associated with a user. A row here does NOT imply Kaada custody.
+ * A wallet linked to a user. A row here does NOT imply Kaada custody, and never holds a private key,
+ * seed, session secret or provider credential: identifiers only.
+ * 
+ * An EMBEDDED wallet is a smart account whose root authority is the user's passkey. Its address is
+ * derived deterministically (counterfactual) and may be null only while PROVISIONING. See
+ * docs/wallet-architecture.md and the manual migration 20261014000001 (one non-revoked EMBEDDED wallet
+ * per user and chain; ACTIVE requires an address).
  */
 export type WalletModel = runtime.Types.Result.DefaultSelection<Prisma.$WalletPayload>
 
@@ -41,6 +47,13 @@ export type WalletMinAggregateOutputType = {
   address: string | null
   label: string | null
   isPrimary: boolean | null
+  type: $Enums.WalletType | null
+  status: $Enums.WalletStatus | null
+  deployment: $Enums.WalletDeployment | null
+  provider: string | null
+  providerAccountId: string | null
+  statusReason: string | null
+  provisionedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -52,6 +65,13 @@ export type WalletMaxAggregateOutputType = {
   address: string | null
   label: string | null
   isPrimary: boolean | null
+  type: $Enums.WalletType | null
+  status: $Enums.WalletStatus | null
+  deployment: $Enums.WalletDeployment | null
+  provider: string | null
+  providerAccountId: string | null
+  statusReason: string | null
+  provisionedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -63,6 +83,13 @@ export type WalletCountAggregateOutputType = {
   address: number
   label: number
   isPrimary: number
+  type: number
+  status: number
+  deployment: number
+  provider: number
+  providerAccountId: number
+  statusReason: number
+  provisionedAt: number
   metadata: number
   createdAt: number
   updatedAt: number
@@ -85,6 +112,13 @@ export type WalletMinAggregateInputType = {
   address?: true
   label?: true
   isPrimary?: true
+  type?: true
+  status?: true
+  deployment?: true
+  provider?: true
+  providerAccountId?: true
+  statusReason?: true
+  provisionedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -96,6 +130,13 @@ export type WalletMaxAggregateInputType = {
   address?: true
   label?: true
   isPrimary?: true
+  type?: true
+  status?: true
+  deployment?: true
+  provider?: true
+  providerAccountId?: true
+  statusReason?: true
+  provisionedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -107,6 +148,13 @@ export type WalletCountAggregateInputType = {
   address?: true
   label?: true
   isPrimary?: true
+  type?: true
+  status?: true
+  deployment?: true
+  provider?: true
+  providerAccountId?: true
+  statusReason?: true
+  provisionedAt?: true
   metadata?: true
   createdAt?: true
   updatedAt?: true
@@ -203,9 +251,16 @@ export type WalletGroupByOutputType = {
   id: string
   userId: string
   chainId: number
-  address: string
+  address: string | null
   label: string | null
   isPrimary: boolean
+  type: $Enums.WalletType
+  status: $Enums.WalletStatus
+  deployment: $Enums.WalletDeployment
+  provider: string | null
+  providerAccountId: string | null
+  statusReason: string | null
+  provisionedAt: Date | null
   metadata: runtime.JsonValue | null
   createdAt: Date
   updatedAt: Date
@@ -238,26 +293,42 @@ export type WalletWhereInput = {
   id?: Prisma.UuidFilter<"Wallet"> | string
   userId?: Prisma.UuidFilter<"Wallet"> | string
   chainId?: Prisma.IntFilter<"Wallet"> | number
-  address?: Prisma.StringFilter<"Wallet"> | string
+  address?: Prisma.StringNullableFilter<"Wallet"> | string | null
   label?: Prisma.StringNullableFilter<"Wallet"> | string | null
   isPrimary?: Prisma.BoolFilter<"Wallet"> | boolean
+  type?: Prisma.EnumWalletTypeFilter<"Wallet"> | $Enums.WalletType
+  status?: Prisma.EnumWalletStatusFilter<"Wallet"> | $Enums.WalletStatus
+  deployment?: Prisma.EnumWalletDeploymentFilter<"Wallet"> | $Enums.WalletDeployment
+  provider?: Prisma.StringNullableFilter<"Wallet"> | string | null
+  providerAccountId?: Prisma.StringNullableFilter<"Wallet"> | string | null
+  statusReason?: Prisma.StringNullableFilter<"Wallet"> | string | null
+  provisionedAt?: Prisma.DateTimeNullableFilter<"Wallet"> | Date | string | null
   metadata?: Prisma.JsonNullableFilter<"Wallet">
   createdAt?: Prisma.DateTimeFilter<"Wallet"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Wallet"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
+  delegatedPermissions?: Prisma.DelegatedPermissionListRelationFilter
 }
 
 export type WalletOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   chainId?: Prisma.SortOrder
-  address?: Prisma.SortOrder
+  address?: Prisma.SortOrderInput | Prisma.SortOrder
   label?: Prisma.SortOrderInput | Prisma.SortOrder
   isPrimary?: Prisma.SortOrder
+  type?: Prisma.SortOrder
+  status?: Prisma.SortOrder
+  deployment?: Prisma.SortOrder
+  provider?: Prisma.SortOrderInput | Prisma.SortOrder
+  providerAccountId?: Prisma.SortOrderInput | Prisma.SortOrder
+  statusReason?: Prisma.SortOrderInput | Prisma.SortOrder
+  provisionedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
+  delegatedPermissions?: Prisma.DelegatedPermissionOrderByRelationAggregateInput
 }
 
 export type WalletWhereUniqueInput = Prisma.AtLeast<{
@@ -268,22 +339,37 @@ export type WalletWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.WalletWhereInput | Prisma.WalletWhereInput[]
   userId?: Prisma.UuidFilter<"Wallet"> | string
   chainId?: Prisma.IntFilter<"Wallet"> | number
-  address?: Prisma.StringFilter<"Wallet"> | string
+  address?: Prisma.StringNullableFilter<"Wallet"> | string | null
   label?: Prisma.StringNullableFilter<"Wallet"> | string | null
   isPrimary?: Prisma.BoolFilter<"Wallet"> | boolean
+  type?: Prisma.EnumWalletTypeFilter<"Wallet"> | $Enums.WalletType
+  status?: Prisma.EnumWalletStatusFilter<"Wallet"> | $Enums.WalletStatus
+  deployment?: Prisma.EnumWalletDeploymentFilter<"Wallet"> | $Enums.WalletDeployment
+  provider?: Prisma.StringNullableFilter<"Wallet"> | string | null
+  providerAccountId?: Prisma.StringNullableFilter<"Wallet"> | string | null
+  statusReason?: Prisma.StringNullableFilter<"Wallet"> | string | null
+  provisionedAt?: Prisma.DateTimeNullableFilter<"Wallet"> | Date | string | null
   metadata?: Prisma.JsonNullableFilter<"Wallet">
   createdAt?: Prisma.DateTimeFilter<"Wallet"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Wallet"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
+  delegatedPermissions?: Prisma.DelegatedPermissionListRelationFilter
 }, "id" | "chainId_address">
 
 export type WalletOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   chainId?: Prisma.SortOrder
-  address?: Prisma.SortOrder
+  address?: Prisma.SortOrderInput | Prisma.SortOrder
   label?: Prisma.SortOrderInput | Prisma.SortOrder
   isPrimary?: Prisma.SortOrder
+  type?: Prisma.SortOrder
+  status?: Prisma.SortOrder
+  deployment?: Prisma.SortOrder
+  provider?: Prisma.SortOrderInput | Prisma.SortOrder
+  providerAccountId?: Prisma.SortOrderInput | Prisma.SortOrder
+  statusReason?: Prisma.SortOrderInput | Prisma.SortOrder
+  provisionedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -301,9 +387,16 @@ export type WalletScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"Wallet"> | string
   userId?: Prisma.UuidWithAggregatesFilter<"Wallet"> | string
   chainId?: Prisma.IntWithAggregatesFilter<"Wallet"> | number
-  address?: Prisma.StringWithAggregatesFilter<"Wallet"> | string
+  address?: Prisma.StringNullableWithAggregatesFilter<"Wallet"> | string | null
   label?: Prisma.StringNullableWithAggregatesFilter<"Wallet"> | string | null
   isPrimary?: Prisma.BoolWithAggregatesFilter<"Wallet"> | boolean
+  type?: Prisma.EnumWalletTypeWithAggregatesFilter<"Wallet"> | $Enums.WalletType
+  status?: Prisma.EnumWalletStatusWithAggregatesFilter<"Wallet"> | $Enums.WalletStatus
+  deployment?: Prisma.EnumWalletDeploymentWithAggregatesFilter<"Wallet"> | $Enums.WalletDeployment
+  provider?: Prisma.StringNullableWithAggregatesFilter<"Wallet"> | string | null
+  providerAccountId?: Prisma.StringNullableWithAggregatesFilter<"Wallet"> | string | null
+  statusReason?: Prisma.StringNullableWithAggregatesFilter<"Wallet"> | string | null
+  provisionedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Wallet"> | Date | string | null
   metadata?: Prisma.JsonNullableWithAggregatesFilter<"Wallet">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Wallet"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Wallet"> | Date | string
@@ -312,58 +405,97 @@ export type WalletScalarWhereWithAggregatesInput = {
 export type WalletCreateInput = {
   id: string
   chainId: number
-  address: string
+  address?: string | null
   label?: string | null
   isPrimary?: boolean
+  type?: $Enums.WalletType
+  status?: $Enums.WalletStatus
+  deployment?: $Enums.WalletDeployment
+  provider?: string | null
+  providerAccountId?: string | null
+  statusReason?: string | null
+  provisionedAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutWalletsInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutWalletInput
 }
 
 export type WalletUncheckedCreateInput = {
   id: string
   userId: string
   chainId: number
-  address: string
+  address?: string | null
   label?: string | null
   isPrimary?: boolean
+  type?: $Enums.WalletType
+  status?: $Enums.WalletStatus
+  deployment?: $Enums.WalletDeployment
+  provider?: string | null
+  providerAccountId?: string | null
+  statusReason?: string | null
+  provisionedAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutWalletInput
 }
 
 export type WalletUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.IntFieldUpdateOperationsInput | number
-  address?: Prisma.StringFieldUpdateOperationsInput | string
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  type?: Prisma.EnumWalletTypeFieldUpdateOperationsInput | $Enums.WalletType
+  status?: Prisma.EnumWalletStatusFieldUpdateOperationsInput | $Enums.WalletStatus
+  deployment?: Prisma.EnumWalletDeploymentFieldUpdateOperationsInput | $Enums.WalletDeployment
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provisionedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutWalletsNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutWalletNestedInput
 }
 
 export type WalletUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.IntFieldUpdateOperationsInput | number
-  address?: Prisma.StringFieldUpdateOperationsInput | string
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  type?: Prisma.EnumWalletTypeFieldUpdateOperationsInput | $Enums.WalletType
+  status?: Prisma.EnumWalletStatusFieldUpdateOperationsInput | $Enums.WalletStatus
+  deployment?: Prisma.EnumWalletDeploymentFieldUpdateOperationsInput | $Enums.WalletDeployment
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provisionedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutWalletNestedInput
 }
 
 export type WalletCreateManyInput = {
   id: string
   userId: string
   chainId: number
-  address: string
+  address?: string | null
   label?: string | null
   isPrimary?: boolean
+  type?: $Enums.WalletType
+  status?: $Enums.WalletStatus
+  deployment?: $Enums.WalletDeployment
+  provider?: string | null
+  providerAccountId?: string | null
+  statusReason?: string | null
+  provisionedAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -372,9 +504,16 @@ export type WalletCreateManyInput = {
 export type WalletUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.IntFieldUpdateOperationsInput | number
-  address?: Prisma.StringFieldUpdateOperationsInput | string
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  type?: Prisma.EnumWalletTypeFieldUpdateOperationsInput | $Enums.WalletType
+  status?: Prisma.EnumWalletStatusFieldUpdateOperationsInput | $Enums.WalletStatus
+  deployment?: Prisma.EnumWalletDeploymentFieldUpdateOperationsInput | $Enums.WalletDeployment
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provisionedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -384,9 +523,16 @@ export type WalletUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.IntFieldUpdateOperationsInput | number
-  address?: Prisma.StringFieldUpdateOperationsInput | string
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  type?: Prisma.EnumWalletTypeFieldUpdateOperationsInput | $Enums.WalletType
+  status?: Prisma.EnumWalletStatusFieldUpdateOperationsInput | $Enums.WalletStatus
+  deployment?: Prisma.EnumWalletDeploymentFieldUpdateOperationsInput | $Enums.WalletDeployment
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provisionedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -414,6 +560,13 @@ export type WalletCountOrderByAggregateInput = {
   address?: Prisma.SortOrder
   label?: Prisma.SortOrder
   isPrimary?: Prisma.SortOrder
+  type?: Prisma.SortOrder
+  status?: Prisma.SortOrder
+  deployment?: Prisma.SortOrder
+  provider?: Prisma.SortOrder
+  providerAccountId?: Prisma.SortOrder
+  statusReason?: Prisma.SortOrder
+  provisionedAt?: Prisma.SortOrder
   metadata?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -430,6 +583,13 @@ export type WalletMaxOrderByAggregateInput = {
   address?: Prisma.SortOrder
   label?: Prisma.SortOrder
   isPrimary?: Prisma.SortOrder
+  type?: Prisma.SortOrder
+  status?: Prisma.SortOrder
+  deployment?: Prisma.SortOrder
+  provider?: Prisma.SortOrder
+  providerAccountId?: Prisma.SortOrder
+  statusReason?: Prisma.SortOrder
+  provisionedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -441,12 +601,24 @@ export type WalletMinOrderByAggregateInput = {
   address?: Prisma.SortOrder
   label?: Prisma.SortOrder
   isPrimary?: Prisma.SortOrder
+  type?: Prisma.SortOrder
+  status?: Prisma.SortOrder
+  deployment?: Prisma.SortOrder
+  provider?: Prisma.SortOrder
+  providerAccountId?: Prisma.SortOrder
+  statusReason?: Prisma.SortOrder
+  provisionedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type WalletSumOrderByAggregateInput = {
   chainId?: Prisma.SortOrder
+}
+
+export type WalletScalarRelationFilter = {
+  is?: Prisma.WalletWhereInput
+  isNot?: Prisma.WalletWhereInput
 }
 
 export type WalletCreateNestedManyWithoutUserInput = {
@@ -503,26 +675,68 @@ export type BoolFieldUpdateOperationsInput = {
   set?: boolean
 }
 
+export type EnumWalletTypeFieldUpdateOperationsInput = {
+  set?: $Enums.WalletType
+}
+
+export type EnumWalletStatusFieldUpdateOperationsInput = {
+  set?: $Enums.WalletStatus
+}
+
+export type EnumWalletDeploymentFieldUpdateOperationsInput = {
+  set?: $Enums.WalletDeployment
+}
+
+export type WalletCreateNestedOneWithoutDelegatedPermissionsInput = {
+  create?: Prisma.XOR<Prisma.WalletCreateWithoutDelegatedPermissionsInput, Prisma.WalletUncheckedCreateWithoutDelegatedPermissionsInput>
+  connectOrCreate?: Prisma.WalletCreateOrConnectWithoutDelegatedPermissionsInput
+  connect?: Prisma.WalletWhereUniqueInput
+}
+
+export type WalletUpdateOneRequiredWithoutDelegatedPermissionsNestedInput = {
+  create?: Prisma.XOR<Prisma.WalletCreateWithoutDelegatedPermissionsInput, Prisma.WalletUncheckedCreateWithoutDelegatedPermissionsInput>
+  connectOrCreate?: Prisma.WalletCreateOrConnectWithoutDelegatedPermissionsInput
+  upsert?: Prisma.WalletUpsertWithoutDelegatedPermissionsInput
+  connect?: Prisma.WalletWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.WalletUpdateToOneWithWhereWithoutDelegatedPermissionsInput, Prisma.WalletUpdateWithoutDelegatedPermissionsInput>, Prisma.WalletUncheckedUpdateWithoutDelegatedPermissionsInput>
+}
+
 export type WalletCreateWithoutUserInput = {
   id: string
   chainId: number
-  address: string
+  address?: string | null
   label?: string | null
   isPrimary?: boolean
+  type?: $Enums.WalletType
+  status?: $Enums.WalletStatus
+  deployment?: $Enums.WalletDeployment
+  provider?: string | null
+  providerAccountId?: string | null
+  statusReason?: string | null
+  provisionedAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutWalletInput
 }
 
 export type WalletUncheckedCreateWithoutUserInput = {
   id: string
   chainId: number
-  address: string
+  address?: string | null
   label?: string | null
   isPrimary?: boolean
+  type?: $Enums.WalletType
+  status?: $Enums.WalletStatus
+  deployment?: $Enums.WalletDeployment
+  provider?: string | null
+  providerAccountId?: string | null
+  statusReason?: string | null
+  provisionedAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutWalletInput
 }
 
 export type WalletCreateOrConnectWithoutUserInput = {
@@ -558,20 +772,126 @@ export type WalletScalarWhereInput = {
   id?: Prisma.UuidFilter<"Wallet"> | string
   userId?: Prisma.UuidFilter<"Wallet"> | string
   chainId?: Prisma.IntFilter<"Wallet"> | number
-  address?: Prisma.StringFilter<"Wallet"> | string
+  address?: Prisma.StringNullableFilter<"Wallet"> | string | null
   label?: Prisma.StringNullableFilter<"Wallet"> | string | null
   isPrimary?: Prisma.BoolFilter<"Wallet"> | boolean
+  type?: Prisma.EnumWalletTypeFilter<"Wallet"> | $Enums.WalletType
+  status?: Prisma.EnumWalletStatusFilter<"Wallet"> | $Enums.WalletStatus
+  deployment?: Prisma.EnumWalletDeploymentFilter<"Wallet"> | $Enums.WalletDeployment
+  provider?: Prisma.StringNullableFilter<"Wallet"> | string | null
+  providerAccountId?: Prisma.StringNullableFilter<"Wallet"> | string | null
+  statusReason?: Prisma.StringNullableFilter<"Wallet"> | string | null
+  provisionedAt?: Prisma.DateTimeNullableFilter<"Wallet"> | Date | string | null
   metadata?: Prisma.JsonNullableFilter<"Wallet">
   createdAt?: Prisma.DateTimeFilter<"Wallet"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Wallet"> | Date | string
 }
 
+export type WalletCreateWithoutDelegatedPermissionsInput = {
+  id: string
+  chainId: number
+  address?: string | null
+  label?: string | null
+  isPrimary?: boolean
+  type?: $Enums.WalletType
+  status?: $Enums.WalletStatus
+  deployment?: $Enums.WalletDeployment
+  provider?: string | null
+  providerAccountId?: string | null
+  statusReason?: string | null
+  provisionedAt?: Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutWalletsInput
+}
+
+export type WalletUncheckedCreateWithoutDelegatedPermissionsInput = {
+  id: string
+  userId: string
+  chainId: number
+  address?: string | null
+  label?: string | null
+  isPrimary?: boolean
+  type?: $Enums.WalletType
+  status?: $Enums.WalletStatus
+  deployment?: $Enums.WalletDeployment
+  provider?: string | null
+  providerAccountId?: string | null
+  statusReason?: string | null
+  provisionedAt?: Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type WalletCreateOrConnectWithoutDelegatedPermissionsInput = {
+  where: Prisma.WalletWhereUniqueInput
+  create: Prisma.XOR<Prisma.WalletCreateWithoutDelegatedPermissionsInput, Prisma.WalletUncheckedCreateWithoutDelegatedPermissionsInput>
+}
+
+export type WalletUpsertWithoutDelegatedPermissionsInput = {
+  update: Prisma.XOR<Prisma.WalletUpdateWithoutDelegatedPermissionsInput, Prisma.WalletUncheckedUpdateWithoutDelegatedPermissionsInput>
+  create: Prisma.XOR<Prisma.WalletCreateWithoutDelegatedPermissionsInput, Prisma.WalletUncheckedCreateWithoutDelegatedPermissionsInput>
+  where?: Prisma.WalletWhereInput
+}
+
+export type WalletUpdateToOneWithWhereWithoutDelegatedPermissionsInput = {
+  where?: Prisma.WalletWhereInput
+  data: Prisma.XOR<Prisma.WalletUpdateWithoutDelegatedPermissionsInput, Prisma.WalletUncheckedUpdateWithoutDelegatedPermissionsInput>
+}
+
+export type WalletUpdateWithoutDelegatedPermissionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  chainId?: Prisma.IntFieldUpdateOperationsInput | number
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  type?: Prisma.EnumWalletTypeFieldUpdateOperationsInput | $Enums.WalletType
+  status?: Prisma.EnumWalletStatusFieldUpdateOperationsInput | $Enums.WalletStatus
+  deployment?: Prisma.EnumWalletDeploymentFieldUpdateOperationsInput | $Enums.WalletDeployment
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provisionedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutWalletsNestedInput
+}
+
+export type WalletUncheckedUpdateWithoutDelegatedPermissionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  chainId?: Prisma.IntFieldUpdateOperationsInput | number
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  type?: Prisma.EnumWalletTypeFieldUpdateOperationsInput | $Enums.WalletType
+  status?: Prisma.EnumWalletStatusFieldUpdateOperationsInput | $Enums.WalletStatus
+  deployment?: Prisma.EnumWalletDeploymentFieldUpdateOperationsInput | $Enums.WalletDeployment
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provisionedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type WalletCreateManyUserInput = {
   id: string
   chainId: number
-  address: string
+  address?: string | null
   label?: string | null
   isPrimary?: boolean
+  type?: $Enums.WalletType
+  status?: $Enums.WalletStatus
+  deployment?: $Enums.WalletDeployment
+  provider?: string | null
+  providerAccountId?: string | null
+  statusReason?: string | null
+  provisionedAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -580,36 +900,88 @@ export type WalletCreateManyUserInput = {
 export type WalletUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.IntFieldUpdateOperationsInput | number
-  address?: Prisma.StringFieldUpdateOperationsInput | string
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  type?: Prisma.EnumWalletTypeFieldUpdateOperationsInput | $Enums.WalletType
+  status?: Prisma.EnumWalletStatusFieldUpdateOperationsInput | $Enums.WalletStatus
+  deployment?: Prisma.EnumWalletDeploymentFieldUpdateOperationsInput | $Enums.WalletDeployment
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provisionedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutWalletNestedInput
 }
 
 export type WalletUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.IntFieldUpdateOperationsInput | number
-  address?: Prisma.StringFieldUpdateOperationsInput | string
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  type?: Prisma.EnumWalletTypeFieldUpdateOperationsInput | $Enums.WalletType
+  status?: Prisma.EnumWalletStatusFieldUpdateOperationsInput | $Enums.WalletStatus
+  deployment?: Prisma.EnumWalletDeploymentFieldUpdateOperationsInput | $Enums.WalletDeployment
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provisionedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutWalletNestedInput
 }
 
 export type WalletUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   chainId?: Prisma.IntFieldUpdateOperationsInput | number
-  address?: Prisma.StringFieldUpdateOperationsInput | string
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  type?: Prisma.EnumWalletTypeFieldUpdateOperationsInput | $Enums.WalletType
+  status?: Prisma.EnumWalletStatusFieldUpdateOperationsInput | $Enums.WalletStatus
+  deployment?: Prisma.EnumWalletDeploymentFieldUpdateOperationsInput | $Enums.WalletDeployment
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provisionedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
+
+/**
+ * Count Type WalletCountOutputType
+ */
+
+export type WalletCountOutputType = {
+  delegatedPermissions: number
+}
+
+export type WalletCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  delegatedPermissions?: boolean | WalletCountOutputTypeCountDelegatedPermissionsArgs
+}
+
+/**
+ * WalletCountOutputType without action
+ */
+export type WalletCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the WalletCountOutputType
+   */
+  select?: Prisma.WalletCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * WalletCountOutputType without action
+ */
+export type WalletCountOutputTypeCountDelegatedPermissionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.DelegatedPermissionWhereInput
+}
 
 
 export type WalletSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -619,10 +991,19 @@ export type WalletSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   address?: boolean
   label?: boolean
   isPrimary?: boolean
+  type?: boolean
+  status?: boolean
+  deployment?: boolean
+  provider?: boolean
+  providerAccountId?: boolean
+  statusReason?: boolean
+  provisionedAt?: boolean
   metadata?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  delegatedPermissions?: boolean | Prisma.Wallet$delegatedPermissionsArgs<ExtArgs>
+  _count?: boolean | Prisma.WalletCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["wallet"]>
 
 export type WalletSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -632,6 +1013,13 @@ export type WalletSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   address?: boolean
   label?: boolean
   isPrimary?: boolean
+  type?: boolean
+  status?: boolean
+  deployment?: boolean
+  provider?: boolean
+  providerAccountId?: boolean
+  statusReason?: boolean
+  provisionedAt?: boolean
   metadata?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -645,6 +1033,13 @@ export type WalletSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   address?: boolean
   label?: boolean
   isPrimary?: boolean
+  type?: boolean
+  status?: boolean
+  deployment?: boolean
+  provider?: boolean
+  providerAccountId?: boolean
+  statusReason?: boolean
+  provisionedAt?: boolean
   metadata?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -658,14 +1053,23 @@ export type WalletSelectScalar = {
   address?: boolean
   label?: boolean
   isPrimary?: boolean
+  type?: boolean
+  status?: boolean
+  deployment?: boolean
+  provider?: boolean
+  providerAccountId?: boolean
+  statusReason?: boolean
+  provisionedAt?: boolean
   metadata?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type WalletOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "chainId" | "address" | "label" | "isPrimary" | "metadata" | "createdAt" | "updatedAt", ExtArgs["result"]["wallet"]>
+export type WalletOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "chainId" | "address" | "label" | "isPrimary" | "type" | "status" | "deployment" | "provider" | "providerAccountId" | "statusReason" | "provisionedAt" | "metadata" | "createdAt" | "updatedAt", ExtArgs["result"]["wallet"]>
 export type WalletInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  delegatedPermissions?: boolean | Prisma.Wallet$delegatedPermissionsArgs<ExtArgs>
+  _count?: boolean | Prisma.WalletCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type WalletIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -678,14 +1082,22 @@ export type $WalletPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
   name: "Wallet"
   objects: {
     user: Prisma.$UserPayload<ExtArgs>
+    delegatedPermissions: Prisma.$DelegatedPermissionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     userId: string
     chainId: number
-    address: string
+    address: string | null
     label: string | null
     isPrimary: boolean
+    type: $Enums.WalletType
+    status: $Enums.WalletStatus
+    deployment: $Enums.WalletDeployment
+    provider: string | null
+    providerAccountId: string | null
+    statusReason: string | null
+    provisionedAt: Date | null
     metadata: runtime.JsonValue | null
     createdAt: Date
     updatedAt: Date
@@ -1084,6 +1496,7 @@ readonly fields: WalletFieldRefs;
 export interface Prisma__WalletClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  delegatedPermissions<T extends Prisma.Wallet$delegatedPermissionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Wallet$delegatedPermissionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DelegatedPermissionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1119,6 +1532,13 @@ export interface WalletFieldRefs {
   readonly address: Prisma.FieldRef<"Wallet", 'String'>
   readonly label: Prisma.FieldRef<"Wallet", 'String'>
   readonly isPrimary: Prisma.FieldRef<"Wallet", 'Boolean'>
+  readonly type: Prisma.FieldRef<"Wallet", 'WalletType'>
+  readonly status: Prisma.FieldRef<"Wallet", 'WalletStatus'>
+  readonly deployment: Prisma.FieldRef<"Wallet", 'WalletDeployment'>
+  readonly provider: Prisma.FieldRef<"Wallet", 'String'>
+  readonly providerAccountId: Prisma.FieldRef<"Wallet", 'String'>
+  readonly statusReason: Prisma.FieldRef<"Wallet", 'String'>
+  readonly provisionedAt: Prisma.FieldRef<"Wallet", 'DateTime'>
   readonly metadata: Prisma.FieldRef<"Wallet", 'Json'>
   readonly createdAt: Prisma.FieldRef<"Wallet", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Wallet", 'DateTime'>
@@ -1520,6 +1940,30 @@ export type WalletDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Limit how many Wallets to delete.
    */
   limit?: number
+}
+
+/**
+ * Wallet.delegatedPermissions
+ */
+export type Wallet$delegatedPermissionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the DelegatedPermission
+   */
+  select?: Prisma.DelegatedPermissionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the DelegatedPermission
+   */
+  omit?: Prisma.DelegatedPermissionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DelegatedPermissionInclude<ExtArgs> | null
+  where?: Prisma.DelegatedPermissionWhereInput
+  orderBy?: Prisma.DelegatedPermissionOrderByWithRelationInput | Prisma.DelegatedPermissionOrderByWithRelationInput[]
+  cursor?: Prisma.DelegatedPermissionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.DelegatedPermissionScalarFieldEnum | Prisma.DelegatedPermissionScalarFieldEnum[]
 }
 
 /**

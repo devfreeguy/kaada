@@ -7,6 +7,7 @@ import { AgentModule } from "./agent/agent.module.js";
 import { AppConfigModule, APP_CONFIG } from "./config/config.module.js";
 import { DatabaseModule } from "./database/database.module.js";
 import { HealthModule } from "./health/health.module.js";
+import { WalletModule } from "./wallet/wallet.module.js";
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { HealthModule } from "./health/health.module.js";
     }),
     HealthModule,
     AgentModule,
+    WalletModule,
   ],
 })
 export class AppModule {}

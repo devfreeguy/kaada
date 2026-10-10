@@ -16,16 +16,16 @@ export {
   toRampSession,
   toTransaction,
 } from "./execution.js";
-export {
-  identityCreateData,
-  toIdentity,
-  toSession,
-  toUser,
-  toWallet,
-  userCreateData,
-} from "./identity.js";
+export { identityCreateData, toIdentity, toSession, toUser, userCreateData } from "./identity.js";
 export { intentCreateData, intentUpdateData, toIntent } from "./intent.js";
 export { toProvider, toProviderCapability } from "./provider.js";
 export { quoteCreateData, routeCreateData, toQuote, toRoute, toRouteStep } from "./quote-route.js";
 export { recipientCreateData, toRecipient } from "./recipient.js";
 export { DataIntegrityError } from "./support.js";
+export {
+  permissionCreateData,
+  toDelegatedPermission,
+  toPasskeyChallenge,
+  toPasskeyCredential,
+  toWallet,
+} from "./wallet.js";

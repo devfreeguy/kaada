@@ -30,20 +30,6 @@ export interface Identity {
   updatedAt: Date;
 }
 
-/** A wallet address linked to a user. A row here does not imply Kaada custody. */
-export interface Wallet {
-  id: string;
-  userId: string;
-  chainId: number;
-  /** Normalised with normalizeAddress before storage. */
-  address: string;
-  label?: string;
-  isPrimary: boolean;
-  metadata?: JsonObject;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 /** A web session. Only a hash of the token exists; the plaintext token is never stored. */
 export interface Session {
   id: string;

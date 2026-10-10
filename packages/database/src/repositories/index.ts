@@ -2,6 +2,10 @@ import { createAssetRegistry } from "@kaada/domain";
 import type {
   AssetRegistry,
   AssetRepository,
+  AuditRepository,
+  DelegatedPermissionRepository,
+  PasskeyRepository,
+  WalletRepository,
   ClarificationChoiceRepository,
   ConversationRepository,
   ExecutionRepository,
@@ -28,6 +32,12 @@ import {
   createRouteRepository,
 } from "./quotes-routes-executions.js";
 import { createProviderRepository, createRecipientRepository } from "./recipients-providers.js";
+import {
+  createAuditRepository,
+  createDelegatedPermissionRepository,
+  createPasskeyRepository,
+  createWalletRepository,
+} from "./wallets.js";
 
 /** Every repository, typed by its domain contract. No Prisma types appear here. */
 export interface Repositories {
@@ -43,6 +53,10 @@ export interface Repositories {
   routes: RouteRepository;
   executions: ExecutionRepository;
   clarifications: ClarificationChoiceRepository;
+  wallets: WalletRepository;
+  passkeys: PasskeyRepository;
+  delegatedPermissions: DelegatedPermissionRepository;
+  audit: AuditRepository;
 }
 
 function buildRepositories(db: Db): Repositories {
@@ -59,6 +73,10 @@ function buildRepositories(db: Db): Repositories {
     routes: createRouteRepository(db),
     executions: createExecutionRepository(db),
     clarifications: createClarificationChoiceRepository(db),
+    wallets: createWalletRepository(db),
+    passkeys: createPasskeyRepository(db),
+    delegatedPermissions: createDelegatedPermissionRepository(db),
+    audit: createAuditRepository(db),
   };
 }
 
@@ -74,12 +92,15 @@ export function createRepositories(database: Database): Repositories {
 export function withTransaction<T>(
   database: Database,
   work: (repositories: Repositories) => Promise<T>,
-  options: { timeoutMs?: number } = {},
+  options: { timeoutMs?: number; maxWaitMs?: number } = {},
 ): Promise<T> {
-  return database.client.$transaction(
-    (tx) => work(buildRepositories(tx)),
-    options.timeoutMs === undefined ? undefined : { timeout: options.timeoutMs },
-  );
+  // maxWait is how long to wait for a pooled connection to START the transaction. Prisma's 2 s default
+  // is too tight for a remote database under concurrent load (a burst of callers queues for
+  // connections), so it is 10 s unless the caller says otherwise.
+  return database.client.$transaction((tx) => work(buildRepositories(tx)), {
+    maxWait: options.maxWaitMs ?? 10_000,
+    ...(options.timeoutMs !== undefined && { timeout: options.timeoutMs }),
+  });
 }
 
 /** The domain AssetRegistry backed by the database. Reads on every call; add caching when needed. */

@@ -81,6 +81,13 @@ with `randomUUID()` from `node:crypto`. Inserting without an id fails at the dat
 5. `20261012000000_quote_route_intent_revision` (Build 8): `Quote.intentRevision` and
    `Route.intentRevision` (>= 1, no default) plus an index, binding every price and route to the intent
    revision it was built for.
+6. `20261014000000_wallets_passkeys_permissions` (Build 10, generated) and `20261014000001_wallet_constraints`
+   (hand-written): `Wallet` gains type/status/deployment/provider fields (address nullable while
+   PROVISIONING); new `PasskeyCredential` (public key only), `PasskeyChallenge` (single-use) and
+   `DelegatedPermission` (bounded, with a per-constraint enforcement record). Constraints: one non-revoked
+   EMBEDDED wallet per user and chain (partial unique index), ACTIVE requires an address, passkey coordinates are
+   32-byte lower-case hex, and a permission must name operations, contracts and assets, have a positive window
+   and canonical amounts, with lower-case contract addresses.
 
 ## Tradeoffs and decisions
 

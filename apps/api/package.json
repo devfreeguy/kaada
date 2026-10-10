@@ -12,9 +12,11 @@
     "test": "node --import tsx --test \"src/**/*.test.ts\" \"test/*.test.ts\"",
     "test:integration": "node --import tsx --test \"test/integration/*.test.ts\"",
     "smoke:groq": "node --import tsx scripts/groq-smoke.ts",
-    "smoke:textile": "node --import tsx scripts/smoke-textile.ts"
+    "smoke:textile": "node --import tsx scripts/smoke-textile.ts",
+    "smoke:wallet": "node --import tsx scripts/wallet-smoke.ts"
   },
   "dependencies": {
+    "@kaada/blockchain": "workspace:*",
     "@kaada/config": "workspace:*",
     "@kaada/database": "workspace:*",
     "@kaada/domain": "workspace:*",
@@ -23,6 +25,7 @@
     "@nestjs/common": "^12.1.2",
     "@nestjs/core": "^12.1.2",
     "@nestjs/platform-fastify": "^12.1.2",
+    "@simplewebauthn/server": "^14.0.3",
     "groq-sdk": "^1.6.0",
     "nestjs-pino": "^5.3.1",
     "pino": "catalog:",

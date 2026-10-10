@@ -55,6 +55,9 @@ export const ModelName = {
   Identity: 'Identity',
   Session: 'Session',
   Wallet: 'Wallet',
+  PasskeyCredential: 'PasskeyCredential',
+  PasskeyChallenge: 'PasskeyChallenge',
+  DelegatedPermission: 'DelegatedPermission',
   Asset: 'Asset',
   Conversation: 'Conversation',
   Message: 'Message',
@@ -134,12 +137,75 @@ export const WalletScalarFieldEnum = {
   address: 'address',
   label: 'label',
   isPrimary: 'isPrimary',
+  type: 'type',
+  status: 'status',
+  deployment: 'deployment',
+  provider: 'provider',
+  providerAccountId: 'providerAccountId',
+  statusReason: 'statusReason',
+  provisionedAt: 'provisionedAt',
   metadata: 'metadata',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type WalletScalarFieldEnum = (typeof WalletScalarFieldEnum)[keyof typeof WalletScalarFieldEnum]
+
+
+export const PasskeyCredentialScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  credentialId: 'credentialId',
+  publicKeyX: 'publicKeyX',
+  publicKeyY: 'publicKeyY',
+  rpId: 'rpId',
+  signCount: 'signCount',
+  label: 'label',
+  createdAt: 'createdAt',
+  lastUsedAt: 'lastUsedAt',
+  revokedAt: 'revokedAt'
+} as const
+
+export type PasskeyCredentialScalarFieldEnum = (typeof PasskeyCredentialScalarFieldEnum)[keyof typeof PasskeyCredentialScalarFieldEnum]
+
+
+export const PasskeyChallengeScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  purpose: 'purpose',
+  challenge: 'challenge',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type PasskeyChallengeScalarFieldEnum = (typeof PasskeyChallengeScalarFieldEnum)[keyof typeof PasskeyChallengeScalarFieldEnum]
+
+
+export const DelegatedPermissionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  walletId: 'walletId',
+  provider: 'provider',
+  providerPermissionId: 'providerPermissionId',
+  chainId: 'chainId',
+  status: 'status',
+  allowedOperations: 'allowedOperations',
+  allowedContracts: 'allowedContracts',
+  allowedAssetIds: 'allowedAssetIds',
+  perTransactionAmount: 'perTransactionAmount',
+  perTransactionAssetId: 'perTransactionAssetId',
+  cumulativeAmount: 'cumulativeAmount',
+  cumulativeAssetId: 'cumulativeAssetId',
+  enforcement: 'enforcement',
+  validFrom: 'validFrom',
+  expiresAt: 'expiresAt',
+  revokedAt: 'revokedAt',
+  revocationReason: 'revocationReason',
+  createdAt: 'createdAt'
+} as const
+
+export type DelegatedPermissionScalarFieldEnum = (typeof DelegatedPermissionScalarFieldEnum)[keyof typeof DelegatedPermissionScalarFieldEnum]
 
 
 export const AssetScalarFieldEnum = {

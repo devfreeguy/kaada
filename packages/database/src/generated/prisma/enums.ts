@@ -123,6 +123,53 @@ export const ProviderType = {
 export type ProviderType = (typeof ProviderType)[keyof typeof ProviderType]
 
 
+export const WalletType = {
+  EMBEDDED: 'EMBEDDED',
+  EXTERNAL: 'EXTERNAL'
+} as const
+
+export type WalletType = (typeof WalletType)[keyof typeof WalletType]
+
+
+export const WalletStatus = {
+  PROVISIONING: 'PROVISIONING',
+  ACTIVE: 'ACTIVE',
+  SUSPENDED: 'SUSPENDED',
+  REVOKED: 'REVOKED',
+  RECOVERY_REQUIRED: 'RECOVERY_REQUIRED'
+} as const
+
+export type WalletStatus = (typeof WalletStatus)[keyof typeof WalletStatus]
+
+
+export const WalletDeployment = {
+  NOT_APPLICABLE: 'NOT_APPLICABLE',
+  COUNTERFACTUAL: 'COUNTERFACTUAL',
+  DEPLOYING: 'DEPLOYING',
+  DEPLOYED: 'DEPLOYED'
+} as const
+
+export type WalletDeployment = (typeof WalletDeployment)[keyof typeof WalletDeployment]
+
+
+export const PermissionStatus = {
+  PENDING: 'PENDING',
+  ACTIVE: 'ACTIVE',
+  REVOKED: 'REVOKED',
+  EXPIRED: 'EXPIRED'
+} as const
+
+export type PermissionStatus = (typeof PermissionStatus)[keyof typeof PermissionStatus]
+
+
+export const PasskeyChallengePurpose = {
+  REGISTRATION: 'REGISTRATION',
+  AUTHENTICATION: 'AUTHENTICATION'
+} as const
+
+export type PasskeyChallengePurpose = (typeof PasskeyChallengePurpose)[keyof typeof PasskeyChallengePurpose]
+
+
 export const CapabilityType = {
   QUOTE: 'QUOTE',
   SWAP: 'SWAP',

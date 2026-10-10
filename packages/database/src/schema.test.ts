@@ -51,6 +51,9 @@ const modelNames = [
   "Identity",
   "Session",
   "Wallet",
+  "PasskeyCredential",
+  "PasskeyChallenge",
+  "DelegatedPermission",
   "Asset",
   "Conversation",
   "Message",
@@ -108,6 +111,11 @@ const enumValues: Record<string, string[]> = {
     "BANK_PAYOUT",
     "CONDITIONAL_EXECUTION",
   ],
+  WalletType: ["EMBEDDED", "EXTERNAL"],
+  WalletStatus: ["PROVISIONING", "ACTIVE", "SUSPENDED", "REVOKED", "RECOVERY_REQUIRED"],
+  WalletDeployment: ["NOT_APPLICABLE", "COUNTERFACTUAL", "DEPLOYING", "DEPLOYED"],
+  PermissionStatus: ["PENDING", "ACTIVE", "REVOKED", "EXPIRED"],
+  PasskeyChallengePurpose: ["REGISTRATION", "AUTHENTICATION"],
   RouteStatus: ["CREATED", "VALID", "EXPIRED", "SELECTED", "INVALID"],
   RouteStepType: ["TRANSFER", "SWAP", "BRIDGE", "ON_RAMP", "OFF_RAMP", "BANK_PAYOUT"],
   ExecutionStatus: [
@@ -154,6 +162,9 @@ const moneyColumns: Record<string, string[]> = {
   RampSession: ["amount"],
 };
 
+/** Wallet-related money columns: their CHECKs live in the wallet constraints migration. */
+const permissionMoneyColumns = ["perTransactionAmount", "cumulativeAmount"];
+
 describe("prisma schema", () => {
   it("defines every required model and enum", () => {
     assert.deepEqual([...models.keys()].sort(), [...modelNames].sort());
@@ -181,11 +192,12 @@ describe("prisma schema", () => {
   });
 
   it("has no unlisted money-looking columns", () => {
-    const listed = new Set(
-      Object.entries(moneyColumns).flatMap(([model, columns]) =>
+    const listed = new Set([
+      ...Object.entries(moneyColumns).flatMap(([model, columns]) =>
         columns.map((column) => `${model}.${column}`),
       ),
-    );
+      ...permissionMoneyColumns.map((column) => `DelegatedPermission.${column}`),
+    ]);
     for (const [model, fields] of models) {
       for (const field of fields) {
         if (/(amount|estimatedInput|estimatedOutput|nonce)$/i.test(field.name)) {
@@ -204,6 +216,27 @@ describe("prisma schema", () => {
     }
   });
 
+  it("bounds delegated permissions and wallets in the wallet constraints migration", () => {
+    const sql = readFileSync(
+      new URL(
+        "../prisma/migrations/20261014000001_wallet_constraints/migration.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    for (const column of permissionMoneyColumns) {
+      assert.ok(sql.includes(`"${column}"`), column);
+    }
+    assert.ok(sql.includes(`~ '^(0|[1-9][0-9]*)$'`));
+    // Never unbounded: contracts, assets and operations are required, and the window must be positive.
+    assert.ok(sql.includes('cardinality("allowedContracts") > 0'));
+    assert.ok(sql.includes('"expiresAt" > "validFrom"'));
+    // One non-revoked embedded wallet per user and chain, and ACTIVE needs an address.
+    assert.ok(sql.includes('ON "Wallet" ("userId", "chainId")'));
+    assert.ok(sql.includes(`"type" = 'EMBEDDED' AND "status" <> 'REVOKED'`));
+    assert.ok(sql.includes("Wallet_active_has_address"));
+  });
+
   it("uses application-generated UUID primary keys", () => {
     for (const [model, fields] of models) {
       const id = fields.find((field) => field.name === "id");
@@ -217,7 +250,8 @@ describe("prisma schema", () => {
   });
 
   it("keeps foreign key columns as UUIDs", () => {
-    const notForeignKeys = /^(external\w*|providerQuoteId|chainId)$/;
+    const notForeignKeys =
+      /^(external\w*|providerQuoteId|providerAccountId|providerPermissionId|credentialId|rpId|chainId)$/;
     for (const [model, fields] of models) {
       for (const field of fields) {
         if (field.name.endsWith("Id") && field.name !== "id" && !notForeignKeys.test(field.name)) {

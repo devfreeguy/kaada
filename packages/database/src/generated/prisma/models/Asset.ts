@@ -299,6 +299,8 @@ export type AssetWhereInput = {
   transactionsAsTransferred?: Prisma.TransactionListRelationFilter
   transactionsAsGas?: Prisma.TransactionListRelationFilter
   rampSessions?: Prisma.RampSessionListRelationFilter
+  permissionsPerTransaction?: Prisma.DelegatedPermissionListRelationFilter
+  permissionsCumulative?: Prisma.DelegatedPermissionListRelationFilter
 }
 
 export type AssetOrderByWithRelationInput = {
@@ -331,6 +333,8 @@ export type AssetOrderByWithRelationInput = {
   transactionsAsTransferred?: Prisma.TransactionOrderByRelationAggregateInput
   transactionsAsGas?: Prisma.TransactionOrderByRelationAggregateInput
   rampSessions?: Prisma.RampSessionOrderByRelationAggregateInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionOrderByRelationAggregateInput
+  permissionsCumulative?: Prisma.DelegatedPermissionOrderByRelationAggregateInput
 }
 
 export type AssetWhereUniqueInput = Prisma.AtLeast<{
@@ -367,6 +371,8 @@ export type AssetWhereUniqueInput = Prisma.AtLeast<{
   transactionsAsTransferred?: Prisma.TransactionListRelationFilter
   transactionsAsGas?: Prisma.TransactionListRelationFilter
   rampSessions?: Prisma.RampSessionListRelationFilter
+  permissionsPerTransaction?: Prisma.DelegatedPermissionListRelationFilter
+  permissionsCumulative?: Prisma.DelegatedPermissionListRelationFilter
 }, "id" | "chainId_contractAddress">
 
 export type AssetOrderByWithAggregationInput = {
@@ -437,6 +443,8 @@ export type AssetCreateInput = {
   transactionsAsTransferred?: Prisma.TransactionCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetUncheckedCreateInput = {
@@ -469,6 +477,8 @@ export type AssetUncheckedCreateInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionUncheckedCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetUpdateInput = {
@@ -501,6 +511,8 @@ export type AssetUpdateInput = {
   transactionsAsTransferred?: Prisma.TransactionUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUncheckedUpdateInput = {
@@ -533,6 +545,8 @@ export type AssetUncheckedUpdateInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUncheckedUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetCreateManyInput = {
@@ -578,6 +592,16 @@ export type AssetUncheckedUpdateManyInput = {
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type AssetScalarRelationFilter = {
+  is?: Prisma.AssetWhereInput
+  isNot?: Prisma.AssetWhereInput
+}
+
+export type AssetNullableScalarRelationFilter = {
+  is?: Prisma.AssetWhereInput | null
+  isNot?: Prisma.AssetWhereInput | null
 }
 
 export type AssetChainIdContractAddressCompoundUniqueInput = {
@@ -640,14 +664,34 @@ export type AssetSumOrderByAggregateInput = {
   decimals?: Prisma.SortOrder
 }
 
-export type AssetNullableScalarRelationFilter = {
-  is?: Prisma.AssetWhereInput | null
-  isNot?: Prisma.AssetWhereInput | null
+export type AssetCreateNestedOneWithoutPermissionsPerTransactionInput = {
+  create?: Prisma.XOR<Prisma.AssetCreateWithoutPermissionsPerTransactionInput, Prisma.AssetUncheckedCreateWithoutPermissionsPerTransactionInput>
+  connectOrCreate?: Prisma.AssetCreateOrConnectWithoutPermissionsPerTransactionInput
+  connect?: Prisma.AssetWhereUniqueInput
 }
 
-export type AssetScalarRelationFilter = {
-  is?: Prisma.AssetWhereInput
-  isNot?: Prisma.AssetWhereInput
+export type AssetCreateNestedOneWithoutPermissionsCumulativeInput = {
+  create?: Prisma.XOR<Prisma.AssetCreateWithoutPermissionsCumulativeInput, Prisma.AssetUncheckedCreateWithoutPermissionsCumulativeInput>
+  connectOrCreate?: Prisma.AssetCreateOrConnectWithoutPermissionsCumulativeInput
+  connect?: Prisma.AssetWhereUniqueInput
+}
+
+export type AssetUpdateOneRequiredWithoutPermissionsPerTransactionNestedInput = {
+  create?: Prisma.XOR<Prisma.AssetCreateWithoutPermissionsPerTransactionInput, Prisma.AssetUncheckedCreateWithoutPermissionsPerTransactionInput>
+  connectOrCreate?: Prisma.AssetCreateOrConnectWithoutPermissionsPerTransactionInput
+  upsert?: Prisma.AssetUpsertWithoutPermissionsPerTransactionInput
+  connect?: Prisma.AssetWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AssetUpdateToOneWithWhereWithoutPermissionsPerTransactionInput, Prisma.AssetUpdateWithoutPermissionsPerTransactionInput>, Prisma.AssetUncheckedUpdateWithoutPermissionsPerTransactionInput>
+}
+
+export type AssetUpdateOneWithoutPermissionsCumulativeNestedInput = {
+  create?: Prisma.XOR<Prisma.AssetCreateWithoutPermissionsCumulativeInput, Prisma.AssetUncheckedCreateWithoutPermissionsCumulativeInput>
+  connectOrCreate?: Prisma.AssetCreateOrConnectWithoutPermissionsCumulativeInput
+  upsert?: Prisma.AssetUpsertWithoutPermissionsCumulativeInput
+  disconnect?: Prisma.AssetWhereInput | boolean
+  delete?: Prisma.AssetWhereInput | boolean
+  connect?: Prisma.AssetWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AssetUpdateToOneWithWhereWithoutPermissionsCumulativeInput, Prisma.AssetUpdateWithoutPermissionsCumulativeInput>, Prisma.AssetUncheckedUpdateWithoutPermissionsCumulativeInput>
 }
 
 export type EnumAssetKindFieldUpdateOperationsInput = {
@@ -920,6 +964,302 @@ export type AssetUpdateOneRequiredWithoutRampSessionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.AssetUpdateToOneWithWhereWithoutRampSessionsInput, Prisma.AssetUpdateWithoutRampSessionsInput>, Prisma.AssetUncheckedUpdateWithoutRampSessionsInput>
 }
 
+export type AssetCreateWithoutPermissionsPerTransactionInput = {
+  id: string
+  symbol: string
+  name: string
+  kind: $Enums.AssetKind
+  chainId?: number | null
+  contractAddress?: string | null
+  decimals: number
+  fiatCode?: string | null
+  countryCode?: string | null
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  intentsAsSource?: Prisma.IntentCreateNestedManyWithoutSourceAssetInput
+  intentsAsDestination?: Prisma.IntentCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentCreateNestedManyWithoutPreferredSourceAssetInput
+  recipientsPreferring?: Prisma.RecipientCreateNestedManyWithoutPreferredAssetInput
+  capabilitiesAsInput?: Prisma.ProviderCapabilityCreateNestedManyWithoutInputAssetInput
+  capabilitiesAsOutput?: Prisma.ProviderCapabilityCreateNestedManyWithoutOutputAssetInput
+  quotesAsInput?: Prisma.QuoteCreateNestedManyWithoutInputAssetInput
+  quotesAsOutput?: Prisma.QuoteCreateNestedManyWithoutOutputAssetInput
+  quotesAsFee?: Prisma.QuoteCreateNestedManyWithoutFeeAssetInput
+  routesAsInput?: Prisma.RouteCreateNestedManyWithoutInputAssetInput
+  routesAsOutput?: Prisma.RouteCreateNestedManyWithoutOutputAssetInput
+  routesAsFee?: Prisma.RouteCreateNestedManyWithoutTotalFeeAssetInput
+  routeStepsAsInput?: Prisma.RouteStepCreateNestedManyWithoutInputAssetInput
+  routeStepsAsOutput?: Prisma.RouteStepCreateNestedManyWithoutOutputAssetInput
+  transactionsAsTransferred?: Prisma.TransactionCreateNestedManyWithoutAssetInput
+  transactionsAsGas?: Prisma.TransactionCreateNestedManyWithoutGasAssetInput
+  rampSessions?: Prisma.RampSessionCreateNestedManyWithoutAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionCreateNestedManyWithoutCumulativeAssetInput
+}
+
+export type AssetUncheckedCreateWithoutPermissionsPerTransactionInput = {
+  id: string
+  symbol: string
+  name: string
+  kind: $Enums.AssetKind
+  chainId?: number | null
+  contractAddress?: string | null
+  decimals: number
+  fiatCode?: string | null
+  countryCode?: string | null
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  intentsAsSource?: Prisma.IntentUncheckedCreateNestedManyWithoutSourceAssetInput
+  intentsAsDestination?: Prisma.IntentUncheckedCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedCreateNestedManyWithoutPreferredSourceAssetInput
+  recipientsPreferring?: Prisma.RecipientUncheckedCreateNestedManyWithoutPreferredAssetInput
+  capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutInputAssetInput
+  capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutOutputAssetInput
+  quotesAsInput?: Prisma.QuoteUncheckedCreateNestedManyWithoutInputAssetInput
+  quotesAsOutput?: Prisma.QuoteUncheckedCreateNestedManyWithoutOutputAssetInput
+  quotesAsFee?: Prisma.QuoteUncheckedCreateNestedManyWithoutFeeAssetInput
+  routesAsInput?: Prisma.RouteUncheckedCreateNestedManyWithoutInputAssetInput
+  routesAsOutput?: Prisma.RouteUncheckedCreateNestedManyWithoutOutputAssetInput
+  routesAsFee?: Prisma.RouteUncheckedCreateNestedManyWithoutTotalFeeAssetInput
+  routeStepsAsInput?: Prisma.RouteStepUncheckedCreateNestedManyWithoutInputAssetInput
+  routeStepsAsOutput?: Prisma.RouteStepUncheckedCreateNestedManyWithoutOutputAssetInput
+  transactionsAsTransferred?: Prisma.TransactionUncheckedCreateNestedManyWithoutAssetInput
+  transactionsAsGas?: Prisma.TransactionUncheckedCreateNestedManyWithoutGasAssetInput
+  rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutCumulativeAssetInput
+}
+
+export type AssetCreateOrConnectWithoutPermissionsPerTransactionInput = {
+  where: Prisma.AssetWhereUniqueInput
+  create: Prisma.XOR<Prisma.AssetCreateWithoutPermissionsPerTransactionInput, Prisma.AssetUncheckedCreateWithoutPermissionsPerTransactionInput>
+}
+
+export type AssetCreateWithoutPermissionsCumulativeInput = {
+  id: string
+  symbol: string
+  name: string
+  kind: $Enums.AssetKind
+  chainId?: number | null
+  contractAddress?: string | null
+  decimals: number
+  fiatCode?: string | null
+  countryCode?: string | null
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  intentsAsSource?: Prisma.IntentCreateNestedManyWithoutSourceAssetInput
+  intentsAsDestination?: Prisma.IntentCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentCreateNestedManyWithoutPreferredSourceAssetInput
+  recipientsPreferring?: Prisma.RecipientCreateNestedManyWithoutPreferredAssetInput
+  capabilitiesAsInput?: Prisma.ProviderCapabilityCreateNestedManyWithoutInputAssetInput
+  capabilitiesAsOutput?: Prisma.ProviderCapabilityCreateNestedManyWithoutOutputAssetInput
+  quotesAsInput?: Prisma.QuoteCreateNestedManyWithoutInputAssetInput
+  quotesAsOutput?: Prisma.QuoteCreateNestedManyWithoutOutputAssetInput
+  quotesAsFee?: Prisma.QuoteCreateNestedManyWithoutFeeAssetInput
+  routesAsInput?: Prisma.RouteCreateNestedManyWithoutInputAssetInput
+  routesAsOutput?: Prisma.RouteCreateNestedManyWithoutOutputAssetInput
+  routesAsFee?: Prisma.RouteCreateNestedManyWithoutTotalFeeAssetInput
+  routeStepsAsInput?: Prisma.RouteStepCreateNestedManyWithoutInputAssetInput
+  routeStepsAsOutput?: Prisma.RouteStepCreateNestedManyWithoutOutputAssetInput
+  transactionsAsTransferred?: Prisma.TransactionCreateNestedManyWithoutAssetInput
+  transactionsAsGas?: Prisma.TransactionCreateNestedManyWithoutGasAssetInput
+  rampSessions?: Prisma.RampSessionCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionCreateNestedManyWithoutPerTransactionAssetInput
+}
+
+export type AssetUncheckedCreateWithoutPermissionsCumulativeInput = {
+  id: string
+  symbol: string
+  name: string
+  kind: $Enums.AssetKind
+  chainId?: number | null
+  contractAddress?: string | null
+  decimals: number
+  fiatCode?: string | null
+  countryCode?: string | null
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  intentsAsSource?: Prisma.IntentUncheckedCreateNestedManyWithoutSourceAssetInput
+  intentsAsDestination?: Prisma.IntentUncheckedCreateNestedManyWithoutDestinationAssetInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedCreateNestedManyWithoutPreferredSourceAssetInput
+  recipientsPreferring?: Prisma.RecipientUncheckedCreateNestedManyWithoutPreferredAssetInput
+  capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutInputAssetInput
+  capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutOutputAssetInput
+  quotesAsInput?: Prisma.QuoteUncheckedCreateNestedManyWithoutInputAssetInput
+  quotesAsOutput?: Prisma.QuoteUncheckedCreateNestedManyWithoutOutputAssetInput
+  quotesAsFee?: Prisma.QuoteUncheckedCreateNestedManyWithoutFeeAssetInput
+  routesAsInput?: Prisma.RouteUncheckedCreateNestedManyWithoutInputAssetInput
+  routesAsOutput?: Prisma.RouteUncheckedCreateNestedManyWithoutOutputAssetInput
+  routesAsFee?: Prisma.RouteUncheckedCreateNestedManyWithoutTotalFeeAssetInput
+  routeStepsAsInput?: Prisma.RouteStepUncheckedCreateNestedManyWithoutInputAssetInput
+  routeStepsAsOutput?: Prisma.RouteStepUncheckedCreateNestedManyWithoutOutputAssetInput
+  transactionsAsTransferred?: Prisma.TransactionUncheckedCreateNestedManyWithoutAssetInput
+  transactionsAsGas?: Prisma.TransactionUncheckedCreateNestedManyWithoutGasAssetInput
+  rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutPerTransactionAssetInput
+}
+
+export type AssetCreateOrConnectWithoutPermissionsCumulativeInput = {
+  where: Prisma.AssetWhereUniqueInput
+  create: Prisma.XOR<Prisma.AssetCreateWithoutPermissionsCumulativeInput, Prisma.AssetUncheckedCreateWithoutPermissionsCumulativeInput>
+}
+
+export type AssetUpsertWithoutPermissionsPerTransactionInput = {
+  update: Prisma.XOR<Prisma.AssetUpdateWithoutPermissionsPerTransactionInput, Prisma.AssetUncheckedUpdateWithoutPermissionsPerTransactionInput>
+  create: Prisma.XOR<Prisma.AssetCreateWithoutPermissionsPerTransactionInput, Prisma.AssetUncheckedCreateWithoutPermissionsPerTransactionInput>
+  where?: Prisma.AssetWhereInput
+}
+
+export type AssetUpdateToOneWithWhereWithoutPermissionsPerTransactionInput = {
+  where?: Prisma.AssetWhereInput
+  data: Prisma.XOR<Prisma.AssetUpdateWithoutPermissionsPerTransactionInput, Prisma.AssetUncheckedUpdateWithoutPermissionsPerTransactionInput>
+}
+
+export type AssetUpdateWithoutPermissionsPerTransactionInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  symbol?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumAssetKindFieldUpdateOperationsInput | $Enums.AssetKind
+  chainId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  decimals?: Prisma.IntFieldUpdateOperationsInput | number
+  fiatCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  intentsAsSource?: Prisma.IntentUpdateManyWithoutSourceAssetNestedInput
+  intentsAsDestination?: Prisma.IntentUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUpdateManyWithoutPreferredSourceAssetNestedInput
+  recipientsPreferring?: Prisma.RecipientUpdateManyWithoutPreferredAssetNestedInput
+  capabilitiesAsInput?: Prisma.ProviderCapabilityUpdateManyWithoutInputAssetNestedInput
+  capabilitiesAsOutput?: Prisma.ProviderCapabilityUpdateManyWithoutOutputAssetNestedInput
+  quotesAsInput?: Prisma.QuoteUpdateManyWithoutInputAssetNestedInput
+  quotesAsOutput?: Prisma.QuoteUpdateManyWithoutOutputAssetNestedInput
+  quotesAsFee?: Prisma.QuoteUpdateManyWithoutFeeAssetNestedInput
+  routesAsInput?: Prisma.RouteUpdateManyWithoutInputAssetNestedInput
+  routesAsOutput?: Prisma.RouteUpdateManyWithoutOutputAssetNestedInput
+  routesAsFee?: Prisma.RouteUpdateManyWithoutTotalFeeAssetNestedInput
+  routeStepsAsInput?: Prisma.RouteStepUpdateManyWithoutInputAssetNestedInput
+  routeStepsAsOutput?: Prisma.RouteStepUpdateManyWithoutOutputAssetNestedInput
+  transactionsAsTransferred?: Prisma.TransactionUpdateManyWithoutAssetNestedInput
+  transactionsAsGas?: Prisma.TransactionUpdateManyWithoutGasAssetNestedInput
+  rampSessions?: Prisma.RampSessionUpdateManyWithoutAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUpdateManyWithoutCumulativeAssetNestedInput
+}
+
+export type AssetUncheckedUpdateWithoutPermissionsPerTransactionInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  symbol?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumAssetKindFieldUpdateOperationsInput | $Enums.AssetKind
+  chainId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  decimals?: Prisma.IntFieldUpdateOperationsInput | number
+  fiatCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  intentsAsSource?: Prisma.IntentUncheckedUpdateManyWithoutSourceAssetNestedInput
+  intentsAsDestination?: Prisma.IntentUncheckedUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedUpdateManyWithoutPreferredSourceAssetNestedInput
+  recipientsPreferring?: Prisma.RecipientUncheckedUpdateManyWithoutPreferredAssetNestedInput
+  capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutInputAssetNestedInput
+  capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutOutputAssetNestedInput
+  quotesAsInput?: Prisma.QuoteUncheckedUpdateManyWithoutInputAssetNestedInput
+  quotesAsOutput?: Prisma.QuoteUncheckedUpdateManyWithoutOutputAssetNestedInput
+  quotesAsFee?: Prisma.QuoteUncheckedUpdateManyWithoutFeeAssetNestedInput
+  routesAsInput?: Prisma.RouteUncheckedUpdateManyWithoutInputAssetNestedInput
+  routesAsOutput?: Prisma.RouteUncheckedUpdateManyWithoutOutputAssetNestedInput
+  routesAsFee?: Prisma.RouteUncheckedUpdateManyWithoutTotalFeeAssetNestedInput
+  routeStepsAsInput?: Prisma.RouteStepUncheckedUpdateManyWithoutInputAssetNestedInput
+  routeStepsAsOutput?: Prisma.RouteStepUncheckedUpdateManyWithoutOutputAssetNestedInput
+  transactionsAsTransferred?: Prisma.TransactionUncheckedUpdateManyWithoutAssetNestedInput
+  transactionsAsGas?: Prisma.TransactionUncheckedUpdateManyWithoutGasAssetNestedInput
+  rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutCumulativeAssetNestedInput
+}
+
+export type AssetUpsertWithoutPermissionsCumulativeInput = {
+  update: Prisma.XOR<Prisma.AssetUpdateWithoutPermissionsCumulativeInput, Prisma.AssetUncheckedUpdateWithoutPermissionsCumulativeInput>
+  create: Prisma.XOR<Prisma.AssetCreateWithoutPermissionsCumulativeInput, Prisma.AssetUncheckedCreateWithoutPermissionsCumulativeInput>
+  where?: Prisma.AssetWhereInput
+}
+
+export type AssetUpdateToOneWithWhereWithoutPermissionsCumulativeInput = {
+  where?: Prisma.AssetWhereInput
+  data: Prisma.XOR<Prisma.AssetUpdateWithoutPermissionsCumulativeInput, Prisma.AssetUncheckedUpdateWithoutPermissionsCumulativeInput>
+}
+
+export type AssetUpdateWithoutPermissionsCumulativeInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  symbol?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumAssetKindFieldUpdateOperationsInput | $Enums.AssetKind
+  chainId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  decimals?: Prisma.IntFieldUpdateOperationsInput | number
+  fiatCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  intentsAsSource?: Prisma.IntentUpdateManyWithoutSourceAssetNestedInput
+  intentsAsDestination?: Prisma.IntentUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUpdateManyWithoutPreferredSourceAssetNestedInput
+  recipientsPreferring?: Prisma.RecipientUpdateManyWithoutPreferredAssetNestedInput
+  capabilitiesAsInput?: Prisma.ProviderCapabilityUpdateManyWithoutInputAssetNestedInput
+  capabilitiesAsOutput?: Prisma.ProviderCapabilityUpdateManyWithoutOutputAssetNestedInput
+  quotesAsInput?: Prisma.QuoteUpdateManyWithoutInputAssetNestedInput
+  quotesAsOutput?: Prisma.QuoteUpdateManyWithoutOutputAssetNestedInput
+  quotesAsFee?: Prisma.QuoteUpdateManyWithoutFeeAssetNestedInput
+  routesAsInput?: Prisma.RouteUpdateManyWithoutInputAssetNestedInput
+  routesAsOutput?: Prisma.RouteUpdateManyWithoutOutputAssetNestedInput
+  routesAsFee?: Prisma.RouteUpdateManyWithoutTotalFeeAssetNestedInput
+  routeStepsAsInput?: Prisma.RouteStepUpdateManyWithoutInputAssetNestedInput
+  routeStepsAsOutput?: Prisma.RouteStepUpdateManyWithoutOutputAssetNestedInput
+  transactionsAsTransferred?: Prisma.TransactionUpdateManyWithoutAssetNestedInput
+  transactionsAsGas?: Prisma.TransactionUpdateManyWithoutGasAssetNestedInput
+  rampSessions?: Prisma.RampSessionUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUpdateManyWithoutPerTransactionAssetNestedInput
+}
+
+export type AssetUncheckedUpdateWithoutPermissionsCumulativeInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  symbol?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumAssetKindFieldUpdateOperationsInput | $Enums.AssetKind
+  chainId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  contractAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  decimals?: Prisma.IntFieldUpdateOperationsInput | number
+  fiatCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  countryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  intentsAsSource?: Prisma.IntentUncheckedUpdateManyWithoutSourceAssetNestedInput
+  intentsAsDestination?: Prisma.IntentUncheckedUpdateManyWithoutDestinationAssetNestedInput
+  intentsAsPreferredSource?: Prisma.IntentUncheckedUpdateManyWithoutPreferredSourceAssetNestedInput
+  recipientsPreferring?: Prisma.RecipientUncheckedUpdateManyWithoutPreferredAssetNestedInput
+  capabilitiesAsInput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutInputAssetNestedInput
+  capabilitiesAsOutput?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutOutputAssetNestedInput
+  quotesAsInput?: Prisma.QuoteUncheckedUpdateManyWithoutInputAssetNestedInput
+  quotesAsOutput?: Prisma.QuoteUncheckedUpdateManyWithoutOutputAssetNestedInput
+  quotesAsFee?: Prisma.QuoteUncheckedUpdateManyWithoutFeeAssetNestedInput
+  routesAsInput?: Prisma.RouteUncheckedUpdateManyWithoutInputAssetNestedInput
+  routesAsOutput?: Prisma.RouteUncheckedUpdateManyWithoutOutputAssetNestedInput
+  routesAsFee?: Prisma.RouteUncheckedUpdateManyWithoutTotalFeeAssetNestedInput
+  routeStepsAsInput?: Prisma.RouteStepUncheckedUpdateManyWithoutInputAssetNestedInput
+  routeStepsAsOutput?: Prisma.RouteStepUncheckedUpdateManyWithoutOutputAssetNestedInput
+  transactionsAsTransferred?: Prisma.TransactionUncheckedUpdateManyWithoutAssetNestedInput
+  transactionsAsGas?: Prisma.TransactionUncheckedUpdateManyWithoutGasAssetNestedInput
+  rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutPerTransactionAssetNestedInput
+}
+
 export type AssetCreateWithoutIntentsAsSourceInput = {
   id: string
   symbol: string
@@ -949,6 +1289,8 @@ export type AssetCreateWithoutIntentsAsSourceInput = {
   transactionsAsTransferred?: Prisma.TransactionCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetUncheckedCreateWithoutIntentsAsSourceInput = {
@@ -980,6 +1322,8 @@ export type AssetUncheckedCreateWithoutIntentsAsSourceInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionUncheckedCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetCreateOrConnectWithoutIntentsAsSourceInput = {
@@ -1016,6 +1360,8 @@ export type AssetCreateWithoutIntentsAsDestinationInput = {
   transactionsAsTransferred?: Prisma.TransactionCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetUncheckedCreateWithoutIntentsAsDestinationInput = {
@@ -1047,6 +1393,8 @@ export type AssetUncheckedCreateWithoutIntentsAsDestinationInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionUncheckedCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetCreateOrConnectWithoutIntentsAsDestinationInput = {
@@ -1083,6 +1431,8 @@ export type AssetCreateWithoutIntentsAsPreferredSourceInput = {
   transactionsAsTransferred?: Prisma.TransactionCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetUncheckedCreateWithoutIntentsAsPreferredSourceInput = {
@@ -1114,6 +1464,8 @@ export type AssetUncheckedCreateWithoutIntentsAsPreferredSourceInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionUncheckedCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetCreateOrConnectWithoutIntentsAsPreferredSourceInput = {
@@ -1161,6 +1513,8 @@ export type AssetUpdateWithoutIntentsAsSourceInput = {
   transactionsAsTransferred?: Prisma.TransactionUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUncheckedUpdateWithoutIntentsAsSourceInput = {
@@ -1192,6 +1546,8 @@ export type AssetUncheckedUpdateWithoutIntentsAsSourceInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUncheckedUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUpsertWithoutIntentsAsDestinationInput = {
@@ -1234,6 +1590,8 @@ export type AssetUpdateWithoutIntentsAsDestinationInput = {
   transactionsAsTransferred?: Prisma.TransactionUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUncheckedUpdateWithoutIntentsAsDestinationInput = {
@@ -1265,6 +1623,8 @@ export type AssetUncheckedUpdateWithoutIntentsAsDestinationInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUncheckedUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUpsertWithoutIntentsAsPreferredSourceInput = {
@@ -1307,6 +1667,8 @@ export type AssetUpdateWithoutIntentsAsPreferredSourceInput = {
   transactionsAsTransferred?: Prisma.TransactionUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUncheckedUpdateWithoutIntentsAsPreferredSourceInput = {
@@ -1338,6 +1700,8 @@ export type AssetUncheckedUpdateWithoutIntentsAsPreferredSourceInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUncheckedUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetCreateWithoutRecipientsPreferringInput = {
@@ -1369,6 +1733,8 @@ export type AssetCreateWithoutRecipientsPreferringInput = {
   transactionsAsTransferred?: Prisma.TransactionCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetUncheckedCreateWithoutRecipientsPreferringInput = {
@@ -1400,6 +1766,8 @@ export type AssetUncheckedCreateWithoutRecipientsPreferringInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionUncheckedCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetCreateOrConnectWithoutRecipientsPreferringInput = {
@@ -1447,6 +1815,8 @@ export type AssetUpdateWithoutRecipientsPreferringInput = {
   transactionsAsTransferred?: Prisma.TransactionUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUncheckedUpdateWithoutRecipientsPreferringInput = {
@@ -1478,6 +1848,8 @@ export type AssetUncheckedUpdateWithoutRecipientsPreferringInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUncheckedUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetCreateWithoutCapabilitiesAsInputInput = {
@@ -1509,6 +1881,8 @@ export type AssetCreateWithoutCapabilitiesAsInputInput = {
   transactionsAsTransferred?: Prisma.TransactionCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetUncheckedCreateWithoutCapabilitiesAsInputInput = {
@@ -1540,6 +1914,8 @@ export type AssetUncheckedCreateWithoutCapabilitiesAsInputInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionUncheckedCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetCreateOrConnectWithoutCapabilitiesAsInputInput = {
@@ -1576,6 +1952,8 @@ export type AssetCreateWithoutCapabilitiesAsOutputInput = {
   transactionsAsTransferred?: Prisma.TransactionCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetUncheckedCreateWithoutCapabilitiesAsOutputInput = {
@@ -1607,6 +1985,8 @@ export type AssetUncheckedCreateWithoutCapabilitiesAsOutputInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionUncheckedCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetCreateOrConnectWithoutCapabilitiesAsOutputInput = {
@@ -1654,6 +2034,8 @@ export type AssetUpdateWithoutCapabilitiesAsInputInput = {
   transactionsAsTransferred?: Prisma.TransactionUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUncheckedUpdateWithoutCapabilitiesAsInputInput = {
@@ -1685,6 +2067,8 @@ export type AssetUncheckedUpdateWithoutCapabilitiesAsInputInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUncheckedUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUpsertWithoutCapabilitiesAsOutputInput = {
@@ -1727,6 +2111,8 @@ export type AssetUpdateWithoutCapabilitiesAsOutputInput = {
   transactionsAsTransferred?: Prisma.TransactionUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUncheckedUpdateWithoutCapabilitiesAsOutputInput = {
@@ -1758,6 +2144,8 @@ export type AssetUncheckedUpdateWithoutCapabilitiesAsOutputInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUncheckedUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetCreateWithoutQuotesAsInputInput = {
@@ -1789,6 +2177,8 @@ export type AssetCreateWithoutQuotesAsInputInput = {
   transactionsAsTransferred?: Prisma.TransactionCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetUncheckedCreateWithoutQuotesAsInputInput = {
@@ -1820,6 +2210,8 @@ export type AssetUncheckedCreateWithoutQuotesAsInputInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionUncheckedCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetCreateOrConnectWithoutQuotesAsInputInput = {
@@ -1856,6 +2248,8 @@ export type AssetCreateWithoutQuotesAsOutputInput = {
   transactionsAsTransferred?: Prisma.TransactionCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetUncheckedCreateWithoutQuotesAsOutputInput = {
@@ -1887,6 +2281,8 @@ export type AssetUncheckedCreateWithoutQuotesAsOutputInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionUncheckedCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetCreateOrConnectWithoutQuotesAsOutputInput = {
@@ -1923,6 +2319,8 @@ export type AssetCreateWithoutQuotesAsFeeInput = {
   transactionsAsTransferred?: Prisma.TransactionCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetUncheckedCreateWithoutQuotesAsFeeInput = {
@@ -1954,6 +2352,8 @@ export type AssetUncheckedCreateWithoutQuotesAsFeeInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionUncheckedCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetCreateOrConnectWithoutQuotesAsFeeInput = {
@@ -2001,6 +2401,8 @@ export type AssetUpdateWithoutQuotesAsInputInput = {
   transactionsAsTransferred?: Prisma.TransactionUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUncheckedUpdateWithoutQuotesAsInputInput = {
@@ -2032,6 +2434,8 @@ export type AssetUncheckedUpdateWithoutQuotesAsInputInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUncheckedUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUpsertWithoutQuotesAsOutputInput = {
@@ -2074,6 +2478,8 @@ export type AssetUpdateWithoutQuotesAsOutputInput = {
   transactionsAsTransferred?: Prisma.TransactionUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUncheckedUpdateWithoutQuotesAsOutputInput = {
@@ -2105,6 +2511,8 @@ export type AssetUncheckedUpdateWithoutQuotesAsOutputInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUncheckedUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUpsertWithoutQuotesAsFeeInput = {
@@ -2147,6 +2555,8 @@ export type AssetUpdateWithoutQuotesAsFeeInput = {
   transactionsAsTransferred?: Prisma.TransactionUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUncheckedUpdateWithoutQuotesAsFeeInput = {
@@ -2178,6 +2588,8 @@ export type AssetUncheckedUpdateWithoutQuotesAsFeeInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUncheckedUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetCreateWithoutRoutesAsInputInput = {
@@ -2209,6 +2621,8 @@ export type AssetCreateWithoutRoutesAsInputInput = {
   transactionsAsTransferred?: Prisma.TransactionCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetUncheckedCreateWithoutRoutesAsInputInput = {
@@ -2240,6 +2654,8 @@ export type AssetUncheckedCreateWithoutRoutesAsInputInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionUncheckedCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetCreateOrConnectWithoutRoutesAsInputInput = {
@@ -2276,6 +2692,8 @@ export type AssetCreateWithoutRoutesAsOutputInput = {
   transactionsAsTransferred?: Prisma.TransactionCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetUncheckedCreateWithoutRoutesAsOutputInput = {
@@ -2307,6 +2725,8 @@ export type AssetUncheckedCreateWithoutRoutesAsOutputInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionUncheckedCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetCreateOrConnectWithoutRoutesAsOutputInput = {
@@ -2343,6 +2763,8 @@ export type AssetCreateWithoutRoutesAsFeeInput = {
   transactionsAsTransferred?: Prisma.TransactionCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetUncheckedCreateWithoutRoutesAsFeeInput = {
@@ -2374,6 +2796,8 @@ export type AssetUncheckedCreateWithoutRoutesAsFeeInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionUncheckedCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetCreateOrConnectWithoutRoutesAsFeeInput = {
@@ -2421,6 +2845,8 @@ export type AssetUpdateWithoutRoutesAsInputInput = {
   transactionsAsTransferred?: Prisma.TransactionUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUncheckedUpdateWithoutRoutesAsInputInput = {
@@ -2452,6 +2878,8 @@ export type AssetUncheckedUpdateWithoutRoutesAsInputInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUncheckedUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUpsertWithoutRoutesAsOutputInput = {
@@ -2494,6 +2922,8 @@ export type AssetUpdateWithoutRoutesAsOutputInput = {
   transactionsAsTransferred?: Prisma.TransactionUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUncheckedUpdateWithoutRoutesAsOutputInput = {
@@ -2525,6 +2955,8 @@ export type AssetUncheckedUpdateWithoutRoutesAsOutputInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUncheckedUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUpsertWithoutRoutesAsFeeInput = {
@@ -2567,6 +2999,8 @@ export type AssetUpdateWithoutRoutesAsFeeInput = {
   transactionsAsTransferred?: Prisma.TransactionUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUncheckedUpdateWithoutRoutesAsFeeInput = {
@@ -2598,6 +3032,8 @@ export type AssetUncheckedUpdateWithoutRoutesAsFeeInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUncheckedUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetCreateWithoutRouteStepsAsInputInput = {
@@ -2629,6 +3065,8 @@ export type AssetCreateWithoutRouteStepsAsInputInput = {
   transactionsAsTransferred?: Prisma.TransactionCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetUncheckedCreateWithoutRouteStepsAsInputInput = {
@@ -2660,6 +3098,8 @@ export type AssetUncheckedCreateWithoutRouteStepsAsInputInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionUncheckedCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetCreateOrConnectWithoutRouteStepsAsInputInput = {
@@ -2696,6 +3136,8 @@ export type AssetCreateWithoutRouteStepsAsOutputInput = {
   transactionsAsTransferred?: Prisma.TransactionCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetUncheckedCreateWithoutRouteStepsAsOutputInput = {
@@ -2727,6 +3169,8 @@ export type AssetUncheckedCreateWithoutRouteStepsAsOutputInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionUncheckedCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetCreateOrConnectWithoutRouteStepsAsOutputInput = {
@@ -2774,6 +3218,8 @@ export type AssetUpdateWithoutRouteStepsAsInputInput = {
   transactionsAsTransferred?: Prisma.TransactionUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUncheckedUpdateWithoutRouteStepsAsInputInput = {
@@ -2805,6 +3251,8 @@ export type AssetUncheckedUpdateWithoutRouteStepsAsInputInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUncheckedUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUpsertWithoutRouteStepsAsOutputInput = {
@@ -2847,6 +3295,8 @@ export type AssetUpdateWithoutRouteStepsAsOutputInput = {
   transactionsAsTransferred?: Prisma.TransactionUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUncheckedUpdateWithoutRouteStepsAsOutputInput = {
@@ -2878,6 +3328,8 @@ export type AssetUncheckedUpdateWithoutRouteStepsAsOutputInput = {
   transactionsAsTransferred?: Prisma.TransactionUncheckedUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUncheckedUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetCreateWithoutTransactionsAsTransferredInput = {
@@ -2909,6 +3361,8 @@ export type AssetCreateWithoutTransactionsAsTransferredInput = {
   routeStepsAsOutput?: Prisma.RouteStepCreateNestedManyWithoutOutputAssetInput
   transactionsAsGas?: Prisma.TransactionCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetUncheckedCreateWithoutTransactionsAsTransferredInput = {
@@ -2940,6 +3394,8 @@ export type AssetUncheckedCreateWithoutTransactionsAsTransferredInput = {
   routeStepsAsOutput?: Prisma.RouteStepUncheckedCreateNestedManyWithoutOutputAssetInput
   transactionsAsGas?: Prisma.TransactionUncheckedCreateNestedManyWithoutGasAssetInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetCreateOrConnectWithoutTransactionsAsTransferredInput = {
@@ -2976,6 +3432,8 @@ export type AssetCreateWithoutTransactionsAsGasInput = {
   routeStepsAsOutput?: Prisma.RouteStepCreateNestedManyWithoutOutputAssetInput
   transactionsAsTransferred?: Prisma.TransactionCreateNestedManyWithoutAssetInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetUncheckedCreateWithoutTransactionsAsGasInput = {
@@ -3007,6 +3465,8 @@ export type AssetUncheckedCreateWithoutTransactionsAsGasInput = {
   routeStepsAsOutput?: Prisma.RouteStepUncheckedCreateNestedManyWithoutOutputAssetInput
   transactionsAsTransferred?: Prisma.TransactionUncheckedCreateNestedManyWithoutAssetInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetCreateOrConnectWithoutTransactionsAsGasInput = {
@@ -3054,6 +3514,8 @@ export type AssetUpdateWithoutTransactionsAsTransferredInput = {
   routeStepsAsOutput?: Prisma.RouteStepUpdateManyWithoutOutputAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUncheckedUpdateWithoutTransactionsAsTransferredInput = {
@@ -3085,6 +3547,8 @@ export type AssetUncheckedUpdateWithoutTransactionsAsTransferredInput = {
   routeStepsAsOutput?: Prisma.RouteStepUncheckedUpdateManyWithoutOutputAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUncheckedUpdateManyWithoutGasAssetNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUpsertWithoutTransactionsAsGasInput = {
@@ -3127,6 +3591,8 @@ export type AssetUpdateWithoutTransactionsAsGasInput = {
   routeStepsAsOutput?: Prisma.RouteStepUpdateManyWithoutOutputAssetNestedInput
   transactionsAsTransferred?: Prisma.TransactionUpdateManyWithoutAssetNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUncheckedUpdateWithoutTransactionsAsGasInput = {
@@ -3158,6 +3624,8 @@ export type AssetUncheckedUpdateWithoutTransactionsAsGasInput = {
   routeStepsAsOutput?: Prisma.RouteStepUncheckedUpdateManyWithoutOutputAssetNestedInput
   transactionsAsTransferred?: Prisma.TransactionUncheckedUpdateManyWithoutAssetNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetCreateWithoutRampSessionsInput = {
@@ -3189,6 +3657,8 @@ export type AssetCreateWithoutRampSessionsInput = {
   routeStepsAsOutput?: Prisma.RouteStepCreateNestedManyWithoutOutputAssetInput
   transactionsAsTransferred?: Prisma.TransactionCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionCreateNestedManyWithoutGasAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetUncheckedCreateWithoutRampSessionsInput = {
@@ -3220,6 +3690,8 @@ export type AssetUncheckedCreateWithoutRampSessionsInput = {
   routeStepsAsOutput?: Prisma.RouteStepUncheckedCreateNestedManyWithoutOutputAssetInput
   transactionsAsTransferred?: Prisma.TransactionUncheckedCreateNestedManyWithoutAssetInput
   transactionsAsGas?: Prisma.TransactionUncheckedCreateNestedManyWithoutGasAssetInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutPerTransactionAssetInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutCumulativeAssetInput
 }
 
 export type AssetCreateOrConnectWithoutRampSessionsInput = {
@@ -3267,6 +3739,8 @@ export type AssetUpdateWithoutRampSessionsInput = {
   routeStepsAsOutput?: Prisma.RouteStepUpdateManyWithoutOutputAssetNestedInput
   transactionsAsTransferred?: Prisma.TransactionUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUpdateManyWithoutGasAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 export type AssetUncheckedUpdateWithoutRampSessionsInput = {
@@ -3298,6 +3772,8 @@ export type AssetUncheckedUpdateWithoutRampSessionsInput = {
   routeStepsAsOutput?: Prisma.RouteStepUncheckedUpdateManyWithoutOutputAssetNestedInput
   transactionsAsTransferred?: Prisma.TransactionUncheckedUpdateManyWithoutAssetNestedInput
   transactionsAsGas?: Prisma.TransactionUncheckedUpdateManyWithoutGasAssetNestedInput
+  permissionsPerTransaction?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutPerTransactionAssetNestedInput
+  permissionsCumulative?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutCumulativeAssetNestedInput
 }
 
 
@@ -3323,6 +3799,8 @@ export type AssetCountOutputType = {
   transactionsAsTransferred: number
   transactionsAsGas: number
   rampSessions: number
+  permissionsPerTransaction: number
+  permissionsCumulative: number
 }
 
 export type AssetCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -3343,6 +3821,8 @@ export type AssetCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.
   transactionsAsTransferred?: boolean | AssetCountOutputTypeCountTransactionsAsTransferredArgs
   transactionsAsGas?: boolean | AssetCountOutputTypeCountTransactionsAsGasArgs
   rampSessions?: boolean | AssetCountOutputTypeCountRampSessionsArgs
+  permissionsPerTransaction?: boolean | AssetCountOutputTypeCountPermissionsPerTransactionArgs
+  permissionsCumulative?: boolean | AssetCountOutputTypeCountPermissionsCumulativeArgs
 }
 
 /**
@@ -3474,6 +3954,20 @@ export type AssetCountOutputTypeCountRampSessionsArgs<ExtArgs extends runtime.Ty
   where?: Prisma.RampSessionWhereInput
 }
 
+/**
+ * AssetCountOutputType without action
+ */
+export type AssetCountOutputTypeCountPermissionsPerTransactionArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.DelegatedPermissionWhereInput
+}
+
+/**
+ * AssetCountOutputType without action
+ */
+export type AssetCountOutputTypeCountPermissionsCumulativeArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.DelegatedPermissionWhereInput
+}
+
 
 export type AssetSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -3505,6 +3999,8 @@ export type AssetSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   transactionsAsTransferred?: boolean | Prisma.Asset$transactionsAsTransferredArgs<ExtArgs>
   transactionsAsGas?: boolean | Prisma.Asset$transactionsAsGasArgs<ExtArgs>
   rampSessions?: boolean | Prisma.Asset$rampSessionsArgs<ExtArgs>
+  permissionsPerTransaction?: boolean | Prisma.Asset$permissionsPerTransactionArgs<ExtArgs>
+  permissionsCumulative?: boolean | Prisma.Asset$permissionsCumulativeArgs<ExtArgs>
   _count?: boolean | Prisma.AssetCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["asset"]>
 
@@ -3572,6 +4068,8 @@ export type AssetInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   transactionsAsTransferred?: boolean | Prisma.Asset$transactionsAsTransferredArgs<ExtArgs>
   transactionsAsGas?: boolean | Prisma.Asset$transactionsAsGasArgs<ExtArgs>
   rampSessions?: boolean | Prisma.Asset$rampSessionsArgs<ExtArgs>
+  permissionsPerTransaction?: boolean | Prisma.Asset$permissionsPerTransactionArgs<ExtArgs>
+  permissionsCumulative?: boolean | Prisma.Asset$permissionsCumulativeArgs<ExtArgs>
   _count?: boolean | Prisma.AssetCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type AssetIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -3597,6 +4095,8 @@ export type $AssetPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     transactionsAsTransferred: Prisma.$TransactionPayload<ExtArgs>[]
     transactionsAsGas: Prisma.$TransactionPayload<ExtArgs>[]
     rampSessions: Prisma.$RampSessionPayload<ExtArgs>[]
+    permissionsPerTransaction: Prisma.$DelegatedPermissionPayload<ExtArgs>[]
+    permissionsCumulative: Prisma.$DelegatedPermissionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -4022,6 +4522,8 @@ export interface Prisma__AssetClient<T, Null = never, ExtArgs extends runtime.Ty
   transactionsAsTransferred<T extends Prisma.Asset$transactionsAsTransferredArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Asset$transactionsAsTransferredArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   transactionsAsGas<T extends Prisma.Asset$transactionsAsGasArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Asset$transactionsAsGasArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   rampSessions<T extends Prisma.Asset$rampSessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Asset$rampSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RampSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  permissionsPerTransaction<T extends Prisma.Asset$permissionsPerTransactionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Asset$permissionsPerTransactionArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DelegatedPermissionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  permissionsCumulative<T extends Prisma.Asset$permissionsCumulativeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Asset$permissionsCumulativeArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DelegatedPermissionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -4861,6 +5363,54 @@ export type Asset$rampSessionsArgs<ExtArgs extends runtime.Types.Extensions.Inte
   take?: number
   skip?: number
   distinct?: Prisma.RampSessionScalarFieldEnum | Prisma.RampSessionScalarFieldEnum[]
+}
+
+/**
+ * Asset.permissionsPerTransaction
+ */
+export type Asset$permissionsPerTransactionArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the DelegatedPermission
+   */
+  select?: Prisma.DelegatedPermissionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the DelegatedPermission
+   */
+  omit?: Prisma.DelegatedPermissionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DelegatedPermissionInclude<ExtArgs> | null
+  where?: Prisma.DelegatedPermissionWhereInput
+  orderBy?: Prisma.DelegatedPermissionOrderByWithRelationInput | Prisma.DelegatedPermissionOrderByWithRelationInput[]
+  cursor?: Prisma.DelegatedPermissionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.DelegatedPermissionScalarFieldEnum | Prisma.DelegatedPermissionScalarFieldEnum[]
+}
+
+/**
+ * Asset.permissionsCumulative
+ */
+export type Asset$permissionsCumulativeArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the DelegatedPermission
+   */
+  select?: Prisma.DelegatedPermissionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the DelegatedPermission
+   */
+  omit?: Prisma.DelegatedPermissionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DelegatedPermissionInclude<ExtArgs> | null
+  where?: Prisma.DelegatedPermissionWhereInput
+  orderBy?: Prisma.DelegatedPermissionOrderByWithRelationInput | Prisma.DelegatedPermissionOrderByWithRelationInput[]
+  cursor?: Prisma.DelegatedPermissionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.DelegatedPermissionScalarFieldEnum | Prisma.DelegatedPermissionScalarFieldEnum[]
 }
 
 /**

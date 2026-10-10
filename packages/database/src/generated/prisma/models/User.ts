@@ -200,6 +200,9 @@ export type UserWhereInput = {
   executions?: Prisma.ExecutionListRelationFilter
   rampSessions?: Prisma.RampSessionListRelationFilter
   auditEvents?: Prisma.AuditEventListRelationFilter
+  passkeyCredentials?: Prisma.PasskeyCredentialListRelationFilter
+  passkeyChallenges?: Prisma.PasskeyChallengeListRelationFilter
+  delegatedPermissions?: Prisma.DelegatedPermissionListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -219,6 +222,9 @@ export type UserOrderByWithRelationInput = {
   executions?: Prisma.ExecutionOrderByRelationAggregateInput
   rampSessions?: Prisma.RampSessionOrderByRelationAggregateInput
   auditEvents?: Prisma.AuditEventOrderByRelationAggregateInput
+  passkeyCredentials?: Prisma.PasskeyCredentialOrderByRelationAggregateInput
+  passkeyChallenges?: Prisma.PasskeyChallengeOrderByRelationAggregateInput
+  delegatedPermissions?: Prisma.DelegatedPermissionOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -241,6 +247,9 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   executions?: Prisma.ExecutionListRelationFilter
   rampSessions?: Prisma.RampSessionListRelationFilter
   auditEvents?: Prisma.AuditEventListRelationFilter
+  passkeyCredentials?: Prisma.PasskeyCredentialListRelationFilter
+  passkeyChallenges?: Prisma.PasskeyChallengeListRelationFilter
+  delegatedPermissions?: Prisma.DelegatedPermissionListRelationFilter
 }, "id" | "username">
 
 export type UserOrderByWithAggregationInput = {
@@ -284,6 +293,9 @@ export type UserCreateInput = {
   executions?: Prisma.ExecutionCreateNestedManyWithoutUserInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutUserInput
   auditEvents?: Prisma.AuditEventCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -303,6 +315,9 @@ export type UserUncheckedCreateInput = {
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutUserInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutUserInput
   auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -322,6 +337,9 @@ export type UserUpdateInput = {
   executions?: Prisma.ExecutionUpdateManyWithoutUserNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutUserNestedInput
   auditEvents?: Prisma.AuditEventUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -341,6 +359,9 @@ export type UserUncheckedUpdateInput = {
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutUserNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutUserNestedInput
   auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -459,6 +480,48 @@ export type UserUpdateOneRequiredWithoutWalletsNestedInput = {
   upsert?: Prisma.UserUpsertWithoutWalletsInput
   connect?: Prisma.UserWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutWalletsInput, Prisma.UserUpdateWithoutWalletsInput>, Prisma.UserUncheckedUpdateWithoutWalletsInput>
+}
+
+export type UserCreateNestedOneWithoutPasskeyCredentialsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutPasskeyCredentialsInput, Prisma.UserUncheckedCreateWithoutPasskeyCredentialsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutPasskeyCredentialsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutPasskeyCredentialsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutPasskeyCredentialsInput, Prisma.UserUncheckedCreateWithoutPasskeyCredentialsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutPasskeyCredentialsInput
+  upsert?: Prisma.UserUpsertWithoutPasskeyCredentialsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutPasskeyCredentialsInput, Prisma.UserUpdateWithoutPasskeyCredentialsInput>, Prisma.UserUncheckedUpdateWithoutPasskeyCredentialsInput>
+}
+
+export type UserCreateNestedOneWithoutPasskeyChallengesInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutPasskeyChallengesInput, Prisma.UserUncheckedCreateWithoutPasskeyChallengesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutPasskeyChallengesInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutPasskeyChallengesNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutPasskeyChallengesInput, Prisma.UserUncheckedCreateWithoutPasskeyChallengesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutPasskeyChallengesInput
+  upsert?: Prisma.UserUpsertWithoutPasskeyChallengesInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutPasskeyChallengesInput, Prisma.UserUpdateWithoutPasskeyChallengesInput>, Prisma.UserUncheckedUpdateWithoutPasskeyChallengesInput>
+}
+
+export type UserCreateNestedOneWithoutDelegatedPermissionsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutDelegatedPermissionsInput, Prisma.UserUncheckedCreateWithoutDelegatedPermissionsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutDelegatedPermissionsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutDelegatedPermissionsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutDelegatedPermissionsInput, Prisma.UserUncheckedCreateWithoutDelegatedPermissionsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutDelegatedPermissionsInput
+  upsert?: Prisma.UserUpsertWithoutDelegatedPermissionsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutDelegatedPermissionsInput, Prisma.UserUpdateWithoutDelegatedPermissionsInput>, Prisma.UserUncheckedUpdateWithoutDelegatedPermissionsInput>
 }
 
 export type UserCreateNestedOneWithoutConversationsInput = {
@@ -581,6 +644,9 @@ export type UserCreateWithoutIdentitiesInput = {
   executions?: Prisma.ExecutionCreateNestedManyWithoutUserInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutUserInput
   auditEvents?: Prisma.AuditEventCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutIdentitiesInput = {
@@ -599,6 +665,9 @@ export type UserUncheckedCreateWithoutIdentitiesInput = {
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutUserInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutUserInput
   auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutIdentitiesInput = {
@@ -633,6 +702,9 @@ export type UserUpdateWithoutIdentitiesInput = {
   executions?: Prisma.ExecutionUpdateManyWithoutUserNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutUserNestedInput
   auditEvents?: Prisma.AuditEventUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutIdentitiesInput = {
@@ -651,6 +723,9 @@ export type UserUncheckedUpdateWithoutIdentitiesInput = {
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutUserNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutUserNestedInput
   auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutSessionsInput = {
@@ -669,6 +744,9 @@ export type UserCreateWithoutSessionsInput = {
   executions?: Prisma.ExecutionCreateNestedManyWithoutUserInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutUserInput
   auditEvents?: Prisma.AuditEventCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutSessionsInput = {
@@ -687,6 +765,9 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutUserInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutUserInput
   auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutSessionsInput = {
@@ -721,6 +802,9 @@ export type UserUpdateWithoutSessionsInput = {
   executions?: Prisma.ExecutionUpdateManyWithoutUserNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutUserNestedInput
   auditEvents?: Prisma.AuditEventUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSessionsInput = {
@@ -739,6 +823,9 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutUserNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutUserNestedInput
   auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutWalletsInput = {
@@ -757,6 +844,9 @@ export type UserCreateWithoutWalletsInput = {
   executions?: Prisma.ExecutionCreateNestedManyWithoutUserInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutUserInput
   auditEvents?: Prisma.AuditEventCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutWalletsInput = {
@@ -775,6 +865,9 @@ export type UserUncheckedCreateWithoutWalletsInput = {
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutUserInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutUserInput
   auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutWalletsInput = {
@@ -809,6 +902,9 @@ export type UserUpdateWithoutWalletsInput = {
   executions?: Prisma.ExecutionUpdateManyWithoutUserNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutUserNestedInput
   auditEvents?: Prisma.AuditEventUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutWalletsInput = {
@@ -827,6 +923,309 @@ export type UserUncheckedUpdateWithoutWalletsInput = {
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutUserNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutUserNestedInput
   auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutPasskeyCredentialsInput = {
+  id: string
+  username?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
+  conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
+  ownedRecipients?: Prisma.RecipientCreateNestedManyWithoutOwnerInput
+  linkedRecipients?: Prisma.RecipientCreateNestedManyWithoutLinkedUserInput
+  intents?: Prisma.IntentCreateNestedManyWithoutUserInput
+  executions?: Prisma.ExecutionCreateNestedManyWithoutUserInput
+  rampSessions?: Prisma.RampSessionCreateNestedManyWithoutUserInput
+  auditEvents?: Prisma.AuditEventCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutPasskeyCredentialsInput = {
+  id: string
+  username?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
+  conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
+  ownedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutOwnerInput
+  linkedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutLinkedUserInput
+  intents?: Prisma.IntentUncheckedCreateNestedManyWithoutUserInput
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutUserInput
+  rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutUserInput
+  auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutPasskeyCredentialsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutPasskeyCredentialsInput, Prisma.UserUncheckedCreateWithoutPasskeyCredentialsInput>
+}
+
+export type UserUpsertWithoutPasskeyCredentialsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutPasskeyCredentialsInput, Prisma.UserUncheckedUpdateWithoutPasskeyCredentialsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutPasskeyCredentialsInput, Prisma.UserUncheckedCreateWithoutPasskeyCredentialsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutPasskeyCredentialsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutPasskeyCredentialsInput, Prisma.UserUncheckedUpdateWithoutPasskeyCredentialsInput>
+}
+
+export type UserUpdateWithoutPasskeyCredentialsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
+  conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
+  ownedRecipients?: Prisma.RecipientUpdateManyWithoutOwnerNestedInput
+  linkedRecipients?: Prisma.RecipientUpdateManyWithoutLinkedUserNestedInput
+  intents?: Prisma.IntentUpdateManyWithoutUserNestedInput
+  executions?: Prisma.ExecutionUpdateManyWithoutUserNestedInput
+  rampSessions?: Prisma.RampSessionUpdateManyWithoutUserNestedInput
+  auditEvents?: Prisma.AuditEventUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutPasskeyCredentialsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
+  conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
+  ownedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutOwnerNestedInput
+  linkedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutLinkedUserNestedInput
+  intents?: Prisma.IntentUncheckedUpdateManyWithoutUserNestedInput
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutUserNestedInput
+  rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutUserNestedInput
+  auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutPasskeyChallengesInput = {
+  id: string
+  username?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
+  conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
+  ownedRecipients?: Prisma.RecipientCreateNestedManyWithoutOwnerInput
+  linkedRecipients?: Prisma.RecipientCreateNestedManyWithoutLinkedUserInput
+  intents?: Prisma.IntentCreateNestedManyWithoutUserInput
+  executions?: Prisma.ExecutionCreateNestedManyWithoutUserInput
+  rampSessions?: Prisma.RampSessionCreateNestedManyWithoutUserInput
+  auditEvents?: Prisma.AuditEventCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutPasskeyChallengesInput = {
+  id: string
+  username?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
+  conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
+  ownedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutOwnerInput
+  linkedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutLinkedUserInput
+  intents?: Prisma.IntentUncheckedCreateNestedManyWithoutUserInput
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutUserInput
+  rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutUserInput
+  auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutPasskeyChallengesInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutPasskeyChallengesInput, Prisma.UserUncheckedCreateWithoutPasskeyChallengesInput>
+}
+
+export type UserUpsertWithoutPasskeyChallengesInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutPasskeyChallengesInput, Prisma.UserUncheckedUpdateWithoutPasskeyChallengesInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutPasskeyChallengesInput, Prisma.UserUncheckedCreateWithoutPasskeyChallengesInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutPasskeyChallengesInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutPasskeyChallengesInput, Prisma.UserUncheckedUpdateWithoutPasskeyChallengesInput>
+}
+
+export type UserUpdateWithoutPasskeyChallengesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
+  conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
+  ownedRecipients?: Prisma.RecipientUpdateManyWithoutOwnerNestedInput
+  linkedRecipients?: Prisma.RecipientUpdateManyWithoutLinkedUserNestedInput
+  intents?: Prisma.IntentUpdateManyWithoutUserNestedInput
+  executions?: Prisma.ExecutionUpdateManyWithoutUserNestedInput
+  rampSessions?: Prisma.RampSessionUpdateManyWithoutUserNestedInput
+  auditEvents?: Prisma.AuditEventUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutPasskeyChallengesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
+  conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
+  ownedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutOwnerNestedInput
+  linkedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutLinkedUserNestedInput
+  intents?: Prisma.IntentUncheckedUpdateManyWithoutUserNestedInput
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutUserNestedInput
+  rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutUserNestedInput
+  auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutDelegatedPermissionsInput = {
+  id: string
+  username?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
+  conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
+  ownedRecipients?: Prisma.RecipientCreateNestedManyWithoutOwnerInput
+  linkedRecipients?: Prisma.RecipientCreateNestedManyWithoutLinkedUserInput
+  intents?: Prisma.IntentCreateNestedManyWithoutUserInput
+  executions?: Prisma.ExecutionCreateNestedManyWithoutUserInput
+  rampSessions?: Prisma.RampSessionCreateNestedManyWithoutUserInput
+  auditEvents?: Prisma.AuditEventCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutDelegatedPermissionsInput = {
+  id: string
+  username?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
+  conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
+  ownedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutOwnerInput
+  linkedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutLinkedUserInput
+  intents?: Prisma.IntentUncheckedCreateNestedManyWithoutUserInput
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutUserInput
+  rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutUserInput
+  auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutDelegatedPermissionsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutDelegatedPermissionsInput, Prisma.UserUncheckedCreateWithoutDelegatedPermissionsInput>
+}
+
+export type UserUpsertWithoutDelegatedPermissionsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutDelegatedPermissionsInput, Prisma.UserUncheckedUpdateWithoutDelegatedPermissionsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutDelegatedPermissionsInput, Prisma.UserUncheckedCreateWithoutDelegatedPermissionsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutDelegatedPermissionsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutDelegatedPermissionsInput, Prisma.UserUncheckedUpdateWithoutDelegatedPermissionsInput>
+}
+
+export type UserUpdateWithoutDelegatedPermissionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
+  conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
+  ownedRecipients?: Prisma.RecipientUpdateManyWithoutOwnerNestedInput
+  linkedRecipients?: Prisma.RecipientUpdateManyWithoutLinkedUserNestedInput
+  intents?: Prisma.IntentUpdateManyWithoutUserNestedInput
+  executions?: Prisma.ExecutionUpdateManyWithoutUserNestedInput
+  rampSessions?: Prisma.RampSessionUpdateManyWithoutUserNestedInput
+  auditEvents?: Prisma.AuditEventUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutDelegatedPermissionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
+  conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
+  ownedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutOwnerNestedInput
+  linkedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutLinkedUserNestedInput
+  intents?: Prisma.IntentUncheckedUpdateManyWithoutUserNestedInput
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutUserNestedInput
+  rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutUserNestedInput
+  auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutConversationsInput = {
@@ -845,6 +1244,9 @@ export type UserCreateWithoutConversationsInput = {
   executions?: Prisma.ExecutionCreateNestedManyWithoutUserInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutUserInput
   auditEvents?: Prisma.AuditEventCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutConversationsInput = {
@@ -863,6 +1265,9 @@ export type UserUncheckedCreateWithoutConversationsInput = {
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutUserInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutUserInput
   auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutConversationsInput = {
@@ -897,6 +1302,9 @@ export type UserUpdateWithoutConversationsInput = {
   executions?: Prisma.ExecutionUpdateManyWithoutUserNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutUserNestedInput
   auditEvents?: Prisma.AuditEventUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutConversationsInput = {
@@ -915,6 +1323,9 @@ export type UserUncheckedUpdateWithoutConversationsInput = {
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutUserNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutUserNestedInput
   auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutIntentsInput = {
@@ -933,6 +1344,9 @@ export type UserCreateWithoutIntentsInput = {
   executions?: Prisma.ExecutionCreateNestedManyWithoutUserInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutUserInput
   auditEvents?: Prisma.AuditEventCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutIntentsInput = {
@@ -951,6 +1365,9 @@ export type UserUncheckedCreateWithoutIntentsInput = {
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutUserInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutUserInput
   auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutIntentsInput = {
@@ -985,6 +1402,9 @@ export type UserUpdateWithoutIntentsInput = {
   executions?: Prisma.ExecutionUpdateManyWithoutUserNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutUserNestedInput
   auditEvents?: Prisma.AuditEventUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutIntentsInput = {
@@ -1003,6 +1423,9 @@ export type UserUncheckedUpdateWithoutIntentsInput = {
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutUserNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutUserNestedInput
   auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutOwnedRecipientsInput = {
@@ -1021,6 +1444,9 @@ export type UserCreateWithoutOwnedRecipientsInput = {
   executions?: Prisma.ExecutionCreateNestedManyWithoutUserInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutUserInput
   auditEvents?: Prisma.AuditEventCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutOwnedRecipientsInput = {
@@ -1039,6 +1465,9 @@ export type UserUncheckedCreateWithoutOwnedRecipientsInput = {
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutUserInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutUserInput
   auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutOwnedRecipientsInput = {
@@ -1062,6 +1491,9 @@ export type UserCreateWithoutLinkedRecipientsInput = {
   executions?: Prisma.ExecutionCreateNestedManyWithoutUserInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutUserInput
   auditEvents?: Prisma.AuditEventCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutLinkedRecipientsInput = {
@@ -1080,6 +1512,9 @@ export type UserUncheckedCreateWithoutLinkedRecipientsInput = {
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutUserInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutUserInput
   auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutLinkedRecipientsInput = {
@@ -1114,6 +1549,9 @@ export type UserUpdateWithoutOwnedRecipientsInput = {
   executions?: Prisma.ExecutionUpdateManyWithoutUserNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutUserNestedInput
   auditEvents?: Prisma.AuditEventUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutOwnedRecipientsInput = {
@@ -1132,6 +1570,9 @@ export type UserUncheckedUpdateWithoutOwnedRecipientsInput = {
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutUserNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutUserNestedInput
   auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUpsertWithoutLinkedRecipientsInput = {
@@ -1161,6 +1602,9 @@ export type UserUpdateWithoutLinkedRecipientsInput = {
   executions?: Prisma.ExecutionUpdateManyWithoutUserNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutUserNestedInput
   auditEvents?: Prisma.AuditEventUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutLinkedRecipientsInput = {
@@ -1179,6 +1623,9 @@ export type UserUncheckedUpdateWithoutLinkedRecipientsInput = {
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutUserNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutUserNestedInput
   auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutExecutionsInput = {
@@ -1197,6 +1644,9 @@ export type UserCreateWithoutExecutionsInput = {
   intents?: Prisma.IntentCreateNestedManyWithoutUserInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutUserInput
   auditEvents?: Prisma.AuditEventCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutExecutionsInput = {
@@ -1215,6 +1665,9 @@ export type UserUncheckedCreateWithoutExecutionsInput = {
   intents?: Prisma.IntentUncheckedCreateNestedManyWithoutUserInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutUserInput
   auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutExecutionsInput = {
@@ -1249,6 +1702,9 @@ export type UserUpdateWithoutExecutionsInput = {
   intents?: Prisma.IntentUpdateManyWithoutUserNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutUserNestedInput
   auditEvents?: Prisma.AuditEventUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutExecutionsInput = {
@@ -1267,6 +1723,9 @@ export type UserUncheckedUpdateWithoutExecutionsInput = {
   intents?: Prisma.IntentUncheckedUpdateManyWithoutUserNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutUserNestedInput
   auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutRampSessionsInput = {
@@ -1285,6 +1744,9 @@ export type UserCreateWithoutRampSessionsInput = {
   intents?: Prisma.IntentCreateNestedManyWithoutUserInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutUserInput
   auditEvents?: Prisma.AuditEventCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutRampSessionsInput = {
@@ -1303,6 +1765,9 @@ export type UserUncheckedCreateWithoutRampSessionsInput = {
   intents?: Prisma.IntentUncheckedCreateNestedManyWithoutUserInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutUserInput
   auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutRampSessionsInput = {
@@ -1337,6 +1802,9 @@ export type UserUpdateWithoutRampSessionsInput = {
   intents?: Prisma.IntentUpdateManyWithoutUserNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutUserNestedInput
   auditEvents?: Prisma.AuditEventUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRampSessionsInput = {
@@ -1355,6 +1823,9 @@ export type UserUncheckedUpdateWithoutRampSessionsInput = {
   intents?: Prisma.IntentUncheckedUpdateManyWithoutUserNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutUserNestedInput
   auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutAuditEventsInput = {
@@ -1373,6 +1844,9 @@ export type UserCreateWithoutAuditEventsInput = {
   intents?: Prisma.IntentCreateNestedManyWithoutUserInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutUserInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutAuditEventsInput = {
@@ -1391,6 +1865,9 @@ export type UserUncheckedCreateWithoutAuditEventsInput = {
   intents?: Prisma.IntentUncheckedCreateNestedManyWithoutUserInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutUserInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutAuditEventsInput = {
@@ -1425,6 +1902,9 @@ export type UserUpdateWithoutAuditEventsInput = {
   intents?: Prisma.IntentUpdateManyWithoutUserNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutUserNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAuditEventsInput = {
@@ -1443,6 +1923,9 @@ export type UserUncheckedUpdateWithoutAuditEventsInput = {
   intents?: Prisma.IntentUncheckedUpdateManyWithoutUserNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutUserNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 
@@ -1461,6 +1944,9 @@ export type UserCountOutputType = {
   executions: number
   rampSessions: number
   auditEvents: number
+  passkeyCredentials: number
+  passkeyChallenges: number
+  delegatedPermissions: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1474,6 +1960,9 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   executions?: boolean | UserCountOutputTypeCountExecutionsArgs
   rampSessions?: boolean | UserCountOutputTypeCountRampSessionsArgs
   auditEvents?: boolean | UserCountOutputTypeCountAuditEventsArgs
+  passkeyCredentials?: boolean | UserCountOutputTypeCountPasskeyCredentialsArgs
+  passkeyChallenges?: boolean | UserCountOutputTypeCountPasskeyChallengesArgs
+  delegatedPermissions?: boolean | UserCountOutputTypeCountDelegatedPermissionsArgs
 }
 
 /**
@@ -1556,6 +2045,27 @@ export type UserCountOutputTypeCountAuditEventsArgs<ExtArgs extends runtime.Type
   where?: Prisma.AuditEventWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountPasskeyCredentialsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PasskeyCredentialWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountPasskeyChallengesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PasskeyChallengeWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountDelegatedPermissionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.DelegatedPermissionWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1574,6 +2084,9 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   executions?: boolean | Prisma.User$executionsArgs<ExtArgs>
   rampSessions?: boolean | Prisma.User$rampSessionsArgs<ExtArgs>
   auditEvents?: boolean | Prisma.User$auditEventsArgs<ExtArgs>
+  passkeyCredentials?: boolean | Prisma.User$passkeyCredentialsArgs<ExtArgs>
+  passkeyChallenges?: boolean | Prisma.User$passkeyChallengesArgs<ExtArgs>
+  delegatedPermissions?: boolean | Prisma.User$delegatedPermissionsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -1616,6 +2129,9 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   executions?: boolean | Prisma.User$executionsArgs<ExtArgs>
   rampSessions?: boolean | Prisma.User$rampSessionsArgs<ExtArgs>
   auditEvents?: boolean | Prisma.User$auditEventsArgs<ExtArgs>
+  passkeyCredentials?: boolean | Prisma.User$passkeyCredentialsArgs<ExtArgs>
+  passkeyChallenges?: boolean | Prisma.User$passkeyChallengesArgs<ExtArgs>
+  delegatedPermissions?: boolean | Prisma.User$delegatedPermissionsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1634,6 +2150,9 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     executions: Prisma.$ExecutionPayload<ExtArgs>[]
     rampSessions: Prisma.$RampSessionPayload<ExtArgs>[]
     auditEvents: Prisma.$AuditEventPayload<ExtArgs>[]
+    passkeyCredentials: Prisma.$PasskeyCredentialPayload<ExtArgs>[]
+    passkeyChallenges: Prisma.$PasskeyChallengePayload<ExtArgs>[]
+    delegatedPermissions: Prisma.$DelegatedPermissionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2046,6 +2565,9 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   executions<T extends Prisma.User$executionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$executionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ExecutionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   rampSessions<T extends Prisma.User$rampSessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$rampSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RampSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   auditEvents<T extends Prisma.User$auditEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$auditEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AuditEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  passkeyCredentials<T extends Prisma.User$passkeyCredentialsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$passkeyCredentialsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PasskeyCredentialPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  passkeyChallenges<T extends Prisma.User$passkeyChallengesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$passkeyChallengesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PasskeyChallengePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  delegatedPermissions<T extends Prisma.User$delegatedPermissionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$delegatedPermissionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DelegatedPermissionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2711,6 +3233,78 @@ export type User$auditEventsArgs<ExtArgs extends runtime.Types.Extensions.Intern
   take?: number
   skip?: number
   distinct?: Prisma.AuditEventScalarFieldEnum | Prisma.AuditEventScalarFieldEnum[]
+}
+
+/**
+ * User.passkeyCredentials
+ */
+export type User$passkeyCredentialsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PasskeyCredential
+   */
+  select?: Prisma.PasskeyCredentialSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PasskeyCredential
+   */
+  omit?: Prisma.PasskeyCredentialOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PasskeyCredentialInclude<ExtArgs> | null
+  where?: Prisma.PasskeyCredentialWhereInput
+  orderBy?: Prisma.PasskeyCredentialOrderByWithRelationInput | Prisma.PasskeyCredentialOrderByWithRelationInput[]
+  cursor?: Prisma.PasskeyCredentialWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PasskeyCredentialScalarFieldEnum | Prisma.PasskeyCredentialScalarFieldEnum[]
+}
+
+/**
+ * User.passkeyChallenges
+ */
+export type User$passkeyChallengesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PasskeyChallenge
+   */
+  select?: Prisma.PasskeyChallengeSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PasskeyChallenge
+   */
+  omit?: Prisma.PasskeyChallengeOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PasskeyChallengeInclude<ExtArgs> | null
+  where?: Prisma.PasskeyChallengeWhereInput
+  orderBy?: Prisma.PasskeyChallengeOrderByWithRelationInput | Prisma.PasskeyChallengeOrderByWithRelationInput[]
+  cursor?: Prisma.PasskeyChallengeWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PasskeyChallengeScalarFieldEnum | Prisma.PasskeyChallengeScalarFieldEnum[]
+}
+
+/**
+ * User.delegatedPermissions
+ */
+export type User$delegatedPermissionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the DelegatedPermission
+   */
+  select?: Prisma.DelegatedPermissionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the DelegatedPermission
+   */
+  omit?: Prisma.DelegatedPermissionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DelegatedPermissionInclude<ExtArgs> | null
+  where?: Prisma.DelegatedPermissionWhereInput
+  orderBy?: Prisma.DelegatedPermissionOrderByWithRelationInput | Prisma.DelegatedPermissionOrderByWithRelationInput[]
+  cursor?: Prisma.DelegatedPermissionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.DelegatedPermissionScalarFieldEnum | Prisma.DelegatedPermissionScalarFieldEnum[]
 }
 
 /**

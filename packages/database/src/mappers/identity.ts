@@ -1,11 +1,10 @@
-import type { Identity, NewIdentity, NewUser, Session, User, Wallet } from "@kaada/domain";
+import type { Identity, NewIdentity, NewUser, Session, User } from "@kaada/domain";
 
 import type {
   Identity as IdentityRow,
   Prisma,
   Session as SessionRow,
   User as UserRow,
-  Wallet as WalletRow,
 } from "../generated/prisma/client.js";
 import { jsonInput, maybe, readJsonObject } from "./support.js";
 
@@ -52,20 +51,6 @@ export function identityCreateData(identity: NewIdentity): Prisma.IdentityUnchec
     username: identity.username ?? null,
     phone: identity.phone ?? null,
     ...maybe("metadata", jsonInput(identity.metadata, "Identity.metadata")),
-  };
-}
-
-export function toWallet(row: WalletRow): Wallet {
-  return {
-    id: row.id,
-    userId: row.userId,
-    chainId: row.chainId,
-    address: row.address,
-    ...maybe("label", row.label),
-    isPrimary: row.isPrimary,
-    ...maybe("metadata", readJsonObject(row.metadata, "Wallet.metadata")),
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
   };
 }
 

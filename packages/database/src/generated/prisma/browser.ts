@@ -34,9 +34,33 @@ export type Identity = Prisma.IdentityModel
 export type Session = Prisma.SessionModel
 /**
  * Model Wallet
- * A wallet address associated with a user. A row here does NOT imply Kaada custody.
+ * A wallet linked to a user. A row here does NOT imply Kaada custody, and never holds a private key,
+ * seed, session secret or provider credential: identifiers only.
+ * 
+ * An EMBEDDED wallet is a smart account whose root authority is the user's passkey. Its address is
+ * derived deterministically (counterfactual) and may be null only while PROVISIONING. See
+ * docs/wallet-architecture.md and the manual migration 20261014000001 (one non-revoked EMBEDDED wallet
+ * per user and chain; ACTIVE requires an address).
  */
 export type Wallet = Prisma.WalletModel
+/**
+ * Model PasskeyCredential
+ * A user's passkey: PUBLIC data only. The private key stays in the user's authenticator.
+ */
+export type PasskeyCredential = Prisma.PasskeyCredentialModel
+/**
+ * Model PasskeyChallenge
+ * A one-time, short-lived WebAuthn challenge. Claimed with a single UPDATE so a replay gets nothing.
+ */
+export type PasskeyChallenge = Prisma.PasskeyChallengeModel
+/**
+ * Model DelegatedPermission
+ * A constrained, expiring permission for Kaada's delegated signer. There is no "anything" form:
+ * contracts, assets, a per-transaction limit and an expiry are mandatory (checks in the manual
+ * migration). `enforcement` records, per constraint, whether the account enforces it on chain or
+ * only Kaada's code does.
+ */
+export type DelegatedPermission = Prisma.DelegatedPermissionModel
 /**
  * Model Asset
  * Fiat currencies, native coins and tokens. `decimals` defines how every smallest-unit money

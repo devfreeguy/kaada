@@ -263,3 +263,59 @@ describe("loadTextileCredentials", () => {
     );
   });
 });
+
+describe("wallet configuration", () => {
+  const base = { DATABASE_URL: databaseUrl };
+  const kernel = {
+    ...base,
+    WALLET_PROVIDER: "kernel",
+    PASSKEY_RP_ID: "kaada.app",
+    PASSKEY_ORIGIN: "https://app.kaada.app",
+  };
+
+  it("defaults to no wallet stack and the public Celo RPC", () => {
+    const config = loadConfig(base);
+    assert.equal(config.wallet.provider, "none");
+    assert.equal(config.wallet.rpcUrl, "https://forno.celo.org");
+    assert.equal(config.wallet.passkey, undefined);
+  });
+
+  it("validates the selected stack: Kernel needs a relying party and origin", () => {
+    assert.throws(
+      () => loadConfig({ ...base, WALLET_PROVIDER: "kernel" }),
+      /PASSKEY_RP_ID and PASSKEY_ORIGIN/,
+    );
+    assert.deepEqual(loadConfig(kernel).wallet.passkey, {
+      rpId: "kaada.app",
+      origin: "https://app.kaada.app",
+    });
+    assert.throws(() => loadConfig({ ...base, WALLET_PROVIDER: "other" }), ConfigError);
+  });
+
+  it("rejects an origin that is not on the relying party domain", () => {
+    assert.throws(
+      () => loadConfig({ ...kernel, PASSKEY_ORIGIN: "https://evil.example" }),
+      /must be on PASSKEY_RP_ID/,
+    );
+    assert.throws(
+      () => loadConfig({ ...kernel, PASSKEY_ORIGIN: "https://notkaada.app" }),
+      ConfigError,
+    );
+  });
+
+  it("requires https in production and allows localhost in development", () => {
+    const local = {
+      ...base,
+      WALLET_PROVIDER: "kernel",
+      PASSKEY_RP_ID: "localhost",
+      PASSKEY_ORIGIN: "http://localhost:3000",
+    };
+    assert.equal(loadConfig(local).wallet.provider, "kernel");
+    assert.throws(() => loadConfig({ ...local, NODE_ENV: "production" }), /https/);
+    assert.equal(loadConfig({ ...kernel, NODE_ENV: "production" }).wallet.provider, "kernel");
+    assert.throws(
+      () => loadConfig({ ...kernel, NODE_ENV: "production", CELO_RPC_URL: "http://rpc.example" }),
+      /https/,
+    );
+  });
+});

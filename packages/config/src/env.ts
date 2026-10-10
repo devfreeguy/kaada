@@ -39,6 +39,14 @@ const envSchema = z
     DATABASE_DIRECT_URL: postgresUrl.optional(),
     DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),
     DATABASE_POOL_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60_000).default(10_000),
+    // Wallet stack. "none" disables wallets; "kernel" is ZeroDev Kernel v3.3 with a passkey root
+    // (see docs/wallet-architecture.md). No signing happens in this build either way.
+    WALLET_PROVIDER: z.enum(["none", "kernel"]).default("none"),
+    // Celo JSON-RPC for read-only calls (balances, address derivation). The public node works.
+    CELO_RPC_URL: z.url().default("https://forno.celo.org"),
+    // WebAuthn relying party: the domain passkeys are bound to, and the exact web origin allowed.
+    PASSKEY_RP_ID: optionalSecret,
+    PASSKEY_ORIGIN: z.url().optional(),
     // Which IntentInterpreter the agent uses. "none" disables the agent.
     AGENT_INTERPRETER: z.enum(["none", "mock", "groq"]).default("none"),
     // Which price source routing uses. "none" disables pricing (the agent stops at ROUTING_REQUIRED);
@@ -77,6 +85,38 @@ const envSchema = z
     message: "the mock FX provider cannot be used in production",
     path: ["FX_PROVIDER"],
   })
+  .refine(
+    (env) =>
+      env.WALLET_PROVIDER !== "kernel" ||
+      (env.PASSKEY_RP_ID !== undefined && env.PASSKEY_ORIGIN !== undefined),
+    {
+      message: "PASSKEY_RP_ID and PASSKEY_ORIGIN are required when WALLET_PROVIDER=kernel",
+      path: ["PASSKEY_ORIGIN"],
+    },
+  )
+  .refine(
+    (env) => {
+      if (env.WALLET_PROVIDER !== "kernel" || !env.PASSKEY_RP_ID || !env.PASSKEY_ORIGIN)
+        return true;
+      const host = new URL(env.PASSKEY_ORIGIN).hostname;
+      return host === env.PASSKEY_RP_ID || host.endsWith(`.${env.PASSKEY_RP_ID}`);
+    },
+    {
+      message: "PASSKEY_ORIGIN must be on PASSKEY_RP_ID (the same domain or a subdomain)",
+      path: ["PASSKEY_ORIGIN"],
+    },
+  )
+  .refine(
+    (env) =>
+      env.WALLET_PROVIDER !== "kernel" ||
+      env.NODE_ENV !== "production" ||
+      (env.PASSKEY_ORIGIN?.startsWith("https://") === true &&
+        env.CELO_RPC_URL.startsWith("https://")),
+    {
+      message: "production wallets need an https PASSKEY_ORIGIN and an https CELO_RPC_URL",
+      path: ["PASSKEY_ORIGIN"],
+    },
+  )
   .refine((env) => env.CELO_CHAIN_ID === 42220, {
     message: "CELO_CHAIN_ID must be 42220 (Celo mainnet); no other chain is supported",
     path: ["CELO_CHAIN_ID"],
@@ -134,6 +174,15 @@ const envSchema = z
         }),
     },
     chain: { network: env.CELO_NETWORK, chainId: env.CELO_CHAIN_ID },
+    wallet: {
+      provider: env.WALLET_PROVIDER,
+      rpcUrl: env.CELO_RPC_URL,
+      ...(env.WALLET_PROVIDER === "kernel" &&
+        env.PASSKEY_RP_ID !== undefined &&
+        env.PASSKEY_ORIGIN !== undefined && {
+          passkey: { rpId: env.PASSKEY_RP_ID, origin: env.PASSKEY_ORIGIN },
+        }),
+    },
     fx: {
       provider: env.FX_PROVIDER,
       ...(env.FX_PROVIDER === "textile" &&
