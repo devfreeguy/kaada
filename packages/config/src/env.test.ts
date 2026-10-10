@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { ConfigError, loadConfig } from "./env.js";
+import { ConfigError, loadConfig, loadTextileCredentials } from "./env.js";
 
 const databaseUrl = "postgresql://user:pass@localhost:5432/kaada";
 
@@ -145,6 +145,121 @@ describe("FX provider configuration", () => {
       ConfigError,
     );
     assert.equal(loadConfig({ ...dev, NODE_ENV: "production" }).fx.provider, "none");
-    assert.throws(() => loadConfig({ ...dev, FX_PROVIDER: "textile" }), ConfigError);
+    assert.throws(() => loadConfig({ ...dev, FX_PROVIDER: "acme" }), ConfigError);
+  });
+});
+
+describe("Textile configuration", () => {
+  const live = {
+    DATABASE_URL: databaseUrl,
+    FX_PROVIDER: "textile",
+    TEXTILE_ENV: "live",
+    TEXTILE_LIVE_API_KEY: "tx_live_abcd1234.supersecretvalue",
+  };
+
+  it("needs an explicit environment and the matching key, with no default or fallback", () => {
+    assert.throws(
+      () => loadConfig({ DATABASE_URL: databaseUrl, FX_PROVIDER: "textile" }),
+      /TEXTILE_ENV .* is required/,
+    );
+    assert.throws(
+      () => loadConfig({ ...live, TEXTILE_LIVE_API_KEY: undefined }),
+      /TEXTILE_LIVE_API_KEY is required/,
+    );
+    // A test key does not satisfy live, and a live key does not satisfy test.
+    assert.throws(
+      () =>
+        loadConfig({
+          ...live,
+          TEXTILE_LIVE_API_KEY: undefined,
+          TEXTILE_TEST_API_KEY: "tx_test_a.b",
+        }),
+      /TEXTILE_LIVE_API_KEY is required/,
+    );
+    assert.throws(() => loadConfig({ ...live, TEXTILE_LIVE_API_KEY: "   " }), ConfigError);
+  });
+
+  it("accepts live with the documented defaults", () => {
+    const config = loadConfig(live);
+    assert.deepEqual(config.fx.textile, {
+      env: "live",
+      apiKey: live.TEXTILE_LIVE_API_KEY,
+      apiUrl: "https://api.textilecredit.com",
+      timeoutMs: 8000,
+    });
+    assert.deepEqual(config.chain, { network: "mainnet", chainId: 42220 });
+  });
+
+  it("refuses the test environment for Kaada, which settles on Celo, in every NODE_ENV", () => {
+    for (const NODE_ENV of ["development", "test", "production"]) {
+      assert.throws(
+        () =>
+          loadConfig({
+            DATABASE_URL: databaseUrl,
+            NODE_ENV,
+            FX_PROVIDER: "textile",
+            TEXTILE_ENV: "test",
+            TEXTILE_TEST_API_KEY: "tx_test_abcd1234.secret",
+          }),
+        /cannot quote Celo mainnet/,
+        NODE_ENV,
+      );
+    }
+  });
+
+  it("is allowed in production with a live key, and the mock still is not", () => {
+    assert.equal(loadConfig({ ...live, NODE_ENV: "production" }).fx.provider, "textile");
+    assert.throws(
+      () => loadConfig({ DATABASE_URL: databaseUrl, NODE_ENV: "production", FX_PROVIDER: "mock" }),
+      ConfigError,
+    );
+  });
+
+  it("requires the live key to look like a live key, without echoing it", () => {
+    const secret = "tx_test_wrongenvironment.SECRETVALUE";
+    try {
+      loadConfig({ ...live, TEXTILE_LIVE_API_KEY: secret });
+      assert.fail("expected a ConfigError");
+    } catch (error) {
+      assert.ok(error instanceof ConfigError);
+      assert.match(error.message, /tx_live_/);
+      assert.equal(error.message.includes("SECRETVALUE"), false);
+    }
+  });
+
+  it("only supports Celo mainnet and a host-only API URL", () => {
+    assert.throws(() => loadConfig({ DATABASE_URL: databaseUrl, CELO_CHAIN_ID: "1" }), ConfigError);
+    assert.throws(
+      () => loadConfig({ DATABASE_URL: databaseUrl, CELO_NETWORK: "alfajores" }),
+      ConfigError,
+    );
+    assert.throws(
+      () => loadConfig({ ...live, TEXTILE_API_URL: "https://api.textilecredit.com/v2" }),
+      ConfigError,
+    );
+  });
+
+  it("ignores Textile settings unless the provider is textile", () => {
+    const { fx } = loadConfig({ DATABASE_URL: databaseUrl, TEXTILE_LIVE_API_KEY: "tx_live_a.b" });
+    assert.equal(fx.textile, undefined);
+  });
+});
+
+describe("loadTextileCredentials", () => {
+  it("selects exactly the requested environment's key and never falls back", () => {
+    const env = {
+      TEXTILE_TEST_API_KEY: "tx_test_a.secret1",
+      TEXTILE_LIVE_API_KEY: "tx_live_b.secret2",
+    };
+    assert.equal(loadTextileCredentials("test", env).apiKey, "tx_test_a.secret1");
+    assert.equal(loadTextileCredentials("live", env).apiKey, "tx_live_b.secret2");
+    assert.throws(
+      () => loadTextileCredentials("live", { TEXTILE_TEST_API_KEY: "tx_test_a.secret1" }),
+      /TEXTILE_LIVE_API_KEY is not set/,
+    );
+    assert.throws(
+      () => loadTextileCredentials("test", { TEXTILE_TEST_API_KEY: "tx_live_oops.secret" }),
+      /must be a tx_test_/,
+    );
   });
 });

@@ -311,7 +311,12 @@ export class RoutingService {
     const mock = quotes.some((quote) => quote.rawProviderData?.["mock"] === true);
     const expiresAt = (route.expiresAt ?? this.now()).toISOString();
     const seconds = route.expiresAt ? secondsUntil(route.expiresAt, this.now()) : 0;
-    const fine = mock ? " (mock pricing, development only, not a real price)" : "";
+    const indicative = quotes.some((quote) => quote.rawProviderData?.["indicative"] === true);
+    const fine = mock
+      ? " (mock pricing, development only, not a real price)"
+      : indicative
+        ? " (indicative price, not a firm quote)"
+        : "";
     const feeText = fees.length > 0 ? fees.map((fee) => fee.display).join(" + ") : "none";
     const expiry = `The prices expire in ${seconds} seconds.`;
 
@@ -335,6 +340,7 @@ export class RoutingService {
         expiresAt,
         route: routeSummary,
         ...(mock && { mock }),
+        ...(indicative && { indicative }),
       };
       return response;
     }
@@ -372,6 +378,7 @@ export class RoutingService {
       route: routeSummary,
       ...(recipient && { recipient }),
       ...(mock && { mock }),
+      ...(indicative && { indicative }),
     };
     return response;
   }

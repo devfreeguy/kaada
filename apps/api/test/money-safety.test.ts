@@ -12,12 +12,16 @@ const roots = [
   new URL("../../../packages/domain/src/money/", import.meta.url),
   new URL("../src/core/routing/", import.meta.url),
   new URL("../src/infrastructure/fx/", import.meta.url),
+  new URL("../src/infrastructure/fx/textile/", import.meta.url),
 ];
+
+/** A Retry-After header is a duration, not money; its one text-to-number conversion lives here. */
+const EXEMPT = new Set(["retry-after.ts"]);
 
 function sources(): [string, string][] {
   return roots.flatMap((root) =>
     readdirSync(root)
-      .filter((name) => name.endsWith(".ts") && !name.endsWith(".test.ts"))
+      .filter((name) => name.endsWith(".ts") && !name.endsWith(".test.ts") && !EXEMPT.has(name))
       .map((name): [string, string] => {
         const code = readFileSync(new URL(name, root), "utf8")
           .replace(/\/\*[\s\S]*?\*\//g, "")
@@ -39,7 +43,7 @@ describe("routing and money source", () => {
   ];
 
   it("scans a non-trivial amount of code", () => {
-    assert.ok(sources().length >= 15);
+    assert.ok(sources().length >= 20);
   });
 
   it("uses none of the forbidden constructs", () => {
@@ -56,5 +60,16 @@ describe("routing and money source", () => {
         assert.match(match[0], /Number\.isInteger\(decimals\)/, `${file}: ${match[0]}`);
       }
     }
+  });
+});
+
+describe("the Textile adapter", () => {
+  it("keeps the only text-to-number conversion in the duration helper", () => {
+    const helper = readFileSync(
+      new URL("../src/infrastructure/fx/textile/retry-after.ts", import.meta.url),
+      "utf8",
+    );
+    assert.match(helper, /Retry-After/);
+    assert.ok(sources().every(([file]) => !file.endsWith("retry-after.ts")));
   });
 });

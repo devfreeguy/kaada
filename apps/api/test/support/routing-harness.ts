@@ -10,7 +10,7 @@ import {
   createSettlementAssetResolver,
   defaultCountryDirectory,
 } from "@kaada/domain";
-import type { Asset, CapabilityType } from "@kaada/domain";
+import type { Asset, AssetRegistry, CapabilityType, FxProvider } from "@kaada/domain";
 
 import { MOCK_FX_FIXTURES, MockFxProvider } from "../../src/infrastructure/fx/mock-fx-provider.js";
 import type { MockPairFixture } from "../../src/infrastructure/fx/mock-fx-provider.js";
@@ -72,6 +72,8 @@ export function createRoutingHarness(
     capabilityPairs?: [string, string][];
     /** The mock prices as if this many ms earlier, so its quotes arrive already expired. */
     mockClockSkewMs?: number;
+    /** Price with this provider (bound to the "textile" capability) instead of the mock. */
+    pricing?: (context: { assets: AssetRegistry; now: () => Date }) => FxProvider;
   } = {},
 ): RoutingHarness {
   const clock = {
@@ -115,7 +117,12 @@ export function createRoutingHarness(
       const planner = createRoutePlanner({
         assets: registry,
         capabilities,
-        fx: createFxProviderDirectory([{ capabilityProvider: "textile", provider: mock }]),
+        fx: createFxProviderDirectory([
+          {
+            capabilityProvider: "textile",
+            provider: options.pricing?.({ assets: registry, now: () => clock.now }) ?? mock,
+          },
+        ]),
         now: () => clock.now,
       });
       holder.candidates = candidates;

@@ -116,6 +116,8 @@ export interface PaymentReadyResponse {
   route: RouteSummary;
   /** True when the prices came from the development mock provider and are not real. */
   mock?: boolean;
+  /** True when the price is indicative (not a firm, reserved quote). */
+  indicative?: boolean;
 }
 
 /** The informational answer to a QUOTE request. It can never be authorized or executed. */
@@ -132,6 +134,7 @@ export interface QuoteResultResponse {
   expiresAt: string;
   route: RouteSummary;
   mock?: boolean;
+  indicative?: boolean;
 }
 
 export interface CancelledResponse {

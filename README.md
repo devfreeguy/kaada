@@ -65,7 +65,7 @@ pnpm test         # unit tests (domain, schemas, config, database)
 ```
 
 Settlement assets and provider capabilities: see [docs/settlement.md](docs/settlement.md).
-Route planning (mock pricing only): see [docs/routing.md](docs/routing.md).
+Route planning: see [docs/routing.md](docs/routing.md). Textile RFQ adapter (quote only): see [docs/textile.md](docs/textile.md).
 
 Database (see [docs/database.md](docs/database.md)):
 
@@ -94,23 +94,23 @@ Configuration is validated at startup by `@kaada/config`; the API exits with a l
 invalid value. The API loads `.env` from the repository root if present. Real environment
 variables take precedence.
 
-| Variable                   | Default                 | Notes                                                                       |
-| -------------------------- | ----------------------- | --------------------------------------------------------------------------- |
-| `NODE_ENV`                 | `development`           | `development`, `test`, or `production`                                      |
-| `PORT`                     | `4000`                  | API port                                                                    |
-| `API_HOST`                 | `0.0.0.0`               | API bind address                                                            |
-| `WEB_URL`                  | `http://localhost:3000` | Public URL of the web app                                                   |
-| `CORS_ORIGINS`             | `WEB_URL`               | Comma-separated allowed origins                                             |
-| `LOG_LEVEL`                | `info`                  | `fatal` … `trace`, or `silent`                                              |
-| `DATABASE_URL`             | required                | Postgres URL; the Neon pooled connection                                    |
-| `DATABASE_DIRECT_URL`      | `DATABASE_URL`          | Prisma CLI migrations only (Neon direct connection)                         |
-| `DATABASE_POOL_MAX`        | `10`                    | Runtime pool size                                                           |
-| `DATABASE_POOL_TIMEOUT_MS` | `10000`                 | Connection timeout                                                          |
-| `AGENT_INTERPRETER`        | `none`                  | `none`, `mock` (development only) or `groq`; see docs/agent.md              |
-| `FX_PROVIDER`              | `none`                  | `none` or `mock` (made-up prices, never in production); see docs/routing.md |
-| `GROQ_API_KEY`             | none                    | Required when `AGENT_INTERPRETER=groq`                                      |
-| `GROQ_MODEL`               | `openai/gpt-oss-20b`    | Must support strict structured output                                       |
-| `GROQ_TIMEOUT_MS`          | `8000`                  | Per HTTP attempt                                                            |
+| Variable                   | Default                 | Notes                                                                                  |
+| -------------------------- | ----------------------- | -------------------------------------------------------------------------------------- |
+| `NODE_ENV`                 | `development`           | `development`, `test`, or `production`                                                 |
+| `PORT`                     | `4000`                  | API port                                                                               |
+| `API_HOST`                 | `0.0.0.0`               | API bind address                                                                       |
+| `WEB_URL`                  | `http://localhost:3000` | Public URL of the web app                                                              |
+| `CORS_ORIGINS`             | `WEB_URL`               | Comma-separated allowed origins                                                        |
+| `LOG_LEVEL`                | `info`                  | `fatal` … `trace`, or `silent`                                                         |
+| `DATABASE_URL`             | required                | Postgres URL; the Neon pooled connection                                               |
+| `DATABASE_DIRECT_URL`      | `DATABASE_URL`          | Prisma CLI migrations only (Neon direct connection)                                    |
+| `DATABASE_POOL_MAX`        | `10`                    | Runtime pool size                                                                      |
+| `DATABASE_POOL_TIMEOUT_MS` | `10000`                 | Connection timeout                                                                     |
+| `AGENT_INTERPRETER`        | `none`                  | `none`, `mock` (development only) or `groq`; see docs/agent.md                         |
+| `FX_PROVIDER`              | `none`                  | `none`, `mock` (made-up prices, never in production) or `textile`; see docs/textile.md |
+| `GROQ_API_KEY`             | none                    | Required when `AGENT_INTERPRETER=groq`                                                 |
+| `GROQ_MODEL`               | `openai/gpt-oss-20b`    | Must support strict structured output                                                  |
+| `GROQ_TIMEOUT_MS`          | `8000`                  | Per HTTP attempt                                                                       |
 
 Logs are pretty-printed in `development` and JSON otherwise. Authorization headers, cookies,
 and common secret fields (`password`, `token`, `apiKey`, ...) are redacted.

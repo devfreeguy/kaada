@@ -10,6 +10,21 @@ const postgresUrl = z
     "must be a postgres:// or postgresql:// URL",
   );
 
+/** An optional secret: surrounding whitespace is trimmed and an empty value counts as unset. */
+const optionalSecret = z
+  .string()
+  .trim()
+  .optional()
+  .transform((value) => (value ? value : undefined));
+
+const envSchemaShape = {
+  TEXTILE_API_URL: z
+    .url()
+    .refine((value) => !/\/v[0-9]+\/?$/.test(value), "give the host only, without /v2")
+    .default("https://api.textilecredit.com"),
+  TEXTILE_TIMEOUT_MS: z.coerce.number().int().min(1000).max(80_000).default(8000),
+};
+
 const envSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -28,7 +43,22 @@ const envSchema = z
     AGENT_INTERPRETER: z.enum(["none", "mock", "groq"]).default("none"),
     // Which price source routing uses. "none" disables pricing (the agent stops at ROUTING_REQUIRED);
     // "mock" is made-up fixture pricing for development and tests. No real provider yet.
-    FX_PROVIDER: z.enum(["none", "mock"]).default("none"),
+    FX_PROVIDER: z.enum(["none", "mock", "textile"]).default("none"),
+    // The blockchain Kaada settles on. Textile has no Celo testnet deployment, so only mainnet exists.
+    CELO_NETWORK: z.enum(["mainnet"]).default("mainnet"),
+    CELO_CHAIN_ID: z.coerce.number().int().default(42220),
+    // Textile has two API ENVIRONMENTS, separate from the blockchain network. Required when
+    // FX_PROVIDER=textile (no default, no fallback):
+    //   live - mainnet corridors, including Celo 42220. Needs TEXTILE_LIVE_API_KEY (tx_live_...).
+    //   test - ONLY BNB testnet (97) and Base Sepolia (84532); a Celo request is a 400. Kaada settles
+    //          on Celo, so the app refuses this; it exists for the sandbox smoke script.
+    TEXTILE_ENV: z.enum(["test", "live"]).optional(),
+    TEXTILE_TEST_API_KEY: optionalSecret,
+    TEXTILE_LIVE_API_KEY: optionalSecret,
+    // The documented API host. The v2 paths (/v2/rfq/...) are added by the client.
+    TEXTILE_API_URL: envSchemaShape.TEXTILE_API_URL,
+    // Client timeout for indicative quotes. (Firm quotes can block up to about 75 s; not used yet.)
+    TEXTILE_TIMEOUT_MS: envSchemaShape.TEXTILE_TIMEOUT_MS,
     // Only needed when AGENT_INTERPRETER=groq. An empty value counts as unset.
     GROQ_API_KEY: z
       .string()
@@ -47,6 +77,40 @@ const envSchema = z
     message: "the mock FX provider cannot be used in production",
     path: ["FX_PROVIDER"],
   })
+  .refine((env) => env.CELO_CHAIN_ID === 42220, {
+    message: "CELO_CHAIN_ID must be 42220 (Celo mainnet); no other chain is supported",
+    path: ["CELO_CHAIN_ID"],
+  })
+  .refine((env) => env.FX_PROVIDER !== "textile" || env.TEXTILE_ENV !== undefined, {
+    message: "TEXTILE_ENV (test or live) is required when FX_PROVIDER=textile",
+    path: ["TEXTILE_ENV"],
+  })
+  .refine((env) => env.FX_PROVIDER !== "textile" || env.TEXTILE_ENV !== "test", {
+    message:
+      "TEXTILE_ENV=test cannot quote Celo mainnet (42220): Textile's test environment only reaches chains 97 and 84532. Use TEXTILE_ENV=live",
+    path: ["TEXTILE_ENV"],
+  })
+  .refine(
+    (env) =>
+      env.FX_PROVIDER !== "textile" ||
+      env.TEXTILE_ENV !== "live" ||
+      env.TEXTILE_LIVE_API_KEY !== undefined,
+    {
+      message: "TEXTILE_LIVE_API_KEY is required when TEXTILE_ENV=live",
+      path: ["TEXTILE_LIVE_API_KEY"],
+    },
+  )
+  .refine(
+    (env) =>
+      env.FX_PROVIDER !== "textile" ||
+      env.TEXTILE_ENV !== "live" ||
+      env.TEXTILE_LIVE_API_KEY === undefined ||
+      env.TEXTILE_LIVE_API_KEY.startsWith("tx_live_"),
+    {
+      message: "TEXTILE_LIVE_API_KEY must be a live Textile key (tx_live_...)",
+      path: ["TEXTILE_LIVE_API_KEY"],
+    },
+  )
   .refine((env) => env.AGENT_INTERPRETER !== "groq" || env.GROQ_API_KEY !== undefined, {
     message: "GROQ_API_KEY is required when AGENT_INTERPRETER=groq",
     path: ["GROQ_API_KEY"],
@@ -69,7 +133,19 @@ const envSchema = z
           },
         }),
     },
-    fx: { provider: env.FX_PROVIDER },
+    chain: { network: env.CELO_NETWORK, chainId: env.CELO_CHAIN_ID },
+    fx: {
+      provider: env.FX_PROVIDER,
+      ...(env.FX_PROVIDER === "textile" &&
+        env.TEXTILE_LIVE_API_KEY !== undefined && {
+          textile: {
+            env: "live" as const,
+            apiKey: env.TEXTILE_LIVE_API_KEY,
+            apiUrl: env.TEXTILE_API_URL,
+            timeoutMs: env.TEXTILE_TIMEOUT_MS,
+          },
+        }),
+    },
     database: {
       url: env.DATABASE_URL,
       ...(env.DATABASE_DIRECT_URL && { directUrl: env.DATABASE_DIRECT_URL }),
@@ -102,4 +178,45 @@ function parseOrigins(raw: string, fallback: string): string[] {
     .map((origin) => origin.trim())
     .filter((origin) => origin.length > 0);
   return origins.length > 0 ? origins : [fallback];
+}
+
+export interface TextileCredentials {
+  env: "test" | "live";
+  apiKey: string;
+  apiUrl: string;
+  timeoutMs: number;
+}
+
+/**
+ * Credentials for one explicitly chosen Textile environment, for tools such as the smoke script that
+ * are not the app. There is no default environment and no fallback from one to the other: the key
+ * must exist and carry that environment's prefix (tx_test_ / tx_live_). Throws ConfigError, and the
+ * message never contains the key.
+ */
+export function loadTextileCredentials(
+  textileEnv: "test" | "live",
+  env: NodeJS.ProcessEnv = process.env,
+): TextileCredentials {
+  const name = textileEnv === "test" ? "TEXTILE_TEST_API_KEY" : "TEXTILE_LIVE_API_KEY";
+  const prefix = textileEnv === "test" ? "tx_test_" : "tx_live_";
+  const result = z
+    .object({
+      key: optionalSecret,
+      url: envSchemaShape.TEXTILE_API_URL,
+      timeout: envSchemaShape.TEXTILE_TIMEOUT_MS,
+    })
+    .safeParse({
+      key: env[name],
+      url: env["TEXTILE_API_URL"],
+      timeout: env["TEXTILE_TIMEOUT_MS"],
+    });
+  if (!result.success) {
+    throw new ConfigError(
+      `Invalid Textile configuration: ${result.error.issues.map((i) => i.path.join(".")).join(", ")}`,
+    );
+  }
+  const { key, url, timeout } = result.data;
+  if (key === undefined) throw new ConfigError(`${name} is not set`);
+  if (!key.startsWith(prefix)) throw new ConfigError(`${name} must be a ${prefix}... key`);
+  return { env: textileEnv, apiKey: key, apiUrl: url, timeoutMs: timeout };
 }

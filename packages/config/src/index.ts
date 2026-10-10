@@ -1,2 +1,2 @@
-export { loadConfig, ConfigError, logLevels } from "./env.js";
-export type { AppConfig, LogLevel } from "./env.js";
+export { loadConfig, loadTextileCredentials, ConfigError, logLevels } from "./env.js";
+export type { AppConfig, LogLevel, TextileCredentials } from "./env.js";

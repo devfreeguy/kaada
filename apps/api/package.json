@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "test": "node --import tsx --test \"src/**/*.test.ts\" \"test/*.test.ts\"",
     "test:integration": "node --import tsx --test \"test/integration/*.test.ts\"",
-    "smoke:groq": "node --import tsx scripts/groq-smoke.ts"
+    "smoke:groq": "node --import tsx scripts/groq-smoke.ts",
+    "smoke:textile": "node --import tsx scripts/smoke-textile.ts"
   },
   "dependencies": {
     "@kaada/config": "workspace:*",

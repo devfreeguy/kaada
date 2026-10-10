@@ -7,12 +7,13 @@ import {
   createSettlementAssetResolver,
   defaultCountryDirectory,
 } from "@kaada/domain";
-import type { AssetRepository, ProviderRepository } from "@kaada/domain";
+import type { AssetRepository, FxProvider, ProviderRepository } from "@kaada/domain";
 import type { AppConfig } from "@kaada/config";
 
 import type { AgentLog, AgentRepositories } from "../../core/agent/ports.js";
 import { RoutingService } from "../../core/routing/routing-service.js";
 import { MockFxProvider } from "./mock-fx-provider.js";
+import { TextileClient, TextileFxProvider, createFetchTransport } from "./textile/index.js";
 
 /**
  * Builds the routing service for the configured price source, or null when pricing is off
@@ -32,16 +33,32 @@ export function createRoutingService(
   },
 ): RoutingService | null {
   if (config.fx.provider === "none") return null;
-  if (config.nodeEnv === "production") {
+  // Fixtures never run in production, and there is no fallback to them from any other provider.
+  if (config.fx.provider === "mock" && config.nodeEnv === "production") {
     throw new Error("the mock FX provider cannot be used in production");
   }
 
   const now = deps.now ?? (() => new Date());
   const registry = createAssetRegistry(deps.assets);
   const capabilities = createProviderCapabilityRegistry(deps.providers);
-  // Capabilities live under "textile"; the mock only stands in for pricing them. It reports its own
+  // Capabilities live under "textile". The mock only stands in for pricing them and reports its own
   // id ("mock-textile"), so nothing it prices is mistaken for a real Textile quote.
-  const mock = new MockFxProvider({ assets: registry, now });
+  let pricing: FxProvider;
+  if (config.fx.provider === "textile") {
+    const textile = config.fx.textile;
+    if (!textile) throw new Error("FX_PROVIDER=textile requires the Textile settings");
+    pricing = new TextileFxProvider({
+      assets: registry,
+      now,
+      client: new TextileClient({
+        transport: createFetchTransport({ baseUrl: textile.apiUrl, apiKey: textile.apiKey }),
+        timeoutMs: textile.timeoutMs,
+      }),
+      ...(deps.log && { log: deps.log }),
+    });
+  } else {
+    pricing = new MockFxProvider({ assets: registry, now });
+  }
   return new RoutingService({
     candidates: createRoutingCandidateResolver({
       assets: registry,
@@ -53,7 +70,7 @@ export function createRoutingService(
     planner: createRoutePlanner({
       assets: registry,
       capabilities,
-      fx: createFxProviderDirectory([{ capabilityProvider: "textile", provider: mock }]),
+      fx: createFxProviderDirectory([{ capabilityProvider: "textile", provider: pricing }]),
       now,
     }),
     assets: registry,
