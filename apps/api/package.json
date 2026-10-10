@@ -13,7 +13,8 @@
     "test:integration": "node --import tsx --test \"test/integration/*.test.ts\"",
     "smoke:groq": "node --import tsx scripts/groq-smoke.ts",
     "smoke:textile": "node --import tsx scripts/smoke-textile.ts",
-    "smoke:wallet": "node --import tsx scripts/wallet-smoke.ts"
+    "smoke:wallet": "node --import tsx scripts/wallet-smoke.ts",
+    "smoke:setup": "node --import tsx scripts/setup-smoke.ts"
   },
   "dependencies": {
     "@kaada/blockchain": "workspace:*",

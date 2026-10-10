@@ -22,6 +22,8 @@ export interface SoftwareAuthenticator {
     rpId: string;
     userVerified?: boolean;
     counter?: number;
+    /** COSE algorithm id written into the credential key; ES256 (-7) by default. */
+    algorithm?: number;
   }): unknown;
   authenticate(options: {
     challenge: string;
@@ -54,11 +56,11 @@ export function createSoftwareAuthenticator(): SoftwareAuthenticator {
     x: xBytes.toString("hex"),
     y: yBytes.toString("hex"),
 
-    register({ challenge, origin, rpId, userVerified = true, counter = 0 }) {
+    register({ challenge, origin, rpId, userVerified = true, counter = 0, algorithm = -7 }) {
       const cose = isoCBOR.encode(
         new Map<number, number | Uint8Array>([
           [1, 2],
-          [3, -7],
+          [3, algorithm],
           [-1, 1],
           [-2, new Uint8Array(xBytes)],
           [-3, new Uint8Array(yBytes)],

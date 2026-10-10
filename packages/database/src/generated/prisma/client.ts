@@ -73,6 +73,11 @@ export type Wallet = Prisma.WalletModel
  */
 export type PasskeyCredential = Prisma.PasskeyCredentialModel
 /**
+ * Model WalletSetupSession
+ * A short-lived grant to set up one user's wallet in a browser. Only a hash of the opaque token is stored.
+ */
+export type WalletSetupSession = Prisma.WalletSetupSessionModel
+/**
  * Model PasskeyChallenge
  * A one-time, short-lived WebAuthn challenge. Claimed with a single UPDATE so a replay gets nothing.
  */

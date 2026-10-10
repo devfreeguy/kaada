@@ -102,6 +102,32 @@ export function checkQuote(
   return undefined;
 }
 
+/**
+ * The request's fixed amount re-expressed in a candidate token, or undefined when the token does not
+ * represent the amount's currency. A token represents its currency at par (that is what its
+ * settlement metadata says), so the amount is only re-expressed at the token's precision: exact when
+ * it gains decimals, rounded toward the user when it loses (down when spending, up when receiving).
+ */
+export function expressFixedAmount(
+  request: Pick<RoutingRequest, "amount" | "amountMode">,
+  amountAsset: Asset,
+  candidate: Asset,
+): Money | undefined {
+  if (candidate.id === amountAsset.id) return request.amount;
+  if (candidate.fiatCode === undefined || candidate.fiatCode !== amountAsset.fiatCode) {
+    return undefined;
+  }
+  return createMoney(
+    rescaleAmount(
+      BigInt(request.amount.amount),
+      amountAsset.decimals,
+      candidate.decimals,
+      request.amountMode === "EXACT_INPUT" ? "DOWN" : "UP",
+    ).toString(),
+    candidate.id,
+  );
+}
+
 export function createRoutePlanner(deps: RoutePlannerDeps): RoutePlanner {
   const chainId = deps.chainId ?? CELO_CHAIN_ID;
 
@@ -282,28 +308,9 @@ export function createRoutePlanner(deps: RoutePlannerDeps): RoutePlanner {
         const fixedAssetId = mode === "EXACT_INPUT" ? pair.sourceAssetId : pair.destinationAssetId;
         const fixedAsset = await assetFor(fixedAssetId);
         if (!fixedAsset) continue;
-        // The fixed side is expressed in the candidate token. A token represents its currency at par
-        // (that is what its settlement metadata says), so the amount is only re-expressed at the
-        // token's precision: exact when it gains decimals, rounded toward the user when it loses.
-        let fixed: Money;
-        if (fixedAsset.id === amountAsset.id) {
-          fixed = request.amount;
-        } else if (
-          fixedAsset.fiatCode !== undefined &&
-          fixedAsset.fiatCode === amountAsset.fiatCode
-        ) {
-          fixed = createMoney(
-            rescaleAmount(
-              BigInt(request.amount.amount),
-              amountAsset.decimals,
-              fixedAsset.decimals,
-              mode === "EXACT_INPUT" ? "DOWN" : "UP",
-            ).toString(),
-            fixedAsset.id,
-          );
-        } else {
-          continue;
-        }
+        // The fixed side is expressed in the candidate token (see expressFixedAmount).
+        const fixed = expressFixedAmount(request, amountAsset, fixedAsset);
+        if (!fixed) continue;
 
         if (pair.kind === "DIRECT") {
           routes.push({

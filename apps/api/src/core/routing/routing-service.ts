@@ -4,7 +4,6 @@ import {
   bpsOf,
   createId,
   createMoney,
-  formatSmallestUnit,
   isKaadaError,
   validatePaymentRoute,
 } from "@kaada/domain";
@@ -21,6 +20,8 @@ import type {
 } from "@kaada/domain";
 
 import type { AgentLog, AgentRepositories } from "../agent/ports.js";
+import { formatAmount } from "./format.js";
+import type { WalletFundingResolver } from "./funding-resolver.js";
 import { noopLog } from "../agent/ports.js";
 import type {
   AgentResponse,
@@ -47,15 +48,17 @@ export interface RoutingServiceDeps {
   assets: AssetRegistry;
   /** Reads for route reuse; a transaction is not needed. */
   read: Pick<AgentRepositories, "routes" | "quotes">;
+  /**
+   * Balance-aware funding for PAYMENTS (set when a wallet provider is configured). When absent,
+   * payments are routed without any wallet check, exactly as before wallets existed. QUOTEs never
+   * use it.
+   */
+  funding?: WalletFundingResolver;
   now?: () => Date;
   log?: AgentLog;
 }
 
-/** "92.250000" -> "92.25", "500.000000000000000000" -> "500". For people only. */
-export function formatAmount(amount: string, decimals: number): string {
-  const exact = formatSmallestUnit(amount, decimals);
-  return exact.includes(".") ? exact.replace(/\.?0+$/, "") : exact;
-}
+export { formatAmount };
 
 /** Whole seconds until `at`, never negative. Integer arithmetic only. */
 function secondsUntil(at: Date, now: Date): number {
@@ -85,9 +88,42 @@ export class RoutingService {
   async plan(request: RoutingRequest): Promise<RoutingOutcome> {
     const now = this.now();
 
+    // Only a payment spends the user's funds, so only a payment needs a wallet. A quote is a price
+    // question and works without one.
+    const funding = request.purpose === "PAYMENT" ? this.deps.funding : undefined;
+    let address: string | null = null;
+    if (funding) {
+      try {
+        address = await funding.requireWallet(request.userId);
+      } catch (error) {
+        return this.fundingUnavailable(request, error);
+      }
+      if (address === null) {
+        return { status: "FAILED", request, response: funding.setupRequired() };
+      }
+    }
+
     // Reuse only a stored route for THIS revision whose quotes are all still valid.
     const reused = await this.findReusable(request, now);
-    if (reused) return { status: "REUSED", request, ...reused };
+    if (reused) {
+      if (funding && address !== null) {
+        try {
+          const slippageBps = reused.quotes.reduce(
+            (sum, quote) => sum + (quote.slippageBps ?? 0),
+            0,
+          );
+          const short = await funding.confirmStored(
+            request,
+            { input: reused.route.input, slippageBps },
+            address,
+          );
+          if (short) return { status: "FAILED", request, response: short };
+        } catch (error) {
+          return this.fundingUnavailable(request, error);
+        }
+      }
+      return { status: "REUSED", request, ...reused };
+    }
 
     const discovery = await this.deps.candidates.resolve(request);
     if (discovery.status === "UNSUPPORTED") {
@@ -98,7 +134,27 @@ export class RoutingService {
       };
     }
 
-    const result = await this.deps.planner.plan(request, discovery.set);
+    // Balance-aware candidates: unaffordable funding assets are dropped BEFORE any provider is asked
+    // for a price, and an explicit asset is never swapped for another.
+    let candidates = discovery.set;
+    let balances: ReadonlyMap<string, bigint> | undefined;
+    if (funding && address !== null) {
+      try {
+        const filtered = await funding.filter(request, candidates, address);
+        if (filtered.status === "REJECTED") {
+          return { status: "FAILED", request, response: filtered.response };
+        }
+        if (filtered.status === "SETUP_REQUIRED") {
+          return { status: "FAILED", request, response: funding.setupRequired() };
+        }
+        candidates = filtered.set;
+        balances = filtered.balances;
+      } catch (error) {
+        return this.fundingUnavailable(request, error);
+      }
+    }
+
+    const result = await this.deps.planner.plan(request, candidates);
     this.log("info", "routing.planned", {
       intentId: request.intentId,
       revision: request.intentRevision,
@@ -107,6 +163,14 @@ export class RoutingService {
     });
     switch (result.status) {
       case "SUCCESS": {
+        if (funding && balances) {
+          // Priced routes arrive best first; take the best one the wallet can afford.
+          const picked = await funding.pick(request, result.routes, balances);
+          if (picked.status === "REJECTED") {
+            return { status: "FAILED", request, response: picked.response };
+          }
+          return { status: "PLANNED", request, route: picked.route };
+        }
         const [best] = result.routes;
         if (!best) return failed(request, "NO_ROUTE", "I couldn't find a route for that.");
         return { status: "PLANNED", request, route: best };
@@ -126,6 +190,19 @@ export class RoutingService {
           "I couldn't get a usable price right now. Please try again in a moment.",
         );
     }
+  }
+
+  /** The wallet or the chain could not be read. Not a balance verdict, so nothing is claimed. */
+  private fundingUnavailable(request: RoutingRequest, error: unknown): RoutingOutcome {
+    this.log("error", "routing.funding_unavailable", {
+      intentId: request.intentId,
+      error: error instanceof Error ? error.name : "unknown",
+    });
+    return failed(
+      request,
+      "ROUTING_UNAVAILABLE",
+      "I couldn't check your wallet balance right now. Please try again in a moment.",
+    );
   }
 
   /**

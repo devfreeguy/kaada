@@ -88,6 +88,8 @@ with `randomUUID()` from `node:crypto`. Inserting without an id fails at the dat
    EMBEDDED wallet per user and chain (partial unique index), ACTIVE requires an address, passkey coordinates are
    32-byte lower-case hex, and a permission must name operations, contracts and assets, have a positive window
    and canonical amounts, with lower-case contract addresses.
+7. `20261015000000_wallet_setup_sessions` (Build 10.1, hand-written): `WalletSetupSession` (only a SHA-256 token hash is
+   stored; CHECKs enforce the digest shape, `usedAt` set iff `COMPLETED`, and expiry after creation).
 
 ## Tradeoffs and decisions
 

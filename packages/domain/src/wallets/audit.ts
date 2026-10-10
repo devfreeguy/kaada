@@ -21,4 +21,8 @@ export const WALLET_AUDIT_EVENTS = {
   suspended: "wallet.suspended",
   reactivated: "wallet.reactivated",
   recoveryRequired: "wallet.recovery_required",
+  setupSessionCreated: "wallet.setup_session_created",
+  passkeyRegistrationStarted: "wallet.passkey_registration_started",
+  setupSessionConsumed: "wallet.setup_session_consumed",
+  setupFailed: "wallet.setup_failed",
 } as const;

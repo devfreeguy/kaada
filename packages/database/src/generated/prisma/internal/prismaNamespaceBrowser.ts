@@ -56,6 +56,7 @@ export const ModelName = {
   Session: 'Session',
   Wallet: 'Wallet',
   PasskeyCredential: 'PasskeyCredential',
+  WalletSetupSession: 'WalletSetupSession',
   PasskeyChallenge: 'PasskeyChallenge',
   DelegatedPermission: 'DelegatedPermission',
   Asset: 'Asset',
@@ -167,6 +168,19 @@ export const PasskeyCredentialScalarFieldEnum = {
 } as const
 
 export type PasskeyCredentialScalarFieldEnum = (typeof PasskeyCredentialScalarFieldEnum)[keyof typeof PasskeyCredentialScalarFieldEnum]
+
+
+export const WalletSetupSessionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  tokenHash: 'tokenHash',
+  status: 'status',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type WalletSetupSessionScalarFieldEnum = (typeof WalletSetupSessionScalarFieldEnum)[keyof typeof WalletSetupSessionScalarFieldEnum]
 
 
 export const PasskeyChallengeScalarFieldEnum = {

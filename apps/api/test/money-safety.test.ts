@@ -11,6 +11,7 @@ const roots = [
   new URL("../../../packages/domain/src/routing/", import.meta.url),
   new URL("../../../packages/domain/src/money/", import.meta.url),
   new URL("../src/core/routing/", import.meta.url),
+  new URL("../src/core/wallets/", import.meta.url),
   new URL("../src/infrastructure/fx/", import.meta.url),
   new URL("../src/infrastructure/fx/textile/", import.meta.url),
 ];

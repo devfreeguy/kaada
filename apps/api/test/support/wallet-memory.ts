@@ -11,6 +11,7 @@ import type {
   RootCredential,
   Wallet,
   WalletProvisioningAdapter,
+  WalletSetupSession,
 } from "@kaada/domain";
 import { KernelPolicyAdapter } from "@kaada/blockchain";
 
@@ -31,6 +32,7 @@ export interface WalletWorld {
   challenges: PasskeyChallenge[];
   permissions: Map<string, DelegatedPermission>;
   audit: AuditEvent[];
+  setupSessions: WalletSetupSession[];
   assets: Asset[];
   addCredential(userId: string, over?: Partial<PasskeyCredential>): PasskeyCredential;
 }
@@ -45,6 +47,7 @@ export function createWalletWorld(): WalletWorld {
   const permissions = new Map<string, DelegatedPermission>();
   const audit: AuditEvent[] = [];
   const assets: Asset[] = [];
+  const setupSessions: WalletSetupSession[] = [];
 
   const assetRepository: AssetRepository = {
     findById: (id) => Promise.resolve(assets.find((a) => a.id === id) ?? null),
@@ -58,6 +61,40 @@ export function createWalletWorld(): WalletWorld {
 
   const repositories: WalletRepositories = {
     assets: assetRepository,
+
+    walletSetupSessions: {
+      create: (input) => {
+        if (setupSessions.some((x) => x.tokenHash === input.tokenHash)) {
+          return Promise.reject(new Error("duplicate token hash"));
+        }
+        const session: WalletSetupSession = { ...input, status: "PENDING", createdAt: stamp() };
+        setupSessions.push(session);
+        return Promise.resolve({ ...session });
+      },
+      findByTokenHash: (hash) => {
+        const found = setupSessions.find((x) => x.tokenHash === hash);
+        return Promise.resolve(found ? { ...found } : null);
+      },
+      revokePending: (userId) => {
+        let count = 0;
+        for (const x of setupSessions) {
+          if (x.userId === userId && x.status === "PENDING") {
+            x.status = "REVOKED";
+            count += 1;
+          }
+        }
+        return Promise.resolve(count);
+      },
+      complete: (id, now) => {
+        const found = setupSessions.find((x) => x.id === id);
+        if (!found || found.status !== "PENDING" || found.expiresAt.getTime() <= now.getTime()) {
+          return Promise.resolve(null);
+        }
+        found.status = "COMPLETED";
+        found.usedAt = now;
+        return Promise.resolve({ ...found });
+      },
+    },
 
     wallets: {
       findById: (id) => Promise.resolve(wallets.get(id) ?? null),
@@ -256,6 +293,7 @@ export function createWalletWorld(): WalletWorld {
     challenges,
     permissions,
     audit,
+    setupSessions,
     assets,
     addCredential(userId, over = {}) {
       const credential: PasskeyCredential = {

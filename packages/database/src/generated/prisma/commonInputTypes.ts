@@ -321,6 +321,23 @@ export type EnumWalletDeploymentWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumWalletDeploymentFilter<$PrismaModel>
 }
 
+export type EnumWalletSetupStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.WalletSetupStatus | Prisma.EnumWalletSetupStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.WalletSetupStatus[] | Prisma.ListEnumWalletSetupStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WalletSetupStatus[] | Prisma.ListEnumWalletSetupStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWalletSetupStatusFilter<$PrismaModel> | $Enums.WalletSetupStatus
+}
+
+export type EnumWalletSetupStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.WalletSetupStatus | Prisma.EnumWalletSetupStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.WalletSetupStatus[] | Prisma.ListEnumWalletSetupStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WalletSetupStatus[] | Prisma.ListEnumWalletSetupStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWalletSetupStatusWithAggregatesFilter<$PrismaModel> | $Enums.WalletSetupStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumWalletSetupStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumWalletSetupStatusFilter<$PrismaModel>
+}
+
 export type EnumPasskeyChallengePurposeFilter<$PrismaModel = never> = {
   equals?: $Enums.PasskeyChallengePurpose | Prisma.EnumPasskeyChallengePurposeFieldRefInput<$PrismaModel>
   in?: $Enums.PasskeyChallengePurpose[] | Prisma.ListEnumPasskeyChallengePurposeFieldRefInput<$PrismaModel>
@@ -1038,6 +1055,23 @@ export type NestedEnumWalletDeploymentWithAggregatesFilter<$PrismaModel = never>
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumWalletDeploymentFilter<$PrismaModel>
   _max?: Prisma.NestedEnumWalletDeploymentFilter<$PrismaModel>
+}
+
+export type NestedEnumWalletSetupStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.WalletSetupStatus | Prisma.EnumWalletSetupStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.WalletSetupStatus[] | Prisma.ListEnumWalletSetupStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WalletSetupStatus[] | Prisma.ListEnumWalletSetupStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWalletSetupStatusFilter<$PrismaModel> | $Enums.WalletSetupStatus
+}
+
+export type NestedEnumWalletSetupStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.WalletSetupStatus | Prisma.EnumWalletSetupStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.WalletSetupStatus[] | Prisma.ListEnumWalletSetupStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WalletSetupStatus[] | Prisma.ListEnumWalletSetupStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWalletSetupStatusWithAggregatesFilter<$PrismaModel> | $Enums.WalletSetupStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumWalletSetupStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumWalletSetupStatusFilter<$PrismaModel>
 }
 
 export type NestedEnumPasskeyChallengePurposeFilter<$PrismaModel = never> = {

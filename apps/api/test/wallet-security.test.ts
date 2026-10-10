@@ -151,3 +151,82 @@ describe("the agent cannot reach a signer", () => {
     assert.equal(/wallet|signer|key|passkey|permission/i.test(deps), false, deps);
   });
 });
+
+describe("Build 10.1 boundaries (source scan)", () => {
+  const edgeSources = [
+    ...files(dir("apps/api/src/core/wallets")),
+    ...files(dir("apps/api/src/wallet")),
+    ...files(dir("apps/api/src/core/routing")),
+  ];
+
+  it("routing never requests a firm Textile quote or executes anything", () => {
+    for (const path of files(dir("apps/api/src"))) {
+      if (path.includes("infrastructure")) continue; // the quote-only client itself
+      const text = code(path);
+      assert.equal(/requestFirm|\/rfq\/request|\.execute\(|submitOrder/.test(text), false, path);
+    }
+    // Inside the Textile provider, only the preview call is made.
+    const provider = code(
+      join(dir("apps/api/src/infrastructure/fx/textile"), "textile-fx-provider.ts"),
+    );
+    assert.equal(/requestFirm/.test(provider), false);
+    assert.equal(/preview\(/.test(provider), true);
+  });
+
+  it("the wallet and routing code never signs, authorizes a payment, or checks a PIN", () => {
+    for (const path of edgeSources) {
+      const text = code(path);
+      assert.equal(
+        /signValidatedExecution|ExecutionSigner|bpinb|PaymentAuthorization/i.test(text),
+        false,
+        path,
+      );
+    }
+  });
+
+  it("never logs, audits or returns a setup token, a challenge or a raw WebAuthn response", () => {
+    for (const path of edgeSources) {
+      const text = code(path);
+      assert.equal(/console\.|new Logger|logger\./.test(text), false, path);
+    }
+    const service = code(join(dir("apps/api/src/core/wallets"), "setup-service.ts"));
+    // Audit payloads carry only a reason code.
+    for (const call of service.match(/this\.audit\([\s\S]*?\)/g) ?? []) {
+      assert.equal(/token|challenge|response|clientData/i.test(call), false, call);
+    }
+    const controller = code(join(dir("apps/api/src/wallet"), "wallet.controller.ts"));
+    // Nothing from the request is echoed back: no token and no body field in a response.
+    assert.equal(/return \{[^}]*token/.test(controller), false);
+  });
+
+  it("the wallet edge never reads a user id from a request, except the development-only helper", () => {
+    const controller = code(join(dir("apps/api/src/wallet"), "wallet.controller.ts"));
+    assert.equal(/@Query\(|@Param\(/.test(controller), false);
+    const beforeDevHelper = controller.slice(0, controller.indexOf("devSetupSession"));
+    // The dev schema declaration is the one place a user id is mentioned before the helper.
+    const inspected = beforeDevHelper
+      .split("\n")
+      .filter((line) => !line.includes("devSessionSchema"))
+      .join("\n");
+    assert.equal(/body\.userId|parsed\.data\.userId/.test(inspected), false);
+  });
+
+  it("balances are never persisted: no balance model or column exists", () => {
+    const schema = readFileSync(join(dir("packages/database/prisma"), "schema.prisma"), "utf8");
+    assert.equal(/^model \w*Balance\w* \{/m.test(schema), false);
+    assert.equal(/^\s*(balance|availableBalance)\w*\s/m.test(schema), false);
+    assert.equal(
+      /balance/i.test(
+        readFileSync(join(dir("packages/database/src/repositories"), "wallets.ts"), "utf8"),
+      ),
+      false,
+    );
+  });
+
+  it("setup tokens are random and compared only through their hash", () => {
+    const service = code(join(dir("apps/api/src/core/wallets"), "setup-service.ts"));
+    assert.equal(/randomBytes\(32\)/.test(service), true);
+    assert.equal(/Math\.random/.test(service), false);
+    assert.equal(/createHash\("sha256"\)/.test(service), true);
+  });
+});

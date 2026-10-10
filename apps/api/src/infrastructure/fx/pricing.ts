@@ -11,6 +11,7 @@ import type { AssetRepository, FxProvider, ProviderRepository } from "@kaada/dom
 import type { AppConfig } from "@kaada/config";
 
 import type { AgentLog, AgentRepositories } from "../../core/agent/ports.js";
+import type { WalletFundingResolver } from "../../core/routing/funding-resolver.js";
 import { RoutingService } from "../../core/routing/routing-service.js";
 import { MockFxProvider } from "./mock-fx-provider.js";
 import { TextileClient, TextileFxProvider, createFetchTransport } from "./textile/index.js";
@@ -28,6 +29,8 @@ export function createRoutingService(
     assets: AssetRepository;
     providers: ProviderRepository;
     read: Pick<AgentRepositories, "routes" | "quotes">;
+    /** Balance-aware funding for payments; omit when no wallet provider is configured. */
+    funding?: WalletFundingResolver;
     log?: AgentLog;
     now?: () => Date;
   },
@@ -76,6 +79,7 @@ export function createRoutingService(
     assets: registry,
     read: deps.read,
     now,
+    ...(deps.funding && { funding: deps.funding }),
     ...(deps.log && { log: deps.log }),
   });
 }

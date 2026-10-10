@@ -162,6 +162,15 @@ export const PermissionStatus = {
 export type PermissionStatus = (typeof PermissionStatus)[keyof typeof PermissionStatus]
 
 
+export const WalletSetupStatus = {
+  PENDING: 'PENDING',
+  COMPLETED: 'COMPLETED',
+  REVOKED: 'REVOKED'
+} as const
+
+export type WalletSetupStatus = (typeof WalletSetupStatus)[keyof typeof WalletSetupStatus]
+
+
 export const PasskeyChallengePurpose = {
   REGISTRATION: 'REGISTRATION',
   AUTHENTICATION: 'AUTHENTICATION'

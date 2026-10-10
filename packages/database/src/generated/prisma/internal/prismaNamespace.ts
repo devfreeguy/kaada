@@ -402,6 +402,7 @@ export const ModelName = {
   Session: 'Session',
   Wallet: 'Wallet',
   PasskeyCredential: 'PasskeyCredential',
+  WalletSetupSession: 'WalletSetupSession',
   PasskeyChallenge: 'PasskeyChallenge',
   DelegatedPermission: 'DelegatedPermission',
   Asset: 'Asset',
@@ -434,7 +435,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent"
+    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -805,6 +806,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.PasskeyCredentialCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.PasskeyCredentialCountAggregateOutputType> | number
+        }
+      }
+    }
+    WalletSetupSession: {
+      payload: Prisma.$WalletSetupSessionPayload<ExtArgs>
+      fields: Prisma.WalletSetupSessionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.WalletSetupSessionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletSetupSessionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.WalletSetupSessionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletSetupSessionPayload>
+        }
+        findFirst: {
+          args: Prisma.WalletSetupSessionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletSetupSessionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.WalletSetupSessionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletSetupSessionPayload>
+        }
+        findMany: {
+          args: Prisma.WalletSetupSessionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletSetupSessionPayload>[]
+        }
+        create: {
+          args: Prisma.WalletSetupSessionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletSetupSessionPayload>
+        }
+        createMany: {
+          args: Prisma.WalletSetupSessionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.WalletSetupSessionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletSetupSessionPayload>[]
+        }
+        delete: {
+          args: Prisma.WalletSetupSessionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletSetupSessionPayload>
+        }
+        update: {
+          args: Prisma.WalletSetupSessionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletSetupSessionPayload>
+        }
+        deleteMany: {
+          args: Prisma.WalletSetupSessionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.WalletSetupSessionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.WalletSetupSessionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletSetupSessionPayload>[]
+        }
+        upsert: {
+          args: Prisma.WalletSetupSessionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletSetupSessionPayload>
+        }
+        aggregate: {
+          args: Prisma.WalletSetupSessionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateWalletSetupSession>
+        }
+        groupBy: {
+          args: Prisma.WalletSetupSessionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.WalletSetupSessionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.WalletSetupSessionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.WalletSetupSessionCountAggregateOutputType> | number
         }
       }
     }
@@ -2183,6 +2258,19 @@ export const PasskeyCredentialScalarFieldEnum = {
 export type PasskeyCredentialScalarFieldEnum = (typeof PasskeyCredentialScalarFieldEnum)[keyof typeof PasskeyCredentialScalarFieldEnum]
 
 
+export const WalletSetupSessionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  tokenHash: 'tokenHash',
+  status: 'status',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type WalletSetupSessionScalarFieldEnum = (typeof WalletSetupSessionScalarFieldEnum)[keyof typeof WalletSetupSessionScalarFieldEnum]
+
+
 export const PasskeyChallengeScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -2668,6 +2756,20 @@ export type ListEnumWalletDeploymentFieldRefInput<$PrismaModel> = FieldRefInputT
 
 
 /**
+ * Reference to a field of type 'WalletSetupStatus'
+ */
+export type EnumWalletSetupStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'WalletSetupStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'WalletSetupStatus[]'
+ */
+export type ListEnumWalletSetupStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'WalletSetupStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'PasskeyChallengePurpose'
  */
 export type EnumPasskeyChallengePurposeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PasskeyChallengePurpose'>
@@ -3102,6 +3204,7 @@ export type GlobalOmitConfig = {
   session?: Prisma.SessionOmit
   wallet?: Prisma.WalletOmit
   passkeyCredential?: Prisma.PasskeyCredentialOmit
+  walletSetupSession?: Prisma.WalletSetupSessionOmit
   passkeyChallenge?: Prisma.PasskeyChallengeOmit
   delegatedPermission?: Prisma.DelegatedPermissionOmit
   asset?: Prisma.AssetOmit

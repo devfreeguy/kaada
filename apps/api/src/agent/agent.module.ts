@@ -1,6 +1,6 @@
 import { Logger, Module } from "@nestjs/common";
 import { createRepositories, withTransaction } from "@kaada/database";
-import { createCachedAssetRepository } from "@kaada/domain";
+import { createAssetRegistry, createCachedAssetRepository } from "@kaada/domain";
 import type { Database, Repositories } from "@kaada/database";
 import type { AppConfig } from "@kaada/config";
 
@@ -17,6 +17,12 @@ import { AgentController } from "./agent.controller.js";
 import { createRoutingService } from "../infrastructure/fx/pricing.js";
 import { createCandidateServices } from "../core/routing/candidate-services.js";
 import type { CandidateServices } from "../core/routing/candidate-services.js";
+import { WalletFundingResolver } from "../core/routing/funding-resolver.js";
+import type { WalletBalanceService } from "../core/wallets/balance-service.js";
+import { WalletServiceFundingPort } from "../core/wallets/funding-port.js";
+import type { WalletService } from "../core/wallets/wallet-service.js";
+import { WalletModule } from "../wallet/wallet.module.js";
+import { WALLET_BALANCE_SERVICE, WALLET_SERVICE } from "../wallet/wallet.tokens.js";
 import { AGENT_REPOSITORIES, AGENT_SERVICE, CANDIDATE_SERVICES } from "./agent.tokens.js";
 
 function nestAgentLog(): AgentLog {
@@ -52,6 +58,7 @@ function createInterpreter(config: AppConfig, log: AgentLog): IntentInterpreter 
 }
 
 @Module({
+  imports: [WalletModule],
   controllers: [AgentController],
   providers: [
     {
@@ -72,11 +79,13 @@ function createInterpreter(config: AppConfig, log: AgentLog): IntentInterpreter 
     },
     {
       provide: AGENT_SERVICE,
-      inject: [DATABASE, APP_CONFIG, AGENT_REPOSITORIES],
+      inject: [DATABASE, APP_CONFIG, AGENT_REPOSITORIES, WALLET_SERVICE, WALLET_BALANCE_SERVICE],
       useFactory: (
         database: Database,
         config: AppConfig,
         repositories: Repositories,
+        wallets: WalletService | null,
+        balances: WalletBalanceService | null,
       ): AgentService | null => {
         const log = nestAgentLog();
         const interpreter = createInterpreter(config, log);
@@ -84,10 +93,20 @@ function createInterpreter(config: AppConfig, log: AgentLog): IntentInterpreter 
 
         // Assets change rarely, so lookups for interpretation share one short-lived snapshot.
         const assets = createCachedAssetRepository(repositories.assets);
+        // Payments are balance-aware only when a wallet provider is configured; otherwise they are
+        // routed without a wallet check, as before wallets existed. Quotes never use it.
+        const funding =
+          wallets && balances
+            ? new WalletFundingResolver({
+                wallet: new WalletServiceFundingPort({ wallets, balances }),
+                assets: createAssetRegistry(assets),
+              })
+            : undefined;
         const service = createRoutingService(config, {
           assets,
           providers: repositories.providers,
           read: repositories,
+          ...(funding && { funding }),
           log,
         });
         const routing = () => (service ? { routing: service } : {});

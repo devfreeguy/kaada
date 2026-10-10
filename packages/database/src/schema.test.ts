@@ -53,6 +53,7 @@ const modelNames = [
   "Wallet",
   "PasskeyCredential",
   "PasskeyChallenge",
+  "WalletSetupSession",
   "DelegatedPermission",
   "Asset",
   "Conversation",
@@ -116,6 +117,7 @@ const enumValues: Record<string, string[]> = {
   WalletDeployment: ["NOT_APPLICABLE", "COUNTERFACTUAL", "DEPLOYING", "DEPLOYED"],
   PermissionStatus: ["PENDING", "ACTIVE", "REVOKED", "EXPIRED"],
   PasskeyChallengePurpose: ["REGISTRATION", "AUTHENTICATION"],
+  WalletSetupStatus: ["PENDING", "COMPLETED", "REVOKED"],
   RouteStatus: ["CREATED", "VALID", "EXPIRED", "SELECTED", "INVALID"],
   RouteStepType: ["TRANSFER", "SWAP", "BRIDGE", "ON_RAMP", "OFF_RAMP", "BANK_PAYOUT"],
   ExecutionStatus: [
@@ -235,6 +237,24 @@ describe("prisma schema", () => {
     assert.ok(sql.includes('ON "Wallet" ("userId", "chainId")'));
     assert.ok(sql.includes(`"type" = 'EMBEDDED' AND "status" <> 'REVOKED'`));
     assert.ok(sql.includes("Wallet_active_has_address"));
+  });
+
+  it("keeps setup tokens hashed and bounded in the setup-session migration", () => {
+    const sql = readFileSync(
+      new URL(
+        "../prisma/migrations/20261015000000_wallet_setup_sessions/migration.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    // Only a SHA-256 digest is stored: there is no token column, and the digest shape is enforced.
+    const start = schema.indexOf("model WalletSetupSession");
+    const model = schema.slice(start, schema.indexOf("}", start));
+    assert.ok(/tokenHash\s+String\s+@unique/.test(model));
+    assert.ok(!/^\s*token\s+String/m.test(model));
+    assert.ok(sql.includes(`"tokenHash" ~ '^[0-9a-f]{64}$'`));
+    assert.ok(sql.includes(`("status" = 'COMPLETED') = ("usedAt" IS NOT NULL)`));
+    assert.ok(sql.includes('"expiresAt" > "createdAt"'));
   });
 
   it("uses application-generated UUID primary keys", () => {

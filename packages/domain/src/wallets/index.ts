@@ -27,6 +27,17 @@ export type {
   PermissionRequest,
   PermissionStatus,
 } from "./permission.js";
+export {
+  WALLET_SETUP_STATUSES,
+  isSetupSessionOpen,
+  isSetupSessionViewable,
+} from "./setup-session.js";
+export type {
+  NewWalletSetupSession,
+  WalletSetupSession,
+  WalletSetupSessionRepository,
+  WalletSetupStatus,
+} from "./setup-session.js";
 export type {
   DerivedAccount,
   ExecutionSigner,

@@ -28,4 +28,5 @@ export {
   toPasskeyChallenge,
   toPasskeyCredential,
   toWallet,
+  toWalletSetupSession,
 } from "./wallet.js";

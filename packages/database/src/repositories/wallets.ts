@@ -3,6 +3,7 @@ import type {
   DelegatedPermissionRepository,
   PasskeyRepository,
   WalletRepository,
+  WalletSetupSessionRepository,
 } from "@kaada/domain";
 
 import {
@@ -12,6 +13,7 @@ import {
   toPasskeyChallenge,
   toPasskeyCredential,
   toWallet,
+  toWalletSetupSession,
 } from "../mappers/index.js";
 import { jsonInput, maybe } from "../mappers/support.js";
 import type { Db } from "./db.js";
@@ -251,6 +253,47 @@ export function createAuditRepository(db: Db): AuditRepository {
         take: limit,
       });
       return rows.map(toAuditEvent);
+    },
+  };
+}
+
+export function createWalletSetupSessionRepository(db: Db): WalletSetupSessionRepository {
+  return {
+    async create(session) {
+      return toWalletSetupSession(
+        await db.walletSetupSession.create({
+          data: {
+            id: session.id,
+            userId: session.userId,
+            tokenHash: session.tokenHash,
+            expiresAt: session.expiresAt,
+          },
+        }),
+      );
+    },
+
+    async findByTokenHash(tokenHash) {
+      const row = await db.walletSetupSession.findUnique({ where: { tokenHash } });
+      return row ? toWalletSetupSession(row) : null;
+    },
+
+    async revokePending(userId) {
+      const { count } = await db.walletSetupSession.updateMany({
+        where: { userId, status: "PENDING" },
+        data: { status: "REVOKED" },
+      });
+      return count;
+    },
+
+    async complete(id, now) {
+      // One conditional UPDATE: only a still-PENDING, unexpired session can be consumed, once.
+      const { count } = await db.walletSetupSession.updateMany({
+        where: { id, status: "PENDING", expiresAt: { gt: now } },
+        data: { status: "COMPLETED", usedAt: now },
+      });
+      if (count !== 1) return null;
+      const row = await db.walletSetupSession.findUnique({ where: { id } });
+      return row ? toWalletSetupSession(row) : null;
     },
   };
 }

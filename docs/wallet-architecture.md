@@ -170,7 +170,7 @@ execution builds, a bundler that supports Celo (and optionally a paymaster). Not
 - **Provisioning concurrency**: a per-user row lock serialises the decision, a partial unique index allows one
   non-revoked EMBEDDED wallet per user and chain, and the provider call runs outside any transaction. Two callers
   both derive (the address is a pure function of the passkey) and one `activate` wins.
-- **Configuration**: `WALLET_PROVIDER=none|kernel`, `CELO_RPC_URL`, `PASSKEY_RP_ID`, `PASSKEY_ORIGIN`. Kernel needs a
+- **Configuration**: `WALLET_PROVIDER=none|kernel`, `CELO_RPC_URL`, `PASSKEY_RP_ID`, `PASSKEY_ORIGIN`, `PASSKEY_RP_NAME`. Kernel needs a
   relying party and an origin on that domain; production needs https for both the origin and the RPC.
 
 ## Verified live (read-only, `pnpm --filter @kaada/api smoke:wallet`)
@@ -194,3 +194,62 @@ token's on-chain `decimals()` matched the registry (USDT 6, USDC 6, wBRL 18, wAR
 
 PIN, PaymentAuthorization, authorization sessions, email sending, deploying the account, creating a session key, signing,
 Textile firm quotes, routing affordability filtering.
+
+# Build 10.1: passkey onboarding, wallet API, balance-aware routing
+
+## Setup sessions
+
+WebAuthn needs a secure browser origin, and Telegram/WhatsApp cannot run it. A channel that has authenticated a user
+calls `WalletSetupService.createSession(userId)` and hands over `PASSKEY_ORIGIN/setup/<token>`.
+
+- The token is 32 random bytes (base64url). Only its SHA-256 is stored (`WalletSetupSession.tokenHash`, CHECKed to be a
+  hex digest). The server looks a token up by hash and reads the user from the row; **no request ever names a user**.
+- Valid for 15 minutes, one live link per user (a new link revokes older ones, serialised by the per-user lock).
+- States: `PENDING` -> `COMPLETED` (registration finished, consumed by one conditional UPDATE) or `REVOKED`. A completed
+  link allows read-only views (wallet, balances) until it expires; it never registers a second passkey.
+- Unknown, malformed, expired, used or replaced tokens all give the same 401.
+- The link is a bearer secret, so it is never put in an agent response or conversation history. The channel creates a
+  link when it renders its "Set up wallet" button. Until Telegram/WhatsApp exist, `POST /api/v1/wallet/dev/setup-sessions`
+  (404 in production) stands in for that channel.
+
+## Endpoints (token sent as `Authorization: Bearer <token>`, never in a body or query)
+
+| Endpoint                                            | Purpose                                                       |
+| --------------------------------------------------- | ------------------------------------------------------------- |
+| `POST /api/v1/wallet/passkeys/registration/options` | WebAuthn creation options (ES256 only, UV required)           |
+| `POST /api/v1/wallet/passkeys/registration/verify`  | verify, store public key, activate wallet, consume link       |
+| `POST /api/v1/wallet/setup/finalize`                | finish after a provisioning failure (no second passkey)       |
+| `GET /api/v1/wallet`                                | setup state, passkey registered?, wallet view                 |
+| `GET /api/v1/wallet/balances`                       | fresh Celo balances of the supported tokens (canonical Money) |
+
+Responses never contain provider ids, public keys, challenges or tokens. Registration is verified server-side by
+`@simplewebauthn/server`: single-use challenge (5 min), origin, RP id, user verification, ES256 only.
+
+## Wallet activation
+
+A verified registration stores the **public** credential, then `ensureEmbeddedWallet` derives the counterfactual Kernel
+address from it and activates the wallet (`ACTIVE` + `COUNTERFACTUAL`). No chain write happens; the address can receive
+supported Celo ERC-20s before the account is deployed. A user with an active wallet or an existing passkey cannot register
+another one here (adding passkeys is a recovery-build feature).
+
+## Balance-aware routing
+
+`RoutingRequest -> candidate resolver -> WalletFundingResolver -> RoutePlanner`. The planner never sees a wallet.
+
+- Only a PAYMENT needs a wallet (`WALLET_SETUP_REQUIRED` if none); a QUOTE never touches one.
+- Funding status per candidate: `NO_BALANCE`, `POTENTIALLY_FUNDED` (exact output, amount unknown until priced), `FUNDED`
+  (exact input covered), `INSUFFICIENT`, `INSUFFICIENT_AFTER_QUOTE`.
+- EXACT_INPUT: the balance must cover the exact input before any price is requested.
+- EXACT_OUTPUT: funded candidates are priced; the best-ranked route whose **maximum** spend (estimate plus slippage)
+  fits the balance wins; an alternative funded source is used when the best one falls short.
+- An explicit source is never swapped (`INSUFFICIENT_BALANCE`); with none, every funded candidate stays and **price, not
+  balance size, chooses**. No funded asset at all is `WALLET_NEEDS_FUNDING`.
+- `no_makers_online` stays a routing failure (`ROUTING_UNAVAILABLE`), not a balance failure. An unreadable chain is
+  `ROUTING_UNAVAILABLE` too, never a balance verdict.
+- A reused stored route is re-checked against a fresh balance. Balances are read fresh and never stored.
+- No firm Textile quote is requested and nothing signs or executes.
+
+## Not built here
+
+PIN, PaymentAuthorization, firm RFQ, execution, token approvals, delegated signing, Telegram/WhatsApp buttons, email
+recovery, general (non-setup-link) user authentication for the wallet API.

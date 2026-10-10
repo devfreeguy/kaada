@@ -137,6 +137,12 @@ enum PermissionStatus {
   EXPIRED
 }
 
+enum WalletSetupStatus {
+  PENDING
+  COMPLETED
+  REVOKED
+}
+
 enum PasskeyChallengePurpose {
   REGISTRATION
   AUTHENTICATION
@@ -240,6 +246,7 @@ model User {
   passkeyCredentials   PasskeyCredential[]
   passkeyChallenges    PasskeyChallenge[]
   delegatedPermissions DelegatedPermission[]
+  walletSetupSessions  WalletSetupSession[]
 }
 
 /// An external identity (Telegram account, phone, email, ...) attached to one Kaada user.
@@ -324,6 +331,21 @@ model PasskeyCredential {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+/// A short-lived grant to set up one user's wallet in a browser. Only a hash of the opaque token is stored.
+model WalletSetupSession {
+  id        String            @id @db.Uuid
+  userId    String            @db.Uuid
+  tokenHash String            @unique @db.Char(64)
+  status    WalletSetupStatus @default(PENDING)
+  expiresAt DateTime          @db.Timestamptz(3)
+  usedAt    DateTime?         @db.Timestamptz(3)
+  createdAt DateTime          @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
 }
 
 /// A one-time, short-lived WebAuthn challenge. Claimed with a single UPDATE so a replay gets nothing.

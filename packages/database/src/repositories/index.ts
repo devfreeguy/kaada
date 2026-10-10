@@ -3,6 +3,7 @@ import type {
   AssetRegistry,
   AssetRepository,
   AuditRepository,
+  WalletSetupSessionRepository,
   DelegatedPermissionRepository,
   PasskeyRepository,
   WalletRepository,
@@ -37,6 +38,7 @@ import {
   createDelegatedPermissionRepository,
   createPasskeyRepository,
   createWalletRepository,
+  createWalletSetupSessionRepository,
 } from "./wallets.js";
 
 /** Every repository, typed by its domain contract. No Prisma types appear here. */
@@ -57,6 +59,7 @@ export interface Repositories {
   passkeys: PasskeyRepository;
   delegatedPermissions: DelegatedPermissionRepository;
   audit: AuditRepository;
+  walletSetupSessions: WalletSetupSessionRepository;
 }
 
 function buildRepositories(db: Db): Repositories {
@@ -77,6 +80,7 @@ function buildRepositories(db: Db): Repositories {
     passkeys: createPasskeyRepository(db),
     delegatedPermissions: createDelegatedPermissionRepository(db),
     audit: createAuditRepository(db),
+    walletSetupSessions: createWalletSetupSessionRepository(db),
   };
 }
 

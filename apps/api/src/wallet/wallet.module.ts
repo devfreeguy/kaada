@@ -18,7 +18,17 @@ import { PasskeyService } from "../core/wallets/passkey-service.js";
 import type { WalletUnitOfWork } from "../core/wallets/ports.js";
 import { WalletService } from "../core/wallets/wallet-service.js";
 import { SimpleWebAuthnVerifier } from "../infrastructure/wallet/simplewebauthn-verifier.js";
-import { BALANCE_READER, PASSKEY_SERVICE, WALLET_SERVICE } from "./wallet.tokens.js";
+import { WalletBalanceService } from "../core/wallets/balance-service.js";
+import { WalletSetupService } from "../core/wallets/setup-service.js";
+import { WalletController } from "./wallet.controller.js";
+import {
+  BALANCE_READER,
+  PASSKEY_SERVICE,
+  WALLET_BALANCE_SERVICE,
+  WALLET_REPOSITORIES,
+  WALLET_SERVICE,
+  WALLET_SETUP_SERVICE,
+} from "./wallet.tokens.js";
 
 function unitOfWork(database: Database): WalletUnitOfWork {
   return {
@@ -29,10 +39,11 @@ function unitOfWork(database: Database): WalletUnitOfWork {
 
 /**
  * Wallet services, present only when WALLET_PROVIDER=kernel (null otherwise). Read-only until the
- * authorization build: nothing here can sign or move funds. There is no controller yet; the browser
- * half of passkey registration is Build 10.1.
+ * authorization build: nothing here can sign or move funds. The controller is a thin edge whose only
+ * identity is a setup-link token.
  */
 @Module({
+  controllers: [WalletController],
   providers: [
     {
       provide: WALLET_SERVICE,
@@ -63,8 +74,50 @@ function unitOfWork(database: Database): WalletUnitOfWork {
       },
     },
     {
-      // A read-only balance reader over the Celo RPC. Not wired into routing: a later, focused step
-      // filters candidates by what the user can spend.
+      provide: WALLET_REPOSITORIES,
+      inject: [DATABASE],
+      useFactory: (database: Database) => createRepositories(database),
+    },
+    {
+      provide: WALLET_SETUP_SERVICE,
+      inject: [DATABASE, APP_CONFIG, WALLET_SERVICE, PASSKEY_SERVICE],
+      useFactory: (
+        database: Database,
+        config: AppConfig,
+        wallets: WalletService | null,
+        passkeys: PasskeyService | null,
+      ): WalletSetupService | null => {
+        const passkey = config.wallet.passkey;
+        if (!wallets || !passkeys || !passkey) return null;
+        return new WalletSetupService({
+          unitOfWork: unitOfWork(database),
+          users: createRepositories(database).users,
+          passkeys,
+          wallets,
+          origin: passkey.origin,
+          rpId: passkey.rpId,
+          rpName: passkey.rpName,
+        });
+      },
+    },
+    {
+      provide: WALLET_BALANCE_SERVICE,
+      inject: [DATABASE, WALLET_SERVICE, BALANCE_READER],
+      useFactory: (
+        database: Database,
+        wallets: WalletService | null,
+        reader: WalletBalanceReader | null,
+      ): WalletBalanceService | null => {
+        if (!wallets || !reader) return null;
+        return new WalletBalanceService({
+          assets: createCachedAssetRepository(createRepositories(database).assets),
+          reader,
+          wallets,
+        });
+      },
+    },
+    {
+      // A read-only balance reader over the Celo RPC.
       provide: BALANCE_READER,
       inject: [DATABASE, APP_CONFIG],
       useFactory: (database: Database, config: AppConfig): WalletBalanceReader | null => {
@@ -79,6 +132,12 @@ function unitOfWork(database: Database): WalletUnitOfWork {
       },
     },
   ],
-  exports: [WALLET_SERVICE, PASSKEY_SERVICE, BALANCE_READER],
+  exports: [
+    WALLET_SERVICE,
+    PASSKEY_SERVICE,
+    BALANCE_READER,
+    WALLET_SETUP_SERVICE,
+    WALLET_BALANCE_SERVICE,
+  ],
 })
 export class WalletModule {}

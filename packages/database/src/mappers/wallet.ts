@@ -8,6 +8,7 @@ import type {
   PermissionConstraint,
   PermissionOperation,
   Wallet,
+  WalletSetupSession,
 } from "@kaada/domain";
 import { PERMISSION_CONSTRAINTS, PERMISSION_OPERATIONS } from "@kaada/domain";
 
@@ -17,6 +18,7 @@ import type {
   PasskeyCredential as CredentialRow,
   Prisma,
   Wallet as WalletRow,
+  WalletSetupSession as SetupSessionRow,
 } from "../generated/prisma/client.js";
 import { DataIntegrityError, maybe, readJsonObject } from "./support.js";
 
@@ -54,6 +56,18 @@ export function toPasskeyCredential(row: CredentialRow): PasskeyCredential {
     createdAt: row.createdAt,
     ...maybe("lastUsedAt", row.lastUsedAt),
     ...maybe("revokedAt", row.revokedAt),
+  };
+}
+
+export function toWalletSetupSession(row: SetupSessionRow): WalletSetupSession {
+  return {
+    id: row.id,
+    userId: row.userId,
+    tokenHash: row.tokenHash,
+    status: row.status,
+    expiresAt: row.expiresAt,
+    ...maybe("usedAt", row.usedAt),
+    createdAt: row.createdAt,
   };
 }
 

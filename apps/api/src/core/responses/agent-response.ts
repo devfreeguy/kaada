@@ -156,7 +156,13 @@ export type AgentErrorCode =
   /** Pricing providers could not be reached or gave no usable quote. */
   | "ROUTING_UNAVAILABLE"
   /** The request changed while it was being priced; the prices were discarded. */
-  | "ROUTING_STALE";
+  | "ROUTING_STALE"
+  /** A payment needs a Kaada wallet and the user has not set one up yet. */
+  | "WALLET_SETUP_REQUIRED"
+  /** The wallet holds none of the supported assets that could fund this payment. */
+  | "WALLET_NEEDS_FUNDING"
+  /** The wallet holds some of the funding asset, but not enough for this payment. */
+  | "INSUFFICIENT_BALANCE";
 
 /** The request cannot be honoured, and nothing was changed. Not an exception: a normal outcome. */
 export interface ErrorResponse {

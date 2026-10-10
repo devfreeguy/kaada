@@ -47,6 +47,8 @@ const envSchema = z
     // WebAuthn relying party: the domain passkeys are bound to, and the exact web origin allowed.
     PASSKEY_RP_ID: optionalSecret,
     PASSKEY_ORIGIN: z.url().optional(),
+    // The name an authenticator shows for this service.
+    PASSKEY_RP_NAME: z.string().trim().min(1).max(64).default("Kaada"),
     // Which IntentInterpreter the agent uses. "none" disables the agent.
     AGENT_INTERPRETER: z.enum(["none", "mock", "groq"]).default("none"),
     // Which price source routing uses. "none" disables pricing (the agent stops at ROUTING_REQUIRED);
@@ -180,7 +182,11 @@ const envSchema = z
       ...(env.WALLET_PROVIDER === "kernel" &&
         env.PASSKEY_RP_ID !== undefined &&
         env.PASSKEY_ORIGIN !== undefined && {
-          passkey: { rpId: env.PASSKEY_RP_ID, origin: env.PASSKEY_ORIGIN },
+          passkey: {
+            rpId: env.PASSKEY_RP_ID,
+            rpName: env.PASSKEY_RP_NAME,
+            origin: env.PASSKEY_ORIGIN,
+          },
         }),
     },
     fx: {

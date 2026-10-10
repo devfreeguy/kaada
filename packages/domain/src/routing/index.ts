@@ -44,6 +44,7 @@ export {
   checkQuote,
   createFxProviderDirectory,
   createRoutePlanner,
+  expressFixedAmount,
   validatePlannedRoute,
 } from "./route-planner.js";
 export type {

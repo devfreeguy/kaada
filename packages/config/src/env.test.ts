@@ -287,8 +287,14 @@ describe("wallet configuration", () => {
     );
     assert.deepEqual(loadConfig(kernel).wallet.passkey, {
       rpId: "kaada.app",
+      rpName: "Kaada",
       origin: "https://app.kaada.app",
     });
+    assert.equal(
+      loadConfig({ ...kernel, PASSKEY_RP_NAME: " Kaada Pay " }).wallet.passkey?.rpName,
+      "Kaada Pay",
+    );
+    assert.throws(() => loadConfig({ ...kernel, PASSKEY_RP_NAME: "" }), ConfigError);
     assert.throws(() => loadConfig({ ...base, WALLET_PROVIDER: "other" }), ConfigError);
   });
 

@@ -4,6 +4,7 @@ import type {
   DelegatedPermissionRepository,
   PasskeyRepository,
   WalletRepository,
+  WalletSetupSessionRepository,
 } from "@kaada/domain";
 
 /** The repositories the wallet services read and write. All are domain contracts. */
@@ -12,6 +13,7 @@ export interface WalletRepositories {
   passkeys: PasskeyRepository;
   delegatedPermissions: DelegatedPermissionRepository;
   audit: AuditRepository;
+  walletSetupSessions: WalletSetupSessionRepository;
   assets: AssetRepository;
 }
 

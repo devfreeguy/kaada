@@ -14,6 +14,7 @@ import type { Asset, AssetRegistry, CapabilityType, FxProvider } from "@kaada/do
 
 import { MOCK_FX_FIXTURES, MockFxProvider } from "../../src/infrastructure/fx/mock-fx-provider.js";
 import type { MockPairFixture } from "../../src/infrastructure/fx/mock-fx-provider.js";
+import type { WalletFundingResolver } from "../../src/core/routing/funding-resolver.js";
 import { RoutingService } from "../../src/core/routing/routing-service.js";
 import { createHarness, SENDER } from "./harness.js";
 import type { Harness } from "./harness.js";
@@ -74,6 +75,8 @@ export function createRoutingHarness(
     mockClockSkewMs?: number;
     /** Price with this provider (bound to the "textile" capability) instead of the mock. */
     pricing?: (context: { assets: AssetRegistry; now: () => Date }) => FxProvider;
+    /** Balance-aware funding for payments, built from the asset registry. */
+    funding?: (registry: AssetRegistry) => WalletFundingResolver;
   } = {},
 ): RoutingHarness {
   const clock = {
@@ -134,6 +137,7 @@ export function createRoutingHarness(
         assets: registry,
         read: world.repositories,
         now: () => clock.now,
+        ...(options.funding && { funding: options.funding(registry) }),
       });
       holder.routing = routing;
       return routing;
