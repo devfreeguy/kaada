@@ -4,6 +4,7 @@ import { PasskeyValidatorContractVersion, toPasskeyValidator } from "@zerodev/pa
 import { createPublicClient, http, keccak256, toHex } from "viem";
 import type { Address } from "viem";
 import { celo } from "viem/chains";
+import type { Chain } from "viem";
 
 import type { RootCredential } from "@kaada/domain";
 
@@ -16,9 +17,14 @@ import type { AccountAddressDeriver } from "./kernel-provisioning.js";
  * No private key is involved at any point: only the passkey's public coordinates.
  */
 export function createKernelAddressDeriver(
-  options: { rpcUrl?: string } = {},
+  options: {
+    rpcUrl?: string;
+    /** Testnet fixtures only: the chain and the passkey validator deployed there. Default: Celo mainnet. */
+    network?: { chain: Chain; passkeyValidatorAddress?: Address };
+  } = {},
 ): AccountAddressDeriver {
-  const client = createPublicClient({ chain: celo, transport: http(options.rpcUrl) });
+  const chain = options.network?.chain ?? celo;
+  const client = createPublicClient({ chain, transport: http(options.rpcUrl) });
   const entryPoint = getEntryPoint("0.7");
 
   return {
@@ -36,6 +42,9 @@ export function createKernelAddressDeriver(
         entryPoint,
         kernelVersion: KERNEL_V3_3,
         validatorContractVersion: PasskeyValidatorContractVersion.V0_0_3_PATCHED,
+        ...(options.network?.passkeyValidatorAddress && {
+          validatorAddress: options.network.passkeyValidatorAddress,
+        }),
       });
       const account = await createKernelAccount(client, {
         plugins: { sudo: validator },

@@ -32,6 +32,7 @@ const scope: PermissionScope = {
   },
   approval: { tokenAddress: addr("11"), spender: addr("33"), limit: createMoney("92200000", "a") },
   swapTarget: addr("44"),
+  swapSelector: "0xa1b2c3d4",
   validFrom: new Date("2026-01-01T00:00:00Z"),
   expiresAt: new Date("2026-01-01T00:15:00Z"),
 };
@@ -105,6 +106,7 @@ describe("permission policies", () => {
       "33".repeat(20), // the approve spender
       "77".repeat(20), // the payout recipient
       "44".repeat(20), // the swap target
+      "a1b2c3d4", // the one selector allowed on it (an omitted selector is NOT a wildcard)
     ]) {
       assert.ok(data.includes(needle), needle);
     }

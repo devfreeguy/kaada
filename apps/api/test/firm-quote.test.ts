@@ -605,6 +605,7 @@ describe("account, permission and allowance requirements", () => {
         allowedAssetIds: string[];
         perTransactionLimit: { amount: string };
         payout?: { recipient: string };
+        swapSelector: string;
         validFrom: string;
         expiresAt: string;
       };
@@ -817,16 +818,12 @@ describe("account, permission and allowance requirements", () => {
     assert.equal(plan["candidate"].intentId, f.authorization.intentId);
     assert.equal(plan["candidate"].routeSteps.length, 1);
     const text = JSON.stringify(plan);
-    for (const forbidden of [
-      "signature",
-      CLAIM_TOKEN,
-      '"claimToken"',
-      "privateKey",
-      "0xdeadbeef",
-      "calldata",
-    ]) {
+    for (const forbidden of ["signature", CLAIM_TOKEN, '"claimToken"', "privateKey", "calldata"]) {
       assert.equal(text.includes(forbidden), false, forbidden);
     }
+    // The swap's 4-byte selector is pinned in the permission scope; its arguments never are.
+    assert.equal(plan["permissionRequirement"].scope.swapSelector, "0xdeadbeef");
+    assert.equal(/"data"/.test(text), false);
     // The record is a pre-execution stage and nothing else.
     assert.ok(
       ["PREPARING", "READY", "BLOCKED", "EXPIRED", "FAILED"].includes(

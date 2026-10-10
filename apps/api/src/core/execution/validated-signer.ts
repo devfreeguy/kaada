@@ -15,7 +15,7 @@ import { loadLiveExecution } from "./live-execution.js";
 import type { LiveExecution } from "./live-execution.js";
 import { freshPlan } from "./fresh-plan.js";
 import type { ChainState, ExecutionUnitOfWork, SecretCipher } from "./ports.js";
-import { ALLOWED_SELECTORS, plannedSteps } from "./steps.js";
+import { ALLOWED_SELECTORS, installedScope, plannedSteps } from "./steps.js";
 import type { PlannedStep } from "./steps.js";
 
 export interface ValidatedSignerDeps {
@@ -138,7 +138,7 @@ export class ValidatedExecutionSigner implements ExecutionSigner {
       !(await this.deps.kernel.isPermissionInstalled({
         walletAddress: live.wallet.address,
         sessionKeyAddress: permission.sessionKeyAddress,
-        scope: plan.permissionRequirement.scope,
+        scope: installedScope(plan.permissionRequirement.scope, permission),
       }))
     ) {
       throw refuse("PERMISSION_NOT_INSTALLED", { readBack: false });

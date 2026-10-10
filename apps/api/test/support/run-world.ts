@@ -82,7 +82,13 @@ export class FakeKernel implements KernelExecutionPort {
       approval: new SecretValue(this.approvalText),
     });
   }
-  isPermissionInstalled(input: { sessionKeyAddress: string }): Promise<boolean> {
+  /** Every scope the runner asked about, to check what a read-back is made of. */
+  readBacks: PermissionScope[] = [];
+  isPermissionInstalled(input: {
+    sessionKeyAddress: string;
+    scope: PermissionScope;
+  }): Promise<boolean> {
+    this.readBacks.push(input.scope);
     return Promise.resolve(this.installed.has(input.sessionKeyAddress));
   }
   sendDelegatedCalls(input: {
@@ -127,7 +133,7 @@ export class FakeKernel implements KernelExecutionPort {
     });
   }
   getTransactionReceipt(): ReturnType<KernelExecutionPort["getTransactionReceipt"]> {
-    return Promise.resolve({ status: "NOT_FOUND" });
+    return Promise.resolve({ status: "SUCCESS" });
   }
 }
 

@@ -550,3 +550,56 @@ describe("the HTTP edge for payments", () => {
     }
   });
 });
+
+describe("lessons from the Celo Sepolia validation", () => {
+  it("reads the permission back with the window that was installed, not a recomputed one", async () => {
+    const w = await runWorld();
+    await ready(w);
+    await w.runner.run(w.executionId);
+    const installed = [...w.run.permissions.values()][0];
+    assert.ok(installed && w.kernel.readBacks.length > 0);
+    // Time moves between install and every later read-back; the id hashes the window.
+    for (const scope of w.kernel.readBacks) {
+      assert.equal(scope.validFrom.getTime(), installed.validFrom.getTime());
+      assert.equal(scope.expiresAt.getTime(), installed.expiresAt.getTime());
+    }
+  });
+
+  it("pins the swap selector in the permission scope (an omitted selector is not a wildcard)", async () => {
+    const w = await runWorld();
+    await ready(w);
+    const scope = w.kernel.prepared[0];
+    assert.equal(scope?.swapSelector, "0xdeadbeef");
+    assert.match(scope?.swapSelector ?? "", /^0x[0-9a-f]{8}$/);
+  });
+
+  it("refuses swap calldata that carries no selector", async () => {
+    const { inspectSwapTransaction } = await import("../src/core/execution/approval-inspector.js");
+    const ok = { to: "0x" + "44".repeat(20), data: "0xdeadbeef00", value: "0", chainId: 42220 };
+    assert.deepEqual(inspectSwapTransaction(ok, { chainId: 42220 }), []);
+    assert.ok(
+      inspectSwapTransaction({ ...ok, data: "0x12" }, { chainId: 42220 }).includes(
+        "SWAP_CALLDATA_INVALID",
+      ),
+    );
+    assert.ok(
+      inspectSwapTransaction({ ...ok, data: "0x" }, { chainId: 42220 }).includes(
+        "SWAP_CALLDATA_INVALID",
+      ),
+    );
+  });
+
+  it("waits for the RPC node to have seen a transaction before building the next step", async () => {
+    const w = await runWorld();
+    await ready(w);
+    let polls = 0;
+    const original = w.kernel.getTransactionReceipt.bind(w.kernel);
+    w.kernel.getTransactionReceipt = () => {
+      polls += 1;
+      // The first looks are "a block behind"; then the node catches up.
+      return polls < 3 ? Promise.resolve({ status: "NOT_FOUND" as const }) : original();
+    };
+    assert.equal((await w.runner.run(w.executionId)).status, "PAYMENT_SENT");
+    assert.ok(polls >= 3, String(polls));
+  });
+});

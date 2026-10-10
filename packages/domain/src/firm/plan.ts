@@ -46,8 +46,13 @@ export interface PermissionScope {
    * approval is needed for this payment.
    */
   approval?: { tokenAddress: string; spender: string; limit: Money };
-  /** The one contract the swap call may target (any function on it, never with native value). */
+  /** The one contract the swap call may target, never with native value. */
   swapTarget: string;
+  /**
+   * The ONE function selector (4 bytes, from the provider's own swap calldata) allowed on `swapTarget`.
+   * An omitted selector is not a wildcard on-chain (verified on Celo Sepolia): it is a literal 0x00000000.
+   */
+  swapSelector: string;
   validFrom: Date;
   expiresAt: Date;
 }
@@ -117,6 +122,7 @@ export const PLAN_BLOCKERS = [
   "APPROVAL_CARRIES_VALUE",
   "TRANSACTION_CHAIN_MISMATCH",
   "SWAP_CARRIES_UNEXPECTED_VALUE",
+  "SWAP_CALLDATA_INVALID",
   "TAKER_MISMATCH",
   "NO_PASSKEY_ROOT",
   "RECIPIENT_ADDRESS_REQUIRED",

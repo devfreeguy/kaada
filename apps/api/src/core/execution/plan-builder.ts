@@ -118,6 +118,7 @@ export function buildExecutionPlan(input: PlanInputs): ExecutionPlan {
     allowedContracts: [...new Set(needsContracts)],
     allowedAssetIds: [sellAsset.id, input.buyAsset.id],
     swapTarget: transactions.swap.to.toLowerCase(),
+    swapSelector: transactions.swap.data.slice(0, 10).toLowerCase(),
     ...(approvalNeeded &&
       spender !== undefined && {
         approval: {

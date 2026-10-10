@@ -26,7 +26,7 @@ import type { LiveExecution } from "./live-execution.js";
 import type { PreparationOutcome } from "./preparation-service.js";
 import type { ChainState, ExecutionUnitOfWork, SecretCipher } from "./ports.js";
 import type { RootActionService } from "./root-action-service.js";
-import { plannedSteps, stepKey } from "./steps.js";
+import { installedScope, plannedSteps, stepKey } from "./steps.js";
 
 /** What a run reports. NOTHING here claims a payment was sent unless the chain and the provider agree. */
 export type RunOutcome =
@@ -321,7 +321,9 @@ export class ExecutionRunner {
     return this.deps.kernel.isPermissionInstalled({
       walletAddress: live.wallet.address,
       sessionKeyAddress: permission.sessionKeyAddress,
-      scope: plan.permissionRequirement.scope,
+      // The permission id hashes the policy parameters INCLUDING the validity window, so read-back must
+      // use the window that was installed (the stored record), never a freshly computed one.
+      scope: installedScope(plan.permissionRequirement.scope, permission),
     });
   }
 
@@ -379,7 +381,7 @@ export class ExecutionRunner {
       (await this.deps.kernel.isPermissionInstalled({
         walletAddress: live.wallet.address,
         sessionKeyAddress: permission.sessionKeyAddress,
-        scope: plan.permissionRequirement.scope,
+        scope: installedScope(plan.permissionRequirement.scope, permission),
       }));
     if (!installed || !permission) {
       await this.fail(record, "PERMISSION_NOT_VERIFIED");
@@ -647,6 +649,10 @@ export class ExecutionRunner {
               success: receipt.success,
               now: this.now(),
             });
+            // The bundler's node and the RPC node that serves nonce and permission reads can differ, and
+            // the RPC node can be a block behind. Whatever is read next (the account nonce for the next
+            // step, the permission read-back) must come from a node that has seen this transaction.
+            await this.rpcHasSeen(receipt.txHash);
             return receipt.success ? "CONFIRMED" : "REVERTED";
           }
         } else if (tx.hash) {
@@ -667,6 +673,21 @@ export class ExecutionRunner {
         return "PENDING";
       }
       if (this.now().getTime() - started >= poll.maxWaitMs) return "PENDING";
+      await this.sleep(poll.intervalMs);
+    }
+  }
+
+  /** Waits (bounded, best effort) until the RPC node reports the transaction. Never fails the payment. */
+  private async rpcHasSeen(txHash: string): Promise<void> {
+    const poll = this.deps.poll ?? { intervalMs: 2000, maxWaitMs: 60_000 };
+    const started = this.now().getTime();
+    while (this.now().getTime() - started < poll.maxWaitMs) {
+      try {
+        const seen = await this.deps.kernel.getTransactionReceipt(txHash);
+        if (seen.status === "SUCCESS" || seen.status === "REVERTED") return;
+      } catch {
+        // the RPC may be briefly unavailable; keep waiting within the bound
+      }
       await this.sleep(poll.intervalMs);
     }
   }

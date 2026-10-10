@@ -39,7 +39,7 @@ const dir = (relative: string) => join(root, relative);
 const adapterPath = join(dir("packages/blockchain/src/execution"), "zerodev-kernel-adapter.ts");
 
 /** Everything that implements or stores wallet state. */
-const walletSources = [
+const walletSourcesAll = [
   ...files(dir("packages/domain/src/wallets")),
   ...files(dir("packages/blockchain/src")),
   ...files(dir("apps/api/src/core/wallets")),
@@ -48,6 +48,13 @@ const walletSources = [
   join(dir("packages/database/src/repositories"), "wallets.ts"),
   join(dir("packages/database/src/mappers"), "wallet.ts"),
 ];
+
+/**
+ * The Celo Sepolia validation harness: testnet-only, faucet funds, throwaway keys, a software passkey.
+ * It is excluded from the strict scans below and held to its own ("the harness is isolated").
+ */
+const harnessPath = join(dir("packages/blockchain/src/testnet"), "celo-sepolia-harness.ts");
+const walletSources = walletSourcesAll.filter((path) => path !== harnessPath);
 
 describe("wallet security review (source scan)", () => {
   it("scans a meaningful amount of code", () => {
@@ -60,6 +67,26 @@ describe("wallet security review (source scan)", () => {
     for (const path of walletSources.filter((p) => p !== adapterPath)) {
       assert.equal(forbidden.test(code(path)), false, path);
     }
+  });
+
+  it("the testnet harness is isolated: nothing imports it and the package does not export it", () => {
+    const everything = [
+      ...files(dir("apps/api/src")),
+      ...files(dir("packages/domain/src")),
+      ...files(dir("packages/blockchain/src")),
+      ...files(dir("packages/database/src")),
+      ...files(dir("packages/config/src")),
+    ].filter((path) => path !== harnessPath);
+    for (const path of everything) {
+      assert.equal(/celo-sepolia-harness|testnet\//.test(code(path)), false, path);
+    }
+    // It talks to Sepolia only and reads its secrets from outside the repository.
+    const harness = code(harnessPath);
+    assert.ok(
+      /11142220|celoSepolia/.test(harness) &&
+        !/chain:\s*celo[,\s]/.test(harness.replace(/mainnetClient[^;]*;/, "")),
+    );
+    assert.ok(/KAADA_HARNESS_STATE/.test(harness));
   });
 
   it("the kernel adapter is the only place a key is generated or used, and never signs raw data", () => {

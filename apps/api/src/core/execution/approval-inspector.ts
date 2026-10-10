@@ -62,5 +62,7 @@ export function inspectSwapTransaction(
   if (transaction.chainId !== expected.chainId) blockers.push("TRANSACTION_CHAIN_MISMATCH");
   // Paying in a token never needs native currency; a value here would spend CELO.
   if (transaction.value !== "0") blockers.push("SWAP_CARRIES_UNEXPECTED_VALUE");
+  // The permission pins the swap's function selector, so the calldata must carry one.
+  if (!/^0x[0-9a-fA-F]{8}/.test(transaction.data)) blockers.push("SWAP_CALLDATA_INVALID");
   return blockers;
 }

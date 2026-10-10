@@ -130,3 +130,94 @@ the source-scan guards.
 
 Do not run this with meaningful funds. A first live test should use a throwaway wallet, a tiny amount and exactly one
 payment, and the observed sequence should be written back here.
+
+## Testing policy and testnet readiness (decided after Build 13)
+
+No Celo mainnet execution testing during development (no budget for real CELO/USDT or a paid mainnet bundler). Mainnet
+stays read-only (and Textile preview). Execution is validated in three separate places, and **nothing below is a
+Celo/Textile end-to-end validation; that happens once, at the end, on mainnet, if budget permits**:
+
+1. **Celo testnet (Celo Sepolia, chain 11142220)** - the Kernel/ERC-4337 side only: derivation, passkey root, bundler,
+   deployment, permission install/read-back, restricted signing, receipts, restart.
+2. **Textile test environment (BNB testnet 97, Base Sepolia 84532)** - the provider contract only: firm RFQ, exact
+   input/output, claim token, approvals, submit, status, slots, failures. Not a change to Kaada's Celo architecture.
+3. **Offline** - fake bundler, scripted Textile, PostgreSQL integration, deterministic plans.
+
+### Findings: Celo Sepolia, read-only (chain id confirmed 11142220 via `eth_chainId` on the official Forno RPC)
+
+Contract code at the SDK's pinned addresses (`eth_getCode`; the same addresses as mainnet):
+
+| Contract                                                                             | Celo Sepolia                    |
+| ------------------------------------------------------------------------------------ | ------------------------------- |
+| EntryPoint v0.7 `0x0000000071727De22E5E9d8BAf0edAc6f37da032`                         | present                         |
+| Kernel v3.3 implementation, factory, meta factory                                    | present                         |
+| CallPolicy v0.0.4, TimestampPolicy, ECDSA signer                                     | present                         |
+| **Passkey (WebAuthn) validator v0.0.3 `0x7ab16Ff354AcB328452F1D445b3Ddee9a91e9e69`** | **ABSENT** (present on mainnet) |
+
+So the passkey root validator does not exist on Celo Sepolia. A testnet run of the passkey path needs either a copy of
+that validator deployed there by us (its address is a parameter of the SDK) or a different root for testnet only. This
+is a testnet-fixture decision, not a change to the production design. Celo Sepolia chain facts (from the Celo docs): RPC
+`https://forno.celo-sepolia.celo-testnet.org`, Blockscout `celo-sepolia.blockscout.com`, faucets at
+`faucet.celo.org/celo-sepolia` and the Google Cloud Web3 faucet. Alfajores (44787) is being retired.
+
+The configured ZeroDev project answers HTTP 402 ("No Plan found for projectId") on every call, so that URL is unusable
+for any network until a plan exists. No bundler for Celo Sepolia has been confirmed yet.
+
+The RIP-7212 P-256 precompile (`0x100`) accepts a valid signature on **both** Celo Sepolia and mainnet (checked with a
+freshly generated key; it returns `1`). The SDK's own list of precompile networks does not include Celo Sepolia, so the
+adapter now takes an explicit `KernelNetwork` (chain, optional passkey-validator address, `p256Precompile`) that
+defaults to Celo mainnet. The Daimo fallback P-256 verifier is absent on Sepolia, so the testnet must use the
+precompile path.
+
+Decided: bundler = an Alchemy key for Celo Sepolia (separate `BUNDLER_URL` for the testnet run), and the passkey
+validator is deployed to Celo Sepolia from a faucet-funded throwaway key as a testnet-only fixture.
+
+## Celo Sepolia validation (testnet; Kernel / ERC-4337 side only)
+
+Run with `packages/blockchain/src/testnet/celo-sepolia-harness.ts` (standalone; state and throwaway keys live outside
+the repository; nothing imports it; mainnet configuration untouched). Chain 11142220, faucet CELO only, a
+**software** P-256 passkey (not a real browser authenticator), the passkey-validator fixture deployed to Sepolia (runtime
+byte-identical to mainnet), the RIP-7212 precompile path. **Nothing here validates Textile, USDT, wBRL or Celo mainnet.**
+
+### Verified on Celo Sepolia
+
+| Property                                                                            | Result                                                                                                                                                                                                                                                                                      |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Counterfactual Kernel v3.3 address from a passkey root (with the fixture validator) | derived; no code until first use                                                                                                                                                                                                                                                            |
+| Deployment + permission install                                                     | **one** UserOperation does both (account `initCode`, then `installValidations` + `grantAccess`); `UserOperationEvent.success = true`; account is a 61-byte proxy; root validator = the fixture                                                                                              |
+| Passkey root signing                                                                | an assertion over the server-fixed challenge (= the UserOperation hash) is encoded by the adapter and accepted on chain through the P-256 precompile                                                                                                                                        |
+| Permission installation                                                             | succeeded with the **corrected** install calls (see below)                                                                                                                                                                                                                                  |
+| Permission read-back                                                                | exact: `permissionConfig(id)` returns the ECDSA signer module and the ordered policy contracts; the id matches only for the exact scope. A changed spender reads back `false`                                                                                                               |
+| Policy parameters verifiable on chain?                                              | **Yes, by id.** Kernel's permission id hashes the policy contracts _and their data_ (call rules, timestamp window) plus the signer, so an id match proves the exact parameters. The window is part of that hash                                                                             |
+| Omitted selector                                                                    | **NOT a wildcard.** It is the literal selector `0x00000000`: an arbitrary call to the swap target was refused. The scope now pins the swap's real 4-byte selector (`swapSelector`)                                                                                                          |
+| Restricted session-key signing                                                      | `approve(spender, 1000)` on the token succeeded; allowance read 1000. A swap-shaped call (pinned selector) plus `transfer(recipient, 100)` in one batch succeeded; the recipient received exactly the amount                                                                                |
+| Refusals (estimation only, nothing sent)                                            | approve to another spender; approve above the limit; transfer to another recipient; transfer above the payout limit; a different selector on the swap target; native value on the swap target; an unlisted address; an unlisted selector (`transferFrom`) - all refused in `validateUserOp` |
+| Receipts and restart                                                                | a brand-new adapter recovers each operation from its stored `userOpHash` (bundler, with a chain fallback on the EntryPoint `UserOperationEvent`) and confirms the account, allowance and permission from persisted state                                                                    |
+
+### Defects the validation found (all fixed offline and covered by tests)
+
+1. **Wrong install calls.** The SDK helper `getValidatorPluginInstallModuleData` is for ordinary validators; for a permission it reverts with
+   no reason. The install is `installValidations(0x02 ++ permissionId, {nonce, hook}, enableData)` plus `grantAccess(id, execute, true)`,
+   as the SDK's own `toInitConfig` does.
+2. **Omitted selector** was assumed to mean "any function" (it does not); the real swap selector is now pinned (and a calldata without one is a plan blocker).
+3. **Read-back used a fresh window.** The permission id hashes the validity window, so read-back with a window recomputed from "now" could
+   never match; read-back now uses the stored permission's window (`installedScope`).
+4. **Stub signature** selected the on-chain fallback P-256 verifier, which does not exist on Sepolia (validation reverts, `AA23`); the stub now follows the network's precompile flag.
+5. **Fee estimation** used `zd_getUserOperationGasPrice`, a ZeroDev-only method; Alchemy answers "Unsupported method". Fees now come from the chain.
+6. **RPC node lag.** Immediately after inclusion an RPC node can be a block behind: the permission read-back returned `false` and the next
+   operation was rejected with `AA25 invalid account nonce`. The runner now waits until its RPC node has seen a transaction before reading or building the next step.
+7. **Receipt lookup** depended on one bundler's index; it now falls back to the chain.
+
+### Open: the Alchemy Celo Sepolia bundler does not mine
+
+Capability check passed (chain id, EntryPoint v0.7 among the supported entry points, `eth_getUserOperationReceipt` present). But **three
+operations** sent through its `eth_sendUserOperation` (root, delegated, and a one-wei probe) were **accepted and never bundled** (10+ minutes), although
+`EntryPoint.handleOps` simulated cleanly on the chain for the same operation and the operations mined when submitted directly (the harness's
+`HARNESS_SUBMIT=self`, a testnet-only seam; it is not wired into the application). Cause unknown. Until a bundler lands operations on
+Celo Sepolia, "real bundler inclusion" is **not** verified; consider a self-hosted bundler or another provider.
+
+### Not verified (still open)
+
+A real browser passkey (only a software authenticator was used); USDT and the USDT reset-to-zero path (the test token was CELO's ERC-20 face, which
+does not need one); the `ExecutionRunner` end to end on a chain (it was exercised against fakes and the real database, and its pieces against
+Sepolia, not as one run); bundler inclusion (above); Textile (not touched); anything on Celo mainnet.

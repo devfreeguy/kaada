@@ -30,12 +30,13 @@ function code(path: string): string {
     .replace(/^\s*\/\/.*$/gm, "");
 }
 
+// The Celo Sepolia harness (testnet fixtures, throwaway keys) is held to its own scan in wallet-security.
 const production = [
   ...files(dir("apps/api/src")),
   ...files(dir("packages/domain/src")),
   ...files(dir("packages/blockchain/src")),
   ...files(dir("apps/web/app")),
-];
+].filter((path) => !path.includes("celo-sepolia-harness"));
 
 describe("execution security review (source scan)", () => {
   it("scans a meaningful amount of code", () => {

@@ -1,4 +1,4 @@
-import type { AccountCall, ExecutionPlan, TransactionType } from "@kaada/domain";
+import type { AccountCall, ExecutionPlan, PermissionScope, TransactionType } from "@kaada/domain";
 
 import { APPROVE_SELECTOR } from "./approval-inspector.js";
 
@@ -105,3 +105,15 @@ export function plannedSteps(
 
 /** Selectors a payment may ever call. Anything else is refused before a signer is asked. */
 export const ALLOWED_SELECTORS = [APPROVE_SELECTOR, TRANSFER_SELECTOR] as const;
+
+/**
+ * The scope as it was INSTALLED: the plan's scope with the stored permission's validity window. Kernel's
+ * permission id hashes the policy parameters, the timestamp window included, so an on-chain read-back
+ * only matches when it uses the window that was installed, not one recomputed from "now".
+ */
+export function installedScope(
+  scope: PermissionScope,
+  permission: { validFrom: Date; expiresAt: Date },
+): PermissionScope {
+  return { ...scope, validFrom: permission.validFrom, expiresAt: permission.expiresAt };
+}
