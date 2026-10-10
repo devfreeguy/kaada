@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
       {
         // A setup link carries a bearer token in its path: never cache it, never send it as a referrer,
         // never let another site frame it.
-        source: "/:area(setup|authorize)/:path*",
+        source: "/:area(setup|authorize|root-action)/:path*",
         headers: [
           { key: "Cache-Control", value: "no-store" },
           { key: "Referrer-Policy", value: "no-referrer" },

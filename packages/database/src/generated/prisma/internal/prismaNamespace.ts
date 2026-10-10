@@ -408,6 +408,7 @@ export const ModelName = {
   PaymentAuthorization: 'PaymentAuthorization',
   ExecutionSecret: 'ExecutionSecret',
   FirmQuoteAttempt: 'FirmQuoteAttempt',
+  RootActionSession: 'RootActionSession',
   PasskeyChallenge: 'PasskeyChallenge',
   DelegatedPermission: 'DelegatedPermission',
   Asset: 'Asset',
@@ -440,7 +441,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "transactionPinSecurity" | "authorizationSession" | "paymentAuthorization" | "executionSecret" | "firmQuoteAttempt" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent"
+    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "transactionPinSecurity" | "authorizationSession" | "paymentAuthorization" | "executionSecret" | "firmQuoteAttempt" | "rootActionSession" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1255,6 +1256,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.FirmQuoteAttemptCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.FirmQuoteAttemptCountAggregateOutputType> | number
+        }
+      }
+    }
+    RootActionSession: {
+      payload: Prisma.$RootActionSessionPayload<ExtArgs>
+      fields: Prisma.RootActionSessionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.RootActionSessionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RootActionSessionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.RootActionSessionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RootActionSessionPayload>
+        }
+        findFirst: {
+          args: Prisma.RootActionSessionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RootActionSessionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.RootActionSessionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RootActionSessionPayload>
+        }
+        findMany: {
+          args: Prisma.RootActionSessionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RootActionSessionPayload>[]
+        }
+        create: {
+          args: Prisma.RootActionSessionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RootActionSessionPayload>
+        }
+        createMany: {
+          args: Prisma.RootActionSessionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.RootActionSessionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RootActionSessionPayload>[]
+        }
+        delete: {
+          args: Prisma.RootActionSessionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RootActionSessionPayload>
+        }
+        update: {
+          args: Prisma.RootActionSessionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RootActionSessionPayload>
+        }
+        deleteMany: {
+          args: Prisma.RootActionSessionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.RootActionSessionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.RootActionSessionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RootActionSessionPayload>[]
+        }
+        upsert: {
+          args: Prisma.RootActionSessionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RootActionSessionPayload>
+        }
+        aggregate: {
+          args: Prisma.RootActionSessionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateRootActionSession>
+        }
+        groupBy: {
+          args: Prisma.RootActionSessionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RootActionSessionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.RootActionSessionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RootActionSessionCountAggregateOutputType> | number
         }
       }
     }
@@ -2717,6 +2792,7 @@ export const ExecutionSecretScalarFieldEnum = {
   purpose: 'purpose',
   keyVersion: 'keyVersion',
   ciphertext: 'ciphertext',
+  tombstonedAt: 'tombstonedAt',
   createdAt: 'createdAt'
 } as const
 
@@ -2757,6 +2833,24 @@ export const FirmQuoteAttemptScalarFieldEnum = {
 export type FirmQuoteAttemptScalarFieldEnum = (typeof FirmQuoteAttemptScalarFieldEnum)[keyof typeof FirmQuoteAttemptScalarFieldEnum]
 
 
+export const RootActionSessionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  walletId: 'walletId',
+  executionId: 'executionId',
+  kind: 'kind',
+  tokenHash: 'tokenHash',
+  status: 'status',
+  challenge: 'challenge',
+  prepared: 'prepared',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type RootActionSessionScalarFieldEnum = (typeof RootActionSessionScalarFieldEnum)[keyof typeof RootActionSessionScalarFieldEnum]
+
+
 export const PasskeyChallengeScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -2790,6 +2884,10 @@ export const DelegatedPermissionScalarFieldEnum = {
   expiresAt: 'expiresAt',
   revokedAt: 'revokedAt',
   revocationReason: 'revocationReason',
+  sessionKeyAddress: 'sessionKeyAddress',
+  sessionKeySecretId: 'sessionKeySecretId',
+  approvalSecretId: 'approvalSecretId',
+  installedAt: 'installedAt',
   createdAt: 'createdAt'
 } as const
 
@@ -3009,6 +3107,13 @@ export const ExecutionScalarFieldEnum = {
   walletId: 'walletId',
   firmQuoteAttemptId: 'firmQuoteAttemptId',
   plan: 'plan',
+  authorizationConsumedAt: 'authorizationConsumedAt',
+  userActionKind: 'userActionKind',
+  providerSubmitState: 'providerSubmitState',
+  settledInputAmount: 'settledInputAmount',
+  settledOutputAmount: 'settledOutputAmount',
+  claimTombstonedAt: 'claimTombstonedAt',
+  lastReconciledAt: 'lastReconciledAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -3030,6 +3135,12 @@ export const TransactionScalarFieldEnum = {
   gasAmount: 'gasAmount',
   gasAssetId: 'gasAssetId',
   nonce: 'nonce',
+  userOpHash: 'userOpHash',
+  idempotencyKey: 'idempotencyKey',
+  blockNumber: 'blockNumber',
+  submittedAt: 'submittedAt',
+  confirmedAt: 'confirmedAt',
+  failureCode: 'failureCode',
   metadata: 'metadata',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -3326,6 +3437,20 @@ export type EnumFirmQuoteAttemptStatusFieldRefInput<$PrismaModel> = FieldRefInpu
  * Reference to a field of type 'FirmQuoteAttemptStatus[]'
  */
 export type ListEnumFirmQuoteAttemptStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FirmQuoteAttemptStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'RootActionStatus'
+ */
+export type EnumRootActionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RootActionStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'RootActionStatus[]'
+ */
+export type ListEnumRootActionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RootActionStatus[]'>
     
 
 
@@ -3742,6 +3867,7 @@ export type GlobalOmitConfig = {
   paymentAuthorization?: Prisma.PaymentAuthorizationOmit
   executionSecret?: Prisma.ExecutionSecretOmit
   firmQuoteAttempt?: Prisma.FirmQuoteAttemptOmit
+  rootActionSession?: Prisma.RootActionSessionOmit
   passkeyChallenge?: Prisma.PasskeyChallengeOmit
   delegatedPermission?: Prisma.DelegatedPermissionOmit
   asset?: Prisma.AssetOmit

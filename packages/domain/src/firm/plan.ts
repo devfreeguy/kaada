@@ -30,12 +30,24 @@ export interface AccountRequirements {
 /** What a delegated permission for THIS payment must allow. Mirrors a PermissionRequest. */
 export interface PermissionScope {
   chainId: number;
-  allowedOperations: ("APPROVE_TOKEN" | "EXECUTE_SWAP")[];
+  allowedOperations: ("APPROVE_TOKEN" | "EXECUTE_SWAP" | "TRANSFER_TOKEN")[];
   /** Exactly the contracts the payment touches: the sell token, the spender and the swap target. */
   allowedContracts: string[];
   allowedAssetIds: string[];
   /** Never more than the authorized maximum spend. */
   perTransactionLimit: Money;
+  /**
+   * The payout leg: the buy token may be transferred ONLY to this recipient, ONLY up to this amount.
+   * (The swap pays the wallet itself; the recipient is paid by a transfer in the same UserOperation.)
+   */
+  payout?: { assetId: string; tokenAddress: string; recipient: string; limit: Money };
+  /**
+   * The bounded token approval: ONLY `approve(spender, <= limit)` on this token. Absent when no
+   * approval is needed for this payment.
+   */
+  approval?: { tokenAddress: string; spender: string; limit: Money };
+  /** The one contract the swap call may target (any function on it, never with native value). */
+  swapTarget: string;
   validFrom: Date;
   expiresAt: Date;
 }
@@ -69,6 +81,16 @@ export interface TokenApprovalRequirement {
   signer: SignerKind;
 }
 
+/** The transfer that pays the recipient, run atomically with the swap in one UserOperation. */
+export interface PayoutRequirement {
+  assetId: string;
+  tokenAddress: string;
+  recipient: string;
+  /** The firm quote's output, in smallest units. A swap that delivers less makes the batch revert. */
+  amount: string;
+  signer: SignerKind;
+}
+
 export interface SwapRequirement {
   provider: string;
   /** The provider's id for the firm quote (not secret). */
@@ -97,6 +119,7 @@ export const PLAN_BLOCKERS = [
   "SWAP_CARRIES_UNEXPECTED_VALUE",
   "TAKER_MISMATCH",
   "NO_PASSKEY_ROOT",
+  "RECIPIENT_ADDRESS_REQUIRED",
 ] as const;
 export type PlanBlocker = (typeof PLAN_BLOCKERS)[number];
 
@@ -108,6 +131,7 @@ export interface ExecutionPlan {
   permissionRequirement: PermissionRequirement;
   approvalRequirements: TokenApprovalRequirement[];
   swapRequirement: SwapRequirement;
+  payoutRequirement: PayoutRequirement;
   /**
    * Infrastructure that must exist before Build 13 can sign and send (for instance a Celo bundler).
    * Not a defect of the plan: a list of what is not switched on yet.

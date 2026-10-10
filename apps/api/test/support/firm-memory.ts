@@ -1,4 +1,5 @@
 import type {
+  PaymentAuthorization,
   ExecutionPlanRecord,
   ExecutionPlanRepository,
   ExecutionSecretRepository,
@@ -23,7 +24,7 @@ export interface FirmStores {
   };
 }
 
-export function createFirmStores(): FirmStores {
+export function createFirmStores(payments: PaymentAuthorization[] = []): FirmStores {
   const attempts: FirmQuoteAttempt[] = [];
   const secrets: FirmStores["secrets"] = [];
   const plans: ExecutionPlanRecord[] = [];
@@ -125,7 +126,15 @@ export function createFirmStores(): FirmStores {
       secrets.push({ id, purpose, keyVersion, ciphertext });
       return Promise.resolve();
     },
-    get: (id) => Promise.resolve(secrets.find((s) => s.id === id) ?? null),
+    get: (id) => {
+      const found = secrets.find((s) => s.id === id);
+      return Promise.resolve(found && found.ciphertext ? (found as never) : null);
+    },
+    tombstone: (id) => {
+      const found = secrets.find((s) => s.id === id);
+      if (found) found.ciphertext = "";
+      return Promise.resolve();
+    },
   };
 
   const executionPlans: ExecutionPlanRepository = {
@@ -147,6 +156,45 @@ export function createFirmStores(): FirmStores {
       const found = plans.find((p) => p.paymentAuthorizationId === id);
       return Promise.resolve(found ? copy(found) : null);
     },
+    findById: (id) => {
+      const found = plans.find((p) => p.id === id);
+      return Promise.resolve(found ? copy(found) : null);
+    },
+    transition: (id, from, to, fields = {}) => {
+      const p = plans.find((x) => x.id === id);
+      if (!p || !from.includes(p.status)) return Promise.resolve(null);
+      p.status = to;
+      p.updatedAt = new Date();
+      const { userActionKind, plan, ...rest } = fields;
+      Object.assign(p, rest);
+      if (userActionKind === null) delete p.userActionKind;
+      else if (userActionKind !== undefined) p.userActionKind = userActionKind;
+      if (plan) p.plan = plan;
+      return Promise.resolve(copy(p));
+    },
+    acquire: (id, now) => {
+      // One synchronous block: lock-check, consume and move, like the row lock + transaction.
+      const p = plans.find((x) => x.id === id);
+      if (!p || p.status !== "READY") return Promise.resolve({ status: "NOT_READY" as const });
+      const auth = payments.find((a) => a.id === p.paymentAuthorizationId);
+      if (!auth || auth.status !== "ACTIVE" || auth.expiresAt.getTime() <= now.getTime()) {
+        return Promise.resolve({ status: "AUTHORIZATION_UNAVAILABLE" as const });
+      }
+      auth.status = "CONSUMED";
+      auth.consumedAt = now;
+      p.status = "SIGNING";
+      p.authorizationConsumedAt = now;
+      p.providerSubmitState = "PENDING";
+      p.updatedAt = now;
+      return Promise.resolve({ status: "ACQUIRED" as const, record: copy(p) });
+    },
+    listByStatus: (statuses, limit) =>
+      Promise.resolve(
+        plans
+          .filter((p) => statuses.includes(p.status))
+          .slice(0, limit)
+          .map(copy),
+      ),
     update: (id, update) => {
       const p = plans.find((x) => x.id === id);
       if (!p) return Promise.reject(new Error("no such plan record"));

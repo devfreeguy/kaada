@@ -1,7 +1,7 @@
 import type { Money } from "../money/index.js";
 
 /** What a delegated permission may do. There is deliberately no "anything" operation. */
-export const PERMISSION_OPERATIONS = ["APPROVE_TOKEN", "EXECUTE_SWAP"] as const;
+export const PERMISSION_OPERATIONS = ["APPROVE_TOKEN", "EXECUTE_SWAP", "TRANSFER_TOKEN"] as const;
 export type PermissionOperation = (typeof PERMISSION_OPERATIONS)[number];
 
 export const PERMISSION_STATUSES = ["PENDING", "ACTIVE", "REVOKED", "EXPIRED"] as const;
@@ -66,6 +66,13 @@ export interface DelegatedPermission {
   expiresAt: Date;
   revokedAt?: Date;
   revocationReason?: string;
+  /** The restricted session key's public address. Its private half is encrypted in ExecutionSecret. */
+  sessionKeyAddress?: string;
+  sessionKeySecretId?: string;
+  /** The passkey-signed enable data needed to use the permission, encrypted in ExecutionSecret. */
+  approvalSecretId?: string;
+  /** Set only after the permission was read back from the chain. PENDING is never installed. */
+  installedAt?: Date;
   createdAt: Date;
 }
 
@@ -88,6 +95,13 @@ export interface DelegatedPermissionRepository {
   create(permission: NewDelegatedPermission): Promise<DelegatedPermission>;
   findById(id: string): Promise<DelegatedPermission | null>;
   listForWallet(walletId: string): Promise<DelegatedPermission[]>;
+  /** Stores the session key address and the encrypted key / approval references (PENDING only). */
+  attachSessionKey(
+    id: string,
+    keys: { address: string; sessionKeySecretId: string; approvalSecretId?: string },
+  ): Promise<DelegatedPermission | null>;
+  /** Stores the encrypted approval after the root signature produced it. */
+  attachApproval(id: string, approvalSecretId: string): Promise<DelegatedPermission | null>;
   /** PENDING -> ACTIVE once it exists on chain. Returns null if it was not PENDING. */
   activate(id: string, providerPermissionId: string): Promise<DelegatedPermission | null>;
   /** PENDING or ACTIVE -> REVOKED. Returns null if it was already REVOKED or EXPIRED. */

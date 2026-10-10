@@ -166,6 +166,13 @@ enum FirmQuoteAttemptStatus {
   TIMED_OUT
 }
 
+enum RootActionStatus {
+  PENDING
+  COMPLETED
+  EXPIRED
+  CANCELLED
+}
+
 enum PasskeyChallengePurpose {
   REGISTRATION
   AUTHENTICATION
@@ -204,6 +211,10 @@ enum ExecutionStatus {
   PREPARING
   READY
   BLOCKED
+  SIGNING
+  SUBMITTING
+  SUBMITTED
+  REQUIRES_USER_ACTION
   AWAITING_CONFIRMATION
   CONFIRMED
   EXECUTING
@@ -215,6 +226,8 @@ enum ExecutionStatus {
 }
 
 enum TransactionType {
+  DEPLOYMENT
+  PERMISSION_INSTALL
   APPROVAL
   TRANSFER
   SWAP
@@ -223,6 +236,7 @@ enum TransactionType {
 }
 
 enum TransactionStatus {
+  UNKNOWN
   CREATED
   SIGNING
   SUBMITTED
@@ -278,6 +292,7 @@ model User {
   authorizationSessions AuthorizationSession[]
   paymentAuthorizations PaymentAuthorization[]
   firmQuoteAttempts     FirmQuoteAttempt[]
+  rootActionSessions    RootActionSession[]
 }
 
 /// An external identity (Telegram account, phone, email, ...) attached to one Kaada user.
@@ -344,6 +359,7 @@ model Wallet {
   paymentAuthorizations PaymentAuthorization[]
   firmQuoteAttempts     FirmQuoteAttempt[]
   executions            Execution[]
+  rootActionSessions    RootActionSession[]
 
   @@unique([chainId, address])
   @@index([userId])
@@ -476,13 +492,17 @@ model PaymentAuthorization {
 /// Encrypted execution material (a provider claim token). Only AES-256-GCM ciphertext is stored; the
 /// key lives in the environment, never in the database.
 model ExecutionSecret {
-  id         String   @id @db.Uuid
-  purpose    String
-  keyVersion Int
-  ciphertext String
-  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  id           String    @id @db.Uuid
+  purpose      String
+  keyVersion   Int
+  /// NULL once destroyed (tombstoned): the secret can no longer be recovered by anyone.
+  ciphertext   String?
+  tombstonedAt DateTime? @db.Timestamptz(3)
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
 
   firmQuoteAttempts FirmQuoteAttempt[]
+  sessionKeyFor     DelegatedPermission[] @relation("PermissionSessionKey")
+  approvalFor       DelegatedPermission[] @relation("PermissionApproval")
 }
 
 /// One request for a firm provider quote, recorded BEFORE the provider is called so retries and
@@ -533,6 +553,32 @@ model FirmQuoteAttempt {
   @@index([providerId, status])
 }
 
+/// A short-lived grant to confirm ONE root (passkey) action for ONE execution: deploying the smart
+/// account and installing the restricted permission. The browser holds an opaque token; the user,
+/// wallet, execution and exact operation come from this row. The PIN is never involved.
+model RootActionSession {
+  id          String           @id @db.Uuid
+  userId      String           @db.Uuid
+  walletId    String           @db.Uuid
+  executionId String           @db.Uuid
+  kind        String
+  tokenHash   String?          @unique @db.Char(64)
+  status      RootActionStatus @default(PENDING)
+  /// The hash the passkey must sign (hex). Fixed by the server when the operation was prepared.
+  challenge   String
+  /// The prepared, UNSIGNED operation this session may complete. Contains no secret.
+  prepared    Json
+  expiresAt   DateTime         @db.Timestamptz(3)
+  usedAt      DateTime?        @db.Timestamptz(3)
+  createdAt   DateTime         @default(now()) @db.Timestamptz(3)
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet    Wallet    @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  execution Execution @relation(fields: [executionId], references: [id], onDelete: Restrict)
+
+  @@index([executionId, status])
+}
+
 /// A one-time, short-lived WebAuthn challenge. Claimed with a single UPDATE so a replay gets nothing.
 model PasskeyChallenge {
   id        String                  @id @db.Uuid
@@ -572,12 +618,21 @@ model DelegatedPermission {
   expiresAt             DateTime         @db.Timestamptz(3)
   revokedAt             DateTime?        @db.Timestamptz(3)
   revocationReason      String?
+  /// The public address of the restricted session key (the key itself is encrypted in ExecutionSecret).
+  sessionKeyAddress     String?
+  sessionKeySecretId    String?          @db.Uuid
+  /// The passkey-signed enable data needed to use the permission, encrypted.
+  approvalSecretId      String?          @db.Uuid
+  /// Set only after the permission was read back from the chain.
+  installedAt           DateTime?        @db.Timestamptz(3)
   createdAt             DateTime         @default(now()) @db.Timestamptz(3)
 
-  user                User   @relation(fields: [userId], references: [id], onDelete: Restrict)
-  wallet              Wallet @relation(fields: [walletId], references: [id], onDelete: Restrict)
-  perTransactionAsset Asset  @relation("PermissionPerTransactionAsset", fields: [perTransactionAssetId], references: [id], onDelete: Restrict)
-  cumulativeAsset     Asset? @relation("PermissionCumulativeAsset", fields: [cumulativeAssetId], references: [id], onDelete: Restrict)
+  user                User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  wallet              Wallet           @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  perTransactionAsset Asset            @relation("PermissionPerTransactionAsset", fields: [perTransactionAssetId], references: [id], onDelete: Restrict)
+  cumulativeAsset     Asset?           @relation("PermissionCumulativeAsset", fields: [cumulativeAssetId], references: [id], onDelete: Restrict)
+  sessionKeySecret    ExecutionSecret? @relation("PermissionSessionKey", fields: [sessionKeySecretId], references: [id], onDelete: Restrict)
+  approvalSecret      ExecutionSecret? @relation("PermissionApproval", fields: [approvalSecretId], references: [id], onDelete: Restrict)
 
   @@index([walletId, status])
   @@index([userId])
@@ -908,28 +963,40 @@ model RouteStep {
 // ───────────────────── Execution & settlement ─────────────────────
 
 model Execution {
-  id                     String          @id @db.Uuid
-  intentId               String          @db.Uuid
-  routeId                String          @db.Uuid
-  userId                 String          @db.Uuid
-  status                 ExecutionStatus @default(CREATED)
+  id                      String          @id @db.Uuid
+  intentId                String          @db.Uuid
+  routeId                 String          @db.Uuid
+  userId                  String          @db.Uuid
+  status                  ExecutionStatus @default(CREATED)
   /// Durable, globally unique: a retried request can never create a second execution.
-  idempotencyKey         String          @unique
-  confirmedAt            DateTime?       @db.Timestamptz(3)
-  startedAt              DateTime?       @db.Timestamptz(3)
-  completedAt            DateTime?       @db.Timestamptz(3)
-  failedAt               DateTime?       @db.Timestamptz(3)
-  failureCode            String?
-  failureMessage         String?
-  metadata               Json?
+  idempotencyKey          String          @unique
+  confirmedAt             DateTime?       @db.Timestamptz(3)
+  startedAt               DateTime?       @db.Timestamptz(3)
+  completedAt             DateTime?       @db.Timestamptz(3)
+  failedAt                DateTime?       @db.Timestamptz(3)
+  failureCode             String?
+  failureMessage          String?
+  metadata                Json?
   /// Set for a payment execution plan (Build 12): one per payment authorization.
-  paymentAuthorizationId String?         @unique @db.Uuid
-  walletId               String?         @db.Uuid
-  firmQuoteAttemptId     String?         @db.Uuid
+  paymentAuthorizationId  String?         @unique @db.Uuid
+  walletId                String?         @db.Uuid
+  firmQuoteAttemptId      String?         @db.Uuid
   /// The serialized ExecutionPlan. Holds no secret, signature or claim token.
-  plan                   Json?
-  createdAt              DateTime        @default(now()) @db.Timestamptz(3)
-  updatedAt              DateTime        @updatedAt @db.Timestamptz(3)
+  plan                    Json?
+  /// Set when the payment authorization was consumed: the moment execution rights were acquired.
+  authorizationConsumedAt DateTime?       @db.Timestamptz(3)
+  /// What the person must do next (a root passkey action), while REQUIRES_USER_ACTION.
+  userActionKind          String?
+  /// NONE until the provider is told (PENDING, SUBMITTED, FAILED).
+  providerSubmitState     String?
+  /// What actually settled, in smallest units (set only after settlement is read).
+  settledInputAmount      String?
+  settledOutputAmount     String?
+  /// When the encrypted provider claim token was destroyed (it is not needed after the submit).
+  claimTombstonedAt       DateTime?       @db.Timestamptz(3)
+  lastReconciledAt        DateTime?       @db.Timestamptz(3)
+  createdAt               DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt               DateTime        @updatedAt @db.Timestamptz(3)
 
   intent               Intent                @relation(fields: [intentId], references: [id], onDelete: Restrict)
   route                Route                 @relation(fields: [routeId], references: [id], onDelete: Restrict)
@@ -938,6 +1005,7 @@ model Execution {
   paymentAuthorization PaymentAuthorization? @relation(fields: [paymentAuthorizationId], references: [id], onDelete: Restrict)
   wallet               Wallet?               @relation(fields: [walletId], references: [id], onDelete: Restrict)
   firmQuoteAttempt     FirmQuoteAttempt?     @relation(fields: [firmQuoteAttemptId], references: [id], onDelete: Restrict)
+  rootActions          RootActionSession[]
   auditEvents          AuditEvent[]
 
   @@index([intentId])
@@ -947,23 +1015,31 @@ model Execution {
 }
 
 model Transaction {
-  id          String            @id @db.Uuid
-  executionId String            @db.Uuid
-  type        TransactionType
-  status      TransactionStatus @default(CREATED)
-  chainId     Int
-  hash        String?
-  fromAddress String?
-  toAddress   String?
-  assetId     String?           @db.Uuid
+  id             String            @id @db.Uuid
+  executionId    String            @db.Uuid
+  type           TransactionType
+  status         TransactionStatus @default(CREATED)
+  chainId        Int
+  hash           String?
+  fromAddress    String?
+  toAddress      String?
+  assetId        String?           @db.Uuid
   /// Smallest-unit integer strings; never JS numbers.
-  amount      String?
-  gasAmount   String?
-  gasAssetId  String?           @db.Uuid
-  nonce       String?
-  metadata    Json?
-  createdAt   DateTime          @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime          @updatedAt @db.Timestamptz(3)
+  amount         String?
+  gasAmount      String?
+  gasAssetId     String?           @db.Uuid
+  nonce          String?
+  /// ERC-4337 UserOperation hash. NOT the transaction hash: that is `hash`, known after inclusion.
+  userOpHash     String?
+  /// One persisted attempt per irreversible step; a retry finds this row instead of sending again.
+  idempotencyKey String?           @unique
+  blockNumber    String?
+  submittedAt    DateTime?         @db.Timestamptz(3)
+  confirmedAt    DateTime?         @db.Timestamptz(3)
+  failureCode    String?
+  metadata       Json?
+  createdAt      DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime          @updatedAt @db.Timestamptz(3)
 
   execution Execution @relation(fields: [executionId], references: [id], onDelete: Restrict)
   asset     Asset?    @relation("TransactionAsset", fields: [assetId], references: [id], onDelete: Restrict)

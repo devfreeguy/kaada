@@ -35,3 +35,9 @@ A new session cannot dodge a lock. HTTP throttling (per link and per address) is
 ## Not built
 
 Textile firm RFQ, execution, signing, token approvals, delegated keys, Telegram/WhatsApp, email/passkey recovery.
+
+## Consumption (Build 13)
+
+The authorization is consumed in the same database transaction that takes the execution lock (`READY -> SIGNING`), after
+every precondition was re-checked, and **not before**: not on quote, plan, account deployment or permission install. A
+failure after that point keeps it consumed. See `docs/execution.md`.

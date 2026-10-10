@@ -48,6 +48,12 @@ export type TransactionMinAggregateOutputType = {
   gasAmount: string | null
   gasAssetId: string | null
   nonce: string | null
+  userOpHash: string | null
+  idempotencyKey: string | null
+  blockNumber: string | null
+  submittedAt: Date | null
+  confirmedAt: Date | null
+  failureCode: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -66,6 +72,12 @@ export type TransactionMaxAggregateOutputType = {
   gasAmount: string | null
   gasAssetId: string | null
   nonce: string | null
+  userOpHash: string | null
+  idempotencyKey: string | null
+  blockNumber: string | null
+  submittedAt: Date | null
+  confirmedAt: Date | null
+  failureCode: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -84,6 +96,12 @@ export type TransactionCountAggregateOutputType = {
   gasAmount: number
   gasAssetId: number
   nonce: number
+  userOpHash: number
+  idempotencyKey: number
+  blockNumber: number
+  submittedAt: number
+  confirmedAt: number
+  failureCode: number
   metadata: number
   createdAt: number
   updatedAt: number
@@ -113,6 +131,12 @@ export type TransactionMinAggregateInputType = {
   gasAmount?: true
   gasAssetId?: true
   nonce?: true
+  userOpHash?: true
+  idempotencyKey?: true
+  blockNumber?: true
+  submittedAt?: true
+  confirmedAt?: true
+  failureCode?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -131,6 +155,12 @@ export type TransactionMaxAggregateInputType = {
   gasAmount?: true
   gasAssetId?: true
   nonce?: true
+  userOpHash?: true
+  idempotencyKey?: true
+  blockNumber?: true
+  submittedAt?: true
+  confirmedAt?: true
+  failureCode?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -149,6 +179,12 @@ export type TransactionCountAggregateInputType = {
   gasAmount?: true
   gasAssetId?: true
   nonce?: true
+  userOpHash?: true
+  idempotencyKey?: true
+  blockNumber?: true
+  submittedAt?: true
+  confirmedAt?: true
+  failureCode?: true
   metadata?: true
   createdAt?: true
   updatedAt?: true
@@ -255,6 +291,12 @@ export type TransactionGroupByOutputType = {
   gasAmount: string | null
   gasAssetId: string | null
   nonce: string | null
+  userOpHash: string | null
+  idempotencyKey: string | null
+  blockNumber: string | null
+  submittedAt: Date | null
+  confirmedAt: Date | null
+  failureCode: string | null
   metadata: runtime.JsonValue | null
   createdAt: Date
   updatedAt: Date
@@ -297,6 +339,12 @@ export type TransactionWhereInput = {
   gasAmount?: Prisma.StringNullableFilter<"Transaction"> | string | null
   gasAssetId?: Prisma.UuidNullableFilter<"Transaction"> | string | null
   nonce?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  userOpHash?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  idempotencyKey?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  blockNumber?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  submittedAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  confirmedAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  failureCode?: Prisma.StringNullableFilter<"Transaction"> | string | null
   metadata?: Prisma.JsonNullableFilter<"Transaction">
   createdAt?: Prisma.DateTimeFilter<"Transaction"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Transaction"> | Date | string
@@ -319,6 +367,12 @@ export type TransactionOrderByWithRelationInput = {
   gasAmount?: Prisma.SortOrderInput | Prisma.SortOrder
   gasAssetId?: Prisma.SortOrderInput | Prisma.SortOrder
   nonce?: Prisma.SortOrderInput | Prisma.SortOrder
+  userOpHash?: Prisma.SortOrderInput | Prisma.SortOrder
+  idempotencyKey?: Prisma.SortOrderInput | Prisma.SortOrder
+  blockNumber?: Prisma.SortOrderInput | Prisma.SortOrder
+  submittedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  confirmedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  failureCode?: Prisma.SortOrderInput | Prisma.SortOrder
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -329,6 +383,7 @@ export type TransactionOrderByWithRelationInput = {
 
 export type TransactionWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  idempotencyKey?: string
   chainId_hash?: Prisma.TransactionChainIdHashCompoundUniqueInput
   AND?: Prisma.TransactionWhereInput | Prisma.TransactionWhereInput[]
   OR?: Prisma.TransactionWhereInput[]
@@ -345,13 +400,18 @@ export type TransactionWhereUniqueInput = Prisma.AtLeast<{
   gasAmount?: Prisma.StringNullableFilter<"Transaction"> | string | null
   gasAssetId?: Prisma.UuidNullableFilter<"Transaction"> | string | null
   nonce?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  userOpHash?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  blockNumber?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  submittedAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  confirmedAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  failureCode?: Prisma.StringNullableFilter<"Transaction"> | string | null
   metadata?: Prisma.JsonNullableFilter<"Transaction">
   createdAt?: Prisma.DateTimeFilter<"Transaction"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Transaction"> | Date | string
   execution?: Prisma.XOR<Prisma.ExecutionScalarRelationFilter, Prisma.ExecutionWhereInput>
   asset?: Prisma.XOR<Prisma.AssetNullableScalarRelationFilter, Prisma.AssetWhereInput> | null
   gasAsset?: Prisma.XOR<Prisma.AssetNullableScalarRelationFilter, Prisma.AssetWhereInput> | null
-}, "id" | "chainId_hash">
+}, "id" | "idempotencyKey" | "chainId_hash">
 
 export type TransactionOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -367,6 +427,12 @@ export type TransactionOrderByWithAggregationInput = {
   gasAmount?: Prisma.SortOrderInput | Prisma.SortOrder
   gasAssetId?: Prisma.SortOrderInput | Prisma.SortOrder
   nonce?: Prisma.SortOrderInput | Prisma.SortOrder
+  userOpHash?: Prisma.SortOrderInput | Prisma.SortOrder
+  idempotencyKey?: Prisma.SortOrderInput | Prisma.SortOrder
+  blockNumber?: Prisma.SortOrderInput | Prisma.SortOrder
+  submittedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  confirmedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  failureCode?: Prisma.SortOrderInput | Prisma.SortOrder
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -394,6 +460,12 @@ export type TransactionScalarWhereWithAggregatesInput = {
   gasAmount?: Prisma.StringNullableWithAggregatesFilter<"Transaction"> | string | null
   gasAssetId?: Prisma.UuidNullableWithAggregatesFilter<"Transaction"> | string | null
   nonce?: Prisma.StringNullableWithAggregatesFilter<"Transaction"> | string | null
+  userOpHash?: Prisma.StringNullableWithAggregatesFilter<"Transaction"> | string | null
+  idempotencyKey?: Prisma.StringNullableWithAggregatesFilter<"Transaction"> | string | null
+  blockNumber?: Prisma.StringNullableWithAggregatesFilter<"Transaction"> | string | null
+  submittedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Transaction"> | Date | string | null
+  confirmedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Transaction"> | Date | string | null
+  failureCode?: Prisma.StringNullableWithAggregatesFilter<"Transaction"> | string | null
   metadata?: Prisma.JsonNullableWithAggregatesFilter<"Transaction">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Transaction"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Transaction"> | Date | string
@@ -410,6 +482,12 @@ export type TransactionCreateInput = {
   amount?: string | null
   gasAmount?: string | null
   nonce?: string | null
+  userOpHash?: string | null
+  idempotencyKey?: string | null
+  blockNumber?: string | null
+  submittedAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failureCode?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -432,6 +510,12 @@ export type TransactionUncheckedCreateInput = {
   gasAmount?: string | null
   gasAssetId?: string | null
   nonce?: string | null
+  userOpHash?: string | null
+  idempotencyKey?: string | null
+  blockNumber?: string | null
+  submittedAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failureCode?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -448,6 +532,12 @@ export type TransactionUpdateInput = {
   amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gasAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userOpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  blockNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -470,6 +560,12 @@ export type TransactionUncheckedUpdateInput = {
   gasAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gasAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userOpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  blockNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -489,6 +585,12 @@ export type TransactionCreateManyInput = {
   gasAmount?: string | null
   gasAssetId?: string | null
   nonce?: string | null
+  userOpHash?: string | null
+  idempotencyKey?: string | null
+  blockNumber?: string | null
+  submittedAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failureCode?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -505,6 +607,12 @@ export type TransactionUpdateManyMutationInput = {
   amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gasAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userOpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  blockNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -524,6 +632,12 @@ export type TransactionUncheckedUpdateManyInput = {
   gasAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gasAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userOpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  blockNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -558,6 +672,12 @@ export type TransactionCountOrderByAggregateInput = {
   gasAmount?: Prisma.SortOrder
   gasAssetId?: Prisma.SortOrder
   nonce?: Prisma.SortOrder
+  userOpHash?: Prisma.SortOrder
+  idempotencyKey?: Prisma.SortOrder
+  blockNumber?: Prisma.SortOrder
+  submittedAt?: Prisma.SortOrder
+  confirmedAt?: Prisma.SortOrder
+  failureCode?: Prisma.SortOrder
   metadata?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -581,6 +701,12 @@ export type TransactionMaxOrderByAggregateInput = {
   gasAmount?: Prisma.SortOrder
   gasAssetId?: Prisma.SortOrder
   nonce?: Prisma.SortOrder
+  userOpHash?: Prisma.SortOrder
+  idempotencyKey?: Prisma.SortOrder
+  blockNumber?: Prisma.SortOrder
+  submittedAt?: Prisma.SortOrder
+  confirmedAt?: Prisma.SortOrder
+  failureCode?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -599,6 +725,12 @@ export type TransactionMinOrderByAggregateInput = {
   gasAmount?: Prisma.SortOrder
   gasAssetId?: Prisma.SortOrder
   nonce?: Prisma.SortOrder
+  userOpHash?: Prisma.SortOrder
+  idempotencyKey?: Prisma.SortOrder
+  blockNumber?: Prisma.SortOrder
+  submittedAt?: Prisma.SortOrder
+  confirmedAt?: Prisma.SortOrder
+  failureCode?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -752,6 +884,12 @@ export type TransactionCreateWithoutAssetInput = {
   amount?: string | null
   gasAmount?: string | null
   nonce?: string | null
+  userOpHash?: string | null
+  idempotencyKey?: string | null
+  blockNumber?: string | null
+  submittedAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failureCode?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -772,6 +910,12 @@ export type TransactionUncheckedCreateWithoutAssetInput = {
   gasAmount?: string | null
   gasAssetId?: string | null
   nonce?: string | null
+  userOpHash?: string | null
+  idempotencyKey?: string | null
+  blockNumber?: string | null
+  submittedAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failureCode?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -798,6 +942,12 @@ export type TransactionCreateWithoutGasAssetInput = {
   amount?: string | null
   gasAmount?: string | null
   nonce?: string | null
+  userOpHash?: string | null
+  idempotencyKey?: string | null
+  blockNumber?: string | null
+  submittedAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failureCode?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -818,6 +968,12 @@ export type TransactionUncheckedCreateWithoutGasAssetInput = {
   amount?: string | null
   gasAmount?: string | null
   nonce?: string | null
+  userOpHash?: string | null
+  idempotencyKey?: string | null
+  blockNumber?: string | null
+  submittedAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failureCode?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -866,6 +1022,12 @@ export type TransactionScalarWhereInput = {
   gasAmount?: Prisma.StringNullableFilter<"Transaction"> | string | null
   gasAssetId?: Prisma.UuidNullableFilter<"Transaction"> | string | null
   nonce?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  userOpHash?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  idempotencyKey?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  blockNumber?: Prisma.StringNullableFilter<"Transaction"> | string | null
+  submittedAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  confirmedAt?: Prisma.DateTimeNullableFilter<"Transaction"> | Date | string | null
+  failureCode?: Prisma.StringNullableFilter<"Transaction"> | string | null
   metadata?: Prisma.JsonNullableFilter<"Transaction">
   createdAt?: Prisma.DateTimeFilter<"Transaction"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Transaction"> | Date | string
@@ -898,6 +1060,12 @@ export type TransactionCreateWithoutExecutionInput = {
   amount?: string | null
   gasAmount?: string | null
   nonce?: string | null
+  userOpHash?: string | null
+  idempotencyKey?: string | null
+  blockNumber?: string | null
+  submittedAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failureCode?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -918,6 +1086,12 @@ export type TransactionUncheckedCreateWithoutExecutionInput = {
   gasAmount?: string | null
   gasAssetId?: string | null
   nonce?: string | null
+  userOpHash?: string | null
+  idempotencyKey?: string | null
+  blockNumber?: string | null
+  submittedAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failureCode?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -962,6 +1136,12 @@ export type TransactionCreateManyAssetInput = {
   gasAmount?: string | null
   gasAssetId?: string | null
   nonce?: string | null
+  userOpHash?: string | null
+  idempotencyKey?: string | null
+  blockNumber?: string | null
+  submittedAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failureCode?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -980,6 +1160,12 @@ export type TransactionCreateManyGasAssetInput = {
   amount?: string | null
   gasAmount?: string | null
   nonce?: string | null
+  userOpHash?: string | null
+  idempotencyKey?: string | null
+  blockNumber?: string | null
+  submittedAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failureCode?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -996,6 +1182,12 @@ export type TransactionUpdateWithoutAssetInput = {
   amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gasAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userOpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  blockNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1016,6 +1208,12 @@ export type TransactionUncheckedUpdateWithoutAssetInput = {
   gasAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gasAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userOpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  blockNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1034,6 +1232,12 @@ export type TransactionUncheckedUpdateManyWithoutAssetInput = {
   gasAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gasAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userOpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  blockNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1050,6 +1254,12 @@ export type TransactionUpdateWithoutGasAssetInput = {
   amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gasAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userOpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  blockNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1070,6 +1280,12 @@ export type TransactionUncheckedUpdateWithoutGasAssetInput = {
   amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gasAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userOpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  blockNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1088,6 +1304,12 @@ export type TransactionUncheckedUpdateManyWithoutGasAssetInput = {
   amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gasAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userOpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  blockNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1106,6 +1328,12 @@ export type TransactionCreateManyExecutionInput = {
   gasAmount?: string | null
   gasAssetId?: string | null
   nonce?: string | null
+  userOpHash?: string | null
+  idempotencyKey?: string | null
+  blockNumber?: string | null
+  submittedAt?: Date | string | null
+  confirmedAt?: Date | string | null
+  failureCode?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1122,6 +1350,12 @@ export type TransactionUpdateWithoutExecutionInput = {
   amount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gasAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userOpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  blockNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1142,6 +1376,12 @@ export type TransactionUncheckedUpdateWithoutExecutionInput = {
   gasAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gasAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userOpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  blockNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1160,6 +1400,12 @@ export type TransactionUncheckedUpdateManyWithoutExecutionInput = {
   gasAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gasAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userOpHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  blockNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1181,6 +1427,12 @@ export type TransactionSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   gasAmount?: boolean
   gasAssetId?: boolean
   nonce?: boolean
+  userOpHash?: boolean
+  idempotencyKey?: boolean
+  blockNumber?: boolean
+  submittedAt?: boolean
+  confirmedAt?: boolean
+  failureCode?: boolean
   metadata?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -1203,6 +1455,12 @@ export type TransactionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   gasAmount?: boolean
   gasAssetId?: boolean
   nonce?: boolean
+  userOpHash?: boolean
+  idempotencyKey?: boolean
+  blockNumber?: boolean
+  submittedAt?: boolean
+  confirmedAt?: boolean
+  failureCode?: boolean
   metadata?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -1225,6 +1483,12 @@ export type TransactionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   gasAmount?: boolean
   gasAssetId?: boolean
   nonce?: boolean
+  userOpHash?: boolean
+  idempotencyKey?: boolean
+  blockNumber?: boolean
+  submittedAt?: boolean
+  confirmedAt?: boolean
+  failureCode?: boolean
   metadata?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -1247,12 +1511,18 @@ export type TransactionSelectScalar = {
   gasAmount?: boolean
   gasAssetId?: boolean
   nonce?: boolean
+  userOpHash?: boolean
+  idempotencyKey?: boolean
+  blockNumber?: boolean
+  submittedAt?: boolean
+  confirmedAt?: boolean
+  failureCode?: boolean
   metadata?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type TransactionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "executionId" | "type" | "status" | "chainId" | "hash" | "fromAddress" | "toAddress" | "assetId" | "amount" | "gasAmount" | "gasAssetId" | "nonce" | "metadata" | "createdAt" | "updatedAt", ExtArgs["result"]["transaction"]>
+export type TransactionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "executionId" | "type" | "status" | "chainId" | "hash" | "fromAddress" | "toAddress" | "assetId" | "amount" | "gasAmount" | "gasAssetId" | "nonce" | "userOpHash" | "idempotencyKey" | "blockNumber" | "submittedAt" | "confirmedAt" | "failureCode" | "metadata" | "createdAt" | "updatedAt", ExtArgs["result"]["transaction"]>
 export type TransactionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   execution?: boolean | Prisma.ExecutionDefaultArgs<ExtArgs>
   asset?: boolean | Prisma.Transaction$assetArgs<ExtArgs>
@@ -1293,6 +1563,18 @@ export type $TransactionPayload<ExtArgs extends runtime.Types.Extensions.Interna
     gasAmount: string | null
     gasAssetId: string | null
     nonce: string | null
+    /**
+     * ERC-4337 UserOperation hash. NOT the transaction hash: that is `hash`, known after inclusion.
+     */
+    userOpHash: string | null
+    /**
+     * One persisted attempt per irreversible step; a retry finds this row instead of sending again.
+     */
+    idempotencyKey: string | null
+    blockNumber: string | null
+    submittedAt: Date | null
+    confirmedAt: Date | null
+    failureCode: string | null
     metadata: runtime.JsonValue | null
     createdAt: Date
     updatedAt: Date
@@ -1735,6 +2017,12 @@ export interface TransactionFieldRefs {
   readonly gasAmount: Prisma.FieldRef<"Transaction", 'String'>
   readonly gasAssetId: Prisma.FieldRef<"Transaction", 'String'>
   readonly nonce: Prisma.FieldRef<"Transaction", 'String'>
+  readonly userOpHash: Prisma.FieldRef<"Transaction", 'String'>
+  readonly idempotencyKey: Prisma.FieldRef<"Transaction", 'String'>
+  readonly blockNumber: Prisma.FieldRef<"Transaction", 'String'>
+  readonly submittedAt: Prisma.FieldRef<"Transaction", 'DateTime'>
+  readonly confirmedAt: Prisma.FieldRef<"Transaction", 'DateTime'>
+  readonly failureCode: Prisma.FieldRef<"Transaction", 'String'>
   readonly metadata: Prisma.FieldRef<"Transaction", 'Json'>
   readonly createdAt: Prisma.FieldRef<"Transaction", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Transaction", 'DateTime'>

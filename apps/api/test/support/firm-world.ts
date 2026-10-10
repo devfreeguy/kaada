@@ -1,12 +1,21 @@
 import { randomBytes } from "node:crypto";
 
-import type { DelegatedPermission, PaymentAuthorization } from "@kaada/domain";
+import type {
+  DelegatedPermission,
+  PasskeyCredential,
+  PaymentAuthorization,
+  Wallet,
+} from "@kaada/domain";
 import { SENDER } from "./harness.js";
 
 import { AccountReadinessService } from "../../src/core/execution/account-readiness.js";
 import { FirmQuoteService } from "../../src/core/execution/firm-quote-service.js";
 import { ExecutionPreparationService } from "../../src/core/execution/preparation-service.js";
-import type { ExecutionRepositories, ExecutionUnitOfWork } from "../../src/core/execution/ports.js";
+import type {
+  ChainState,
+  ExecutionRepositories,
+  ExecutionUnitOfWork,
+} from "../../src/core/execution/ports.js";
 import { PreparationTracker } from "../../src/core/execution/tracker.js";
 import {
   TextileClient,
@@ -14,6 +23,7 @@ import {
 } from "../../src/infrastructure/fx/textile/index.js";
 import { AesGcmSecretCipher } from "../../src/infrastructure/security/aes-gcm-cipher.js";
 import { createFirmStores } from "./firm-memory.js";
+import { createRunStores } from "./run-memory.js";
 import { FakeTextileTransport } from "./textile-fixtures.js";
 import type { RecordedCall, Reply } from "./textile-fixtures.js";
 import { WALLET_ADDRESS, WALLET_ID, setup } from "./payment-world.js";
@@ -30,8 +40,21 @@ export const USDT_ADDRESS = `0x${"11".repeat(20)}`;
 export const WBRL_ADDRESS = `0x${"22".repeat(20)}`;
 export const REACTOR = `0x${"33".repeat(20)}`;
 export const SWAP_TARGET = `0x${"44".repeat(20)}`;
+export const RECIPIENT_ADDRESS = `0x${"77".repeat(20)}`;
 export const SECRET_KEY = randomBytes(32).toString("base64");
 export const CLAIM_TOKEN = "rfqc_TEST_CLAIM_TOKEN_must_never_leak_0123456789";
+
+/** A stored passkey (test values; the P-256 coordinates are placeholders no test verifies). */
+export const passkey = (index: number): PasskeyCredential => ({
+  id: `00000000-0000-4000-8000-0000000000c${index}`,
+  userId: SENDER,
+  credentialId: `credential-${index}`,
+  publicKeyX: "ab".repeat(32),
+  publicKeyY: "cd".repeat(32),
+  rpId: "kaada.test",
+  signCount: 0,
+  createdAt: new Date(0),
+});
 
 const word = (hex: string) => hex.replace(/^0x/, "").padStart(64, "0");
 
@@ -108,12 +131,16 @@ export interface FirmWorld {
   w: PaymentWorld;
   transport: FakeTextileTransport;
   firm: ReturnType<typeof createFirmStores>;
+  run: ReturnType<typeof createRunStores>;
   authorization: PaymentAuthorization;
   /** The authorization link token (the PIN session is spent). */
   token: string;
   service: ExecutionPreparationService;
   firmQuotes: FirmQuoteService;
   tracker: PreparationTracker;
+  uow: ExecutionUnitOfWork;
+  wallets: { getWallet(userId: string): Promise<Wallet | null> };
+  chainState: ChainState;
   logs: { level: string; event: string; fields: Record<string, unknown> }[];
   /** Mutable chain state the read-only fakes serve. */
   chain: { allowance: bigint; deployed: boolean };
@@ -137,6 +164,10 @@ export async function firmWorld(
   } = {},
 ): Promise<FirmWorld> {
   const w = setup({ authorize: true });
+  // The payee has a wallet address (the payout leg needs one).
+  for (const recipient of w.r.world.recipients.values()) {
+    recipient.walletAddress = RECIPIENT_ADDRESS;
+  }
   if (!options.usdcOnly) w.fund("USDT", 500n);
   w.fund("USDC", 500n);
   // Real-looking token addresses (the base fixtures use short placeholders).
@@ -164,7 +195,8 @@ export async function firmWorld(
     void logs.push({ level, event, fields });
   const provider = new TextileFirmQuoteProvider({ client, timeoutMs: 75_000, log });
   const cipher = new AesGcmSecretCipher([{ version: 1, key: SECRET_KEY }]);
-  const firm = createFirmStores();
+  const firm = createFirmStores(w.r.world.authorization.payments);
+  const run = createRunStores();
 
   const chain = { allowance: 0n, deployed: false };
   const permissions: DelegatedPermission[] = [];
@@ -177,10 +209,26 @@ export async function firmWorld(
       ...repositories,
       wallets: w.auth.uow.read.wallets,
       passkeys: {
-        listActiveForUser: () => Promise.resolve(Array.from({ length: credentials.length })),
+        listActiveForUser: () =>
+          Promise.resolve(Array.from({ length: credentials.length }, (_, i) => passkey(i))),
+        findByCredentialId: (credentialId: string) =>
+          Promise.resolve(
+            Array.from({ length: credentials.length }, (_, i) => passkey(i)).find(
+              (c) => c.credentialId === credentialId,
+            ) ?? null,
+          ),
+        advanceCounter: () => Promise.resolve(true),
       },
-      delegatedPermissions: { listForWallet: () => Promise.resolve(permissions) },
+      delegatedPermissions: {
+        ...run.repositories.delegatedPermissions,
+        listForWallet: (walletId: string) =>
+          run.repositories.delegatedPermissions
+            .listForWallet(walletId)
+            .then((stored) => [...permissions, ...stored]),
+      },
       ...firm.repositories,
+      executionTransactions: run.repositories.executionTransactions,
+      rootActions: run.repositories.rootActions,
     }) as unknown as ExecutionRepositories;
   const uow: ExecutionUnitOfWork = {
     read: compose(w.r.world.repositories),
@@ -222,6 +270,12 @@ export async function firmWorld(
     now,
     log,
   });
+  const preparationWallets = {
+    getWallet: (userId: string) => {
+      const wallet = [...w.auth.wallets.values()].find((x) => x.userId === userId);
+      return Promise.resolve(wallet ?? null);
+    },
+  };
   const service = new ExecutionPreparationService({
     unitOfWork: uow,
     firmQuotes,
@@ -234,12 +288,7 @@ export async function firmWorld(
       },
     }),
     chain: chainState,
-    wallets: {
-      getWallet: (userId) => {
-        const wallet = [...w.auth.wallets.values()].find((x) => x.userId === userId);
-        return Promise.resolve(wallet ?? null);
-      },
-    },
+    wallets: preparationWallets,
     minWindowMs: options.minWindowMs ?? 12_000,
     now,
     log,
@@ -249,11 +298,15 @@ export async function firmWorld(
     w,
     transport,
     firm,
+    run,
     authorization,
     token,
     service,
     firmQuotes,
     tracker: new PreparationTracker(),
+    uow,
+    wallets: preparationWallets,
+    chainState,
     logs,
     chain,
     permissions,

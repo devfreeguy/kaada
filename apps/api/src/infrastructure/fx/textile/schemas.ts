@@ -118,6 +118,30 @@ export const firmResponseSchema = z.looseObject({
   ]),
 });
 
+/**
+ * POST /rfq/{id}/submit. The documentation does not publish a response schema (only that a repeat
+ * "returns the current status"), so nothing about the body is required: a 2xx means it was accepted.
+ */
+export const submitResponseSchema = z.looseObject({ data: z.unknown() });
+
+/**
+ * GET /rfq/{id}. Documented fields; status is one of soliciting, quoted, no_quote, submitted, filled,
+ * failed, expired. Once settled, sellAmount / buyAmount are the settled amounts. A status that is not
+ * in the documented list is kept as text and treated as UNKNOWN by the adapter, never as success.
+ */
+export const orderStatusSchema = z.looseObject({
+  data: z.looseObject({
+    rfqId: z.string().optional(),
+    status: z.string().min(1),
+    sellAmount: atomicAmountSchema.optional(),
+    buyAmount: atomicAmountSchema.optional(),
+    feeAmount: atomicAmountSchema.optional(),
+    txHash: z.string().optional(),
+    failReason: z.string().nullish(),
+  }),
+});
+
+export type OrderStatusResponse = z.infer<typeof orderStatusSchema>;
 export type TextileErrorBody = z.infer<typeof textileErrorSchema>;
 export type PreviewResponse = z.infer<typeof previewResponseSchema>;
 export type FirmResponse = z.infer<typeof firmResponseSchema>;

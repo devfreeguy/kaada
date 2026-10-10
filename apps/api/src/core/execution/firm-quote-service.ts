@@ -27,6 +27,8 @@ export interface FirmQuoteContext {
   takerAddress: string;
   sellAsset: Asset & { contractAddress: string };
   buyAsset: Asset & { contractAddress: string };
+  /** A held quote with less time left than this is not reused (it is retired and replaced). */
+  minRemainingMs?: number;
 }
 
 export type FirmQuoteOutcome =
@@ -83,11 +85,18 @@ export class FirmQuoteService {
     const now = this.now();
 
     if (live?.status === "QUOTED") {
-      if (live.expiresAt && live.expiresAt.getTime() > now.getTime()) {
+      if (
+        live.expiresAt &&
+        live.expiresAt.getTime() - (context.minRemainingMs ?? 0) > now.getTime()
+      ) {
         return { status: "QUOTED", attempt: live, reused: true };
       }
-      // Expired: never reused. It stays as history and frees the "one live attempt" slot.
-      await repositories.firmQuoteAttempts.markExpired(live.id, now);
+      // Expired (or too close to expiry to be used): never reused. It stays as history and frees the
+      // "one live attempt" slot. It is retired as of the end of the window it could no longer serve.
+      await repositories.firmQuoteAttempts.markExpired(
+        live.id,
+        new Date(now.getTime() + (context.minRemainingMs ?? 0)),
+      );
     } else if (live?.status === "REQUESTING") {
       const abandonedAfter = this.deps.requestTimeoutMs + ABANDONED_GRACE_MS;
       if (now.getTime() - live.createdAt.getTime() <= abandonedAfter) {

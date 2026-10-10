@@ -64,9 +64,25 @@ const envSchema = z
     // A server-side secret mixed into every PIN hash (Argon2 "secret"). With only 10,000 possible
     // PINs, a leaked database alone must not be enough to recover them. Required in production.
     PIN_PEPPER: optionalSecret,
-    // A Celo-capable ERC-4337 bundler. Reserved for the signing build: only its presence is read today,
-    // to tell an execution plan whether sending UserOperations could work yet.
+    // A Celo-capable ERC-4337 bundler. Required when EXECUTION_ENABLED=true: every UserOperation (account
+    // deployment, permission install, approval, swap) goes through it, never through a raw transaction.
     BUNDLER_URL: z.url().optional(),
+    // Build 13 can move funds. It is OFF unless this is exactly "true"; with it on, a bundler, the
+    // secret key, the kernel wallet stack and Textile pricing must all be configured or startup fails.
+    EXECUTION_ENABLED: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((value) => value === "true"),
+    // The least native CELO (wei) the smart account must hold for network fees. No paymaster is used.
+    EXECUTION_MIN_NATIVE_WEI: z
+      .string()
+      .regex(/^[1-9][0-9]{0,30}$/, "must be a positive integer in wei")
+      .default("1000000000000000"),
+    // Receipt polling inside one run; the reconciler continues anything still pending afterwards.
+    EXECUTION_POLL_INTERVAL_MS: z.coerce.number().int().min(250).max(30_000).default(2_000),
+    EXECUTION_POLL_MAX_WAIT_MS: z.coerce.number().int().min(1_000).max(120_000).default(45_000),
+    // How often the reconciler looks at unfinished executions. 0 disables the timer (call it by hand).
+    EXECUTION_RECONCILE_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(3600).default(30),
     // Firm Textile quotes. The claim token Textile returns once is encrypted at rest with this key
     // (AES-256-GCM, 32 random bytes as base64). A previous key may stay for decryption after rotation.
     EXECUTION_SECRET_KEY: optionalSecret,
@@ -210,6 +226,21 @@ const envSchema = z
       path: ["EXECUTION_SECRET_KEY"],
     },
   )
+  .refine(
+    (env) =>
+      !env.EXECUTION_ENABLED ||
+      (env.BUNDLER_URL !== undefined &&
+        env.EXECUTION_SECRET_KEY !== undefined &&
+        env.WALLET_PROVIDER === "kernel" &&
+        env.FX_PROVIDER === "textile" &&
+        env.PASSKEY_RP_ID !== undefined &&
+        env.PASSKEY_ORIGIN !== undefined),
+    {
+      message:
+        "EXECUTION_ENABLED=true needs BUNDLER_URL, EXECUTION_SECRET_KEY, WALLET_PROVIDER=kernel, FX_PROVIDER=textile and the passkey settings",
+      path: ["EXECUTION_ENABLED"],
+    },
+  )
   .refine((env) => env.AGENT_INTERPRETER !== "groq" || env.GROQ_API_KEY !== undefined, {
     message: "GROQ_API_KEY is required when AGENT_INTERPRETER=groq",
     path: ["GROQ_API_KEY"],
@@ -255,6 +286,13 @@ const envSchema = z
       minFirmWindowMs: env.FIRM_QUOTE_MIN_WINDOW_SECONDS * 1000,
       firmTimeoutMs: env.FIRM_QUOTE_TIMEOUT_MS,
       bundlerConfigured: env.BUNDLER_URL !== undefined,
+      // Build 13: moving funds is a separate switch from planning one.
+      enabled: env.EXECUTION_ENABLED,
+      ...(env.BUNDLER_URL !== undefined && { bundlerUrl: env.BUNDLER_URL }),
+      minNativeWei: BigInt(env.EXECUTION_MIN_NATIVE_WEI),
+      pollIntervalMs: env.EXECUTION_POLL_INTERVAL_MS,
+      pollMaxWaitMs: env.EXECUTION_POLL_MAX_WAIT_MS,
+      reconcileIntervalMs: env.EXECUTION_RECONCILE_INTERVAL_SECONDS * 1000,
       maxOutstandingRfqs: env.TEXTILE_MAX_OUTSTANDING_RFQS,
       // Newest first. Absent when no key is configured: firm quoting is then disabled.
       cipherKeys: [

@@ -133,6 +133,10 @@ export function toDelegatedPermission(row: PermissionRow): DelegatedPermission {
     expiresAt: row.expiresAt,
     ...maybe("revokedAt", row.revokedAt),
     ...maybe("revocationReason", row.revocationReason),
+    ...maybe("sessionKeyAddress", row.sessionKeyAddress),
+    ...maybe("sessionKeySecretId", row.sessionKeySecretId),
+    ...maybe("approvalSecretId", row.approvalSecretId),
+    ...maybe("installedAt", row.installedAt),
     createdAt: row.createdAt,
   };
 }

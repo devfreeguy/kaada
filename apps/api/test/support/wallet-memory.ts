@@ -233,10 +233,36 @@ export function createWalletWorld(): WalletWorld {
       findById: (id) => Promise.resolve(permissions.get(id) ?? null),
       listForWallet: (walletId) =>
         Promise.resolve([...permissions.values()].filter((p) => p.walletId === walletId)),
+      attachSessionKey: (id, keys) => {
+        const current = permissions.get(id);
+        if (!current || current.status !== "PENDING" || current.sessionKeySecretId) {
+          return Promise.resolve(null);
+        }
+        const updated: DelegatedPermission = {
+          ...current,
+          sessionKeyAddress: keys.address.toLowerCase(),
+          sessionKeySecretId: keys.sessionKeySecretId,
+          ...(keys.approvalSecretId && { approvalSecretId: keys.approvalSecretId }),
+        };
+        permissions.set(id, updated);
+        return Promise.resolve(updated);
+      },
+      attachApproval: (id, approvalSecretId) => {
+        const current = permissions.get(id);
+        if (!current || current.status !== "PENDING") return Promise.resolve(null);
+        const updated: DelegatedPermission = { ...current, approvalSecretId };
+        permissions.set(id, updated);
+        return Promise.resolve(updated);
+      },
       activate: (id, providerPermissionId) => {
         const current = permissions.get(id);
         if (!current || current.status !== "PENDING") return Promise.resolve(null);
-        const updated: DelegatedPermission = { ...current, status: "ACTIVE", providerPermissionId };
+        const updated: DelegatedPermission = {
+          ...current,
+          status: "ACTIVE",
+          providerPermissionId,
+          installedAt: stamp(),
+        };
         permissions.set(id, updated);
         return Promise.resolve(updated);
       },

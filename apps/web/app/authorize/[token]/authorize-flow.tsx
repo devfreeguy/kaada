@@ -228,9 +228,9 @@ export function AuthorizeFlow({ token }: { token: string }) {
         <section className="flex flex-col gap-3">
           <h1 className="text-2xl font-semibold">Payment authorized</h1>
           <p className="text-neutral-600">
-            Your approval is saved. Nothing has been sent yet: the final price is confirmed first,
-            and only within the limits you just approved. You can close this page and return to your
-            chat.
+            Your approval is saved. The final price is confirmed first, and the payment starts only
+            within the limits you just approved. Keep this page open to follow it; you can also
+            return to your chat.
           </p>
           <FinalPricing token={token} />
         </section>

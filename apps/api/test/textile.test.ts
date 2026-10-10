@@ -478,11 +478,11 @@ describe("no execution, no secrets", () => {
       isKaadaError(error, "EXECUTION_NOT_ENABLED"),
     );
     assert.equal(s.transport.calls.length, 1, "only the price request was ever made");
-    // The client exposes no way to submit, cancel or swap.
+    // The client exposes no way to cancel or swap (submit/status exist only for Build 13 settlement).
     const methods = Object.getOwnPropertyNames(TextileClient.prototype).filter(
       (n) => !n.startsWith("_"),
     );
-    for (const forbidden of ["submit", "cancel", "swap", "execute", "settle"]) {
+    for (const forbidden of ["cancel", "swap", "execute", "settle"]) {
       assert.equal(methods.includes(forbidden), false, forbidden);
     }
   });

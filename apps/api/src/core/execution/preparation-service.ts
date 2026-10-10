@@ -12,6 +12,7 @@ import type {
   FirmQuote,
   PaymentAuthorization,
   PlanBlocker,
+  TokenPolicy,
   Wallet,
 } from "@kaada/domain";
 
@@ -21,6 +22,7 @@ import type { AuthorizationPolicyService } from "../authorization/policy-service
 import type { AccountReadinessService } from "./account-readiness.js";
 import type { FirmQuoteService } from "./firm-quote-service.js";
 import { buildExecutionPlan, serializePlan } from "./plan-builder.js";
+import { defaultTokenPolicy } from "./token-policy.js";
 import { planExpiresAt } from "./tracker.js";
 import type { ChainState, ExecutionUnitOfWork } from "./ports.js";
 
@@ -60,6 +62,8 @@ export interface PreparationServiceDeps {
   wallets: { getWallet(userId: string): Promise<Wallet | null> };
   /** The least time that must remain on a firm quote for it to count as executable. */
   minWindowMs: number;
+  /** Token-specific ERC-20 quirks. Defaults to the built-in table. */
+  tokenPolicy?: TokenPolicy;
   now?: () => Date;
   log?: AgentLog;
 }
@@ -109,7 +113,10 @@ export class ExecutionPreparationService {
     this.log = deps.log ?? noopLog;
   }
 
-  async prepare(authorizationId: string): Promise<PreparationOutcome> {
+  async prepare(
+    authorizationId: string,
+    options: { minRemainingMs?: number } = {},
+  ): Promise<PreparationOutcome> {
     const repositories = this.uow.read;
     const now = this.now();
 
@@ -125,7 +132,7 @@ export class ExecutionPreparationService {
     const existing = await repositories.executionPlans.findByAuthorization(authorization.id);
     if (existing?.status === "READY") {
       const expiresAt = planExpiresAt(existing.plan);
-      if (expiresAt && expiresAt.getTime() > now.getTime()) {
+      if (expiresAt && expiresAt.getTime() - (options.minRemainingMs ?? 0) > now.getTime()) {
         return { status: "EXECUTION_READY", executionId: existing.id, expiresAt, reused: true };
       }
     }
@@ -236,6 +243,7 @@ export class ExecutionPreparationService {
       takerAddress: wallet.address,
       sellAsset: sell,
       buyAsset: buy,
+      minRemainingMs: this.deps.minWindowMs,
     });
     switch (obtained.status) {
       case "IN_PROGRESS":
@@ -369,6 +377,8 @@ export class ExecutionPreparationService {
       authorization,
       wallet,
       sellAsset: sell,
+      buyAsset: buy,
+      tokenPolicy: this.deps.tokenPolicy ?? defaultTokenPolicy,
       currentAllowance,
       deployed: snapshot.deployed,
       passkeyRootAvailable: snapshot.passkeyRootAvailable,

@@ -201,7 +201,32 @@ export function createDelegatedPermissionRepository(db: Db): DelegatedPermission
     async activate(id, providerPermissionId) {
       const { count } = await db.delegatedPermission.updateMany({
         where: { id, status: "PENDING" },
-        data: { status: "ACTIVE", providerPermissionId },
+        // ACTIVE means read back from the chain, so the time it was confirmed is recorded with it.
+        data: { status: "ACTIVE", providerPermissionId, installedAt: new Date() },
+      });
+      if (count === 0) return null;
+      const row = await db.delegatedPermission.findUnique({ where: { id } });
+      return row ? toDelegatedPermission(row) : null;
+    },
+
+    async attachSessionKey(id, keys) {
+      const { count } = await db.delegatedPermission.updateMany({
+        where: { id, status: "PENDING", sessionKeySecretId: null },
+        data: {
+          sessionKeyAddress: keys.address.toLowerCase(),
+          sessionKeySecretId: keys.sessionKeySecretId,
+          ...(keys.approvalSecretId && { approvalSecretId: keys.approvalSecretId }),
+        },
+      });
+      if (count === 0) return null;
+      const row = await db.delegatedPermission.findUnique({ where: { id } });
+      return row ? toDelegatedPermission(row) : null;
+    },
+
+    async attachApproval(id, approvalSecretId) {
+      const { count } = await db.delegatedPermission.updateMany({
+        where: { id, status: "PENDING" },
+        data: { approvalSecretId },
       });
       if (count === 0) return null;
       const row = await db.delegatedPermission.findUnique({ where: { id } });

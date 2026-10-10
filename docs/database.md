@@ -154,3 +154,12 @@ USD, NGN, ARS, BRL, IDR (ISO 4217, 2 decimals). It never changes the decimals of
 It also seeds the verified Celo tokens (USDT, USDC, cNGN, wARS, wBRL, IDRX) and the 40 verified Textile
 RFQ capabilities (both directions of each USDT corridor). wMXN, wCOP, wPEN, wCLP, USA₮ and every Ripio and
 Textile ramp capability stay unseeded; see [settlement.md](settlement.md) for provenance.
+
+## Execution lifecycle (Build 13)
+
+Migrations `20261018000000_execution_lifecycle` and `20261018000001_execution_lifecycle_constraints`: payment states on
+`Execution` (`SIGNING`, `SUBMITTING`, `SUBMITTED`, `REQUIRES_USER_ACTION`), `authorizationConsumedAt`, settled amounts,
+claim tombstone; `Transaction` (`userOpHash`, `idempotencyKey` unique, block, timestamps, `UNKNOWN`); `RootActionSession`
+(hashed token, server-fixed challenge, one pending per execution); `DelegatedPermission` session key and approval
+references and `installedAt`; `ExecutionSecret` tombstones. Constraints keep a payment status from existing without a
+consumed authorization and keep hashes well formed.

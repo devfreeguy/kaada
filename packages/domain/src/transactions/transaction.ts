@@ -1,9 +1,18 @@
 import type { JsonObject } from "../json.js";
 
-export const TRANSACTION_TYPES = ["APPROVAL", "TRANSFER", "SWAP", "CONTRACT_CALL", "RAMP"] as const;
+export const TRANSACTION_TYPES = [
+  "DEPLOYMENT",
+  "PERMISSION_INSTALL",
+  "APPROVAL",
+  "TRANSFER",
+  "SWAP",
+  "CONTRACT_CALL",
+  "RAMP",
+] as const;
 export type TransactionType = (typeof TRANSACTION_TYPES)[number];
 
 export const TRANSACTION_STATUSES = [
+  "UNKNOWN",
   "CREATED",
   "SIGNING",
   "SUBMITTED",
@@ -34,6 +43,14 @@ export interface Transaction {
   gasAmount?: string;
   gasAssetId?: string;
   nonce?: string;
+  /** ERC-4337 UserOperation hash. Distinct from `hash`, the on-chain transaction hash. */
+  userOpHash?: string;
+  /** One persisted attempt per irreversible step: a retry finds this row instead of sending again. */
+  idempotencyKey?: string;
+  blockNumber?: string;
+  submittedAt?: Date;
+  confirmedAt?: Date;
+  failureCode?: string;
   metadata?: JsonObject;
   createdAt: Date;
   updatedAt: Date;

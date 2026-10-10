@@ -31,6 +31,13 @@ function code(path: string): string {
 
 const dir = (relative: string) => join(root, relative);
 
+/**
+ * Build 13: the ONE file that builds, signs and sends UserOperations, and that holds a session key
+ * for the length of one call. Everything else is held to the strict scans; this file is held to a
+ * narrower, explicit one (see "the kernel adapter is the only place...").
+ */
+const adapterPath = join(dir("packages/blockchain/src/execution"), "zerodev-kernel-adapter.ts");
+
 /** Everything that implements or stores wallet state. */
 const walletSources = [
   ...files(dir("packages/domain/src/wallets")),
@@ -50,8 +57,25 @@ describe("wallet security review (source scan)", () => {
   it("contains no private key, mnemonic, seed or secret-key handling", () => {
     const forbidden =
       /\b(privateKey|mnemonic|seedPhrase|secretKey|privateKeyToAccount|generatePrivateKey|mnemonicToAccount|signMessage|signTransaction|signTypedData|signUserOperation|sendTransaction|writeContract)\b/;
-    for (const path of walletSources) {
+    for (const path of walletSources.filter((p) => p !== adapterPath)) {
       assert.equal(forbidden.test(code(path)), false, path);
+    }
+  });
+
+  it("the kernel adapter is the only place a key is generated or used, and never signs raw data", () => {
+    const text = code(adapterPath);
+    // It may create and use the per-permission session key and sign/send UserOperations...
+    assert.ok(/generatePrivateKey/.test(text) && /privateKeyToAccount/.test(text));
+    // ...but it exposes no raw signing, no mnemonic/seed handling and no plain transactions.
+    assert.equal(
+      /\b(mnemonic|seedPhrase|secretKey|signMessage|signTransaction|signTypedData|sendTransaction|writeContract|sendRawTransaction)\b/.test(
+        text,
+      ),
+      false,
+    );
+    // And no other file in the repository generates a key.
+    for (const path of walletSources.filter((p) => p !== adapterPath)) {
+      assert.equal(/generatePrivateKey|privateKeyToAccount/.test(code(path)), false, path);
     }
   });
 
@@ -81,6 +105,10 @@ describe("wallet security review (source scan)", () => {
       assert.ok(body.length > 0, model);
       const columns = [...body.matchAll(/^\s{2}(\w+)\s/gm)].map((m) => m[1] ?? "");
       for (const column of columns) {
+        // References to rows in ExecutionSecret (AES-GCM ciphertext), never a secret themselves.
+        if (model === "DelegatedPermission" && /^(sessionKey|approval)Secret(Id)?$/.test(column)) {
+          continue;
+        }
         assert.equal(
           /private|mnemonic|seed|secret|encrypted|pin|password|cipher|wrapped/i.test(column),
           false,
@@ -107,7 +135,10 @@ describe("wallet security review (source scan)", () => {
       /\bMath\.(round|floor|ceil|trunc)\b/,
       /\btoFixed\b/,
     ];
-    for (const path of walletSources.filter((p) => !p.includes("simplewebauthn-verifier"))) {
+    // The adapter converts a Date to unix seconds with Math.floor; it handles no money values.
+    for (const path of walletSources.filter(
+      (p) => !p.includes("simplewebauthn-verifier") && p !== adapterPath,
+    )) {
       for (const pattern of forbidden)
         assert.equal(pattern.test(code(path)), false, `${path} ${String(pattern)}`);
     }

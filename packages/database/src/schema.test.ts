@@ -59,6 +59,7 @@ const modelNames = [
   "PaymentAuthorization",
   "ExecutionSecret",
   "FirmQuoteAttempt",
+  "RootActionSession",
   "DelegatedPermission",
   "Asset",
   "Conversation",
@@ -125,6 +126,7 @@ const enumValues: Record<string, string[]> = {
   WalletSetupStatus: ["PENDING", "COMPLETED", "REVOKED"],
   AuthorizationSessionStatus: ["PENDING", "AUTHORIZED", "EXPIRED", "CANCELLED"],
   PaymentAuthorizationStatus: ["ACTIVE", "CONSUMED", "REVOKED", "EXPIRED"],
+  RootActionStatus: ["PENDING", "COMPLETED", "EXPIRED", "CANCELLED"],
   FirmQuoteAttemptStatus: ["REQUESTING", "QUOTED", "UNUSABLE", "EXPIRED", "FAILED", "TIMED_OUT"],
   RouteStatus: ["CREATED", "VALID", "EXPIRED", "SELECTED", "INVALID"],
   RouteStepType: ["TRANSFER", "SWAP", "BRIDGE", "ON_RAMP", "OFF_RAMP", "BANK_PAYOUT"],
@@ -133,6 +135,10 @@ const enumValues: Record<string, string[]> = {
     "PREPARING",
     "READY",
     "BLOCKED",
+    "SIGNING",
+    "SUBMITTING",
+    "SUBMITTED",
+    "REQUIRES_USER_ACTION",
     "AWAITING_CONFIRMATION",
     "CONFIRMED",
     "EXECUTING",
@@ -142,8 +148,17 @@ const enumValues: Record<string, string[]> = {
     "CANCELLED",
     "EXPIRED",
   ],
-  TransactionType: ["APPROVAL", "TRANSFER", "SWAP", "CONTRACT_CALL", "RAMP"],
+  TransactionType: [
+    "DEPLOYMENT",
+    "PERMISSION_INSTALL",
+    "APPROVAL",
+    "TRANSFER",
+    "SWAP",
+    "CONTRACT_CALL",
+    "RAMP",
+  ],
   TransactionStatus: [
+    "UNKNOWN",
     "CREATED",
     "SIGNING",
     "SUBMITTED",
@@ -218,6 +233,8 @@ describe("prisma schema", () => {
       ...permissionMoneyColumns.map((column) => `DelegatedPermission.${column}`),
       ...authorizationMoneyColumns.map((column) => `PaymentAuthorization.${column}`),
       ...firmMoneyColumns.map((column) => `FirmQuoteAttempt.${column}`),
+      "Execution.settledInputAmount",
+      "Execution.settledOutputAmount",
     ]);
     for (const [model, fields] of models) {
       for (const field of fields) {
@@ -306,6 +323,31 @@ describe("prisma schema", () => {
     assert.ok(sql.includes('"routeAssetPath"[1] = "inputAssetId"'));
     // An approval is bound to a quote by nothing: there is no quote column to bind to.
     assert.ok(!/bquoteIdb/.test(read("PaymentAuthorization")));
+  });
+
+  it("guards the execution lifecycle in the database", () => {
+    const sql = readFileSync(
+      new URL(
+        "../prisma/migrations/20261018000001_execution_lifecycle_constraints/migration.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    for (const name of [
+      "Execution_payment_status_allowed",
+      "Execution_consumed_before_signing",
+      "Execution_settled_amounts_canonical",
+      "Transaction_hashes_wellformed",
+      "ExecutionSecret_tombstone_consistent",
+      "RootActionSession_tokenHash_sha256",
+      "RootActionSession_used_iff_completed",
+      "RootActionSession_one_pending_per_execution_key",
+      "DelegatedPermission_session_key_complete",
+    ]) {
+      assert.ok(sql.includes(`"${name}"`), name);
+    }
+    // No session may reach SIGNING or later without the authorization having been consumed.
+    assert.ok(/"authorizationConsumedAt" IS NOT NULL/.test(sql));
   });
 
   it("stores only encrypted execution secrets and guards provider slots in the database", () => {

@@ -8,6 +8,7 @@ import type { Repositories } from "@kaada/database";
 import { createMoney, SecretValue } from "@kaada/domain";
 import type { DelegatedPermission } from "@kaada/domain";
 
+import { RunTracker } from "../src/core/execution/run-tracker.js";
 import { ExecutionController } from "../src/execution/execution.controller.js";
 import { approveCalldata, firmWorld, noQuoteReply, quotedReply } from "./support/firm-world.js";
 import type { FirmWorld } from "./support/firm-world.js";
@@ -17,6 +18,7 @@ import {
   SECRET_KEY,
   SWAP_TARGET,
   USDT_ADDRESS,
+  RECIPIENT_ADDRESS,
   WBRL_ADDRESS,
 } from "./support/firm-world.js";
 import { WALLET_ADDRESS, WALLET_ID } from "./support/payment-world.js";
@@ -331,6 +333,9 @@ describe("the claim token is a secret", () => {
       f.service,
       f.tracker,
       f.w.auth.uow.read as unknown as Repositories,
+      null,
+      null,
+      new RunTracker(),
     );
     // The controller reads the stored session and plan through the same in-memory repositories.
     Object.assign(controller, {
@@ -565,9 +570,9 @@ describe("account, permission and allowance requirements", () => {
     providerPermissionId: "perm-1",
     chainId: 42220,
     status: "ACTIVE",
-    allowedOperations: ["APPROVE_TOKEN", "EXECUTE_SWAP"],
-    allowedContracts: [USDT_ADDRESS, SWAP_TARGET],
-    allowedAssetIds: [f.w.r.h.assets.USDT.id],
+    allowedOperations: ["APPROVE_TOKEN", "EXECUTE_SWAP", "TRANSFER_TOKEN"],
+    allowedContracts: [USDT_ADDRESS, SWAP_TARGET, WBRL_ADDRESS],
+    allowedAssetIds: [f.w.r.h.assets.USDT.id, f.w.r.tokens.wBRL.id],
     perTransactionLimit: createMoney(String(MAX_IN), f.w.r.h.assets.USDT.id),
     enforcement: {
       contracts: "ONCHAIN",
@@ -599,6 +604,7 @@ describe("account, permission and allowance requirements", () => {
         allowedOperations: string[];
         allowedAssetIds: string[];
         perTransactionLimit: { amount: string };
+        payout?: { recipient: string };
         validFrom: string;
         expiresAt: string;
       };
@@ -656,9 +662,13 @@ describe("account, permission and allowance requirements", () => {
     await f.service.prepare(f.authorization.id);
     const scope = planOf(f)["permissionRequirement"].scope;
     assert.equal(scope.chainId, 42220);
-    assert.deepEqual(scope.allowedContracts.sort(), [USDT_ADDRESS, SWAP_TARGET].sort());
-    assert.deepEqual(scope.allowedOperations, ["APPROVE_TOKEN", "EXECUTE_SWAP"]);
-    assert.deepEqual(scope.allowedAssetIds, [f.w.r.h.assets.USDT.id]);
+    assert.deepEqual(
+      scope.allowedContracts.sort(),
+      [USDT_ADDRESS, SWAP_TARGET, WBRL_ADDRESS].sort(),
+    );
+    assert.deepEqual(scope.allowedOperations, ["APPROVE_TOKEN", "EXECUTE_SWAP", "TRANSFER_TOKEN"]);
+    assert.deepEqual(scope.allowedAssetIds, [f.w.r.h.assets.USDT.id, f.w.r.tokens.wBRL.id]);
+    assert.equal(scope.payout?.recipient, RECIPIENT_ADDRESS);
     assert.equal(
       scope.perTransactionLimit.amount,
       String(MAX_IN),
@@ -854,10 +864,18 @@ describe("only single-hop payments execute", () => {
 describe("the HTTP edge", () => {
   it("needs the link of a session that was just authorized, and nothing else", async () => {
     const f = await exactOutput();
-    const controller = new ExecutionController(f.w.auth.sessions, f.service, f.tracker, {
-      paymentAuthorizations: f.w.auth.uow.read.paymentAuthorizations,
-      executionPlans: f.firm.repositories.executionPlans,
-    } as unknown as Repositories);
+    const controller = new ExecutionController(
+      f.w.auth.sessions,
+      f.service,
+      f.tracker,
+      {
+        paymentAuthorizations: f.w.auth.uow.read.paymentAuthorizations,
+        executionPlans: f.firm.repositories.executionPlans,
+      } as unknown as Repositories,
+      null,
+      null,
+      new RunTracker(),
+    );
     await assert.rejects(controller.prepare(undefined), UnauthorizedException);
     await assert.rejects(controller.prepare(`Bearer ${"A".repeat(43)}`), UnauthorizedException);
     await assert.rejects(controller.outcome("Basic abc"), UnauthorizedException);

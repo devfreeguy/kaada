@@ -254,3 +254,16 @@ orders[]}` and `transactions {approval, swap}`, each `{to, data, value, chainId}
   and never the maximum input. The returned `takerPays` is the input compared with the authorization.
 - Not run live: a firm quote spends one of 4 slots and needs a funded wallet, and no safely funded test wallet exists.
   The offline fixtures follow the documented shape and are not captured responses.
+
+## Order submit and status (Build 13)
+
+After the swap UserOperation is included, Kaada reports the on-chain transaction hash and reads the order:
+
+- `POST /v2/rfq/{rfqId}/submit` with body `{ "txHash": "0x..." }` and header `x-rfq-claim: <claimToken>` - documented as
+  a courtesy (a fill is detected from the chain anyway), idempotent for the same hash, `409` for a different one.
+- `GET /v2/rfq/{rfqId}` with the same claim header - the order status (`quoted`, `submitted`, `filled`, `failed`,
+  `expired`). A failed or expired order can still flip to filled for up to 24 hours, so a non-filled status is watched,
+  not treated as final.
+
+Only `TextileOrderProvider` calls these, and only the execution runner calls the provider. The claim token is decrypted
+for the length of one request. There is no cancel call. See `docs/execution.md`.

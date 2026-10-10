@@ -146,14 +146,20 @@ export function createExecutionSecretRepository(db: Db): ExecutionSecretReposito
     },
     async get(id) {
       const row = await db.executionSecret.findUnique({ where: { id } });
-      return row
-        ? {
-            id: row.id,
-            purpose: row.purpose,
-            keyVersion: row.keyVersion,
-            ciphertext: row.ciphertext,
-          }
-        : null;
+      if (!row || row.ciphertext === null) return null;
+      return {
+        id: row.id,
+        purpose: row.purpose,
+        keyVersion: row.keyVersion,
+        ciphertext: row.ciphertext,
+      };
+    },
+    async tombstone(id, now) {
+      // Idempotent: a second call finds nothing left to destroy.
+      await db.executionSecret.updateMany({
+        where: { id, ciphertext: { not: null } },
+        data: { ciphertext: null, tombstonedAt: now },
+      });
     },
   };
 }
@@ -162,6 +168,11 @@ export function createExecutionPlanRepository(db: Db): ExecutionPlanRepository {
   const find = async (paymentAuthorizationId: string) => {
     const row = await db.execution.findUnique({ where: { paymentAuthorizationId } });
     return row ? toExecutionPlanRecord(row) : null;
+  };
+
+  const find2 = async (id: string) => {
+    const row = await db.execution.findUnique({ where: { id } });
+    return row && row.paymentAuthorizationId ? toExecutionPlanRecord(row) : null;
   };
 
   return {
@@ -188,6 +199,71 @@ export function createExecutionPlanRepository(db: Db): ExecutionPlanRepository {
     },
 
     findByAuthorization: find,
+
+    async findById(id) {
+      const row = await db.execution.findUnique({ where: { id } });
+      return row && row.paymentAuthorizationId ? toExecutionPlanRecord(row) : null;
+    },
+
+    async transition(id, from, to, fields = {}) {
+      const { count } = await db.execution.updateMany({
+        where: { id, status: { in: [...from] }, paymentAuthorizationId: { not: null } },
+        data: {
+          status: to,
+          ...maybe("failureCode", fields.failureCode),
+          ...(fields.userActionKind !== undefined && { userActionKind: fields.userActionKind }),
+          ...maybe("providerSubmitState", fields.providerSubmitState),
+          ...maybe("settledInputAmount", fields.settledInputAmount),
+          ...maybe("settledOutputAmount", fields.settledOutputAmount),
+          ...maybe("claimTombstonedAt", fields.claimTombstonedAt),
+          ...maybe("lastReconciledAt", fields.lastReconciledAt),
+          ...maybe("startedAt", fields.startedAt),
+          ...maybe("completedAt", fields.completedAt),
+          ...maybe("failedAt", fields.failedAt),
+          ...maybe("plan", jsonInput(fields.plan, "Execution.plan")),
+          ...maybe("firmQuoteAttemptId", fields.firmQuoteAttemptId),
+        },
+      });
+      return count === 1 ? find2(id) : null;
+    },
+
+    async acquire(id, now) {
+      // Inside the caller's transaction: take the row lock, so a racing acquire waits here and then
+      // sees SIGNING. Nothing is written unless BOTH the execution and its authorization can move.
+      const locked = await db.$queryRaw<
+        { status: string; paymentAuthorizationId: string | null }[]
+      >`SELECT "status", "paymentAuthorizationId" FROM "Execution" WHERE "id" = ${id}::uuid FOR UPDATE`;
+      const row = locked[0];
+      if (!row || row.status !== "READY" || !row.paymentAuthorizationId) {
+        return { status: "NOT_READY" };
+      }
+      const consumed = await db.paymentAuthorization.updateMany({
+        where: { id: row.paymentAuthorizationId, status: "ACTIVE", expiresAt: { gt: now } },
+        data: { status: "CONSUMED", consumedAt: now },
+      });
+      if (consumed.count !== 1) return { status: "AUTHORIZATION_UNAVAILABLE" };
+      await db.execution.update({
+        where: { id },
+        data: {
+          status: "SIGNING",
+          authorizationConsumedAt: now,
+          startedAt: now,
+          providerSubmitState: "PENDING",
+        },
+      });
+      const record = await find2(id);
+      if (!record) throw new Error("execution vanished while it was being acquired");
+      return { status: "ACQUIRED", record };
+    },
+
+    async listByStatus(statuses, limit) {
+      const rows = await db.execution.findMany({
+        where: { status: { in: [...statuses] }, paymentAuthorizationId: { not: null } },
+        orderBy: { updatedAt: "asc" },
+        take: limit,
+      });
+      return rows.map(toExecutionPlanRecord);
+    },
 
     async update(id, update) {
       const row = await db.execution.update({

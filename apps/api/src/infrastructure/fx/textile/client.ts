@@ -1,16 +1,23 @@
 import type { ZodType } from "zod";
 
 import { retryAfterMs } from "./retry-after.js";
-import { firmResponseSchema, previewResponseSchema, textileErrorSchema } from "./schemas.js";
-import type { FirmResponse, PreviewResponse } from "./schemas.js";
+import {
+  firmResponseSchema,
+  orderStatusSchema,
+  previewResponseSchema,
+  submitResponseSchema,
+  textileErrorSchema,
+} from "./schemas.js";
+import type { FirmResponse, OrderStatusResponse, PreviewResponse } from "./schemas.js";
 import { TextileTransportError } from "./transport.js";
 import type { TextileHttpResponse, TextileTransport } from "./transport.js";
 
 /*
  * The narrow Textile client: build the request, send it, check the status, validate the body with
- * Zod, and normalise failures. It exposes only what TextileFxProvider needs, in Kaada-neutral types;
- * no raw Textile DTO leaves this folder. It sends only RFQ price requests: there is deliberately no
- * method for submit, cancel or any order or swap operation.
+ * Zod, and normalise failures. It exposes only what the Textile adapters need, in Kaada-neutral
+ * types; no raw Textile DTO leaves this folder. Its methods: preview, requestFirm, submit (report a
+ * transaction hash) and status. There is deliberately no cancel, and nothing that signs or sends a
+ * transaction: Textile only prices, and is told afterwards.
  */
 
 /** Which side the amount fixes, expressed the way Textile names it (documented). */
@@ -34,6 +41,12 @@ export function rfqBody(request: TextileRfqRequest): Record<string, unknown> {
       ? { sellAmount: request.exact.sellAmount }
       : { buyAmount: request.exact.buyAmount }),
   };
+}
+
+/** A Textile rfq id is `rfq_...`; anything else never reaches a URL. */
+export function assertRfqId(rfqId: string): string {
+  if (!/^rfq_[A-Za-z0-9_-]{1,128}$/.test(rfqId)) throw new Error("malformed rfq id");
+  return rfqId;
 }
 
 export type TextileFailureKind =
@@ -130,12 +143,48 @@ export class TextileClient {
     );
   }
 
+  /**
+   * POST /v2/rfq/{id}/submit: reports the on-chain transaction hash of the executed swap. Documented
+   * as a courtesy that is safe to repeat for the same hash (a different hash is a 409). The claim token
+   * is sent as `X-Rfq-Claim`; it is passed in by the caller, used for this request only, and never kept.
+   */
+  submit(
+    rfqId: string,
+    txHash: string,
+    claimToken: string,
+  ): Promise<{ data: unknown; meta: TextileCallMeta }> {
+    return this.call(
+      `/v2/rfq/${assertRfqId(rfqId)}/submit`,
+      { txHash },
+      submitResponseSchema,
+      undefined,
+      undefined,
+      { "x-rfq-claim": claimToken },
+    );
+  }
+
+  /** GET /v2/rfq/{id}: the order's status. Needs the same proof as submit. */
+  status(
+    rfqId: string,
+    claimToken: string,
+  ): Promise<{ data: OrderStatusResponse["data"]; meta: TextileCallMeta }> {
+    return this.call(
+      `/v2/rfq/${assertRfqId(rfqId)}`,
+      undefined,
+      orderStatusSchema,
+      undefined,
+      undefined,
+      { "x-rfq-claim": claimToken },
+    );
+  }
+
   private async call<T extends { data: unknown }>(
     path: string,
-    body: Record<string, unknown>,
+    body: Record<string, unknown> | undefined,
     schema: ZodType<T>,
     timeoutMs: number = this.timeoutMs,
     maxRetries: number = this.maxRetries,
+    headers?: Record<string, string>,
   ): Promise<{ data: T["data"]; meta: TextileCallMeta }> {
     let attempts = 0;
     for (;;) {
@@ -143,7 +192,11 @@ export class TextileClient {
       const canRetry = attempts <= maxRetries;
       let response: TextileHttpResponse;
       try {
-        response = await this.transport.post(path, body, { timeoutMs });
+        const options = { timeoutMs, ...(headers && { headers }) };
+        response =
+          body === undefined
+            ? await this.transport.get(path, options)
+            : await this.transport.post(path, body, options);
       } catch (error) {
         const kind =
           error instanceof TextileTransportError && error.failure === "TIMEOUT"

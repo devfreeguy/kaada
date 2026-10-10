@@ -65,7 +65,7 @@ pnpm test         # unit tests (domain, schemas, config, database)
 ```
 
 Settlement assets and provider capabilities: see [docs/settlement.md](docs/settlement.md).
-Wallet architecture and the passkey/smart-account foundation: see [docs/wallet-architecture.md](docs/wallet-architecture.md). Route planning: see [docs/routing.md](docs/routing.md). Textile RFQ adapter (quote only): see [docs/textile.md](docs/textile.md).
+Wallet architecture and the passkey/smart-account foundation: see [docs/wallet-architecture.md](docs/wallet-architecture.md). Route planning: see [docs/routing.md](docs/routing.md). Textile RFQ adapter: see [docs/textile.md](docs/textile.md). Firm quotes and the pre-signing plan: [docs/execution-planning.md](docs/execution-planning.md). Onchain execution, Textile submit and settlement (off by default, `EXECUTION_ENABLED`; **never run live**): [docs/execution.md](docs/execution.md).
 
 Database (see [docs/database.md](docs/database.md)):
 

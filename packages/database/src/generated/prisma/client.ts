@@ -111,6 +111,13 @@ export type ExecutionSecret = Prisma.ExecutionSecretModel
  */
 export type FirmQuoteAttempt = Prisma.FirmQuoteAttemptModel
 /**
+ * Model RootActionSession
+ * A short-lived grant to confirm ONE root (passkey) action for ONE execution: deploying the smart
+ * account and installing the restricted permission. The browser holds an opaque token; the user,
+ * wallet, execution and exact operation come from this row. The PIN is never involved.
+ */
+export type RootActionSession = Prisma.RootActionSessionModel
+/**
  * Model PasskeyChallenge
  * A one-time, short-lived WebAuthn challenge. Claimed with a single UPDATE so a replay gets nothing.
  */

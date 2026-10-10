@@ -40,6 +40,13 @@ export type ExecutionMinAggregateOutputType = {
   paymentAuthorizationId: string | null
   walletId: string | null
   firmQuoteAttemptId: string | null
+  authorizationConsumedAt: Date | null
+  userActionKind: string | null
+  providerSubmitState: string | null
+  settledInputAmount: string | null
+  settledOutputAmount: string | null
+  claimTombstonedAt: Date | null
+  lastReconciledAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -60,6 +67,13 @@ export type ExecutionMaxAggregateOutputType = {
   paymentAuthorizationId: string | null
   walletId: string | null
   firmQuoteAttemptId: string | null
+  authorizationConsumedAt: Date | null
+  userActionKind: string | null
+  providerSubmitState: string | null
+  settledInputAmount: string | null
+  settledOutputAmount: string | null
+  claimTombstonedAt: Date | null
+  lastReconciledAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -82,6 +96,13 @@ export type ExecutionCountAggregateOutputType = {
   walletId: number
   firmQuoteAttemptId: number
   plan: number
+  authorizationConsumedAt: number
+  userActionKind: number
+  providerSubmitState: number
+  settledInputAmount: number
+  settledOutputAmount: number
+  claimTombstonedAt: number
+  lastReconciledAt: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -104,6 +125,13 @@ export type ExecutionMinAggregateInputType = {
   paymentAuthorizationId?: true
   walletId?: true
   firmQuoteAttemptId?: true
+  authorizationConsumedAt?: true
+  userActionKind?: true
+  providerSubmitState?: true
+  settledInputAmount?: true
+  settledOutputAmount?: true
+  claimTombstonedAt?: true
+  lastReconciledAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -124,6 +152,13 @@ export type ExecutionMaxAggregateInputType = {
   paymentAuthorizationId?: true
   walletId?: true
   firmQuoteAttemptId?: true
+  authorizationConsumedAt?: true
+  userActionKind?: true
+  providerSubmitState?: true
+  settledInputAmount?: true
+  settledOutputAmount?: true
+  claimTombstonedAt?: true
+  lastReconciledAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -146,6 +181,13 @@ export type ExecutionCountAggregateInputType = {
   walletId?: true
   firmQuoteAttemptId?: true
   plan?: true
+  authorizationConsumedAt?: true
+  userActionKind?: true
+  providerSubmitState?: true
+  settledInputAmount?: true
+  settledOutputAmount?: true
+  claimTombstonedAt?: true
+  lastReconciledAt?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -241,6 +283,13 @@ export type ExecutionGroupByOutputType = {
   walletId: string | null
   firmQuoteAttemptId: string | null
   plan: runtime.JsonValue | null
+  authorizationConsumedAt: Date | null
+  userActionKind: string | null
+  providerSubmitState: string | null
+  settledInputAmount: string | null
+  settledOutputAmount: string | null
+  claimTombstonedAt: Date | null
+  lastReconciledAt: Date | null
   createdAt: Date
   updatedAt: Date
   _count: ExecutionCountAggregateOutputType | null
@@ -284,6 +333,13 @@ export type ExecutionWhereInput = {
   walletId?: Prisma.UuidNullableFilter<"Execution"> | string | null
   firmQuoteAttemptId?: Prisma.UuidNullableFilter<"Execution"> | string | null
   plan?: Prisma.JsonNullableFilter<"Execution">
+  authorizationConsumedAt?: Prisma.DateTimeNullableFilter<"Execution"> | Date | string | null
+  userActionKind?: Prisma.StringNullableFilter<"Execution"> | string | null
+  providerSubmitState?: Prisma.StringNullableFilter<"Execution"> | string | null
+  settledInputAmount?: Prisma.StringNullableFilter<"Execution"> | string | null
+  settledOutputAmount?: Prisma.StringNullableFilter<"Execution"> | string | null
+  claimTombstonedAt?: Prisma.DateTimeNullableFilter<"Execution"> | Date | string | null
+  lastReconciledAt?: Prisma.DateTimeNullableFilter<"Execution"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Execution"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Execution"> | Date | string
   intent?: Prisma.XOR<Prisma.IntentScalarRelationFilter, Prisma.IntentWhereInput>
@@ -293,6 +349,7 @@ export type ExecutionWhereInput = {
   paymentAuthorization?: Prisma.XOR<Prisma.PaymentAuthorizationNullableScalarRelationFilter, Prisma.PaymentAuthorizationWhereInput> | null
   wallet?: Prisma.XOR<Prisma.WalletNullableScalarRelationFilter, Prisma.WalletWhereInput> | null
   firmQuoteAttempt?: Prisma.XOR<Prisma.FirmQuoteAttemptNullableScalarRelationFilter, Prisma.FirmQuoteAttemptWhereInput> | null
+  rootActions?: Prisma.RootActionSessionListRelationFilter
   auditEvents?: Prisma.AuditEventListRelationFilter
 }
 
@@ -314,6 +371,13 @@ export type ExecutionOrderByWithRelationInput = {
   walletId?: Prisma.SortOrderInput | Prisma.SortOrder
   firmQuoteAttemptId?: Prisma.SortOrderInput | Prisma.SortOrder
   plan?: Prisma.SortOrderInput | Prisma.SortOrder
+  authorizationConsumedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  userActionKind?: Prisma.SortOrderInput | Prisma.SortOrder
+  providerSubmitState?: Prisma.SortOrderInput | Prisma.SortOrder
+  settledInputAmount?: Prisma.SortOrderInput | Prisma.SortOrder
+  settledOutputAmount?: Prisma.SortOrderInput | Prisma.SortOrder
+  claimTombstonedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  lastReconciledAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   intent?: Prisma.IntentOrderByWithRelationInput
@@ -323,6 +387,7 @@ export type ExecutionOrderByWithRelationInput = {
   paymentAuthorization?: Prisma.PaymentAuthorizationOrderByWithRelationInput
   wallet?: Prisma.WalletOrderByWithRelationInput
   firmQuoteAttempt?: Prisma.FirmQuoteAttemptOrderByWithRelationInput
+  rootActions?: Prisma.RootActionSessionOrderByRelationAggregateInput
   auditEvents?: Prisma.AuditEventOrderByRelationAggregateInput
 }
 
@@ -347,6 +412,13 @@ export type ExecutionWhereUniqueInput = Prisma.AtLeast<{
   walletId?: Prisma.UuidNullableFilter<"Execution"> | string | null
   firmQuoteAttemptId?: Prisma.UuidNullableFilter<"Execution"> | string | null
   plan?: Prisma.JsonNullableFilter<"Execution">
+  authorizationConsumedAt?: Prisma.DateTimeNullableFilter<"Execution"> | Date | string | null
+  userActionKind?: Prisma.StringNullableFilter<"Execution"> | string | null
+  providerSubmitState?: Prisma.StringNullableFilter<"Execution"> | string | null
+  settledInputAmount?: Prisma.StringNullableFilter<"Execution"> | string | null
+  settledOutputAmount?: Prisma.StringNullableFilter<"Execution"> | string | null
+  claimTombstonedAt?: Prisma.DateTimeNullableFilter<"Execution"> | Date | string | null
+  lastReconciledAt?: Prisma.DateTimeNullableFilter<"Execution"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Execution"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Execution"> | Date | string
   intent?: Prisma.XOR<Prisma.IntentScalarRelationFilter, Prisma.IntentWhereInput>
@@ -356,6 +428,7 @@ export type ExecutionWhereUniqueInput = Prisma.AtLeast<{
   paymentAuthorization?: Prisma.XOR<Prisma.PaymentAuthorizationNullableScalarRelationFilter, Prisma.PaymentAuthorizationWhereInput> | null
   wallet?: Prisma.XOR<Prisma.WalletNullableScalarRelationFilter, Prisma.WalletWhereInput> | null
   firmQuoteAttempt?: Prisma.XOR<Prisma.FirmQuoteAttemptNullableScalarRelationFilter, Prisma.FirmQuoteAttemptWhereInput> | null
+  rootActions?: Prisma.RootActionSessionListRelationFilter
   auditEvents?: Prisma.AuditEventListRelationFilter
 }, "id" | "idempotencyKey" | "paymentAuthorizationId">
 
@@ -377,6 +450,13 @@ export type ExecutionOrderByWithAggregationInput = {
   walletId?: Prisma.SortOrderInput | Prisma.SortOrder
   firmQuoteAttemptId?: Prisma.SortOrderInput | Prisma.SortOrder
   plan?: Prisma.SortOrderInput | Prisma.SortOrder
+  authorizationConsumedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  userActionKind?: Prisma.SortOrderInput | Prisma.SortOrder
+  providerSubmitState?: Prisma.SortOrderInput | Prisma.SortOrder
+  settledInputAmount?: Prisma.SortOrderInput | Prisma.SortOrder
+  settledOutputAmount?: Prisma.SortOrderInput | Prisma.SortOrder
+  claimTombstonedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  lastReconciledAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.ExecutionCountOrderByAggregateInput
@@ -405,6 +485,13 @@ export type ExecutionScalarWhereWithAggregatesInput = {
   walletId?: Prisma.UuidNullableWithAggregatesFilter<"Execution"> | string | null
   firmQuoteAttemptId?: Prisma.UuidNullableWithAggregatesFilter<"Execution"> | string | null
   plan?: Prisma.JsonNullableWithAggregatesFilter<"Execution">
+  authorizationConsumedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Execution"> | Date | string | null
+  userActionKind?: Prisma.StringNullableWithAggregatesFilter<"Execution"> | string | null
+  providerSubmitState?: Prisma.StringNullableWithAggregatesFilter<"Execution"> | string | null
+  settledInputAmount?: Prisma.StringNullableWithAggregatesFilter<"Execution"> | string | null
+  settledOutputAmount?: Prisma.StringNullableWithAggregatesFilter<"Execution"> | string | null
+  claimTombstonedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Execution"> | Date | string | null
+  lastReconciledAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Execution"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Execution"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Execution"> | Date | string
 }
@@ -421,6 +508,13 @@ export type ExecutionCreateInput = {
   failureMessage?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   intent: Prisma.IntentCreateNestedOneWithoutExecutionsInput
@@ -430,6 +524,7 @@ export type ExecutionCreateInput = {
   paymentAuthorization?: Prisma.PaymentAuthorizationCreateNestedOneWithoutExecutionsInput
   wallet?: Prisma.WalletCreateNestedOneWithoutExecutionsInput
   firmQuoteAttempt?: Prisma.FirmQuoteAttemptCreateNestedOneWithoutExecutionsInput
+  rootActions?: Prisma.RootActionSessionCreateNestedManyWithoutExecutionInput
   auditEvents?: Prisma.AuditEventCreateNestedManyWithoutExecutionInput
 }
 
@@ -451,9 +546,17 @@ export type ExecutionUncheckedCreateInput = {
   walletId?: string | null
   firmQuoteAttemptId?: string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutExecutionInput
+  rootActions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutExecutionInput
   auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutExecutionInput
 }
 
@@ -469,6 +572,13 @@ export type ExecutionUpdateInput = {
   failureMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intent?: Prisma.IntentUpdateOneRequiredWithoutExecutionsNestedInput
@@ -478,6 +588,7 @@ export type ExecutionUpdateInput = {
   paymentAuthorization?: Prisma.PaymentAuthorizationUpdateOneWithoutExecutionsNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutExecutionsNestedInput
   firmQuoteAttempt?: Prisma.FirmQuoteAttemptUpdateOneWithoutExecutionsNestedInput
+  rootActions?: Prisma.RootActionSessionUpdateManyWithoutExecutionNestedInput
   auditEvents?: Prisma.AuditEventUpdateManyWithoutExecutionNestedInput
 }
 
@@ -499,9 +610,17 @@ export type ExecutionUncheckedUpdateInput = {
   walletId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firmQuoteAttemptId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutExecutionNestedInput
+  rootActions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutExecutionNestedInput
   auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutExecutionNestedInput
 }
 
@@ -523,6 +642,13 @@ export type ExecutionCreateManyInput = {
   walletId?: string | null
   firmQuoteAttemptId?: string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -539,6 +665,13 @@ export type ExecutionUpdateManyMutationInput = {
   failureMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -561,6 +694,13 @@ export type ExecutionUncheckedUpdateManyInput = {
   walletId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firmQuoteAttemptId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -573,6 +713,11 @@ export type ExecutionListRelationFilter = {
 
 export type ExecutionOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
+}
+
+export type ExecutionScalarRelationFilter = {
+  is?: Prisma.ExecutionWhereInput
+  isNot?: Prisma.ExecutionWhereInput
 }
 
 export type ExecutionCountOrderByAggregateInput = {
@@ -593,6 +738,13 @@ export type ExecutionCountOrderByAggregateInput = {
   walletId?: Prisma.SortOrder
   firmQuoteAttemptId?: Prisma.SortOrder
   plan?: Prisma.SortOrder
+  authorizationConsumedAt?: Prisma.SortOrder
+  userActionKind?: Prisma.SortOrder
+  providerSubmitState?: Prisma.SortOrder
+  settledInputAmount?: Prisma.SortOrder
+  settledOutputAmount?: Prisma.SortOrder
+  claimTombstonedAt?: Prisma.SortOrder
+  lastReconciledAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -613,6 +765,13 @@ export type ExecutionMaxOrderByAggregateInput = {
   paymentAuthorizationId?: Prisma.SortOrder
   walletId?: Prisma.SortOrder
   firmQuoteAttemptId?: Prisma.SortOrder
+  authorizationConsumedAt?: Prisma.SortOrder
+  userActionKind?: Prisma.SortOrder
+  providerSubmitState?: Prisma.SortOrder
+  settledInputAmount?: Prisma.SortOrder
+  settledOutputAmount?: Prisma.SortOrder
+  claimTombstonedAt?: Prisma.SortOrder
+  lastReconciledAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -633,13 +792,15 @@ export type ExecutionMinOrderByAggregateInput = {
   paymentAuthorizationId?: Prisma.SortOrder
   walletId?: Prisma.SortOrder
   firmQuoteAttemptId?: Prisma.SortOrder
+  authorizationConsumedAt?: Prisma.SortOrder
+  userActionKind?: Prisma.SortOrder
+  providerSubmitState?: Prisma.SortOrder
+  settledInputAmount?: Prisma.SortOrder
+  settledOutputAmount?: Prisma.SortOrder
+  claimTombstonedAt?: Prisma.SortOrder
+  lastReconciledAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-}
-
-export type ExecutionScalarRelationFilter = {
-  is?: Prisma.ExecutionWhereInput
-  isNot?: Prisma.ExecutionWhereInput
 }
 
 export type ExecutionNullableScalarRelationFilter = {
@@ -815,6 +976,20 @@ export type ExecutionUncheckedUpdateManyWithoutFirmQuoteAttemptNestedInput = {
   deleteMany?: Prisma.ExecutionScalarWhereInput | Prisma.ExecutionScalarWhereInput[]
 }
 
+export type ExecutionCreateNestedOneWithoutRootActionsInput = {
+  create?: Prisma.XOR<Prisma.ExecutionCreateWithoutRootActionsInput, Prisma.ExecutionUncheckedCreateWithoutRootActionsInput>
+  connectOrCreate?: Prisma.ExecutionCreateOrConnectWithoutRootActionsInput
+  connect?: Prisma.ExecutionWhereUniqueInput
+}
+
+export type ExecutionUpdateOneRequiredWithoutRootActionsNestedInput = {
+  create?: Prisma.XOR<Prisma.ExecutionCreateWithoutRootActionsInput, Prisma.ExecutionUncheckedCreateWithoutRootActionsInput>
+  connectOrCreate?: Prisma.ExecutionCreateOrConnectWithoutRootActionsInput
+  upsert?: Prisma.ExecutionUpsertWithoutRootActionsInput
+  connect?: Prisma.ExecutionWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ExecutionUpdateToOneWithWhereWithoutRootActionsInput, Prisma.ExecutionUpdateWithoutRootActionsInput>, Prisma.ExecutionUncheckedUpdateWithoutRootActionsInput>
+}
+
 export type ExecutionCreateNestedManyWithoutIntentInput = {
   create?: Prisma.XOR<Prisma.ExecutionCreateWithoutIntentInput, Prisma.ExecutionUncheckedCreateWithoutIntentInput> | Prisma.ExecutionCreateWithoutIntentInput[] | Prisma.ExecutionUncheckedCreateWithoutIntentInput[]
   connectOrCreate?: Prisma.ExecutionCreateOrConnectWithoutIntentInput | Prisma.ExecutionCreateOrConnectWithoutIntentInput[]
@@ -945,6 +1120,13 @@ export type ExecutionCreateWithoutUserInput = {
   failureMessage?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   intent: Prisma.IntentCreateNestedOneWithoutExecutionsInput
@@ -953,6 +1135,7 @@ export type ExecutionCreateWithoutUserInput = {
   paymentAuthorization?: Prisma.PaymentAuthorizationCreateNestedOneWithoutExecutionsInput
   wallet?: Prisma.WalletCreateNestedOneWithoutExecutionsInput
   firmQuoteAttempt?: Prisma.FirmQuoteAttemptCreateNestedOneWithoutExecutionsInput
+  rootActions?: Prisma.RootActionSessionCreateNestedManyWithoutExecutionInput
   auditEvents?: Prisma.AuditEventCreateNestedManyWithoutExecutionInput
 }
 
@@ -973,9 +1156,17 @@ export type ExecutionUncheckedCreateWithoutUserInput = {
   walletId?: string | null
   firmQuoteAttemptId?: string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutExecutionInput
+  rootActions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutExecutionInput
   auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutExecutionInput
 }
 
@@ -1026,6 +1217,13 @@ export type ExecutionScalarWhereInput = {
   walletId?: Prisma.UuidNullableFilter<"Execution"> | string | null
   firmQuoteAttemptId?: Prisma.UuidNullableFilter<"Execution"> | string | null
   plan?: Prisma.JsonNullableFilter<"Execution">
+  authorizationConsumedAt?: Prisma.DateTimeNullableFilter<"Execution"> | Date | string | null
+  userActionKind?: Prisma.StringNullableFilter<"Execution"> | string | null
+  providerSubmitState?: Prisma.StringNullableFilter<"Execution"> | string | null
+  settledInputAmount?: Prisma.StringNullableFilter<"Execution"> | string | null
+  settledOutputAmount?: Prisma.StringNullableFilter<"Execution"> | string | null
+  claimTombstonedAt?: Prisma.DateTimeNullableFilter<"Execution"> | Date | string | null
+  lastReconciledAt?: Prisma.DateTimeNullableFilter<"Execution"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Execution"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Execution"> | Date | string
 }
@@ -1042,6 +1240,13 @@ export type ExecutionCreateWithoutWalletInput = {
   failureMessage?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   intent: Prisma.IntentCreateNestedOneWithoutExecutionsInput
@@ -1050,6 +1255,7 @@ export type ExecutionCreateWithoutWalletInput = {
   transactions?: Prisma.TransactionCreateNestedManyWithoutExecutionInput
   paymentAuthorization?: Prisma.PaymentAuthorizationCreateNestedOneWithoutExecutionsInput
   firmQuoteAttempt?: Prisma.FirmQuoteAttemptCreateNestedOneWithoutExecutionsInput
+  rootActions?: Prisma.RootActionSessionCreateNestedManyWithoutExecutionInput
   auditEvents?: Prisma.AuditEventCreateNestedManyWithoutExecutionInput
 }
 
@@ -1070,9 +1276,17 @@ export type ExecutionUncheckedCreateWithoutWalletInput = {
   paymentAuthorizationId?: string | null
   firmQuoteAttemptId?: string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutExecutionInput
+  rootActions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutExecutionInput
   auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutExecutionInput
 }
 
@@ -1114,6 +1328,13 @@ export type ExecutionCreateWithoutPaymentAuthorizationInput = {
   failureMessage?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   intent: Prisma.IntentCreateNestedOneWithoutExecutionsInput
@@ -1122,6 +1343,7 @@ export type ExecutionCreateWithoutPaymentAuthorizationInput = {
   transactions?: Prisma.TransactionCreateNestedManyWithoutExecutionInput
   wallet?: Prisma.WalletCreateNestedOneWithoutExecutionsInput
   firmQuoteAttempt?: Prisma.FirmQuoteAttemptCreateNestedOneWithoutExecutionsInput
+  rootActions?: Prisma.RootActionSessionCreateNestedManyWithoutExecutionInput
   auditEvents?: Prisma.AuditEventCreateNestedManyWithoutExecutionInput
 }
 
@@ -1142,9 +1364,17 @@ export type ExecutionUncheckedCreateWithoutPaymentAuthorizationInput = {
   walletId?: string | null
   firmQuoteAttemptId?: string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutExecutionInput
+  rootActions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutExecutionInput
   auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutExecutionInput
 }
 
@@ -1186,6 +1416,13 @@ export type ExecutionCreateWithoutFirmQuoteAttemptInput = {
   failureMessage?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   intent: Prisma.IntentCreateNestedOneWithoutExecutionsInput
@@ -1194,6 +1431,7 @@ export type ExecutionCreateWithoutFirmQuoteAttemptInput = {
   transactions?: Prisma.TransactionCreateNestedManyWithoutExecutionInput
   paymentAuthorization?: Prisma.PaymentAuthorizationCreateNestedOneWithoutExecutionsInput
   wallet?: Prisma.WalletCreateNestedOneWithoutExecutionsInput
+  rootActions?: Prisma.RootActionSessionCreateNestedManyWithoutExecutionInput
   auditEvents?: Prisma.AuditEventCreateNestedManyWithoutExecutionInput
 }
 
@@ -1214,9 +1452,17 @@ export type ExecutionUncheckedCreateWithoutFirmQuoteAttemptInput = {
   paymentAuthorizationId?: string | null
   walletId?: string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutExecutionInput
+  rootActions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutExecutionInput
   auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutExecutionInput
 }
 
@@ -1246,6 +1492,146 @@ export type ExecutionUpdateManyWithWhereWithoutFirmQuoteAttemptInput = {
   data: Prisma.XOR<Prisma.ExecutionUpdateManyMutationInput, Prisma.ExecutionUncheckedUpdateManyWithoutFirmQuoteAttemptInput>
 }
 
+export type ExecutionCreateWithoutRootActionsInput = {
+  id: string
+  status?: $Enums.ExecutionStatus
+  idempotencyKey: string
+  confirmedAt?: Date | string | null
+  startedAt?: Date | string | null
+  completedAt?: Date | string | null
+  failedAt?: Date | string | null
+  failureCode?: string | null
+  failureMessage?: string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  intent: Prisma.IntentCreateNestedOneWithoutExecutionsInput
+  route: Prisma.RouteCreateNestedOneWithoutExecutionsInput
+  user: Prisma.UserCreateNestedOneWithoutExecutionsInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutExecutionInput
+  paymentAuthorization?: Prisma.PaymentAuthorizationCreateNestedOneWithoutExecutionsInput
+  wallet?: Prisma.WalletCreateNestedOneWithoutExecutionsInput
+  firmQuoteAttempt?: Prisma.FirmQuoteAttemptCreateNestedOneWithoutExecutionsInput
+  auditEvents?: Prisma.AuditEventCreateNestedManyWithoutExecutionInput
+}
+
+export type ExecutionUncheckedCreateWithoutRootActionsInput = {
+  id: string
+  intentId: string
+  routeId: string
+  userId: string
+  status?: $Enums.ExecutionStatus
+  idempotencyKey: string
+  confirmedAt?: Date | string | null
+  startedAt?: Date | string | null
+  completedAt?: Date | string | null
+  failedAt?: Date | string | null
+  failureCode?: string | null
+  failureMessage?: string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  paymentAuthorizationId?: string | null
+  walletId?: string | null
+  firmQuoteAttemptId?: string | null
+  plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutExecutionInput
+  auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutExecutionInput
+}
+
+export type ExecutionCreateOrConnectWithoutRootActionsInput = {
+  where: Prisma.ExecutionWhereUniqueInput
+  create: Prisma.XOR<Prisma.ExecutionCreateWithoutRootActionsInput, Prisma.ExecutionUncheckedCreateWithoutRootActionsInput>
+}
+
+export type ExecutionUpsertWithoutRootActionsInput = {
+  update: Prisma.XOR<Prisma.ExecutionUpdateWithoutRootActionsInput, Prisma.ExecutionUncheckedUpdateWithoutRootActionsInput>
+  create: Prisma.XOR<Prisma.ExecutionCreateWithoutRootActionsInput, Prisma.ExecutionUncheckedCreateWithoutRootActionsInput>
+  where?: Prisma.ExecutionWhereInput
+}
+
+export type ExecutionUpdateToOneWithWhereWithoutRootActionsInput = {
+  where?: Prisma.ExecutionWhereInput
+  data: Prisma.XOR<Prisma.ExecutionUpdateWithoutRootActionsInput, Prisma.ExecutionUncheckedUpdateWithoutRootActionsInput>
+}
+
+export type ExecutionUpdateWithoutRootActionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumExecutionStatusFieldUpdateOperationsInput | $Enums.ExecutionStatus
+  idempotencyKey?: Prisma.StringFieldUpdateOperationsInput | string
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  failureMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  intent?: Prisma.IntentUpdateOneRequiredWithoutExecutionsNestedInput
+  route?: Prisma.RouteUpdateOneRequiredWithoutExecutionsNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutExecutionsNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutExecutionNestedInput
+  paymentAuthorization?: Prisma.PaymentAuthorizationUpdateOneWithoutExecutionsNestedInput
+  wallet?: Prisma.WalletUpdateOneWithoutExecutionsNestedInput
+  firmQuoteAttempt?: Prisma.FirmQuoteAttemptUpdateOneWithoutExecutionsNestedInput
+  auditEvents?: Prisma.AuditEventUpdateManyWithoutExecutionNestedInput
+}
+
+export type ExecutionUncheckedUpdateWithoutRootActionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  intentId?: Prisma.StringFieldUpdateOperationsInput | string
+  routeId?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumExecutionStatusFieldUpdateOperationsInput | $Enums.ExecutionStatus
+  idempotencyKey?: Prisma.StringFieldUpdateOperationsInput | string
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  failureMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  paymentAuthorizationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  walletId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  firmQuoteAttemptId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutExecutionNestedInput
+  auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutExecutionNestedInput
+}
+
 export type ExecutionCreateWithoutIntentInput = {
   id: string
   status?: $Enums.ExecutionStatus
@@ -1258,6 +1644,13 @@ export type ExecutionCreateWithoutIntentInput = {
   failureMessage?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   route: Prisma.RouteCreateNestedOneWithoutExecutionsInput
@@ -1266,6 +1659,7 @@ export type ExecutionCreateWithoutIntentInput = {
   paymentAuthorization?: Prisma.PaymentAuthorizationCreateNestedOneWithoutExecutionsInput
   wallet?: Prisma.WalletCreateNestedOneWithoutExecutionsInput
   firmQuoteAttempt?: Prisma.FirmQuoteAttemptCreateNestedOneWithoutExecutionsInput
+  rootActions?: Prisma.RootActionSessionCreateNestedManyWithoutExecutionInput
   auditEvents?: Prisma.AuditEventCreateNestedManyWithoutExecutionInput
 }
 
@@ -1286,9 +1680,17 @@ export type ExecutionUncheckedCreateWithoutIntentInput = {
   walletId?: string | null
   firmQuoteAttemptId?: string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutExecutionInput
+  rootActions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutExecutionInput
   auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutExecutionInput
 }
 
@@ -1330,6 +1732,13 @@ export type ExecutionCreateWithoutRouteInput = {
   failureMessage?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   intent: Prisma.IntentCreateNestedOneWithoutExecutionsInput
@@ -1338,6 +1747,7 @@ export type ExecutionCreateWithoutRouteInput = {
   paymentAuthorization?: Prisma.PaymentAuthorizationCreateNestedOneWithoutExecutionsInput
   wallet?: Prisma.WalletCreateNestedOneWithoutExecutionsInput
   firmQuoteAttempt?: Prisma.FirmQuoteAttemptCreateNestedOneWithoutExecutionsInput
+  rootActions?: Prisma.RootActionSessionCreateNestedManyWithoutExecutionInput
   auditEvents?: Prisma.AuditEventCreateNestedManyWithoutExecutionInput
 }
 
@@ -1358,9 +1768,17 @@ export type ExecutionUncheckedCreateWithoutRouteInput = {
   walletId?: string | null
   firmQuoteAttemptId?: string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutExecutionInput
+  rootActions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutExecutionInput
   auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutExecutionInput
 }
 
@@ -1402,6 +1820,13 @@ export type ExecutionCreateWithoutTransactionsInput = {
   failureMessage?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   intent: Prisma.IntentCreateNestedOneWithoutExecutionsInput
@@ -1410,6 +1835,7 @@ export type ExecutionCreateWithoutTransactionsInput = {
   paymentAuthorization?: Prisma.PaymentAuthorizationCreateNestedOneWithoutExecutionsInput
   wallet?: Prisma.WalletCreateNestedOneWithoutExecutionsInput
   firmQuoteAttempt?: Prisma.FirmQuoteAttemptCreateNestedOneWithoutExecutionsInput
+  rootActions?: Prisma.RootActionSessionCreateNestedManyWithoutExecutionInput
   auditEvents?: Prisma.AuditEventCreateNestedManyWithoutExecutionInput
 }
 
@@ -1431,8 +1857,16 @@ export type ExecutionUncheckedCreateWithoutTransactionsInput = {
   walletId?: string | null
   firmQuoteAttemptId?: string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  rootActions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutExecutionInput
   auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutExecutionInput
 }
 
@@ -1464,6 +1898,13 @@ export type ExecutionUpdateWithoutTransactionsInput = {
   failureMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intent?: Prisma.IntentUpdateOneRequiredWithoutExecutionsNestedInput
@@ -1472,6 +1913,7 @@ export type ExecutionUpdateWithoutTransactionsInput = {
   paymentAuthorization?: Prisma.PaymentAuthorizationUpdateOneWithoutExecutionsNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutExecutionsNestedInput
   firmQuoteAttempt?: Prisma.FirmQuoteAttemptUpdateOneWithoutExecutionsNestedInput
+  rootActions?: Prisma.RootActionSessionUpdateManyWithoutExecutionNestedInput
   auditEvents?: Prisma.AuditEventUpdateManyWithoutExecutionNestedInput
 }
 
@@ -1493,8 +1935,16 @@ export type ExecutionUncheckedUpdateWithoutTransactionsInput = {
   walletId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firmQuoteAttemptId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  rootActions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutExecutionNestedInput
   auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutExecutionNestedInput
 }
 
@@ -1510,6 +1960,13 @@ export type ExecutionCreateWithoutAuditEventsInput = {
   failureMessage?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   intent: Prisma.IntentCreateNestedOneWithoutExecutionsInput
@@ -1519,6 +1976,7 @@ export type ExecutionCreateWithoutAuditEventsInput = {
   paymentAuthorization?: Prisma.PaymentAuthorizationCreateNestedOneWithoutExecutionsInput
   wallet?: Prisma.WalletCreateNestedOneWithoutExecutionsInput
   firmQuoteAttempt?: Prisma.FirmQuoteAttemptCreateNestedOneWithoutExecutionsInput
+  rootActions?: Prisma.RootActionSessionCreateNestedManyWithoutExecutionInput
 }
 
 export type ExecutionUncheckedCreateWithoutAuditEventsInput = {
@@ -1539,9 +1997,17 @@ export type ExecutionUncheckedCreateWithoutAuditEventsInput = {
   walletId?: string | null
   firmQuoteAttemptId?: string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutExecutionInput
+  rootActions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutExecutionInput
 }
 
 export type ExecutionCreateOrConnectWithoutAuditEventsInput = {
@@ -1572,6 +2038,13 @@ export type ExecutionUpdateWithoutAuditEventsInput = {
   failureMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intent?: Prisma.IntentUpdateOneRequiredWithoutExecutionsNestedInput
@@ -1581,6 +2054,7 @@ export type ExecutionUpdateWithoutAuditEventsInput = {
   paymentAuthorization?: Prisma.PaymentAuthorizationUpdateOneWithoutExecutionsNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutExecutionsNestedInput
   firmQuoteAttempt?: Prisma.FirmQuoteAttemptUpdateOneWithoutExecutionsNestedInput
+  rootActions?: Prisma.RootActionSessionUpdateManyWithoutExecutionNestedInput
 }
 
 export type ExecutionUncheckedUpdateWithoutAuditEventsInput = {
@@ -1601,9 +2075,17 @@ export type ExecutionUncheckedUpdateWithoutAuditEventsInput = {
   walletId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firmQuoteAttemptId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutExecutionNestedInput
+  rootActions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutExecutionNestedInput
 }
 
 export type ExecutionCreateManyUserInput = {
@@ -1623,6 +2105,13 @@ export type ExecutionCreateManyUserInput = {
   walletId?: string | null
   firmQuoteAttemptId?: string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1639,6 +2128,13 @@ export type ExecutionUpdateWithoutUserInput = {
   failureMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intent?: Prisma.IntentUpdateOneRequiredWithoutExecutionsNestedInput
@@ -1647,6 +2143,7 @@ export type ExecutionUpdateWithoutUserInput = {
   paymentAuthorization?: Prisma.PaymentAuthorizationUpdateOneWithoutExecutionsNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutExecutionsNestedInput
   firmQuoteAttempt?: Prisma.FirmQuoteAttemptUpdateOneWithoutExecutionsNestedInput
+  rootActions?: Prisma.RootActionSessionUpdateManyWithoutExecutionNestedInput
   auditEvents?: Prisma.AuditEventUpdateManyWithoutExecutionNestedInput
 }
 
@@ -1667,9 +2164,17 @@ export type ExecutionUncheckedUpdateWithoutUserInput = {
   walletId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firmQuoteAttemptId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutExecutionNestedInput
+  rootActions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutExecutionNestedInput
   auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutExecutionNestedInput
 }
 
@@ -1690,6 +2195,13 @@ export type ExecutionUncheckedUpdateManyWithoutUserInput = {
   walletId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firmQuoteAttemptId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1711,6 +2223,13 @@ export type ExecutionCreateManyWalletInput = {
   paymentAuthorizationId?: string | null
   firmQuoteAttemptId?: string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1727,6 +2246,13 @@ export type ExecutionUpdateWithoutWalletInput = {
   failureMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intent?: Prisma.IntentUpdateOneRequiredWithoutExecutionsNestedInput
@@ -1735,6 +2261,7 @@ export type ExecutionUpdateWithoutWalletInput = {
   transactions?: Prisma.TransactionUpdateManyWithoutExecutionNestedInput
   paymentAuthorization?: Prisma.PaymentAuthorizationUpdateOneWithoutExecutionsNestedInput
   firmQuoteAttempt?: Prisma.FirmQuoteAttemptUpdateOneWithoutExecutionsNestedInput
+  rootActions?: Prisma.RootActionSessionUpdateManyWithoutExecutionNestedInput
   auditEvents?: Prisma.AuditEventUpdateManyWithoutExecutionNestedInput
 }
 
@@ -1755,9 +2282,17 @@ export type ExecutionUncheckedUpdateWithoutWalletInput = {
   paymentAuthorizationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firmQuoteAttemptId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutExecutionNestedInput
+  rootActions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutExecutionNestedInput
   auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutExecutionNestedInput
 }
 
@@ -1778,6 +2313,13 @@ export type ExecutionUncheckedUpdateManyWithoutWalletInput = {
   paymentAuthorizationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firmQuoteAttemptId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1799,6 +2341,13 @@ export type ExecutionCreateManyPaymentAuthorizationInput = {
   walletId?: string | null
   firmQuoteAttemptId?: string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1815,6 +2364,13 @@ export type ExecutionUpdateWithoutPaymentAuthorizationInput = {
   failureMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intent?: Prisma.IntentUpdateOneRequiredWithoutExecutionsNestedInput
@@ -1823,6 +2379,7 @@ export type ExecutionUpdateWithoutPaymentAuthorizationInput = {
   transactions?: Prisma.TransactionUpdateManyWithoutExecutionNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutExecutionsNestedInput
   firmQuoteAttempt?: Prisma.FirmQuoteAttemptUpdateOneWithoutExecutionsNestedInput
+  rootActions?: Prisma.RootActionSessionUpdateManyWithoutExecutionNestedInput
   auditEvents?: Prisma.AuditEventUpdateManyWithoutExecutionNestedInput
 }
 
@@ -1843,9 +2400,17 @@ export type ExecutionUncheckedUpdateWithoutPaymentAuthorizationInput = {
   walletId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firmQuoteAttemptId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutExecutionNestedInput
+  rootActions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutExecutionNestedInput
   auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutExecutionNestedInput
 }
 
@@ -1866,6 +2431,13 @@ export type ExecutionUncheckedUpdateManyWithoutPaymentAuthorizationInput = {
   walletId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firmQuoteAttemptId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1887,6 +2459,13 @@ export type ExecutionCreateManyFirmQuoteAttemptInput = {
   paymentAuthorizationId?: string | null
   walletId?: string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1903,6 +2482,13 @@ export type ExecutionUpdateWithoutFirmQuoteAttemptInput = {
   failureMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intent?: Prisma.IntentUpdateOneRequiredWithoutExecutionsNestedInput
@@ -1911,6 +2497,7 @@ export type ExecutionUpdateWithoutFirmQuoteAttemptInput = {
   transactions?: Prisma.TransactionUpdateManyWithoutExecutionNestedInput
   paymentAuthorization?: Prisma.PaymentAuthorizationUpdateOneWithoutExecutionsNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutExecutionsNestedInput
+  rootActions?: Prisma.RootActionSessionUpdateManyWithoutExecutionNestedInput
   auditEvents?: Prisma.AuditEventUpdateManyWithoutExecutionNestedInput
 }
 
@@ -1931,9 +2518,17 @@ export type ExecutionUncheckedUpdateWithoutFirmQuoteAttemptInput = {
   paymentAuthorizationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   walletId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutExecutionNestedInput
+  rootActions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutExecutionNestedInput
   auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutExecutionNestedInput
 }
 
@@ -1954,6 +2549,13 @@ export type ExecutionUncheckedUpdateManyWithoutFirmQuoteAttemptInput = {
   paymentAuthorizationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   walletId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1975,6 +2577,13 @@ export type ExecutionCreateManyIntentInput = {
   walletId?: string | null
   firmQuoteAttemptId?: string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1991,6 +2600,13 @@ export type ExecutionUpdateWithoutIntentInput = {
   failureMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   route?: Prisma.RouteUpdateOneRequiredWithoutExecutionsNestedInput
@@ -1999,6 +2615,7 @@ export type ExecutionUpdateWithoutIntentInput = {
   paymentAuthorization?: Prisma.PaymentAuthorizationUpdateOneWithoutExecutionsNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutExecutionsNestedInput
   firmQuoteAttempt?: Prisma.FirmQuoteAttemptUpdateOneWithoutExecutionsNestedInput
+  rootActions?: Prisma.RootActionSessionUpdateManyWithoutExecutionNestedInput
   auditEvents?: Prisma.AuditEventUpdateManyWithoutExecutionNestedInput
 }
 
@@ -2019,9 +2636,17 @@ export type ExecutionUncheckedUpdateWithoutIntentInput = {
   walletId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firmQuoteAttemptId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutExecutionNestedInput
+  rootActions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutExecutionNestedInput
   auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutExecutionNestedInput
 }
 
@@ -2042,6 +2667,13 @@ export type ExecutionUncheckedUpdateManyWithoutIntentInput = {
   walletId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firmQuoteAttemptId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -2063,6 +2695,13 @@ export type ExecutionCreateManyRouteInput = {
   walletId?: string | null
   firmQuoteAttemptId?: string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Date | string | null
+  userActionKind?: string | null
+  providerSubmitState?: string | null
+  settledInputAmount?: string | null
+  settledOutputAmount?: string | null
+  claimTombstonedAt?: Date | string | null
+  lastReconciledAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -2079,6 +2718,13 @@ export type ExecutionUpdateWithoutRouteInput = {
   failureMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   intent?: Prisma.IntentUpdateOneRequiredWithoutExecutionsNestedInput
@@ -2087,6 +2733,7 @@ export type ExecutionUpdateWithoutRouteInput = {
   paymentAuthorization?: Prisma.PaymentAuthorizationUpdateOneWithoutExecutionsNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutExecutionsNestedInput
   firmQuoteAttempt?: Prisma.FirmQuoteAttemptUpdateOneWithoutExecutionsNestedInput
+  rootActions?: Prisma.RootActionSessionUpdateManyWithoutExecutionNestedInput
   auditEvents?: Prisma.AuditEventUpdateManyWithoutExecutionNestedInput
 }
 
@@ -2107,9 +2754,17 @@ export type ExecutionUncheckedUpdateWithoutRouteInput = {
   walletId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firmQuoteAttemptId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   transactions?: Prisma.TransactionUncheckedUpdateManyWithoutExecutionNestedInput
+  rootActions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutExecutionNestedInput
   auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutExecutionNestedInput
 }
 
@@ -2130,6 +2785,13 @@ export type ExecutionUncheckedUpdateManyWithoutRouteInput = {
   walletId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   firmQuoteAttemptId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plan?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  authorizationConsumedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  userActionKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubmitState?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledInputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settledOutputAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  claimTombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastReconciledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -2141,11 +2803,13 @@ export type ExecutionUncheckedUpdateManyWithoutRouteInput = {
 
 export type ExecutionCountOutputType = {
   transactions: number
+  rootActions: number
   auditEvents: number
 }
 
 export type ExecutionCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   transactions?: boolean | ExecutionCountOutputTypeCountTransactionsArgs
+  rootActions?: boolean | ExecutionCountOutputTypeCountRootActionsArgs
   auditEvents?: boolean | ExecutionCountOutputTypeCountAuditEventsArgs
 }
 
@@ -2164,6 +2828,13 @@ export type ExecutionCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Ex
  */
 export type ExecutionCountOutputTypeCountTransactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.TransactionWhereInput
+}
+
+/**
+ * ExecutionCountOutputType without action
+ */
+export type ExecutionCountOutputTypeCountRootActionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.RootActionSessionWhereInput
 }
 
 /**
@@ -2192,6 +2863,13 @@ export type ExecutionSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   walletId?: boolean
   firmQuoteAttemptId?: boolean
   plan?: boolean
+  authorizationConsumedAt?: boolean
+  userActionKind?: boolean
+  providerSubmitState?: boolean
+  settledInputAmount?: boolean
+  settledOutputAmount?: boolean
+  claimTombstonedAt?: boolean
+  lastReconciledAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   intent?: boolean | Prisma.IntentDefaultArgs<ExtArgs>
@@ -2201,6 +2879,7 @@ export type ExecutionSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   paymentAuthorization?: boolean | Prisma.Execution$paymentAuthorizationArgs<ExtArgs>
   wallet?: boolean | Prisma.Execution$walletArgs<ExtArgs>
   firmQuoteAttempt?: boolean | Prisma.Execution$firmQuoteAttemptArgs<ExtArgs>
+  rootActions?: boolean | Prisma.Execution$rootActionsArgs<ExtArgs>
   auditEvents?: boolean | Prisma.Execution$auditEventsArgs<ExtArgs>
   _count?: boolean | Prisma.ExecutionCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["execution"]>
@@ -2223,6 +2902,13 @@ export type ExecutionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   walletId?: boolean
   firmQuoteAttemptId?: boolean
   plan?: boolean
+  authorizationConsumedAt?: boolean
+  userActionKind?: boolean
+  providerSubmitState?: boolean
+  settledInputAmount?: boolean
+  settledOutputAmount?: boolean
+  claimTombstonedAt?: boolean
+  lastReconciledAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   intent?: boolean | Prisma.IntentDefaultArgs<ExtArgs>
@@ -2251,6 +2937,13 @@ export type ExecutionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   walletId?: boolean
   firmQuoteAttemptId?: boolean
   plan?: boolean
+  authorizationConsumedAt?: boolean
+  userActionKind?: boolean
+  providerSubmitState?: boolean
+  settledInputAmount?: boolean
+  settledOutputAmount?: boolean
+  claimTombstonedAt?: boolean
+  lastReconciledAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   intent?: boolean | Prisma.IntentDefaultArgs<ExtArgs>
@@ -2279,11 +2972,18 @@ export type ExecutionSelectScalar = {
   walletId?: boolean
   firmQuoteAttemptId?: boolean
   plan?: boolean
+  authorizationConsumedAt?: boolean
+  userActionKind?: boolean
+  providerSubmitState?: boolean
+  settledInputAmount?: boolean
+  settledOutputAmount?: boolean
+  claimTombstonedAt?: boolean
+  lastReconciledAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type ExecutionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "intentId" | "routeId" | "userId" | "status" | "idempotencyKey" | "confirmedAt" | "startedAt" | "completedAt" | "failedAt" | "failureCode" | "failureMessage" | "metadata" | "paymentAuthorizationId" | "walletId" | "firmQuoteAttemptId" | "plan" | "createdAt" | "updatedAt", ExtArgs["result"]["execution"]>
+export type ExecutionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "intentId" | "routeId" | "userId" | "status" | "idempotencyKey" | "confirmedAt" | "startedAt" | "completedAt" | "failedAt" | "failureCode" | "failureMessage" | "metadata" | "paymentAuthorizationId" | "walletId" | "firmQuoteAttemptId" | "plan" | "authorizationConsumedAt" | "userActionKind" | "providerSubmitState" | "settledInputAmount" | "settledOutputAmount" | "claimTombstonedAt" | "lastReconciledAt" | "createdAt" | "updatedAt", ExtArgs["result"]["execution"]>
 export type ExecutionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   intent?: boolean | Prisma.IntentDefaultArgs<ExtArgs>
   route?: boolean | Prisma.RouteDefaultArgs<ExtArgs>
@@ -2292,6 +2992,7 @@ export type ExecutionInclude<ExtArgs extends runtime.Types.Extensions.InternalAr
   paymentAuthorization?: boolean | Prisma.Execution$paymentAuthorizationArgs<ExtArgs>
   wallet?: boolean | Prisma.Execution$walletArgs<ExtArgs>
   firmQuoteAttempt?: boolean | Prisma.Execution$firmQuoteAttemptArgs<ExtArgs>
+  rootActions?: boolean | Prisma.Execution$rootActionsArgs<ExtArgs>
   auditEvents?: boolean | Prisma.Execution$auditEventsArgs<ExtArgs>
   _count?: boolean | Prisma.ExecutionCountOutputTypeDefaultArgs<ExtArgs>
 }
@@ -2322,6 +3023,7 @@ export type $ExecutionPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     paymentAuthorization: Prisma.$PaymentAuthorizationPayload<ExtArgs> | null
     wallet: Prisma.$WalletPayload<ExtArgs> | null
     firmQuoteAttempt: Prisma.$FirmQuoteAttemptPayload<ExtArgs> | null
+    rootActions: Prisma.$RootActionSessionPayload<ExtArgs>[]
     auditEvents: Prisma.$AuditEventPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -2351,6 +3053,28 @@ export type $ExecutionPayload<ExtArgs extends runtime.Types.Extensions.InternalA
      * The serialized ExecutionPlan. Holds no secret, signature or claim token.
      */
     plan: runtime.JsonValue | null
+    /**
+     * Set when the payment authorization was consumed: the moment execution rights were acquired.
+     */
+    authorizationConsumedAt: Date | null
+    /**
+     * What the person must do next (a root passkey action), while REQUIRES_USER_ACTION.
+     */
+    userActionKind: string | null
+    /**
+     * NONE until the provider is told (PENDING, SUBMITTED, FAILED).
+     */
+    providerSubmitState: string | null
+    /**
+     * What actually settled, in smallest units (set only after settlement is read).
+     */
+    settledInputAmount: string | null
+    settledOutputAmount: string | null
+    /**
+     * When the encrypted provider claim token was destroyed (it is not needed after the submit).
+     */
+    claimTombstonedAt: Date | null
+    lastReconciledAt: Date | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["execution"]>
@@ -2754,6 +3478,7 @@ export interface Prisma__ExecutionClient<T, Null = never, ExtArgs extends runtim
   paymentAuthorization<T extends Prisma.Execution$paymentAuthorizationArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Execution$paymentAuthorizationArgs<ExtArgs>>): Prisma.Prisma__PaymentAuthorizationClient<runtime.Types.Result.GetResult<Prisma.$PaymentAuthorizationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   wallet<T extends Prisma.Execution$walletArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Execution$walletArgs<ExtArgs>>): Prisma.Prisma__WalletClient<runtime.Types.Result.GetResult<Prisma.$WalletPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   firmQuoteAttempt<T extends Prisma.Execution$firmQuoteAttemptArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Execution$firmQuoteAttemptArgs<ExtArgs>>): Prisma.Prisma__FirmQuoteAttemptClient<runtime.Types.Result.GetResult<Prisma.$FirmQuoteAttemptPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  rootActions<T extends Prisma.Execution$rootActionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Execution$rootActionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RootActionSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   auditEvents<T extends Prisma.Execution$auditEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Execution$auditEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AuditEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -2801,6 +3526,13 @@ export interface ExecutionFieldRefs {
   readonly walletId: Prisma.FieldRef<"Execution", 'String'>
   readonly firmQuoteAttemptId: Prisma.FieldRef<"Execution", 'String'>
   readonly plan: Prisma.FieldRef<"Execution", 'Json'>
+  readonly authorizationConsumedAt: Prisma.FieldRef<"Execution", 'DateTime'>
+  readonly userActionKind: Prisma.FieldRef<"Execution", 'String'>
+  readonly providerSubmitState: Prisma.FieldRef<"Execution", 'String'>
+  readonly settledInputAmount: Prisma.FieldRef<"Execution", 'String'>
+  readonly settledOutputAmount: Prisma.FieldRef<"Execution", 'String'>
+  readonly claimTombstonedAt: Prisma.FieldRef<"Execution", 'DateTime'>
+  readonly lastReconciledAt: Prisma.FieldRef<"Execution", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Execution", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Execution", 'DateTime'>
 }
@@ -3282,6 +4014,30 @@ export type Execution$firmQuoteAttemptArgs<ExtArgs extends runtime.Types.Extensi
    */
   include?: Prisma.FirmQuoteAttemptInclude<ExtArgs> | null
   where?: Prisma.FirmQuoteAttemptWhereInput
+}
+
+/**
+ * Execution.rootActions
+ */
+export type Execution$rootActionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the RootActionSession
+   */
+  select?: Prisma.RootActionSessionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the RootActionSession
+   */
+  omit?: Prisma.RootActionSessionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.RootActionSessionInclude<ExtArgs> | null
+  where?: Prisma.RootActionSessionWhereInput
+  orderBy?: Prisma.RootActionSessionOrderByWithRelationInput | Prisma.RootActionSessionOrderByWithRelationInput[]
+  cursor?: Prisma.RootActionSessionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.RootActionSessionScalarFieldEnum | Prisma.RootActionSessionScalarFieldEnum[]
 }
 
 /**

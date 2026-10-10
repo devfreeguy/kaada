@@ -324,6 +324,54 @@ describe("wallet configuration", () => {
   });
 });
 
+describe("execution (moving funds) configuration", () => {
+  const key = Buffer.alloc(32, 5).toString("base64");
+  const ready = {
+    DATABASE_URL: databaseUrl,
+    WALLET_PROVIDER: "kernel",
+    PASSKEY_RP_ID: "kaada.app",
+    PASSKEY_ORIGIN: "https://app.kaada.app",
+    FX_PROVIDER: "textile",
+    TEXTILE_ENV: "live",
+    TEXTILE_LIVE_API_KEY: "tx_live_abcd1234.supersecretvalue",
+    EXECUTION_SECRET_KEY: key,
+  };
+
+  it("is off unless exactly true", () => {
+    assert.equal(loadConfig({ ...ready }).execution.enabled, false);
+    assert.throws(() => loadConfig({ ...ready, EXECUTION_ENABLED: "yes" }), ConfigError);
+  });
+
+  it("refuses to start enabled without a bundler", () => {
+    assert.throws(() => loadConfig({ ...ready, EXECUTION_ENABLED: "true" }), /BUNDLER_URL/);
+    const config = loadConfig({
+      ...ready,
+      EXECUTION_ENABLED: "true",
+      BUNDLER_URL: "https://bundler.example/rpc",
+    });
+    assert.equal(config.execution.enabled, true);
+    assert.equal(config.execution.bundlerUrl, "https://bundler.example/rpc");
+  });
+
+  it("refuses to start enabled without the secret key, wallets or pricing", () => {
+    const enabled = { ...ready, EXECUTION_ENABLED: "true", BUNDLER_URL: "https://b.example/rpc" };
+    const { EXECUTION_SECRET_KEY: _key, ...noKey } = enabled;
+    assert.throws(() => loadConfig(noKey), ConfigError);
+    assert.throws(() => loadConfig({ ...enabled, FX_PROVIDER: "mock" }), ConfigError);
+  });
+
+  it("validates the gas floor and the polling bounds", () => {
+    assert.throws(() => loadConfig({ ...ready, EXECUTION_MIN_NATIVE_WEI: "0" }), ConfigError);
+    assert.throws(() => loadConfig({ ...ready, EXECUTION_MIN_NATIVE_WEI: "1.5" }), ConfigError);
+    assert.throws(() => loadConfig({ ...ready, EXECUTION_POLL_INTERVAL_MS: "5" }), ConfigError);
+    assert.equal(
+      loadConfig({ ...ready, EXECUTION_RECONCILE_INTERVAL_SECONDS: "0" }).execution
+        .reconcileIntervalMs,
+      0,
+    );
+  });
+});
+
 describe("payment authorization configuration", () => {
   const base = { DATABASE_URL: databaseUrl };
   const kernel = {
@@ -381,6 +429,8 @@ describe("firm quote configuration", () => {
     assert.equal(execution.maxOutstandingRfqs, 4);
     assert.deepEqual(execution.cipherKeys, []);
     assert.equal(execution.bundlerConfigured, false);
+    assert.equal(execution.enabled, false, "moving funds is off by default");
+    assert.equal(execution.minNativeWei, 1_000_000_000_000_000n);
   });
 
   it("accepts only a 32-byte key, and keeps the previous one for rotation", () => {

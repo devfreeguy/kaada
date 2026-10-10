@@ -40,6 +40,7 @@ export type ExecutionSecretMinAggregateOutputType = {
   purpose: string | null
   keyVersion: number | null
   ciphertext: string | null
+  tombstonedAt: Date | null
   createdAt: Date | null
 }
 
@@ -48,6 +49,7 @@ export type ExecutionSecretMaxAggregateOutputType = {
   purpose: string | null
   keyVersion: number | null
   ciphertext: string | null
+  tombstonedAt: Date | null
   createdAt: Date | null
 }
 
@@ -56,6 +58,7 @@ export type ExecutionSecretCountAggregateOutputType = {
   purpose: number
   keyVersion: number
   ciphertext: number
+  tombstonedAt: number
   createdAt: number
   _all: number
 }
@@ -74,6 +77,7 @@ export type ExecutionSecretMinAggregateInputType = {
   purpose?: true
   keyVersion?: true
   ciphertext?: true
+  tombstonedAt?: true
   createdAt?: true
 }
 
@@ -82,6 +86,7 @@ export type ExecutionSecretMaxAggregateInputType = {
   purpose?: true
   keyVersion?: true
   ciphertext?: true
+  tombstonedAt?: true
   createdAt?: true
 }
 
@@ -90,6 +95,7 @@ export type ExecutionSecretCountAggregateInputType = {
   purpose?: true
   keyVersion?: true
   ciphertext?: true
+  tombstonedAt?: true
   createdAt?: true
   _all?: true
 }
@@ -184,7 +190,8 @@ export type ExecutionSecretGroupByOutputType = {
   id: string
   purpose: string
   keyVersion: number
-  ciphertext: string
+  ciphertext: string | null
+  tombstonedAt: Date | null
   createdAt: Date
   _count: ExecutionSecretCountAggregateOutputType | null
   _avg: ExecutionSecretAvgAggregateOutputType | null
@@ -215,18 +222,24 @@ export type ExecutionSecretWhereInput = {
   id?: Prisma.UuidFilter<"ExecutionSecret"> | string
   purpose?: Prisma.StringFilter<"ExecutionSecret"> | string
   keyVersion?: Prisma.IntFilter<"ExecutionSecret"> | number
-  ciphertext?: Prisma.StringFilter<"ExecutionSecret"> | string
+  ciphertext?: Prisma.StringNullableFilter<"ExecutionSecret"> | string | null
+  tombstonedAt?: Prisma.DateTimeNullableFilter<"ExecutionSecret"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"ExecutionSecret"> | Date | string
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptListRelationFilter
+  sessionKeyFor?: Prisma.DelegatedPermissionListRelationFilter
+  approvalFor?: Prisma.DelegatedPermissionListRelationFilter
 }
 
 export type ExecutionSecretOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   purpose?: Prisma.SortOrder
   keyVersion?: Prisma.SortOrder
-  ciphertext?: Prisma.SortOrder
+  ciphertext?: Prisma.SortOrderInput | Prisma.SortOrder
+  tombstonedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptOrderByRelationAggregateInput
+  sessionKeyFor?: Prisma.DelegatedPermissionOrderByRelationAggregateInput
+  approvalFor?: Prisma.DelegatedPermissionOrderByRelationAggregateInput
 }
 
 export type ExecutionSecretWhereUniqueInput = Prisma.AtLeast<{
@@ -236,16 +249,20 @@ export type ExecutionSecretWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.ExecutionSecretWhereInput | Prisma.ExecutionSecretWhereInput[]
   purpose?: Prisma.StringFilter<"ExecutionSecret"> | string
   keyVersion?: Prisma.IntFilter<"ExecutionSecret"> | number
-  ciphertext?: Prisma.StringFilter<"ExecutionSecret"> | string
+  ciphertext?: Prisma.StringNullableFilter<"ExecutionSecret"> | string | null
+  tombstonedAt?: Prisma.DateTimeNullableFilter<"ExecutionSecret"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"ExecutionSecret"> | Date | string
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptListRelationFilter
+  sessionKeyFor?: Prisma.DelegatedPermissionListRelationFilter
+  approvalFor?: Prisma.DelegatedPermissionListRelationFilter
 }, "id">
 
 export type ExecutionSecretOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   purpose?: Prisma.SortOrder
   keyVersion?: Prisma.SortOrder
-  ciphertext?: Prisma.SortOrder
+  ciphertext?: Prisma.SortOrderInput | Prisma.SortOrder
+  tombstonedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.ExecutionSecretCountOrderByAggregateInput
   _avg?: Prisma.ExecutionSecretAvgOrderByAggregateInput
@@ -261,7 +278,8 @@ export type ExecutionSecretScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"ExecutionSecret"> | string
   purpose?: Prisma.StringWithAggregatesFilter<"ExecutionSecret"> | string
   keyVersion?: Prisma.IntWithAggregatesFilter<"ExecutionSecret"> | number
-  ciphertext?: Prisma.StringWithAggregatesFilter<"ExecutionSecret"> | string
+  ciphertext?: Prisma.StringNullableWithAggregatesFilter<"ExecutionSecret"> | string | null
+  tombstonedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"ExecutionSecret"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"ExecutionSecret"> | Date | string
 }
 
@@ -269,43 +287,56 @@ export type ExecutionSecretCreateInput = {
   id: string
   purpose: string
   keyVersion: number
-  ciphertext: string
+  ciphertext?: string | null
+  tombstonedAt?: Date | string | null
   createdAt?: Date | string
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutClaimSecretInput
+  sessionKeyFor?: Prisma.DelegatedPermissionCreateNestedManyWithoutSessionKeySecretInput
+  approvalFor?: Prisma.DelegatedPermissionCreateNestedManyWithoutApprovalSecretInput
 }
 
 export type ExecutionSecretUncheckedCreateInput = {
   id: string
   purpose: string
   keyVersion: number
-  ciphertext: string
+  ciphertext?: string | null
+  tombstonedAt?: Date | string | null
   createdAt?: Date | string
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutClaimSecretInput
+  sessionKeyFor?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutSessionKeySecretInput
+  approvalFor?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutApprovalSecretInput
 }
 
 export type ExecutionSecretUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   purpose?: Prisma.StringFieldUpdateOperationsInput | string
   keyVersion?: Prisma.IntFieldUpdateOperationsInput | number
-  ciphertext?: Prisma.StringFieldUpdateOperationsInput | string
+  ciphertext?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutClaimSecretNestedInput
+  sessionKeyFor?: Prisma.DelegatedPermissionUpdateManyWithoutSessionKeySecretNestedInput
+  approvalFor?: Prisma.DelegatedPermissionUpdateManyWithoutApprovalSecretNestedInput
 }
 
 export type ExecutionSecretUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   purpose?: Prisma.StringFieldUpdateOperationsInput | string
   keyVersion?: Prisma.IntFieldUpdateOperationsInput | number
-  ciphertext?: Prisma.StringFieldUpdateOperationsInput | string
+  ciphertext?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutClaimSecretNestedInput
+  sessionKeyFor?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutSessionKeySecretNestedInput
+  approvalFor?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutApprovalSecretNestedInput
 }
 
 export type ExecutionSecretCreateManyInput = {
   id: string
   purpose: string
   keyVersion: number
-  ciphertext: string
+  ciphertext?: string | null
+  tombstonedAt?: Date | string | null
   createdAt?: Date | string
 }
 
@@ -313,7 +344,8 @@ export type ExecutionSecretUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   purpose?: Prisma.StringFieldUpdateOperationsInput | string
   keyVersion?: Prisma.IntFieldUpdateOperationsInput | number
-  ciphertext?: Prisma.StringFieldUpdateOperationsInput | string
+  ciphertext?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -321,7 +353,8 @@ export type ExecutionSecretUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   purpose?: Prisma.StringFieldUpdateOperationsInput | string
   keyVersion?: Prisma.IntFieldUpdateOperationsInput | number
-  ciphertext?: Prisma.StringFieldUpdateOperationsInput | string
+  ciphertext?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -330,6 +363,7 @@ export type ExecutionSecretCountOrderByAggregateInput = {
   purpose?: Prisma.SortOrder
   keyVersion?: Prisma.SortOrder
   ciphertext?: Prisma.SortOrder
+  tombstonedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -342,6 +376,7 @@ export type ExecutionSecretMaxOrderByAggregateInput = {
   purpose?: Prisma.SortOrder
   keyVersion?: Prisma.SortOrder
   ciphertext?: Prisma.SortOrder
+  tombstonedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -350,6 +385,7 @@ export type ExecutionSecretMinOrderByAggregateInput = {
   purpose?: Prisma.SortOrder
   keyVersion?: Prisma.SortOrder
   ciphertext?: Prisma.SortOrder
+  tombstonedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -378,20 +414,58 @@ export type ExecutionSecretUpdateOneWithoutFirmQuoteAttemptsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ExecutionSecretUpdateToOneWithWhereWithoutFirmQuoteAttemptsInput, Prisma.ExecutionSecretUpdateWithoutFirmQuoteAttemptsInput>, Prisma.ExecutionSecretUncheckedUpdateWithoutFirmQuoteAttemptsInput>
 }
 
+export type ExecutionSecretCreateNestedOneWithoutSessionKeyForInput = {
+  create?: Prisma.XOR<Prisma.ExecutionSecretCreateWithoutSessionKeyForInput, Prisma.ExecutionSecretUncheckedCreateWithoutSessionKeyForInput>
+  connectOrCreate?: Prisma.ExecutionSecretCreateOrConnectWithoutSessionKeyForInput
+  connect?: Prisma.ExecutionSecretWhereUniqueInput
+}
+
+export type ExecutionSecretCreateNestedOneWithoutApprovalForInput = {
+  create?: Prisma.XOR<Prisma.ExecutionSecretCreateWithoutApprovalForInput, Prisma.ExecutionSecretUncheckedCreateWithoutApprovalForInput>
+  connectOrCreate?: Prisma.ExecutionSecretCreateOrConnectWithoutApprovalForInput
+  connect?: Prisma.ExecutionSecretWhereUniqueInput
+}
+
+export type ExecutionSecretUpdateOneWithoutSessionKeyForNestedInput = {
+  create?: Prisma.XOR<Prisma.ExecutionSecretCreateWithoutSessionKeyForInput, Prisma.ExecutionSecretUncheckedCreateWithoutSessionKeyForInput>
+  connectOrCreate?: Prisma.ExecutionSecretCreateOrConnectWithoutSessionKeyForInput
+  upsert?: Prisma.ExecutionSecretUpsertWithoutSessionKeyForInput
+  disconnect?: Prisma.ExecutionSecretWhereInput | boolean
+  delete?: Prisma.ExecutionSecretWhereInput | boolean
+  connect?: Prisma.ExecutionSecretWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ExecutionSecretUpdateToOneWithWhereWithoutSessionKeyForInput, Prisma.ExecutionSecretUpdateWithoutSessionKeyForInput>, Prisma.ExecutionSecretUncheckedUpdateWithoutSessionKeyForInput>
+}
+
+export type ExecutionSecretUpdateOneWithoutApprovalForNestedInput = {
+  create?: Prisma.XOR<Prisma.ExecutionSecretCreateWithoutApprovalForInput, Prisma.ExecutionSecretUncheckedCreateWithoutApprovalForInput>
+  connectOrCreate?: Prisma.ExecutionSecretCreateOrConnectWithoutApprovalForInput
+  upsert?: Prisma.ExecutionSecretUpsertWithoutApprovalForInput
+  disconnect?: Prisma.ExecutionSecretWhereInput | boolean
+  delete?: Prisma.ExecutionSecretWhereInput | boolean
+  connect?: Prisma.ExecutionSecretWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ExecutionSecretUpdateToOneWithWhereWithoutApprovalForInput, Prisma.ExecutionSecretUpdateWithoutApprovalForInput>, Prisma.ExecutionSecretUncheckedUpdateWithoutApprovalForInput>
+}
+
 export type ExecutionSecretCreateWithoutFirmQuoteAttemptsInput = {
   id: string
   purpose: string
   keyVersion: number
-  ciphertext: string
+  ciphertext?: string | null
+  tombstonedAt?: Date | string | null
   createdAt?: Date | string
+  sessionKeyFor?: Prisma.DelegatedPermissionCreateNestedManyWithoutSessionKeySecretInput
+  approvalFor?: Prisma.DelegatedPermissionCreateNestedManyWithoutApprovalSecretInput
 }
 
 export type ExecutionSecretUncheckedCreateWithoutFirmQuoteAttemptsInput = {
   id: string
   purpose: string
   keyVersion: number
-  ciphertext: string
+  ciphertext?: string | null
+  tombstonedAt?: Date | string | null
   createdAt?: Date | string
+  sessionKeyFor?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutSessionKeySecretInput
+  approvalFor?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutApprovalSecretInput
 }
 
 export type ExecutionSecretCreateOrConnectWithoutFirmQuoteAttemptsInput = {
@@ -414,16 +488,142 @@ export type ExecutionSecretUpdateWithoutFirmQuoteAttemptsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   purpose?: Prisma.StringFieldUpdateOperationsInput | string
   keyVersion?: Prisma.IntFieldUpdateOperationsInput | number
-  ciphertext?: Prisma.StringFieldUpdateOperationsInput | string
+  ciphertext?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sessionKeyFor?: Prisma.DelegatedPermissionUpdateManyWithoutSessionKeySecretNestedInput
+  approvalFor?: Prisma.DelegatedPermissionUpdateManyWithoutApprovalSecretNestedInput
 }
 
 export type ExecutionSecretUncheckedUpdateWithoutFirmQuoteAttemptsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   purpose?: Prisma.StringFieldUpdateOperationsInput | string
   keyVersion?: Prisma.IntFieldUpdateOperationsInput | number
-  ciphertext?: Prisma.StringFieldUpdateOperationsInput | string
+  ciphertext?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sessionKeyFor?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutSessionKeySecretNestedInput
+  approvalFor?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutApprovalSecretNestedInput
+}
+
+export type ExecutionSecretCreateWithoutSessionKeyForInput = {
+  id: string
+  purpose: string
+  keyVersion: number
+  ciphertext?: string | null
+  tombstonedAt?: Date | string | null
+  createdAt?: Date | string
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutClaimSecretInput
+  approvalFor?: Prisma.DelegatedPermissionCreateNestedManyWithoutApprovalSecretInput
+}
+
+export type ExecutionSecretUncheckedCreateWithoutSessionKeyForInput = {
+  id: string
+  purpose: string
+  keyVersion: number
+  ciphertext?: string | null
+  tombstonedAt?: Date | string | null
+  createdAt?: Date | string
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutClaimSecretInput
+  approvalFor?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutApprovalSecretInput
+}
+
+export type ExecutionSecretCreateOrConnectWithoutSessionKeyForInput = {
+  where: Prisma.ExecutionSecretWhereUniqueInput
+  create: Prisma.XOR<Prisma.ExecutionSecretCreateWithoutSessionKeyForInput, Prisma.ExecutionSecretUncheckedCreateWithoutSessionKeyForInput>
+}
+
+export type ExecutionSecretCreateWithoutApprovalForInput = {
+  id: string
+  purpose: string
+  keyVersion: number
+  ciphertext?: string | null
+  tombstonedAt?: Date | string | null
+  createdAt?: Date | string
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutClaimSecretInput
+  sessionKeyFor?: Prisma.DelegatedPermissionCreateNestedManyWithoutSessionKeySecretInput
+}
+
+export type ExecutionSecretUncheckedCreateWithoutApprovalForInput = {
+  id: string
+  purpose: string
+  keyVersion: number
+  ciphertext?: string | null
+  tombstonedAt?: Date | string | null
+  createdAt?: Date | string
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutClaimSecretInput
+  sessionKeyFor?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutSessionKeySecretInput
+}
+
+export type ExecutionSecretCreateOrConnectWithoutApprovalForInput = {
+  where: Prisma.ExecutionSecretWhereUniqueInput
+  create: Prisma.XOR<Prisma.ExecutionSecretCreateWithoutApprovalForInput, Prisma.ExecutionSecretUncheckedCreateWithoutApprovalForInput>
+}
+
+export type ExecutionSecretUpsertWithoutSessionKeyForInput = {
+  update: Prisma.XOR<Prisma.ExecutionSecretUpdateWithoutSessionKeyForInput, Prisma.ExecutionSecretUncheckedUpdateWithoutSessionKeyForInput>
+  create: Prisma.XOR<Prisma.ExecutionSecretCreateWithoutSessionKeyForInput, Prisma.ExecutionSecretUncheckedCreateWithoutSessionKeyForInput>
+  where?: Prisma.ExecutionSecretWhereInput
+}
+
+export type ExecutionSecretUpdateToOneWithWhereWithoutSessionKeyForInput = {
+  where?: Prisma.ExecutionSecretWhereInput
+  data: Prisma.XOR<Prisma.ExecutionSecretUpdateWithoutSessionKeyForInput, Prisma.ExecutionSecretUncheckedUpdateWithoutSessionKeyForInput>
+}
+
+export type ExecutionSecretUpdateWithoutSessionKeyForInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  purpose?: Prisma.StringFieldUpdateOperationsInput | string
+  keyVersion?: Prisma.IntFieldUpdateOperationsInput | number
+  ciphertext?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutClaimSecretNestedInput
+  approvalFor?: Prisma.DelegatedPermissionUpdateManyWithoutApprovalSecretNestedInput
+}
+
+export type ExecutionSecretUncheckedUpdateWithoutSessionKeyForInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  purpose?: Prisma.StringFieldUpdateOperationsInput | string
+  keyVersion?: Prisma.IntFieldUpdateOperationsInput | number
+  ciphertext?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutClaimSecretNestedInput
+  approvalFor?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutApprovalSecretNestedInput
+}
+
+export type ExecutionSecretUpsertWithoutApprovalForInput = {
+  update: Prisma.XOR<Prisma.ExecutionSecretUpdateWithoutApprovalForInput, Prisma.ExecutionSecretUncheckedUpdateWithoutApprovalForInput>
+  create: Prisma.XOR<Prisma.ExecutionSecretCreateWithoutApprovalForInput, Prisma.ExecutionSecretUncheckedCreateWithoutApprovalForInput>
+  where?: Prisma.ExecutionSecretWhereInput
+}
+
+export type ExecutionSecretUpdateToOneWithWhereWithoutApprovalForInput = {
+  where?: Prisma.ExecutionSecretWhereInput
+  data: Prisma.XOR<Prisma.ExecutionSecretUpdateWithoutApprovalForInput, Prisma.ExecutionSecretUncheckedUpdateWithoutApprovalForInput>
+}
+
+export type ExecutionSecretUpdateWithoutApprovalForInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  purpose?: Prisma.StringFieldUpdateOperationsInput | string
+  keyVersion?: Prisma.IntFieldUpdateOperationsInput | number
+  ciphertext?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutClaimSecretNestedInput
+  sessionKeyFor?: Prisma.DelegatedPermissionUpdateManyWithoutSessionKeySecretNestedInput
+}
+
+export type ExecutionSecretUncheckedUpdateWithoutApprovalForInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  purpose?: Prisma.StringFieldUpdateOperationsInput | string
+  keyVersion?: Prisma.IntFieldUpdateOperationsInput | number
+  ciphertext?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tombstonedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutClaimSecretNestedInput
+  sessionKeyFor?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutSessionKeySecretNestedInput
 }
 
 
@@ -433,10 +633,14 @@ export type ExecutionSecretUncheckedUpdateWithoutFirmQuoteAttemptsInput = {
 
 export type ExecutionSecretCountOutputType = {
   firmQuoteAttempts: number
+  sessionKeyFor: number
+  approvalFor: number
 }
 
 export type ExecutionSecretCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   firmQuoteAttempts?: boolean | ExecutionSecretCountOutputTypeCountFirmQuoteAttemptsArgs
+  sessionKeyFor?: boolean | ExecutionSecretCountOutputTypeCountSessionKeyForArgs
+  approvalFor?: boolean | ExecutionSecretCountOutputTypeCountApprovalForArgs
 }
 
 /**
@@ -456,14 +660,31 @@ export type ExecutionSecretCountOutputTypeCountFirmQuoteAttemptsArgs<ExtArgs ext
   where?: Prisma.FirmQuoteAttemptWhereInput
 }
 
+/**
+ * ExecutionSecretCountOutputType without action
+ */
+export type ExecutionSecretCountOutputTypeCountSessionKeyForArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.DelegatedPermissionWhereInput
+}
+
+/**
+ * ExecutionSecretCountOutputType without action
+ */
+export type ExecutionSecretCountOutputTypeCountApprovalForArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.DelegatedPermissionWhereInput
+}
+
 
 export type ExecutionSecretSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   purpose?: boolean
   keyVersion?: boolean
   ciphertext?: boolean
+  tombstonedAt?: boolean
   createdAt?: boolean
   firmQuoteAttempts?: boolean | Prisma.ExecutionSecret$firmQuoteAttemptsArgs<ExtArgs>
+  sessionKeyFor?: boolean | Prisma.ExecutionSecret$sessionKeyForArgs<ExtArgs>
+  approvalFor?: boolean | Prisma.ExecutionSecret$approvalForArgs<ExtArgs>
   _count?: boolean | Prisma.ExecutionSecretCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["executionSecret"]>
 
@@ -472,6 +693,7 @@ export type ExecutionSecretSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
   purpose?: boolean
   keyVersion?: boolean
   ciphertext?: boolean
+  tombstonedAt?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["executionSecret"]>
 
@@ -480,6 +702,7 @@ export type ExecutionSecretSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
   purpose?: boolean
   keyVersion?: boolean
   ciphertext?: boolean
+  tombstonedAt?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["executionSecret"]>
 
@@ -488,12 +711,15 @@ export type ExecutionSecretSelectScalar = {
   purpose?: boolean
   keyVersion?: boolean
   ciphertext?: boolean
+  tombstonedAt?: boolean
   createdAt?: boolean
 }
 
-export type ExecutionSecretOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "purpose" | "keyVersion" | "ciphertext" | "createdAt", ExtArgs["result"]["executionSecret"]>
+export type ExecutionSecretOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "purpose" | "keyVersion" | "ciphertext" | "tombstonedAt" | "createdAt", ExtArgs["result"]["executionSecret"]>
 export type ExecutionSecretInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   firmQuoteAttempts?: boolean | Prisma.ExecutionSecret$firmQuoteAttemptsArgs<ExtArgs>
+  sessionKeyFor?: boolean | Prisma.ExecutionSecret$sessionKeyForArgs<ExtArgs>
+  approvalFor?: boolean | Prisma.ExecutionSecret$approvalForArgs<ExtArgs>
   _count?: boolean | Prisma.ExecutionSecretCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ExecutionSecretIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -503,12 +729,18 @@ export type $ExecutionSecretPayload<ExtArgs extends runtime.Types.Extensions.Int
   name: "ExecutionSecret"
   objects: {
     firmQuoteAttempts: Prisma.$FirmQuoteAttemptPayload<ExtArgs>[]
+    sessionKeyFor: Prisma.$DelegatedPermissionPayload<ExtArgs>[]
+    approvalFor: Prisma.$DelegatedPermissionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     purpose: string
     keyVersion: number
-    ciphertext: string
+    /**
+     * NULL once destroyed (tombstoned): the secret can no longer be recovered by anyone.
+     */
+    ciphertext: string | null
+    tombstonedAt: Date | null
     createdAt: Date
   }, ExtArgs["result"]["executionSecret"]>
   composites: {}
@@ -905,6 +1137,8 @@ readonly fields: ExecutionSecretFieldRefs;
 export interface Prisma__ExecutionSecretClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   firmQuoteAttempts<T extends Prisma.ExecutionSecret$firmQuoteAttemptsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ExecutionSecret$firmQuoteAttemptsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FirmQuoteAttemptPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  sessionKeyFor<T extends Prisma.ExecutionSecret$sessionKeyForArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ExecutionSecret$sessionKeyForArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DelegatedPermissionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  approvalFor<T extends Prisma.ExecutionSecret$approvalForArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ExecutionSecret$approvalForArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DelegatedPermissionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -938,6 +1172,7 @@ export interface ExecutionSecretFieldRefs {
   readonly purpose: Prisma.FieldRef<"ExecutionSecret", 'String'>
   readonly keyVersion: Prisma.FieldRef<"ExecutionSecret", 'Int'>
   readonly ciphertext: Prisma.FieldRef<"ExecutionSecret", 'String'>
+  readonly tombstonedAt: Prisma.FieldRef<"ExecutionSecret", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"ExecutionSecret", 'DateTime'>
 }
     
@@ -1353,6 +1588,54 @@ export type ExecutionSecret$firmQuoteAttemptsArgs<ExtArgs extends runtime.Types.
   take?: number
   skip?: number
   distinct?: Prisma.FirmQuoteAttemptScalarFieldEnum | Prisma.FirmQuoteAttemptScalarFieldEnum[]
+}
+
+/**
+ * ExecutionSecret.sessionKeyFor
+ */
+export type ExecutionSecret$sessionKeyForArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the DelegatedPermission
+   */
+  select?: Prisma.DelegatedPermissionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the DelegatedPermission
+   */
+  omit?: Prisma.DelegatedPermissionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DelegatedPermissionInclude<ExtArgs> | null
+  where?: Prisma.DelegatedPermissionWhereInput
+  orderBy?: Prisma.DelegatedPermissionOrderByWithRelationInput | Prisma.DelegatedPermissionOrderByWithRelationInput[]
+  cursor?: Prisma.DelegatedPermissionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.DelegatedPermissionScalarFieldEnum | Prisma.DelegatedPermissionScalarFieldEnum[]
+}
+
+/**
+ * ExecutionSecret.approvalFor
+ */
+export type ExecutionSecret$approvalForArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the DelegatedPermission
+   */
+  select?: Prisma.DelegatedPermissionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the DelegatedPermission
+   */
+  omit?: Prisma.DelegatedPermissionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DelegatedPermissionInclude<ExtArgs> | null
+  where?: Prisma.DelegatedPermissionWhereInput
+  orderBy?: Prisma.DelegatedPermissionOrderByWithRelationInput | Prisma.DelegatedPermissionOrderByWithRelationInput[]
+  cursor?: Prisma.DelegatedPermissionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.DelegatedPermissionScalarFieldEnum | Prisma.DelegatedPermissionScalarFieldEnum[]
 }
 
 /**

@@ -69,6 +69,8 @@ describe("firm quotes and execution plans on the real database", { skip }, () =>
   // by every attempt on this database, which is exactly what it is for).
   afterEach(async () => {
     const userIds = { in: createdUsers };
+    await database.client.transaction.deleteMany({ where: { execution: { userId: userIds } } });
+    await database.client.rootActionSession.deleteMany({ where: { userId: userIds } });
     await database.client.execution.deleteMany({ where: { userId: userIds } });
     await database.client.firmQuoteAttempt.deleteMany({ where: { userId: userIds } });
   });
@@ -79,14 +81,18 @@ describe("firm quotes and execution plans on the real database", { skip }, () =>
       await database.client.intent.findMany({ where: { userId: userIds }, select: { id: true } })
     ).map((row) => row.id);
     const owned = { intentId: { in: intents } };
+    await database.client.transaction.deleteMany({ where: { execution: { userId: userIds } } });
+    await database.client.rootActionSession.deleteMany({ where: { userId: userIds } });
     await database.client.execution.deleteMany({ where: { userId: userIds } });
     await database.client.firmQuoteAttempt.deleteMany({ where: { userId: userIds } });
+    await database.client.delegatedPermission.deleteMany({ where: { userId: userIds } });
     await database.client.paymentAuthorization.deleteMany({ where: owned });
     await database.client.authorizationSession.deleteMany({ where: owned });
     await database.client.routeStep.deleteMany({ where: { route: owned } });
     await database.client.route.deleteMany({ where: owned });
     await database.client.quote.deleteMany({ where: owned });
     await database.client.intent.deleteMany({ where: { userId: userIds } });
+    await database.client.recipient.deleteMany({ where: { ownerUserId: userIds } });
     await database.client.conversation.deleteMany({ where: { userId: userIds } });
     await database.client.transactionPinSecurity.deleteMany({ where: { userId: userIds } });
     await database.client.passkeyCredential.deleteMany({ where: { userId: userIds } });
@@ -96,7 +102,9 @@ describe("firm quotes and execution plans on the real database", { skip }, () =>
     // Secrets are not tied to a user; remove the ones these tests created.
     await database.client.executionSecret.deleteMany({
       where: {
-        purpose: { in: ["TEXTILE_CLAIM_TOKEN", "TEST_PLAINTEXT"] },
+        purpose: {
+          in: ["TEXTILE_CLAIM_TOKEN", "TEST_PLAINTEXT", "SESSION_KEY", "PERMISSION_APPROVAL"],
+        },
         firmQuoteAttempts: { none: {} },
       },
     });
@@ -138,10 +146,19 @@ describe("firm quotes and execution plans on the real database", { skip }, () =>
       status: "ACTIVE",
       externalConversationId: `firm-${run}-${createId()}`,
     });
+    const recipient = await repositories.recipients.create({
+      id: createId(),
+      ownerUserId: user.id,
+      type: "SAVED_BENEFICIARY",
+      displayName: "Joao",
+      isSaved: true,
+      walletAddress: `0x${randomBytes(20).toString("hex")}`,
+    });
     const intent = await repositories.intents.create({
       id: createId(),
       userId: user.id,
       conversationId: conversation.id,
+      recipientId: recipient.id,
       type: "SEND",
       status: "RESOLVED",
       missingFields: [],
@@ -386,17 +403,12 @@ describe("firm quotes and execution plans on the real database", { skip }, () =>
       include: { claimSecret: true },
     });
     assert.equal(attempt.status, "QUOTED");
-    assert.ok(attempt.claimSecret);
-    assert.match(attempt.claimSecret.ciphertext, /^v1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
-    assert.equal(attempt.claimSecret.ciphertext.includes(CLAIM), false);
+    assert.ok(attempt.claimSecret?.ciphertext);
+    const sealed = attempt.claimSecret.ciphertext;
+    assert.match(sealed, /^v1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
+    assert.equal(sealed.includes(CLAIM), false);
     const cipher = new AesGcmSecretCipher([{ version: 1, key: KEY }]);
-    assert.equal(
-      cipher.decrypt(
-        attempt.claimSecret.ciphertext,
-        `textile-claim-token:${attempt.claimSecret.id}`,
-      ),
-      CLAIM,
-    );
+    assert.equal(cipher.decrypt(sealed, `textile-claim-token:${attempt.claimSecret.id}`), CLAIM);
     // The database refuses a bare token even if some code tried to store one.
     await assert.rejects(
       database.client.executionSecret.create({
@@ -476,5 +488,167 @@ describe("firm quotes and execution plans on the real database", { skip }, () =>
       status: "EXECUTION_ROUTE_UNSUPPORTED",
     });
     assert.equal(provider.calls, 0);
+  });
+
+  describe("execution lifecycle (Build 13)", () => {
+    async function ready(label: string) {
+      const ctx = await authorized(label);
+      const { service } = services(new FakeProvider());
+      const outcome = await service.prepare(ctx.authorization.id);
+      assert.equal(outcome.status, "EXECUTION_READY");
+      if (outcome.status !== "EXECUTION_READY") throw new Error("unreachable");
+      return { ...ctx, executionId: outcome.executionId };
+    }
+
+    it("hands the execution lock to exactly one of many racing callers and consumes once", async () => {
+      const ctx = await ready("lock");
+      const now = new Date();
+      const results = await Promise.all(
+        Array.from({ length: 6 }, () =>
+          uow.transaction((tx) => tx.executionPlans.acquire(ctx.executionId, now)),
+        ),
+      );
+      assert.equal(results.filter((r) => r.status === "ACQUIRED").length, 1);
+      assert.equal(results.filter((r) => r.status === "NOT_READY").length, 5);
+      const record = await repositories.executionPlans.findById(ctx.executionId);
+      assert.equal(record?.status, "SIGNING");
+      assert.ok(record?.authorizationConsumedAt);
+      const authorization = await repositories.paymentAuthorizations.findById(ctx.authorization.id);
+      assert.equal(authorization?.status, "CONSUMED");
+    });
+
+    it("never takes the lock for an expired or already used authorization, and changes nothing", async () => {
+      const ctx = await ready("noauth");
+      const late = new Date(ctx.authorization.expiresAt.getTime() + 1_000);
+      const refused = await uow.transaction((tx) =>
+        tx.executionPlans.acquire(ctx.executionId, late),
+      );
+      assert.equal(refused.status, "AUTHORIZATION_UNAVAILABLE");
+      assert.equal((await repositories.executionPlans.findById(ctx.executionId))?.status, "READY");
+      assert.equal(
+        (await repositories.paymentAuthorizations.findById(ctx.authorization.id))?.status,
+        "ACTIVE",
+      );
+    });
+
+    it("rolls the consumption back with the transition: a failing transaction leaves both untouched", async () => {
+      const ctx = await ready("rollback");
+      await assert.rejects(
+        uow.transaction(async (tx) => {
+          const acquired = await tx.executionPlans.acquire(ctx.executionId, new Date());
+          assert.equal(acquired.status, "ACQUIRED");
+          throw new Error("simulated failure after acquiring");
+        }),
+      );
+      assert.equal((await repositories.executionPlans.findById(ctx.executionId))?.status, "READY");
+      assert.equal(
+        (await repositories.paymentAuthorizations.findById(ctx.authorization.id))?.status,
+        "ACTIVE",
+      );
+    });
+
+    it("the database refuses a payment status that skipped the consumed authorization", async () => {
+      const ctx = await ready("skip");
+      await assert.rejects(
+        database.client
+          .$executeRaw`UPDATE "Execution" SET "status" = 'SIGNING' WHERE "id" = ${ctx.executionId}::uuid`,
+      );
+      await assert.rejects(
+        database.client
+          .$executeRaw`UPDATE "Execution" SET "status" = 'COMPLETED' WHERE "id" = ${ctx.executionId}::uuid`,
+      );
+      assert.equal((await repositories.executionPlans.findById(ctx.executionId))?.status, "READY");
+    });
+
+    it("starts a step once per idempotency key under real concurrency", async () => {
+      const ctx = await ready("steps");
+      const key = `exec:${ctx.executionId}:APPROVAL`;
+      const results = await Promise.all(
+        Array.from({ length: 5 }, () =>
+          repositories.executionTransactions.begin({
+            idempotencyKey: key,
+            executionId: ctx.executionId,
+            type: "APPROVAL",
+            chainId: CELO_CHAIN_ID,
+            fromAddress: ctx.wallet.address ?? "",
+          }),
+        ),
+      );
+      assert.equal(results.filter((r) => r.created).length, 1);
+      const rows = await database.client.transaction.findMany({
+        where: { executionId: ctx.executionId },
+      });
+      assert.equal(rows.length, 1);
+      // userOpHash and txHash are separate, and a hash must be well formed.
+      const row = rows[0];
+      assert.ok(row);
+      const userOpHash = `0x${"ab".repeat(32)}`;
+      const sent = await repositories.executionTransactions.markSubmitted(row.id, {
+        userOpHash,
+        now: new Date(),
+      });
+      assert.equal(sent?.userOpHash, userOpHash);
+      assert.equal(sent?.hash, undefined);
+      await assert.rejects(
+        database.client
+          .$executeRaw`UPDATE "Transaction" SET "hash" = 'not-a-hash' WHERE "id" = ${row.id}::uuid`,
+      );
+    });
+
+    it("keeps one pending root action per execution and a token that works once", async () => {
+      const ctx = await ready("root");
+      const input = {
+        id: createId(),
+        userId: ctx.user.id,
+        walletId: ctx.wallet.id,
+        executionId: ctx.executionId,
+        kind: "DEPLOY_AND_INSTALL_PERMISSION" as const,
+        challenge: `0x${"cd".repeat(32)}`,
+        prepared: { operation: {} },
+        expiresAt: new Date(Date.now() + 600_000),
+      };
+      const now = new Date();
+      const created = await Promise.all(
+        Array.from({ length: 4 }, (_, i) =>
+          repositories.rootActions.createOrGetPending(
+            { ...input, id: i === 0 ? input.id : createId() },
+            now,
+          ),
+        ),
+      );
+      assert.equal(created.filter((c) => c.created).length, 1);
+      const session = created[0]?.session;
+      assert.ok(session);
+      const tokenHash = "a".repeat(64);
+      assert.ok(await repositories.rootActions.issueToken({ id: session.id, tokenHash, now }));
+      const taken = await Promise.all([
+        repositories.rootActions.complete(session.id, new Date()),
+        repositories.rootActions.complete(session.id, new Date()),
+      ]);
+      assert.equal(taken.filter(Boolean).length, 1, "a link is used once");
+      assert.equal(
+        (await repositories.rootActions.findByTokenHash(tokenHash))?.status,
+        "COMPLETED",
+      );
+    });
+
+    it("destroys a secret by tombstone and the database keeps it consistent", async () => {
+      const id = createId();
+      const sealed = new AesGcmSecretCipher([{ version: 1, key: KEY }]).encrypt("x", `ctx:${id}`);
+      await repositories.executionSecrets.put({
+        id,
+        purpose: "SESSION_KEY",
+        keyVersion: sealed.keyVersion,
+        ciphertext: sealed.ciphertext,
+        now: new Date(),
+      });
+      assert.ok(await repositories.executionSecrets.get(id));
+      await repositories.executionSecrets.tombstone(id, new Date());
+      assert.equal(await repositories.executionSecrets.get(id), null);
+      const row = await database.client.executionSecret.findUniqueOrThrow({ where: { id } });
+      assert.equal(row.ciphertext, null);
+      assert.ok(row.tombstonedAt);
+      await database.client.executionSecret.delete({ where: { id } });
+    });
   });
 });

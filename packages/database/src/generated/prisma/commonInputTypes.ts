@@ -450,28 +450,11 @@ export type EnumFirmQuoteAttemptStatusWithAggregatesFilter<$PrismaModel = never>
   _max?: Prisma.NestedEnumFirmQuoteAttemptStatusFilter<$PrismaModel>
 }
 
-export type EnumPasskeyChallengePurposeFilter<$PrismaModel = never> = {
-  equals?: $Enums.PasskeyChallengePurpose | Prisma.EnumPasskeyChallengePurposeFieldRefInput<$PrismaModel>
-  in?: $Enums.PasskeyChallengePurpose[] | Prisma.ListEnumPasskeyChallengePurposeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.PasskeyChallengePurpose[] | Prisma.ListEnumPasskeyChallengePurposeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumPasskeyChallengePurposeFilter<$PrismaModel> | $Enums.PasskeyChallengePurpose
-}
-
-export type EnumPasskeyChallengePurposeWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.PasskeyChallengePurpose | Prisma.EnumPasskeyChallengePurposeFieldRefInput<$PrismaModel>
-  in?: $Enums.PasskeyChallengePurpose[] | Prisma.ListEnumPasskeyChallengePurposeFieldRefInput<$PrismaModel>
-  notIn?: $Enums.PasskeyChallengePurpose[] | Prisma.ListEnumPasskeyChallengePurposeFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumPasskeyChallengePurposeWithAggregatesFilter<$PrismaModel> | $Enums.PasskeyChallengePurpose
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumPasskeyChallengePurposeFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumPasskeyChallengePurposeFilter<$PrismaModel>
-}
-
-export type EnumPermissionStatusFilter<$PrismaModel = never> = {
-  equals?: $Enums.PermissionStatus | Prisma.EnumPermissionStatusFieldRefInput<$PrismaModel>
-  in?: $Enums.PermissionStatus[] | Prisma.ListEnumPermissionStatusFieldRefInput<$PrismaModel>
-  notIn?: $Enums.PermissionStatus[] | Prisma.ListEnumPermissionStatusFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumPermissionStatusFilter<$PrismaModel> | $Enums.PermissionStatus
+export type EnumRootActionStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.RootActionStatus | Prisma.EnumRootActionStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.RootActionStatus[] | Prisma.ListEnumRootActionStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RootActionStatus[] | Prisma.ListEnumRootActionStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRootActionStatusFilter<$PrismaModel> | $Enums.RootActionStatus
 }
 
 export type JsonFilter<$PrismaModel = never> =
@@ -498,14 +481,14 @@ export type JsonFilterBase<$PrismaModel = never> = {
   not?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | Prisma.JsonNullValueFilter
 }
 
-export type EnumPermissionStatusWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.PermissionStatus | Prisma.EnumPermissionStatusFieldRefInput<$PrismaModel>
-  in?: $Enums.PermissionStatus[] | Prisma.ListEnumPermissionStatusFieldRefInput<$PrismaModel>
-  notIn?: $Enums.PermissionStatus[] | Prisma.ListEnumPermissionStatusFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumPermissionStatusWithAggregatesFilter<$PrismaModel> | $Enums.PermissionStatus
+export type EnumRootActionStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RootActionStatus | Prisma.EnumRootActionStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.RootActionStatus[] | Prisma.ListEnumRootActionStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RootActionStatus[] | Prisma.ListEnumRootActionStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRootActionStatusWithAggregatesFilter<$PrismaModel> | $Enums.RootActionStatus
   _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumPermissionStatusFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumPermissionStatusFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumRootActionStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumRootActionStatusFilter<$PrismaModel>
 }
 
 export type JsonWithAggregatesFilter<$PrismaModel = never> =
@@ -533,6 +516,40 @@ export type JsonWithAggregatesFilterBase<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedJsonFilter<$PrismaModel>
   _max?: Prisma.NestedJsonFilter<$PrismaModel>
+}
+
+export type EnumPasskeyChallengePurposeFilter<$PrismaModel = never> = {
+  equals?: $Enums.PasskeyChallengePurpose | Prisma.EnumPasskeyChallengePurposeFieldRefInput<$PrismaModel>
+  in?: $Enums.PasskeyChallengePurpose[] | Prisma.ListEnumPasskeyChallengePurposeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.PasskeyChallengePurpose[] | Prisma.ListEnumPasskeyChallengePurposeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumPasskeyChallengePurposeFilter<$PrismaModel> | $Enums.PasskeyChallengePurpose
+}
+
+export type EnumPasskeyChallengePurposeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.PasskeyChallengePurpose | Prisma.EnumPasskeyChallengePurposeFieldRefInput<$PrismaModel>
+  in?: $Enums.PasskeyChallengePurpose[] | Prisma.ListEnumPasskeyChallengePurposeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.PasskeyChallengePurpose[] | Prisma.ListEnumPasskeyChallengePurposeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumPasskeyChallengePurposeWithAggregatesFilter<$PrismaModel> | $Enums.PasskeyChallengePurpose
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumPasskeyChallengePurposeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumPasskeyChallengePurposeFilter<$PrismaModel>
+}
+
+export type EnumPermissionStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.PermissionStatus | Prisma.EnumPermissionStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.PermissionStatus[] | Prisma.ListEnumPermissionStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.PermissionStatus[] | Prisma.ListEnumPermissionStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumPermissionStatusFilter<$PrismaModel> | $Enums.PermissionStatus
+}
+
+export type EnumPermissionStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.PermissionStatus | Prisma.EnumPermissionStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.PermissionStatus[] | Prisma.ListEnumPermissionStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.PermissionStatus[] | Prisma.ListEnumPermissionStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumPermissionStatusWithAggregatesFilter<$PrismaModel> | $Enums.PermissionStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumPermissionStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumPermissionStatusFilter<$PrismaModel>
 }
 
 export type EnumAssetKindFilter<$PrismaModel = never> = {
@@ -1252,6 +1269,47 @@ export type NestedEnumFirmQuoteAttemptStatusWithAggregatesFilter<$PrismaModel = 
   _max?: Prisma.NestedEnumFirmQuoteAttemptStatusFilter<$PrismaModel>
 }
 
+export type NestedEnumRootActionStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.RootActionStatus | Prisma.EnumRootActionStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.RootActionStatus[] | Prisma.ListEnumRootActionStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RootActionStatus[] | Prisma.ListEnumRootActionStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRootActionStatusFilter<$PrismaModel> | $Enums.RootActionStatus
+}
+
+export type NestedEnumRootActionStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RootActionStatus | Prisma.EnumRootActionStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.RootActionStatus[] | Prisma.ListEnumRootActionStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RootActionStatus[] | Prisma.ListEnumRootActionStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRootActionStatusWithAggregatesFilter<$PrismaModel> | $Enums.RootActionStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumRootActionStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumRootActionStatusFilter<$PrismaModel>
+}
+
+export type NestedJsonFilter<$PrismaModel = never> =
+| Prisma.PatchUndefined<
+    Prisma.Either<Required<NestedJsonFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>,
+    Required<NestedJsonFilterBase<$PrismaModel>>
+  >
+| Prisma.OptionalFlat<Omit<Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>
+
+export type NestedJsonFilterBase<$PrismaModel = never> = {
+  equals?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | Prisma.JsonNullValueFilter
+  path?: string[]
+  mode?: Prisma.QueryMode | Prisma.EnumQueryModeFieldRefInput<$PrismaModel>
+  string_contains?: string | Prisma.StringFieldRefInput<$PrismaModel>
+  string_starts_with?: string | Prisma.StringFieldRefInput<$PrismaModel>
+  string_ends_with?: string | Prisma.StringFieldRefInput<$PrismaModel>
+  array_starts_with?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | null
+  array_ends_with?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | null
+  array_contains?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | null
+  lt?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel>
+  lte?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel>
+  gt?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel>
+  gte?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel>
+  not?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | Prisma.JsonNullValueFilter
+}
+
 export type NestedEnumPasskeyChallengePurposeFilter<$PrismaModel = never> = {
   equals?: $Enums.PasskeyChallengePurpose | Prisma.EnumPasskeyChallengePurposeFieldRefInput<$PrismaModel>
   in?: $Enums.PasskeyChallengePurpose[] | Prisma.ListEnumPasskeyChallengePurposeFieldRefInput<$PrismaModel>
@@ -1284,30 +1342,6 @@ export type NestedEnumPermissionStatusWithAggregatesFilter<$PrismaModel = never>
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumPermissionStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumPermissionStatusFilter<$PrismaModel>
-}
-
-export type NestedJsonFilter<$PrismaModel = never> =
-| Prisma.PatchUndefined<
-    Prisma.Either<Required<NestedJsonFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>,
-    Required<NestedJsonFilterBase<$PrismaModel>>
-  >
-| Prisma.OptionalFlat<Omit<Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>
-
-export type NestedJsonFilterBase<$PrismaModel = never> = {
-  equals?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | Prisma.JsonNullValueFilter
-  path?: string[]
-  mode?: Prisma.QueryMode | Prisma.EnumQueryModeFieldRefInput<$PrismaModel>
-  string_contains?: string | Prisma.StringFieldRefInput<$PrismaModel>
-  string_starts_with?: string | Prisma.StringFieldRefInput<$PrismaModel>
-  string_ends_with?: string | Prisma.StringFieldRefInput<$PrismaModel>
-  array_starts_with?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | null
-  array_ends_with?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | null
-  array_contains?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | null
-  lt?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel>
-  lte?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel>
-  gt?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel>
-  gte?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel>
-  not?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | Prisma.JsonNullValueFilter
 }
 
 export type NestedEnumAssetKindFilter<$PrismaModel = never> = {

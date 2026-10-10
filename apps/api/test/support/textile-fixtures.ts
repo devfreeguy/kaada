@@ -17,6 +17,7 @@ export interface RecordedCall {
   path: string;
   body: Record<string, unknown>;
   timeoutMs: number;
+  headers?: Record<string, string>;
 }
 
 export type Reply =
@@ -41,11 +42,23 @@ export class FakeTextileTransport implements TextileTransport {
     this.queue.push(reply);
   }
 
-  post(path: string, body: unknown, options: { timeoutMs: number }): Promise<TextileHttpResponse> {
+  get(
+    path: string,
+    options: { timeoutMs: number; headers?: Record<string, string> },
+  ): Promise<TextileHttpResponse> {
+    return this.post(path, undefined, options);
+  }
+
+  post(
+    path: string,
+    body: unknown,
+    options: { timeoutMs: number; headers?: Record<string, string> },
+  ): Promise<TextileHttpResponse> {
     const call: RecordedCall = {
       path,
       body: body as Record<string, unknown>,
       timeoutMs: options.timeoutMs,
+      ...(options.headers && { headers: options.headers }),
     };
     this.calls.push(call);
     const reply = this.queue.shift() ?? this.fallback?.(call);

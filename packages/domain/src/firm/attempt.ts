@@ -126,7 +126,10 @@ export interface ExecutionSecretRepository {
     ciphertext: string;
     now: Date;
   }): Promise<void>;
+  /** The secret, or null if it does not exist or was destroyed. */
   get(
     id: string,
   ): Promise<{ id: string; purpose: string; keyVersion: number; ciphertext: string } | null>;
+  /** Destroys the ciphertext (idempotent). The row stays as proof it existed; nobody can recover it. */
+  tombstone(id: string, now: Date): Promise<void>;
 }

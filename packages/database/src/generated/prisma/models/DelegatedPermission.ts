@@ -53,6 +53,10 @@ export type DelegatedPermissionMinAggregateOutputType = {
   expiresAt: Date | null
   revokedAt: Date | null
   revocationReason: string | null
+  sessionKeyAddress: string | null
+  sessionKeySecretId: string | null
+  approvalSecretId: string | null
+  installedAt: Date | null
   createdAt: Date | null
 }
 
@@ -72,6 +76,10 @@ export type DelegatedPermissionMaxAggregateOutputType = {
   expiresAt: Date | null
   revokedAt: Date | null
   revocationReason: string | null
+  sessionKeyAddress: string | null
+  sessionKeySecretId: string | null
+  approvalSecretId: string | null
+  installedAt: Date | null
   createdAt: Date | null
 }
 
@@ -95,6 +103,10 @@ export type DelegatedPermissionCountAggregateOutputType = {
   expiresAt: number
   revokedAt: number
   revocationReason: number
+  sessionKeyAddress: number
+  sessionKeySecretId: number
+  approvalSecretId: number
+  installedAt: number
   createdAt: number
   _all: number
 }
@@ -124,6 +136,10 @@ export type DelegatedPermissionMinAggregateInputType = {
   expiresAt?: true
   revokedAt?: true
   revocationReason?: true
+  sessionKeyAddress?: true
+  sessionKeySecretId?: true
+  approvalSecretId?: true
+  installedAt?: true
   createdAt?: true
 }
 
@@ -143,6 +159,10 @@ export type DelegatedPermissionMaxAggregateInputType = {
   expiresAt?: true
   revokedAt?: true
   revocationReason?: true
+  sessionKeyAddress?: true
+  sessionKeySecretId?: true
+  approvalSecretId?: true
+  installedAt?: true
   createdAt?: true
 }
 
@@ -166,6 +186,10 @@ export type DelegatedPermissionCountAggregateInputType = {
   expiresAt?: true
   revokedAt?: true
   revocationReason?: true
+  sessionKeyAddress?: true
+  sessionKeySecretId?: true
+  approvalSecretId?: true
+  installedAt?: true
   createdAt?: true
   _all?: true
 }
@@ -276,6 +300,10 @@ export type DelegatedPermissionGroupByOutputType = {
   expiresAt: Date
   revokedAt: Date | null
   revocationReason: string | null
+  sessionKeyAddress: string | null
+  sessionKeySecretId: string | null
+  approvalSecretId: string | null
+  installedAt: Date | null
   createdAt: Date
   _count: DelegatedPermissionCountAggregateOutputType | null
   _avg: DelegatedPermissionAvgAggregateOutputType | null
@@ -322,11 +350,17 @@ export type DelegatedPermissionWhereInput = {
   expiresAt?: Prisma.DateTimeFilter<"DelegatedPermission"> | Date | string
   revokedAt?: Prisma.DateTimeNullableFilter<"DelegatedPermission"> | Date | string | null
   revocationReason?: Prisma.StringNullableFilter<"DelegatedPermission"> | string | null
+  sessionKeyAddress?: Prisma.StringNullableFilter<"DelegatedPermission"> | string | null
+  sessionKeySecretId?: Prisma.UuidNullableFilter<"DelegatedPermission"> | string | null
+  approvalSecretId?: Prisma.UuidNullableFilter<"DelegatedPermission"> | string | null
+  installedAt?: Prisma.DateTimeNullableFilter<"DelegatedPermission"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"DelegatedPermission"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   wallet?: Prisma.XOR<Prisma.WalletScalarRelationFilter, Prisma.WalletWhereInput>
   perTransactionAsset?: Prisma.XOR<Prisma.AssetScalarRelationFilter, Prisma.AssetWhereInput>
   cumulativeAsset?: Prisma.XOR<Prisma.AssetNullableScalarRelationFilter, Prisma.AssetWhereInput> | null
+  sessionKeySecret?: Prisma.XOR<Prisma.ExecutionSecretNullableScalarRelationFilter, Prisma.ExecutionSecretWhereInput> | null
+  approvalSecret?: Prisma.XOR<Prisma.ExecutionSecretNullableScalarRelationFilter, Prisma.ExecutionSecretWhereInput> | null
 }
 
 export type DelegatedPermissionOrderByWithRelationInput = {
@@ -349,11 +383,17 @@ export type DelegatedPermissionOrderByWithRelationInput = {
   expiresAt?: Prisma.SortOrder
   revokedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   revocationReason?: Prisma.SortOrderInput | Prisma.SortOrder
+  sessionKeyAddress?: Prisma.SortOrderInput | Prisma.SortOrder
+  sessionKeySecretId?: Prisma.SortOrderInput | Prisma.SortOrder
+  approvalSecretId?: Prisma.SortOrderInput | Prisma.SortOrder
+  installedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
   wallet?: Prisma.WalletOrderByWithRelationInput
   perTransactionAsset?: Prisma.AssetOrderByWithRelationInput
   cumulativeAsset?: Prisma.AssetOrderByWithRelationInput
+  sessionKeySecret?: Prisma.ExecutionSecretOrderByWithRelationInput
+  approvalSecret?: Prisma.ExecutionSecretOrderByWithRelationInput
 }
 
 export type DelegatedPermissionWhereUniqueInput = Prisma.AtLeast<{
@@ -379,11 +419,17 @@ export type DelegatedPermissionWhereUniqueInput = Prisma.AtLeast<{
   expiresAt?: Prisma.DateTimeFilter<"DelegatedPermission"> | Date | string
   revokedAt?: Prisma.DateTimeNullableFilter<"DelegatedPermission"> | Date | string | null
   revocationReason?: Prisma.StringNullableFilter<"DelegatedPermission"> | string | null
+  sessionKeyAddress?: Prisma.StringNullableFilter<"DelegatedPermission"> | string | null
+  sessionKeySecretId?: Prisma.UuidNullableFilter<"DelegatedPermission"> | string | null
+  approvalSecretId?: Prisma.UuidNullableFilter<"DelegatedPermission"> | string | null
+  installedAt?: Prisma.DateTimeNullableFilter<"DelegatedPermission"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"DelegatedPermission"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   wallet?: Prisma.XOR<Prisma.WalletScalarRelationFilter, Prisma.WalletWhereInput>
   perTransactionAsset?: Prisma.XOR<Prisma.AssetScalarRelationFilter, Prisma.AssetWhereInput>
   cumulativeAsset?: Prisma.XOR<Prisma.AssetNullableScalarRelationFilter, Prisma.AssetWhereInput> | null
+  sessionKeySecret?: Prisma.XOR<Prisma.ExecutionSecretNullableScalarRelationFilter, Prisma.ExecutionSecretWhereInput> | null
+  approvalSecret?: Prisma.XOR<Prisma.ExecutionSecretNullableScalarRelationFilter, Prisma.ExecutionSecretWhereInput> | null
 }, "id">
 
 export type DelegatedPermissionOrderByWithAggregationInput = {
@@ -406,6 +452,10 @@ export type DelegatedPermissionOrderByWithAggregationInput = {
   expiresAt?: Prisma.SortOrder
   revokedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   revocationReason?: Prisma.SortOrderInput | Prisma.SortOrder
+  sessionKeyAddress?: Prisma.SortOrderInput | Prisma.SortOrder
+  sessionKeySecretId?: Prisma.SortOrderInput | Prisma.SortOrder
+  approvalSecretId?: Prisma.SortOrderInput | Prisma.SortOrder
+  installedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.DelegatedPermissionCountOrderByAggregateInput
   _avg?: Prisma.DelegatedPermissionAvgOrderByAggregateInput
@@ -437,6 +487,10 @@ export type DelegatedPermissionScalarWhereWithAggregatesInput = {
   expiresAt?: Prisma.DateTimeWithAggregatesFilter<"DelegatedPermission"> | Date | string
   revokedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"DelegatedPermission"> | Date | string | null
   revocationReason?: Prisma.StringNullableWithAggregatesFilter<"DelegatedPermission"> | string | null
+  sessionKeyAddress?: Prisma.StringNullableWithAggregatesFilter<"DelegatedPermission"> | string | null
+  sessionKeySecretId?: Prisma.UuidNullableWithAggregatesFilter<"DelegatedPermission"> | string | null
+  approvalSecretId?: Prisma.UuidNullableWithAggregatesFilter<"DelegatedPermission"> | string | null
+  installedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"DelegatedPermission"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"DelegatedPermission"> | Date | string
 }
 
@@ -456,11 +510,15 @@ export type DelegatedPermissionCreateInput = {
   expiresAt: Date | string
   revokedAt?: Date | string | null
   revocationReason?: string | null
+  sessionKeyAddress?: string | null
+  installedAt?: Date | string | null
   createdAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutDelegatedPermissionsInput
   wallet: Prisma.WalletCreateNestedOneWithoutDelegatedPermissionsInput
   perTransactionAsset: Prisma.AssetCreateNestedOneWithoutPermissionsPerTransactionInput
   cumulativeAsset?: Prisma.AssetCreateNestedOneWithoutPermissionsCumulativeInput
+  sessionKeySecret?: Prisma.ExecutionSecretCreateNestedOneWithoutSessionKeyForInput
+  approvalSecret?: Prisma.ExecutionSecretCreateNestedOneWithoutApprovalForInput
 }
 
 export type DelegatedPermissionUncheckedCreateInput = {
@@ -483,6 +541,10 @@ export type DelegatedPermissionUncheckedCreateInput = {
   expiresAt: Date | string
   revokedAt?: Date | string | null
   revocationReason?: string | null
+  sessionKeyAddress?: string | null
+  sessionKeySecretId?: string | null
+  approvalSecretId?: string | null
+  installedAt?: Date | string | null
   createdAt?: Date | string
 }
 
@@ -502,11 +564,15 @@ export type DelegatedPermissionUpdateInput = {
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   revocationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeyAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutDelegatedPermissionsNestedInput
   wallet?: Prisma.WalletUpdateOneRequiredWithoutDelegatedPermissionsNestedInput
   perTransactionAsset?: Prisma.AssetUpdateOneRequiredWithoutPermissionsPerTransactionNestedInput
   cumulativeAsset?: Prisma.AssetUpdateOneWithoutPermissionsCumulativeNestedInput
+  sessionKeySecret?: Prisma.ExecutionSecretUpdateOneWithoutSessionKeyForNestedInput
+  approvalSecret?: Prisma.ExecutionSecretUpdateOneWithoutApprovalForNestedInput
 }
 
 export type DelegatedPermissionUncheckedUpdateInput = {
@@ -529,6 +595,10 @@ export type DelegatedPermissionUncheckedUpdateInput = {
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   revocationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeyAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeySecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  approvalSecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -552,6 +622,10 @@ export type DelegatedPermissionCreateManyInput = {
   expiresAt: Date | string
   revokedAt?: Date | string | null
   revocationReason?: string | null
+  sessionKeyAddress?: string | null
+  sessionKeySecretId?: string | null
+  approvalSecretId?: string | null
+  installedAt?: Date | string | null
   createdAt?: Date | string
 }
 
@@ -571,6 +645,8 @@ export type DelegatedPermissionUpdateManyMutationInput = {
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   revocationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeyAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -594,6 +670,10 @@ export type DelegatedPermissionUncheckedUpdateManyInput = {
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   revocationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeyAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeySecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  approvalSecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -627,6 +707,10 @@ export type DelegatedPermissionCountOrderByAggregateInput = {
   expiresAt?: Prisma.SortOrder
   revokedAt?: Prisma.SortOrder
   revocationReason?: Prisma.SortOrder
+  sessionKeyAddress?: Prisma.SortOrder
+  sessionKeySecretId?: Prisma.SortOrder
+  approvalSecretId?: Prisma.SortOrder
+  installedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -650,6 +734,10 @@ export type DelegatedPermissionMaxOrderByAggregateInput = {
   expiresAt?: Prisma.SortOrder
   revokedAt?: Prisma.SortOrder
   revocationReason?: Prisma.SortOrder
+  sessionKeyAddress?: Prisma.SortOrder
+  sessionKeySecretId?: Prisma.SortOrder
+  approvalSecretId?: Prisma.SortOrder
+  installedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -669,6 +757,10 @@ export type DelegatedPermissionMinOrderByAggregateInput = {
   expiresAt?: Prisma.SortOrder
   revokedAt?: Prisma.SortOrder
   revocationReason?: Prisma.SortOrder
+  sessionKeyAddress?: Prisma.SortOrder
+  sessionKeySecretId?: Prisma.SortOrder
+  approvalSecretId?: Prisma.SortOrder
+  installedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -757,6 +849,90 @@ export type DelegatedPermissionUncheckedUpdateManyWithoutWalletNestedInput = {
   connect?: Prisma.DelegatedPermissionWhereUniqueInput | Prisma.DelegatedPermissionWhereUniqueInput[]
   update?: Prisma.DelegatedPermissionUpdateWithWhereUniqueWithoutWalletInput | Prisma.DelegatedPermissionUpdateWithWhereUniqueWithoutWalletInput[]
   updateMany?: Prisma.DelegatedPermissionUpdateManyWithWhereWithoutWalletInput | Prisma.DelegatedPermissionUpdateManyWithWhereWithoutWalletInput[]
+  deleteMany?: Prisma.DelegatedPermissionScalarWhereInput | Prisma.DelegatedPermissionScalarWhereInput[]
+}
+
+export type DelegatedPermissionCreateNestedManyWithoutSessionKeySecretInput = {
+  create?: Prisma.XOR<Prisma.DelegatedPermissionCreateWithoutSessionKeySecretInput, Prisma.DelegatedPermissionUncheckedCreateWithoutSessionKeySecretInput> | Prisma.DelegatedPermissionCreateWithoutSessionKeySecretInput[] | Prisma.DelegatedPermissionUncheckedCreateWithoutSessionKeySecretInput[]
+  connectOrCreate?: Prisma.DelegatedPermissionCreateOrConnectWithoutSessionKeySecretInput | Prisma.DelegatedPermissionCreateOrConnectWithoutSessionKeySecretInput[]
+  createMany?: Prisma.DelegatedPermissionCreateManySessionKeySecretInputEnvelope
+  connect?: Prisma.DelegatedPermissionWhereUniqueInput | Prisma.DelegatedPermissionWhereUniqueInput[]
+}
+
+export type DelegatedPermissionCreateNestedManyWithoutApprovalSecretInput = {
+  create?: Prisma.XOR<Prisma.DelegatedPermissionCreateWithoutApprovalSecretInput, Prisma.DelegatedPermissionUncheckedCreateWithoutApprovalSecretInput> | Prisma.DelegatedPermissionCreateWithoutApprovalSecretInput[] | Prisma.DelegatedPermissionUncheckedCreateWithoutApprovalSecretInput[]
+  connectOrCreate?: Prisma.DelegatedPermissionCreateOrConnectWithoutApprovalSecretInput | Prisma.DelegatedPermissionCreateOrConnectWithoutApprovalSecretInput[]
+  createMany?: Prisma.DelegatedPermissionCreateManyApprovalSecretInputEnvelope
+  connect?: Prisma.DelegatedPermissionWhereUniqueInput | Prisma.DelegatedPermissionWhereUniqueInput[]
+}
+
+export type DelegatedPermissionUncheckedCreateNestedManyWithoutSessionKeySecretInput = {
+  create?: Prisma.XOR<Prisma.DelegatedPermissionCreateWithoutSessionKeySecretInput, Prisma.DelegatedPermissionUncheckedCreateWithoutSessionKeySecretInput> | Prisma.DelegatedPermissionCreateWithoutSessionKeySecretInput[] | Prisma.DelegatedPermissionUncheckedCreateWithoutSessionKeySecretInput[]
+  connectOrCreate?: Prisma.DelegatedPermissionCreateOrConnectWithoutSessionKeySecretInput | Prisma.DelegatedPermissionCreateOrConnectWithoutSessionKeySecretInput[]
+  createMany?: Prisma.DelegatedPermissionCreateManySessionKeySecretInputEnvelope
+  connect?: Prisma.DelegatedPermissionWhereUniqueInput | Prisma.DelegatedPermissionWhereUniqueInput[]
+}
+
+export type DelegatedPermissionUncheckedCreateNestedManyWithoutApprovalSecretInput = {
+  create?: Prisma.XOR<Prisma.DelegatedPermissionCreateWithoutApprovalSecretInput, Prisma.DelegatedPermissionUncheckedCreateWithoutApprovalSecretInput> | Prisma.DelegatedPermissionCreateWithoutApprovalSecretInput[] | Prisma.DelegatedPermissionUncheckedCreateWithoutApprovalSecretInput[]
+  connectOrCreate?: Prisma.DelegatedPermissionCreateOrConnectWithoutApprovalSecretInput | Prisma.DelegatedPermissionCreateOrConnectWithoutApprovalSecretInput[]
+  createMany?: Prisma.DelegatedPermissionCreateManyApprovalSecretInputEnvelope
+  connect?: Prisma.DelegatedPermissionWhereUniqueInput | Prisma.DelegatedPermissionWhereUniqueInput[]
+}
+
+export type DelegatedPermissionUpdateManyWithoutSessionKeySecretNestedInput = {
+  create?: Prisma.XOR<Prisma.DelegatedPermissionCreateWithoutSessionKeySecretInput, Prisma.DelegatedPermissionUncheckedCreateWithoutSessionKeySecretInput> | Prisma.DelegatedPermissionCreateWithoutSessionKeySecretInput[] | Prisma.DelegatedPermissionUncheckedCreateWithoutSessionKeySecretInput[]
+  connectOrCreate?: Prisma.DelegatedPermissionCreateOrConnectWithoutSessionKeySecretInput | Prisma.DelegatedPermissionCreateOrConnectWithoutSessionKeySecretInput[]
+  upsert?: Prisma.DelegatedPermissionUpsertWithWhereUniqueWithoutSessionKeySecretInput | Prisma.DelegatedPermissionUpsertWithWhereUniqueWithoutSessionKeySecretInput[]
+  createMany?: Prisma.DelegatedPermissionCreateManySessionKeySecretInputEnvelope
+  set?: Prisma.DelegatedPermissionWhereUniqueInput | Prisma.DelegatedPermissionWhereUniqueInput[]
+  disconnect?: Prisma.DelegatedPermissionWhereUniqueInput | Prisma.DelegatedPermissionWhereUniqueInput[]
+  delete?: Prisma.DelegatedPermissionWhereUniqueInput | Prisma.DelegatedPermissionWhereUniqueInput[]
+  connect?: Prisma.DelegatedPermissionWhereUniqueInput | Prisma.DelegatedPermissionWhereUniqueInput[]
+  update?: Prisma.DelegatedPermissionUpdateWithWhereUniqueWithoutSessionKeySecretInput | Prisma.DelegatedPermissionUpdateWithWhereUniqueWithoutSessionKeySecretInput[]
+  updateMany?: Prisma.DelegatedPermissionUpdateManyWithWhereWithoutSessionKeySecretInput | Prisma.DelegatedPermissionUpdateManyWithWhereWithoutSessionKeySecretInput[]
+  deleteMany?: Prisma.DelegatedPermissionScalarWhereInput | Prisma.DelegatedPermissionScalarWhereInput[]
+}
+
+export type DelegatedPermissionUpdateManyWithoutApprovalSecretNestedInput = {
+  create?: Prisma.XOR<Prisma.DelegatedPermissionCreateWithoutApprovalSecretInput, Prisma.DelegatedPermissionUncheckedCreateWithoutApprovalSecretInput> | Prisma.DelegatedPermissionCreateWithoutApprovalSecretInput[] | Prisma.DelegatedPermissionUncheckedCreateWithoutApprovalSecretInput[]
+  connectOrCreate?: Prisma.DelegatedPermissionCreateOrConnectWithoutApprovalSecretInput | Prisma.DelegatedPermissionCreateOrConnectWithoutApprovalSecretInput[]
+  upsert?: Prisma.DelegatedPermissionUpsertWithWhereUniqueWithoutApprovalSecretInput | Prisma.DelegatedPermissionUpsertWithWhereUniqueWithoutApprovalSecretInput[]
+  createMany?: Prisma.DelegatedPermissionCreateManyApprovalSecretInputEnvelope
+  set?: Prisma.DelegatedPermissionWhereUniqueInput | Prisma.DelegatedPermissionWhereUniqueInput[]
+  disconnect?: Prisma.DelegatedPermissionWhereUniqueInput | Prisma.DelegatedPermissionWhereUniqueInput[]
+  delete?: Prisma.DelegatedPermissionWhereUniqueInput | Prisma.DelegatedPermissionWhereUniqueInput[]
+  connect?: Prisma.DelegatedPermissionWhereUniqueInput | Prisma.DelegatedPermissionWhereUniqueInput[]
+  update?: Prisma.DelegatedPermissionUpdateWithWhereUniqueWithoutApprovalSecretInput | Prisma.DelegatedPermissionUpdateWithWhereUniqueWithoutApprovalSecretInput[]
+  updateMany?: Prisma.DelegatedPermissionUpdateManyWithWhereWithoutApprovalSecretInput | Prisma.DelegatedPermissionUpdateManyWithWhereWithoutApprovalSecretInput[]
+  deleteMany?: Prisma.DelegatedPermissionScalarWhereInput | Prisma.DelegatedPermissionScalarWhereInput[]
+}
+
+export type DelegatedPermissionUncheckedUpdateManyWithoutSessionKeySecretNestedInput = {
+  create?: Prisma.XOR<Prisma.DelegatedPermissionCreateWithoutSessionKeySecretInput, Prisma.DelegatedPermissionUncheckedCreateWithoutSessionKeySecretInput> | Prisma.DelegatedPermissionCreateWithoutSessionKeySecretInput[] | Prisma.DelegatedPermissionUncheckedCreateWithoutSessionKeySecretInput[]
+  connectOrCreate?: Prisma.DelegatedPermissionCreateOrConnectWithoutSessionKeySecretInput | Prisma.DelegatedPermissionCreateOrConnectWithoutSessionKeySecretInput[]
+  upsert?: Prisma.DelegatedPermissionUpsertWithWhereUniqueWithoutSessionKeySecretInput | Prisma.DelegatedPermissionUpsertWithWhereUniqueWithoutSessionKeySecretInput[]
+  createMany?: Prisma.DelegatedPermissionCreateManySessionKeySecretInputEnvelope
+  set?: Prisma.DelegatedPermissionWhereUniqueInput | Prisma.DelegatedPermissionWhereUniqueInput[]
+  disconnect?: Prisma.DelegatedPermissionWhereUniqueInput | Prisma.DelegatedPermissionWhereUniqueInput[]
+  delete?: Prisma.DelegatedPermissionWhereUniqueInput | Prisma.DelegatedPermissionWhereUniqueInput[]
+  connect?: Prisma.DelegatedPermissionWhereUniqueInput | Prisma.DelegatedPermissionWhereUniqueInput[]
+  update?: Prisma.DelegatedPermissionUpdateWithWhereUniqueWithoutSessionKeySecretInput | Prisma.DelegatedPermissionUpdateWithWhereUniqueWithoutSessionKeySecretInput[]
+  updateMany?: Prisma.DelegatedPermissionUpdateManyWithWhereWithoutSessionKeySecretInput | Prisma.DelegatedPermissionUpdateManyWithWhereWithoutSessionKeySecretInput[]
+  deleteMany?: Prisma.DelegatedPermissionScalarWhereInput | Prisma.DelegatedPermissionScalarWhereInput[]
+}
+
+export type DelegatedPermissionUncheckedUpdateManyWithoutApprovalSecretNestedInput = {
+  create?: Prisma.XOR<Prisma.DelegatedPermissionCreateWithoutApprovalSecretInput, Prisma.DelegatedPermissionUncheckedCreateWithoutApprovalSecretInput> | Prisma.DelegatedPermissionCreateWithoutApprovalSecretInput[] | Prisma.DelegatedPermissionUncheckedCreateWithoutApprovalSecretInput[]
+  connectOrCreate?: Prisma.DelegatedPermissionCreateOrConnectWithoutApprovalSecretInput | Prisma.DelegatedPermissionCreateOrConnectWithoutApprovalSecretInput[]
+  upsert?: Prisma.DelegatedPermissionUpsertWithWhereUniqueWithoutApprovalSecretInput | Prisma.DelegatedPermissionUpsertWithWhereUniqueWithoutApprovalSecretInput[]
+  createMany?: Prisma.DelegatedPermissionCreateManyApprovalSecretInputEnvelope
+  set?: Prisma.DelegatedPermissionWhereUniqueInput | Prisma.DelegatedPermissionWhereUniqueInput[]
+  disconnect?: Prisma.DelegatedPermissionWhereUniqueInput | Prisma.DelegatedPermissionWhereUniqueInput[]
+  delete?: Prisma.DelegatedPermissionWhereUniqueInput | Prisma.DelegatedPermissionWhereUniqueInput[]
+  connect?: Prisma.DelegatedPermissionWhereUniqueInput | Prisma.DelegatedPermissionWhereUniqueInput[]
+  update?: Prisma.DelegatedPermissionUpdateWithWhereUniqueWithoutApprovalSecretInput | Prisma.DelegatedPermissionUpdateWithWhereUniqueWithoutApprovalSecretInput[]
+  updateMany?: Prisma.DelegatedPermissionUpdateManyWithWhereWithoutApprovalSecretInput | Prisma.DelegatedPermissionUpdateManyWithWhereWithoutApprovalSecretInput[]
   deleteMany?: Prisma.DelegatedPermissionScalarWhereInput | Prisma.DelegatedPermissionScalarWhereInput[]
 }
 
@@ -891,10 +1067,14 @@ export type DelegatedPermissionCreateWithoutUserInput = {
   expiresAt: Date | string
   revokedAt?: Date | string | null
   revocationReason?: string | null
+  sessionKeyAddress?: string | null
+  installedAt?: Date | string | null
   createdAt?: Date | string
   wallet: Prisma.WalletCreateNestedOneWithoutDelegatedPermissionsInput
   perTransactionAsset: Prisma.AssetCreateNestedOneWithoutPermissionsPerTransactionInput
   cumulativeAsset?: Prisma.AssetCreateNestedOneWithoutPermissionsCumulativeInput
+  sessionKeySecret?: Prisma.ExecutionSecretCreateNestedOneWithoutSessionKeyForInput
+  approvalSecret?: Prisma.ExecutionSecretCreateNestedOneWithoutApprovalForInput
 }
 
 export type DelegatedPermissionUncheckedCreateWithoutUserInput = {
@@ -916,6 +1096,10 @@ export type DelegatedPermissionUncheckedCreateWithoutUserInput = {
   expiresAt: Date | string
   revokedAt?: Date | string | null
   revocationReason?: string | null
+  sessionKeyAddress?: string | null
+  sessionKeySecretId?: string | null
+  approvalSecretId?: string | null
+  installedAt?: Date | string | null
   createdAt?: Date | string
 }
 
@@ -968,6 +1152,10 @@ export type DelegatedPermissionScalarWhereInput = {
   expiresAt?: Prisma.DateTimeFilter<"DelegatedPermission"> | Date | string
   revokedAt?: Prisma.DateTimeNullableFilter<"DelegatedPermission"> | Date | string | null
   revocationReason?: Prisma.StringNullableFilter<"DelegatedPermission"> | string | null
+  sessionKeyAddress?: Prisma.StringNullableFilter<"DelegatedPermission"> | string | null
+  sessionKeySecretId?: Prisma.UuidNullableFilter<"DelegatedPermission"> | string | null
+  approvalSecretId?: Prisma.UuidNullableFilter<"DelegatedPermission"> | string | null
+  installedAt?: Prisma.DateTimeNullableFilter<"DelegatedPermission"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"DelegatedPermission"> | Date | string
 }
 
@@ -987,10 +1175,14 @@ export type DelegatedPermissionCreateWithoutWalletInput = {
   expiresAt: Date | string
   revokedAt?: Date | string | null
   revocationReason?: string | null
+  sessionKeyAddress?: string | null
+  installedAt?: Date | string | null
   createdAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutDelegatedPermissionsInput
   perTransactionAsset: Prisma.AssetCreateNestedOneWithoutPermissionsPerTransactionInput
   cumulativeAsset?: Prisma.AssetCreateNestedOneWithoutPermissionsCumulativeInput
+  sessionKeySecret?: Prisma.ExecutionSecretCreateNestedOneWithoutSessionKeyForInput
+  approvalSecret?: Prisma.ExecutionSecretCreateNestedOneWithoutApprovalForInput
 }
 
 export type DelegatedPermissionUncheckedCreateWithoutWalletInput = {
@@ -1012,6 +1204,10 @@ export type DelegatedPermissionUncheckedCreateWithoutWalletInput = {
   expiresAt: Date | string
   revokedAt?: Date | string | null
   revocationReason?: string | null
+  sessionKeyAddress?: string | null
+  sessionKeySecretId?: string | null
+  approvalSecretId?: string | null
+  installedAt?: Date | string | null
   createdAt?: Date | string
 }
 
@@ -1041,6 +1237,162 @@ export type DelegatedPermissionUpdateManyWithWhereWithoutWalletInput = {
   data: Prisma.XOR<Prisma.DelegatedPermissionUpdateManyMutationInput, Prisma.DelegatedPermissionUncheckedUpdateManyWithoutWalletInput>
 }
 
+export type DelegatedPermissionCreateWithoutSessionKeySecretInput = {
+  id: string
+  provider: string
+  providerPermissionId?: string | null
+  chainId: number
+  status?: $Enums.PermissionStatus
+  allowedOperations?: Prisma.DelegatedPermissionCreateallowedOperationsInput | string[]
+  allowedContracts?: Prisma.DelegatedPermissionCreateallowedContractsInput | string[]
+  allowedAssetIds?: Prisma.DelegatedPermissionCreateallowedAssetIdsInput | string[]
+  perTransactionAmount: string
+  cumulativeAmount?: string | null
+  enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  validFrom: Date | string
+  expiresAt: Date | string
+  revokedAt?: Date | string | null
+  revocationReason?: string | null
+  sessionKeyAddress?: string | null
+  installedAt?: Date | string | null
+  createdAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutDelegatedPermissionsInput
+  wallet: Prisma.WalletCreateNestedOneWithoutDelegatedPermissionsInput
+  perTransactionAsset: Prisma.AssetCreateNestedOneWithoutPermissionsPerTransactionInput
+  cumulativeAsset?: Prisma.AssetCreateNestedOneWithoutPermissionsCumulativeInput
+  approvalSecret?: Prisma.ExecutionSecretCreateNestedOneWithoutApprovalForInput
+}
+
+export type DelegatedPermissionUncheckedCreateWithoutSessionKeySecretInput = {
+  id: string
+  userId: string
+  walletId: string
+  provider: string
+  providerPermissionId?: string | null
+  chainId: number
+  status?: $Enums.PermissionStatus
+  allowedOperations?: Prisma.DelegatedPermissionCreateallowedOperationsInput | string[]
+  allowedContracts?: Prisma.DelegatedPermissionCreateallowedContractsInput | string[]
+  allowedAssetIds?: Prisma.DelegatedPermissionCreateallowedAssetIdsInput | string[]
+  perTransactionAmount: string
+  perTransactionAssetId: string
+  cumulativeAmount?: string | null
+  cumulativeAssetId?: string | null
+  enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  validFrom: Date | string
+  expiresAt: Date | string
+  revokedAt?: Date | string | null
+  revocationReason?: string | null
+  sessionKeyAddress?: string | null
+  approvalSecretId?: string | null
+  installedAt?: Date | string | null
+  createdAt?: Date | string
+}
+
+export type DelegatedPermissionCreateOrConnectWithoutSessionKeySecretInput = {
+  where: Prisma.DelegatedPermissionWhereUniqueInput
+  create: Prisma.XOR<Prisma.DelegatedPermissionCreateWithoutSessionKeySecretInput, Prisma.DelegatedPermissionUncheckedCreateWithoutSessionKeySecretInput>
+}
+
+export type DelegatedPermissionCreateManySessionKeySecretInputEnvelope = {
+  data: Prisma.DelegatedPermissionCreateManySessionKeySecretInput | Prisma.DelegatedPermissionCreateManySessionKeySecretInput[]
+  skipDuplicates?: boolean
+}
+
+export type DelegatedPermissionCreateWithoutApprovalSecretInput = {
+  id: string
+  provider: string
+  providerPermissionId?: string | null
+  chainId: number
+  status?: $Enums.PermissionStatus
+  allowedOperations?: Prisma.DelegatedPermissionCreateallowedOperationsInput | string[]
+  allowedContracts?: Prisma.DelegatedPermissionCreateallowedContractsInput | string[]
+  allowedAssetIds?: Prisma.DelegatedPermissionCreateallowedAssetIdsInput | string[]
+  perTransactionAmount: string
+  cumulativeAmount?: string | null
+  enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  validFrom: Date | string
+  expiresAt: Date | string
+  revokedAt?: Date | string | null
+  revocationReason?: string | null
+  sessionKeyAddress?: string | null
+  installedAt?: Date | string | null
+  createdAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutDelegatedPermissionsInput
+  wallet: Prisma.WalletCreateNestedOneWithoutDelegatedPermissionsInput
+  perTransactionAsset: Prisma.AssetCreateNestedOneWithoutPermissionsPerTransactionInput
+  cumulativeAsset?: Prisma.AssetCreateNestedOneWithoutPermissionsCumulativeInput
+  sessionKeySecret?: Prisma.ExecutionSecretCreateNestedOneWithoutSessionKeyForInput
+}
+
+export type DelegatedPermissionUncheckedCreateWithoutApprovalSecretInput = {
+  id: string
+  userId: string
+  walletId: string
+  provider: string
+  providerPermissionId?: string | null
+  chainId: number
+  status?: $Enums.PermissionStatus
+  allowedOperations?: Prisma.DelegatedPermissionCreateallowedOperationsInput | string[]
+  allowedContracts?: Prisma.DelegatedPermissionCreateallowedContractsInput | string[]
+  allowedAssetIds?: Prisma.DelegatedPermissionCreateallowedAssetIdsInput | string[]
+  perTransactionAmount: string
+  perTransactionAssetId: string
+  cumulativeAmount?: string | null
+  cumulativeAssetId?: string | null
+  enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  validFrom: Date | string
+  expiresAt: Date | string
+  revokedAt?: Date | string | null
+  revocationReason?: string | null
+  sessionKeyAddress?: string | null
+  sessionKeySecretId?: string | null
+  installedAt?: Date | string | null
+  createdAt?: Date | string
+}
+
+export type DelegatedPermissionCreateOrConnectWithoutApprovalSecretInput = {
+  where: Prisma.DelegatedPermissionWhereUniqueInput
+  create: Prisma.XOR<Prisma.DelegatedPermissionCreateWithoutApprovalSecretInput, Prisma.DelegatedPermissionUncheckedCreateWithoutApprovalSecretInput>
+}
+
+export type DelegatedPermissionCreateManyApprovalSecretInputEnvelope = {
+  data: Prisma.DelegatedPermissionCreateManyApprovalSecretInput | Prisma.DelegatedPermissionCreateManyApprovalSecretInput[]
+  skipDuplicates?: boolean
+}
+
+export type DelegatedPermissionUpsertWithWhereUniqueWithoutSessionKeySecretInput = {
+  where: Prisma.DelegatedPermissionWhereUniqueInput
+  update: Prisma.XOR<Prisma.DelegatedPermissionUpdateWithoutSessionKeySecretInput, Prisma.DelegatedPermissionUncheckedUpdateWithoutSessionKeySecretInput>
+  create: Prisma.XOR<Prisma.DelegatedPermissionCreateWithoutSessionKeySecretInput, Prisma.DelegatedPermissionUncheckedCreateWithoutSessionKeySecretInput>
+}
+
+export type DelegatedPermissionUpdateWithWhereUniqueWithoutSessionKeySecretInput = {
+  where: Prisma.DelegatedPermissionWhereUniqueInput
+  data: Prisma.XOR<Prisma.DelegatedPermissionUpdateWithoutSessionKeySecretInput, Prisma.DelegatedPermissionUncheckedUpdateWithoutSessionKeySecretInput>
+}
+
+export type DelegatedPermissionUpdateManyWithWhereWithoutSessionKeySecretInput = {
+  where: Prisma.DelegatedPermissionScalarWhereInput
+  data: Prisma.XOR<Prisma.DelegatedPermissionUpdateManyMutationInput, Prisma.DelegatedPermissionUncheckedUpdateManyWithoutSessionKeySecretInput>
+}
+
+export type DelegatedPermissionUpsertWithWhereUniqueWithoutApprovalSecretInput = {
+  where: Prisma.DelegatedPermissionWhereUniqueInput
+  update: Prisma.XOR<Prisma.DelegatedPermissionUpdateWithoutApprovalSecretInput, Prisma.DelegatedPermissionUncheckedUpdateWithoutApprovalSecretInput>
+  create: Prisma.XOR<Prisma.DelegatedPermissionCreateWithoutApprovalSecretInput, Prisma.DelegatedPermissionUncheckedCreateWithoutApprovalSecretInput>
+}
+
+export type DelegatedPermissionUpdateWithWhereUniqueWithoutApprovalSecretInput = {
+  where: Prisma.DelegatedPermissionWhereUniqueInput
+  data: Prisma.XOR<Prisma.DelegatedPermissionUpdateWithoutApprovalSecretInput, Prisma.DelegatedPermissionUncheckedUpdateWithoutApprovalSecretInput>
+}
+
+export type DelegatedPermissionUpdateManyWithWhereWithoutApprovalSecretInput = {
+  where: Prisma.DelegatedPermissionScalarWhereInput
+  data: Prisma.XOR<Prisma.DelegatedPermissionUpdateManyMutationInput, Prisma.DelegatedPermissionUncheckedUpdateManyWithoutApprovalSecretInput>
+}
+
 export type DelegatedPermissionCreateWithoutPerTransactionAssetInput = {
   id: string
   provider: string
@@ -1057,10 +1409,14 @@ export type DelegatedPermissionCreateWithoutPerTransactionAssetInput = {
   expiresAt: Date | string
   revokedAt?: Date | string | null
   revocationReason?: string | null
+  sessionKeyAddress?: string | null
+  installedAt?: Date | string | null
   createdAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutDelegatedPermissionsInput
   wallet: Prisma.WalletCreateNestedOneWithoutDelegatedPermissionsInput
   cumulativeAsset?: Prisma.AssetCreateNestedOneWithoutPermissionsCumulativeInput
+  sessionKeySecret?: Prisma.ExecutionSecretCreateNestedOneWithoutSessionKeyForInput
+  approvalSecret?: Prisma.ExecutionSecretCreateNestedOneWithoutApprovalForInput
 }
 
 export type DelegatedPermissionUncheckedCreateWithoutPerTransactionAssetInput = {
@@ -1082,6 +1438,10 @@ export type DelegatedPermissionUncheckedCreateWithoutPerTransactionAssetInput = 
   expiresAt: Date | string
   revokedAt?: Date | string | null
   revocationReason?: string | null
+  sessionKeyAddress?: string | null
+  sessionKeySecretId?: string | null
+  approvalSecretId?: string | null
+  installedAt?: Date | string | null
   createdAt?: Date | string
 }
 
@@ -1111,10 +1471,14 @@ export type DelegatedPermissionCreateWithoutCumulativeAssetInput = {
   expiresAt: Date | string
   revokedAt?: Date | string | null
   revocationReason?: string | null
+  sessionKeyAddress?: string | null
+  installedAt?: Date | string | null
   createdAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutDelegatedPermissionsInput
   wallet: Prisma.WalletCreateNestedOneWithoutDelegatedPermissionsInput
   perTransactionAsset: Prisma.AssetCreateNestedOneWithoutPermissionsPerTransactionInput
+  sessionKeySecret?: Prisma.ExecutionSecretCreateNestedOneWithoutSessionKeyForInput
+  approvalSecret?: Prisma.ExecutionSecretCreateNestedOneWithoutApprovalForInput
 }
 
 export type DelegatedPermissionUncheckedCreateWithoutCumulativeAssetInput = {
@@ -1136,6 +1500,10 @@ export type DelegatedPermissionUncheckedCreateWithoutCumulativeAssetInput = {
   expiresAt: Date | string
   revokedAt?: Date | string | null
   revocationReason?: string | null
+  sessionKeyAddress?: string | null
+  sessionKeySecretId?: string | null
+  approvalSecretId?: string | null
+  installedAt?: Date | string | null
   createdAt?: Date | string
 }
 
@@ -1200,6 +1568,10 @@ export type DelegatedPermissionCreateManyUserInput = {
   expiresAt: Date | string
   revokedAt?: Date | string | null
   revocationReason?: string | null
+  sessionKeyAddress?: string | null
+  sessionKeySecretId?: string | null
+  approvalSecretId?: string | null
+  installedAt?: Date | string | null
   createdAt?: Date | string
 }
 
@@ -1219,10 +1591,14 @@ export type DelegatedPermissionUpdateWithoutUserInput = {
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   revocationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeyAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   wallet?: Prisma.WalletUpdateOneRequiredWithoutDelegatedPermissionsNestedInput
   perTransactionAsset?: Prisma.AssetUpdateOneRequiredWithoutPermissionsPerTransactionNestedInput
   cumulativeAsset?: Prisma.AssetUpdateOneWithoutPermissionsCumulativeNestedInput
+  sessionKeySecret?: Prisma.ExecutionSecretUpdateOneWithoutSessionKeyForNestedInput
+  approvalSecret?: Prisma.ExecutionSecretUpdateOneWithoutApprovalForNestedInput
 }
 
 export type DelegatedPermissionUncheckedUpdateWithoutUserInput = {
@@ -1244,6 +1620,10 @@ export type DelegatedPermissionUncheckedUpdateWithoutUserInput = {
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   revocationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeyAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeySecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  approvalSecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -1266,6 +1646,10 @@ export type DelegatedPermissionUncheckedUpdateManyWithoutUserInput = {
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   revocationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeyAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeySecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  approvalSecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -1288,6 +1672,10 @@ export type DelegatedPermissionCreateManyWalletInput = {
   expiresAt: Date | string
   revokedAt?: Date | string | null
   revocationReason?: string | null
+  sessionKeyAddress?: string | null
+  sessionKeySecretId?: string | null
+  approvalSecretId?: string | null
+  installedAt?: Date | string | null
   createdAt?: Date | string
 }
 
@@ -1307,10 +1695,14 @@ export type DelegatedPermissionUpdateWithoutWalletInput = {
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   revocationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeyAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutDelegatedPermissionsNestedInput
   perTransactionAsset?: Prisma.AssetUpdateOneRequiredWithoutPermissionsPerTransactionNestedInput
   cumulativeAsset?: Prisma.AssetUpdateOneWithoutPermissionsCumulativeNestedInput
+  sessionKeySecret?: Prisma.ExecutionSecretUpdateOneWithoutSessionKeyForNestedInput
+  approvalSecret?: Prisma.ExecutionSecretUpdateOneWithoutApprovalForNestedInput
 }
 
 export type DelegatedPermissionUncheckedUpdateWithoutWalletInput = {
@@ -1332,6 +1724,10 @@ export type DelegatedPermissionUncheckedUpdateWithoutWalletInput = {
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   revocationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeyAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeySecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  approvalSecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -1354,6 +1750,218 @@ export type DelegatedPermissionUncheckedUpdateManyWithoutWalletInput = {
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   revocationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeyAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeySecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  approvalSecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type DelegatedPermissionCreateManySessionKeySecretInput = {
+  id: string
+  userId: string
+  walletId: string
+  provider: string
+  providerPermissionId?: string | null
+  chainId: number
+  status?: $Enums.PermissionStatus
+  allowedOperations?: Prisma.DelegatedPermissionCreateallowedOperationsInput | string[]
+  allowedContracts?: Prisma.DelegatedPermissionCreateallowedContractsInput | string[]
+  allowedAssetIds?: Prisma.DelegatedPermissionCreateallowedAssetIdsInput | string[]
+  perTransactionAmount: string
+  perTransactionAssetId: string
+  cumulativeAmount?: string | null
+  cumulativeAssetId?: string | null
+  enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  validFrom: Date | string
+  expiresAt: Date | string
+  revokedAt?: Date | string | null
+  revocationReason?: string | null
+  sessionKeyAddress?: string | null
+  approvalSecretId?: string | null
+  installedAt?: Date | string | null
+  createdAt?: Date | string
+}
+
+export type DelegatedPermissionCreateManyApprovalSecretInput = {
+  id: string
+  userId: string
+  walletId: string
+  provider: string
+  providerPermissionId?: string | null
+  chainId: number
+  status?: $Enums.PermissionStatus
+  allowedOperations?: Prisma.DelegatedPermissionCreateallowedOperationsInput | string[]
+  allowedContracts?: Prisma.DelegatedPermissionCreateallowedContractsInput | string[]
+  allowedAssetIds?: Prisma.DelegatedPermissionCreateallowedAssetIdsInput | string[]
+  perTransactionAmount: string
+  perTransactionAssetId: string
+  cumulativeAmount?: string | null
+  cumulativeAssetId?: string | null
+  enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  validFrom: Date | string
+  expiresAt: Date | string
+  revokedAt?: Date | string | null
+  revocationReason?: string | null
+  sessionKeyAddress?: string | null
+  sessionKeySecretId?: string | null
+  installedAt?: Date | string | null
+  createdAt?: Date | string
+}
+
+export type DelegatedPermissionUpdateWithoutSessionKeySecretInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.StringFieldUpdateOperationsInput | string
+  providerPermissionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chainId?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.EnumPermissionStatusFieldUpdateOperationsInput | $Enums.PermissionStatus
+  allowedOperations?: Prisma.DelegatedPermissionUpdateallowedOperationsInput | string[]
+  allowedContracts?: Prisma.DelegatedPermissionUpdateallowedContractsInput | string[]
+  allowedAssetIds?: Prisma.DelegatedPermissionUpdateallowedAssetIdsInput | string[]
+  perTransactionAmount?: Prisma.StringFieldUpdateOperationsInput | string
+  cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  revocationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeyAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutDelegatedPermissionsNestedInput
+  wallet?: Prisma.WalletUpdateOneRequiredWithoutDelegatedPermissionsNestedInput
+  perTransactionAsset?: Prisma.AssetUpdateOneRequiredWithoutPermissionsPerTransactionNestedInput
+  cumulativeAsset?: Prisma.AssetUpdateOneWithoutPermissionsCumulativeNestedInput
+  approvalSecret?: Prisma.ExecutionSecretUpdateOneWithoutApprovalForNestedInput
+}
+
+export type DelegatedPermissionUncheckedUpdateWithoutSessionKeySecretInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  walletId?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.StringFieldUpdateOperationsInput | string
+  providerPermissionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chainId?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.EnumPermissionStatusFieldUpdateOperationsInput | $Enums.PermissionStatus
+  allowedOperations?: Prisma.DelegatedPermissionUpdateallowedOperationsInput | string[]
+  allowedContracts?: Prisma.DelegatedPermissionUpdateallowedContractsInput | string[]
+  allowedAssetIds?: Prisma.DelegatedPermissionUpdateallowedAssetIdsInput | string[]
+  perTransactionAmount?: Prisma.StringFieldUpdateOperationsInput | string
+  perTransactionAssetId?: Prisma.StringFieldUpdateOperationsInput | string
+  cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cumulativeAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  revocationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeyAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  approvalSecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type DelegatedPermissionUncheckedUpdateManyWithoutSessionKeySecretInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  walletId?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.StringFieldUpdateOperationsInput | string
+  providerPermissionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chainId?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.EnumPermissionStatusFieldUpdateOperationsInput | $Enums.PermissionStatus
+  allowedOperations?: Prisma.DelegatedPermissionUpdateallowedOperationsInput | string[]
+  allowedContracts?: Prisma.DelegatedPermissionUpdateallowedContractsInput | string[]
+  allowedAssetIds?: Prisma.DelegatedPermissionUpdateallowedAssetIdsInput | string[]
+  perTransactionAmount?: Prisma.StringFieldUpdateOperationsInput | string
+  perTransactionAssetId?: Prisma.StringFieldUpdateOperationsInput | string
+  cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cumulativeAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  revocationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeyAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  approvalSecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type DelegatedPermissionUpdateWithoutApprovalSecretInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.StringFieldUpdateOperationsInput | string
+  providerPermissionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chainId?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.EnumPermissionStatusFieldUpdateOperationsInput | $Enums.PermissionStatus
+  allowedOperations?: Prisma.DelegatedPermissionUpdateallowedOperationsInput | string[]
+  allowedContracts?: Prisma.DelegatedPermissionUpdateallowedContractsInput | string[]
+  allowedAssetIds?: Prisma.DelegatedPermissionUpdateallowedAssetIdsInput | string[]
+  perTransactionAmount?: Prisma.StringFieldUpdateOperationsInput | string
+  cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  revocationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeyAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutDelegatedPermissionsNestedInput
+  wallet?: Prisma.WalletUpdateOneRequiredWithoutDelegatedPermissionsNestedInput
+  perTransactionAsset?: Prisma.AssetUpdateOneRequiredWithoutPermissionsPerTransactionNestedInput
+  cumulativeAsset?: Prisma.AssetUpdateOneWithoutPermissionsCumulativeNestedInput
+  sessionKeySecret?: Prisma.ExecutionSecretUpdateOneWithoutSessionKeyForNestedInput
+}
+
+export type DelegatedPermissionUncheckedUpdateWithoutApprovalSecretInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  walletId?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.StringFieldUpdateOperationsInput | string
+  providerPermissionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chainId?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.EnumPermissionStatusFieldUpdateOperationsInput | $Enums.PermissionStatus
+  allowedOperations?: Prisma.DelegatedPermissionUpdateallowedOperationsInput | string[]
+  allowedContracts?: Prisma.DelegatedPermissionUpdateallowedContractsInput | string[]
+  allowedAssetIds?: Prisma.DelegatedPermissionUpdateallowedAssetIdsInput | string[]
+  perTransactionAmount?: Prisma.StringFieldUpdateOperationsInput | string
+  perTransactionAssetId?: Prisma.StringFieldUpdateOperationsInput | string
+  cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cumulativeAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  revocationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeyAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeySecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type DelegatedPermissionUncheckedUpdateManyWithoutApprovalSecretInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  walletId?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.StringFieldUpdateOperationsInput | string
+  providerPermissionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chainId?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.EnumPermissionStatusFieldUpdateOperationsInput | $Enums.PermissionStatus
+  allowedOperations?: Prisma.DelegatedPermissionUpdateallowedOperationsInput | string[]
+  allowedContracts?: Prisma.DelegatedPermissionUpdateallowedContractsInput | string[]
+  allowedAssetIds?: Prisma.DelegatedPermissionUpdateallowedAssetIdsInput | string[]
+  perTransactionAmount?: Prisma.StringFieldUpdateOperationsInput | string
+  perTransactionAssetId?: Prisma.StringFieldUpdateOperationsInput | string
+  cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cumulativeAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  revocationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeyAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeySecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -1376,6 +1984,10 @@ export type DelegatedPermissionCreateManyPerTransactionAssetInput = {
   expiresAt: Date | string
   revokedAt?: Date | string | null
   revocationReason?: string | null
+  sessionKeyAddress?: string | null
+  sessionKeySecretId?: string | null
+  approvalSecretId?: string | null
+  installedAt?: Date | string | null
   createdAt?: Date | string
 }
 
@@ -1398,6 +2010,10 @@ export type DelegatedPermissionCreateManyCumulativeAssetInput = {
   expiresAt: Date | string
   revokedAt?: Date | string | null
   revocationReason?: string | null
+  sessionKeyAddress?: string | null
+  sessionKeySecretId?: string | null
+  approvalSecretId?: string | null
+  installedAt?: Date | string | null
   createdAt?: Date | string
 }
 
@@ -1417,10 +2033,14 @@ export type DelegatedPermissionUpdateWithoutPerTransactionAssetInput = {
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   revocationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeyAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutDelegatedPermissionsNestedInput
   wallet?: Prisma.WalletUpdateOneRequiredWithoutDelegatedPermissionsNestedInput
   cumulativeAsset?: Prisma.AssetUpdateOneWithoutPermissionsCumulativeNestedInput
+  sessionKeySecret?: Prisma.ExecutionSecretUpdateOneWithoutSessionKeyForNestedInput
+  approvalSecret?: Prisma.ExecutionSecretUpdateOneWithoutApprovalForNestedInput
 }
 
 export type DelegatedPermissionUncheckedUpdateWithoutPerTransactionAssetInput = {
@@ -1442,6 +2062,10 @@ export type DelegatedPermissionUncheckedUpdateWithoutPerTransactionAssetInput = 
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   revocationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeyAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeySecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  approvalSecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -1464,6 +2088,10 @@ export type DelegatedPermissionUncheckedUpdateManyWithoutPerTransactionAssetInpu
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   revocationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeyAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeySecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  approvalSecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -1483,10 +2111,14 @@ export type DelegatedPermissionUpdateWithoutCumulativeAssetInput = {
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   revocationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeyAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutDelegatedPermissionsNestedInput
   wallet?: Prisma.WalletUpdateOneRequiredWithoutDelegatedPermissionsNestedInput
   perTransactionAsset?: Prisma.AssetUpdateOneRequiredWithoutPermissionsPerTransactionNestedInput
+  sessionKeySecret?: Prisma.ExecutionSecretUpdateOneWithoutSessionKeyForNestedInput
+  approvalSecret?: Prisma.ExecutionSecretUpdateOneWithoutApprovalForNestedInput
 }
 
 export type DelegatedPermissionUncheckedUpdateWithoutCumulativeAssetInput = {
@@ -1508,6 +2140,10 @@ export type DelegatedPermissionUncheckedUpdateWithoutCumulativeAssetInput = {
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   revocationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeyAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeySecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  approvalSecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -1530,6 +2166,10 @@ export type DelegatedPermissionUncheckedUpdateManyWithoutCumulativeAssetInput = 
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   revocationReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeyAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessionKeySecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  approvalSecretId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -1555,11 +2195,17 @@ export type DelegatedPermissionSelect<ExtArgs extends runtime.Types.Extensions.I
   expiresAt?: boolean
   revokedAt?: boolean
   revocationReason?: boolean
+  sessionKeyAddress?: boolean
+  sessionKeySecretId?: boolean
+  approvalSecretId?: boolean
+  installedAt?: boolean
   createdAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
   perTransactionAsset?: boolean | Prisma.AssetDefaultArgs<ExtArgs>
   cumulativeAsset?: boolean | Prisma.DelegatedPermission$cumulativeAssetArgs<ExtArgs>
+  sessionKeySecret?: boolean | Prisma.DelegatedPermission$sessionKeySecretArgs<ExtArgs>
+  approvalSecret?: boolean | Prisma.DelegatedPermission$approvalSecretArgs<ExtArgs>
 }, ExtArgs["result"]["delegatedPermission"]>
 
 export type DelegatedPermissionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1582,11 +2228,17 @@ export type DelegatedPermissionSelectCreateManyAndReturn<ExtArgs extends runtime
   expiresAt?: boolean
   revokedAt?: boolean
   revocationReason?: boolean
+  sessionKeyAddress?: boolean
+  sessionKeySecretId?: boolean
+  approvalSecretId?: boolean
+  installedAt?: boolean
   createdAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
   perTransactionAsset?: boolean | Prisma.AssetDefaultArgs<ExtArgs>
   cumulativeAsset?: boolean | Prisma.DelegatedPermission$cumulativeAssetArgs<ExtArgs>
+  sessionKeySecret?: boolean | Prisma.DelegatedPermission$sessionKeySecretArgs<ExtArgs>
+  approvalSecret?: boolean | Prisma.DelegatedPermission$approvalSecretArgs<ExtArgs>
 }, ExtArgs["result"]["delegatedPermission"]>
 
 export type DelegatedPermissionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1609,11 +2261,17 @@ export type DelegatedPermissionSelectUpdateManyAndReturn<ExtArgs extends runtime
   expiresAt?: boolean
   revokedAt?: boolean
   revocationReason?: boolean
+  sessionKeyAddress?: boolean
+  sessionKeySecretId?: boolean
+  approvalSecretId?: boolean
+  installedAt?: boolean
   createdAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
   perTransactionAsset?: boolean | Prisma.AssetDefaultArgs<ExtArgs>
   cumulativeAsset?: boolean | Prisma.DelegatedPermission$cumulativeAssetArgs<ExtArgs>
+  sessionKeySecret?: boolean | Prisma.DelegatedPermission$sessionKeySecretArgs<ExtArgs>
+  approvalSecret?: boolean | Prisma.DelegatedPermission$approvalSecretArgs<ExtArgs>
 }, ExtArgs["result"]["delegatedPermission"]>
 
 export type DelegatedPermissionSelectScalar = {
@@ -1636,27 +2294,37 @@ export type DelegatedPermissionSelectScalar = {
   expiresAt?: boolean
   revokedAt?: boolean
   revocationReason?: boolean
+  sessionKeyAddress?: boolean
+  sessionKeySecretId?: boolean
+  approvalSecretId?: boolean
+  installedAt?: boolean
   createdAt?: boolean
 }
 
-export type DelegatedPermissionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "walletId" | "provider" | "providerPermissionId" | "chainId" | "status" | "allowedOperations" | "allowedContracts" | "allowedAssetIds" | "perTransactionAmount" | "perTransactionAssetId" | "cumulativeAmount" | "cumulativeAssetId" | "enforcement" | "validFrom" | "expiresAt" | "revokedAt" | "revocationReason" | "createdAt", ExtArgs["result"]["delegatedPermission"]>
+export type DelegatedPermissionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "walletId" | "provider" | "providerPermissionId" | "chainId" | "status" | "allowedOperations" | "allowedContracts" | "allowedAssetIds" | "perTransactionAmount" | "perTransactionAssetId" | "cumulativeAmount" | "cumulativeAssetId" | "enforcement" | "validFrom" | "expiresAt" | "revokedAt" | "revocationReason" | "sessionKeyAddress" | "sessionKeySecretId" | "approvalSecretId" | "installedAt" | "createdAt", ExtArgs["result"]["delegatedPermission"]>
 export type DelegatedPermissionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
   perTransactionAsset?: boolean | Prisma.AssetDefaultArgs<ExtArgs>
   cumulativeAsset?: boolean | Prisma.DelegatedPermission$cumulativeAssetArgs<ExtArgs>
+  sessionKeySecret?: boolean | Prisma.DelegatedPermission$sessionKeySecretArgs<ExtArgs>
+  approvalSecret?: boolean | Prisma.DelegatedPermission$approvalSecretArgs<ExtArgs>
 }
 export type DelegatedPermissionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
   perTransactionAsset?: boolean | Prisma.AssetDefaultArgs<ExtArgs>
   cumulativeAsset?: boolean | Prisma.DelegatedPermission$cumulativeAssetArgs<ExtArgs>
+  sessionKeySecret?: boolean | Prisma.DelegatedPermission$sessionKeySecretArgs<ExtArgs>
+  approvalSecret?: boolean | Prisma.DelegatedPermission$approvalSecretArgs<ExtArgs>
 }
 export type DelegatedPermissionIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
   perTransactionAsset?: boolean | Prisma.AssetDefaultArgs<ExtArgs>
   cumulativeAsset?: boolean | Prisma.DelegatedPermission$cumulativeAssetArgs<ExtArgs>
+  sessionKeySecret?: boolean | Prisma.DelegatedPermission$sessionKeySecretArgs<ExtArgs>
+  approvalSecret?: boolean | Prisma.DelegatedPermission$approvalSecretArgs<ExtArgs>
 }
 
 export type $DelegatedPermissionPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1666,6 +2334,8 @@ export type $DelegatedPermissionPayload<ExtArgs extends runtime.Types.Extensions
     wallet: Prisma.$WalletPayload<ExtArgs>
     perTransactionAsset: Prisma.$AssetPayload<ExtArgs>
     cumulativeAsset: Prisma.$AssetPayload<ExtArgs> | null
+    sessionKeySecret: Prisma.$ExecutionSecretPayload<ExtArgs> | null
+    approvalSecret: Prisma.$ExecutionSecretPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1687,6 +2357,19 @@ export type $DelegatedPermissionPayload<ExtArgs extends runtime.Types.Extensions
     expiresAt: Date
     revokedAt: Date | null
     revocationReason: string | null
+    /**
+     * The public address of the restricted session key (the key itself is encrypted in ExecutionSecret).
+     */
+    sessionKeyAddress: string | null
+    sessionKeySecretId: string | null
+    /**
+     * The passkey-signed enable data needed to use the permission, encrypted.
+     */
+    approvalSecretId: string | null
+    /**
+     * Set only after the permission was read back from the chain.
+     */
+    installedAt: Date | null
     createdAt: Date
   }, ExtArgs["result"]["delegatedPermission"]>
   composites: {}
@@ -2086,6 +2769,8 @@ export interface Prisma__DelegatedPermissionClient<T, Null = never, ExtArgs exte
   wallet<T extends Prisma.WalletDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.WalletDefaultArgs<ExtArgs>>): Prisma.Prisma__WalletClient<runtime.Types.Result.GetResult<Prisma.$WalletPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   perTransactionAsset<T extends Prisma.AssetDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AssetDefaultArgs<ExtArgs>>): Prisma.Prisma__AssetClient<runtime.Types.Result.GetResult<Prisma.$AssetPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   cumulativeAsset<T extends Prisma.DelegatedPermission$cumulativeAssetArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.DelegatedPermission$cumulativeAssetArgs<ExtArgs>>): Prisma.Prisma__AssetClient<runtime.Types.Result.GetResult<Prisma.$AssetPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  sessionKeySecret<T extends Prisma.DelegatedPermission$sessionKeySecretArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.DelegatedPermission$sessionKeySecretArgs<ExtArgs>>): Prisma.Prisma__ExecutionSecretClient<runtime.Types.Result.GetResult<Prisma.$ExecutionSecretPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  approvalSecret<T extends Prisma.DelegatedPermission$approvalSecretArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.DelegatedPermission$approvalSecretArgs<ExtArgs>>): Prisma.Prisma__ExecutionSecretClient<runtime.Types.Result.GetResult<Prisma.$ExecutionSecretPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2134,6 +2819,10 @@ export interface DelegatedPermissionFieldRefs {
   readonly expiresAt: Prisma.FieldRef<"DelegatedPermission", 'DateTime'>
   readonly revokedAt: Prisma.FieldRef<"DelegatedPermission", 'DateTime'>
   readonly revocationReason: Prisma.FieldRef<"DelegatedPermission", 'String'>
+  readonly sessionKeyAddress: Prisma.FieldRef<"DelegatedPermission", 'String'>
+  readonly sessionKeySecretId: Prisma.FieldRef<"DelegatedPermission", 'String'>
+  readonly approvalSecretId: Prisma.FieldRef<"DelegatedPermission", 'String'>
+  readonly installedAt: Prisma.FieldRef<"DelegatedPermission", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"DelegatedPermission", 'DateTime'>
 }
     
@@ -2552,6 +3241,44 @@ export type DelegatedPermission$cumulativeAssetArgs<ExtArgs extends runtime.Type
    */
   include?: Prisma.AssetInclude<ExtArgs> | null
   where?: Prisma.AssetWhereInput
+}
+
+/**
+ * DelegatedPermission.sessionKeySecret
+ */
+export type DelegatedPermission$sessionKeySecretArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ExecutionSecret
+   */
+  select?: Prisma.ExecutionSecretSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ExecutionSecret
+   */
+  omit?: Prisma.ExecutionSecretOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ExecutionSecretInclude<ExtArgs> | null
+  where?: Prisma.ExecutionSecretWhereInput
+}
+
+/**
+ * DelegatedPermission.approvalSecret
+ */
+export type DelegatedPermission$approvalSecretArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ExecutionSecret
+   */
+  select?: Prisma.ExecutionSecretSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ExecutionSecret
+   */
+  omit?: Prisma.ExecutionSecretOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ExecutionSecretInclude<ExtArgs> | null
+  where?: Prisma.ExecutionSecretWhereInput
 }
 
 /**

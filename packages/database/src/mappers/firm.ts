@@ -62,7 +62,19 @@ export function toFirmQuoteAttempt(row: AttemptRow): FirmQuoteAttempt {
   };
 }
 
-const PLAN_STATUSES = new Set(["PREPARING", "READY", "BLOCKED", "EXPIRED", "FAILED"]);
+const PLAN_STATUSES = new Set([
+  "PREPARING",
+  "READY",
+  "BLOCKED",
+  "EXPIRED",
+  "FAILED",
+  "REQUIRES_USER_ACTION",
+  "SIGNING",
+  "SUBMITTING",
+  "SUBMITTED",
+  "SETTLING",
+  "COMPLETED",
+]);
 
 export function toExecutionPlanRecord(row: ExecutionRow): ExecutionPlanRecord {
   if (!row.paymentAuthorizationId || !row.walletId || !PLAN_STATUSES.has(row.status)) {
@@ -80,6 +92,17 @@ export function toExecutionPlanRecord(row: ExecutionRow): ExecutionPlanRecord {
     status: row.status as ExecutionPlanRecord["status"],
     ...(plan && { plan: plan satisfies JsonObject }),
     ...maybe("failureCode", row.failureCode),
+    ...maybe("authorizationConsumedAt", row.authorizationConsumedAt),
+    ...maybe("userActionKind", row.userActionKind),
+    ...(row.providerSubmitState && {
+      providerSubmitState: row.providerSubmitState as NonNullable<
+        ExecutionPlanRecord["providerSubmitState"]
+      >,
+    }),
+    ...maybe("settledInputAmount", row.settledInputAmount),
+    ...maybe("settledOutputAmount", row.settledOutputAmount),
+    ...maybe("claimTombstonedAt", row.claimTombstonedAt),
+    ...maybe("lastReconciledAt", row.lastReconciledAt),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

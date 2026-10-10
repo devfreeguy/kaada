@@ -4,6 +4,8 @@ import type {
   AuditRepository,
   DelegatedPermissionRepository,
   ExecutionPlanRepository,
+  ExecutionTransactionRepository,
+  RootActionSessionRepository,
   ExecutionSecretRepository,
   FirmQuoteAttemptRepository,
   IntentRepository,
@@ -38,6 +40,8 @@ export interface ExecutionRepositories {
   firmQuoteAttempts: FirmQuoteAttemptRepository;
   executionSecrets: ExecutionSecretRepository;
   executionPlans: ExecutionPlanRepository;
+  executionTransactions: ExecutionTransactionRepository;
+  rootActions: RootActionSessionRepository;
   audit: AuditRepository;
 }
 

@@ -1,4 +1,4 @@
-import { isPermissionUsable } from "@kaada/domain";
+import { createMoney, isPermissionUsable } from "@kaada/domain";
 import type {
   AccountRequirements,
   Asset,
@@ -13,6 +13,7 @@ import type {
   PlanBlocker,
   TokenApprovalRequirement,
   UnsignedTransactions,
+  TokenPolicy,
   Wallet,
 } from "@kaada/domain";
 import { boundLimits } from "@kaada/domain";
@@ -30,6 +31,9 @@ export interface PlanInputs {
   authorization: PaymentAuthorization;
   wallet: Wallet & { address: string };
   sellAsset: Asset & { contractAddress: string };
+  /** The token the recipient is paid in; it is transferred out by the payout leg. */
+  buyAsset: Asset & { contractAddress: string };
+  tokenPolicy: TokenPolicy;
   /** Read-only: the allowance the wallet has already granted the spender. */
   currentAllowance: bigint;
   /** Read-only: whether the Kernel account exists on chain. */
@@ -78,8 +82,15 @@ export function buildExecutionPlan(input: PlanInputs): ExecutionPlan {
       currentAllowance: input.currentAllowance.toString(),
       requiredAllowance: required.toString(),
       required: approvalNeeded,
+      // Token-specific quirks live in the token policy, not in this code.
       resetToZeroFirst:
-        approvalNeeded && input.currentAllowance > 0n && sellAsset.symbol === "USDT",
+        approvalNeeded &&
+        input.currentAllowance > 0n &&
+        input.tokenPolicy.requiresZeroResetBeforeChange({
+          chainId: quote.chainId,
+          symbol: sellAsset.symbol,
+          address: sellAsset.contractAddress,
+        }),
       signer: "DELEGATED_SIGNER",
     });
   }
@@ -88,21 +99,45 @@ export function buildExecutionPlan(input: PlanInputs): ExecutionPlan {
 
   // ── delegated permission: only an ACTIVE, installed one that covers THIS payment counts
   const { maxInput } = boundLimits(authorization.bounds);
+  // The wallet receives the swap output, so the recipient is paid by a transfer in the same
+  // UserOperation. It needs a destination address; without one the payment cannot execute.
+  const recipientAddress = input.candidate.recipient.address?.toLowerCase();
+  if (!recipientAddress) blockers.push("RECIPIENT_ADDRESS_REQUIRED");
   const needsContracts = [
     ...(approvalNeeded ? [sellAsset.contractAddress.toLowerCase()] : []),
     transactions.swap.to.toLowerCase(),
+    input.buyAsset.contractAddress.toLowerCase(),
   ];
   const needsOperations: PermissionScope["allowedOperations"] = approvalNeeded
-    ? ["APPROVE_TOKEN", "EXECUTE_SWAP"]
-    : ["EXECUTE_SWAP"];
+    ? ["APPROVE_TOKEN", "EXECUTE_SWAP", "TRANSFER_TOKEN"]
+    : ["EXECUTE_SWAP", "TRANSFER_TOKEN"];
   const mustLastUntil = quote.latestOrderDeadline ?? quote.expiresAt;
   const scope: PermissionScope = {
     chainId: quote.chainId,
     allowedOperations: needsOperations,
     allowedContracts: [...new Set(needsContracts)],
-    allowedAssetIds: [sellAsset.id],
+    allowedAssetIds: [sellAsset.id, input.buyAsset.id],
+    swapTarget: transactions.swap.to.toLowerCase(),
+    ...(approvalNeeded &&
+      spender !== undefined && {
+        approval: {
+          tokenAddress: sellAsset.contractAddress.toLowerCase(),
+          spender: spender.toLowerCase(),
+          // The exact allowance this quote needs, never more.
+          limit: createMoney(required.toString(), sellAsset.id),
+        },
+      }),
     // Never above the authorized maximum spend.
     perTransactionLimit: maxInput,
+    // The payout may go to this one recipient and no more than the firm output.
+    ...(recipientAddress && {
+      payout: {
+        assetId: input.buyAsset.id,
+        tokenAddress: input.buyAsset.contractAddress.toLowerCase(),
+        recipient: recipientAddress,
+        limit: quote.output,
+      },
+    }),
     validFrom: now,
     expiresAt: new Date(now.getTime() + PERMISSION_WINDOW_MS),
   };
@@ -156,6 +191,13 @@ export function buildExecutionPlan(input: PlanInputs): ExecutionPlan {
     accountRequirements,
     permissionRequirement,
     approvalRequirements: approvals,
+    payoutRequirement: {
+      assetId: input.buyAsset.id,
+      tokenAddress: input.buyAsset.contractAddress.toLowerCase(),
+      recipient: recipientAddress ?? "",
+      amount: quote.output.amount,
+      signer: "DELEGATED_SIGNER",
+    },
     swapRequirement: {
       provider: quote.provider,
       providerQuoteId: quote.providerQuoteId,

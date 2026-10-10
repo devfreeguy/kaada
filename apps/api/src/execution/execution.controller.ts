@@ -20,10 +20,17 @@ import type {
 } from "../core/execution/preparation-service.js";
 import { preparationMessage } from "../core/execution/preparation-service.js";
 import { PreparationTracker, outcomeFromRecord } from "../core/execution/tracker.js";
+import type { ExecutionRunner } from "../core/execution/runner.js";
+import type { RootActionService } from "../core/execution/root-action-service.js";
+import { paymentView } from "../core/execution/run-status.js";
+import type { RunTracker } from "../core/execution/run-tracker.js";
 import {
   EXECUTION_PREPARATION_SERVICE,
   EXECUTION_REPOSITORIES,
+  EXECUTION_RUNNER,
   PREPARATION_TRACKER,
+  ROOT_ACTION_SERVICE,
+  RUN_TRACKER,
 } from "./execution.tokens.js";
 
 function bearer(header: string | undefined): string {
@@ -61,6 +68,9 @@ export class ExecutionController {
     private readonly preparation: ExecutionPreparationService | null,
     @Inject(PREPARATION_TRACKER) private readonly tracker: PreparationTracker,
     @Inject(EXECUTION_REPOSITORIES) private readonly repositories: Repositories,
+    @Inject(EXECUTION_RUNNER) private readonly runner: ExecutionRunner | null,
+    @Inject(ROOT_ACTION_SERVICE) private readonly rootActions: RootActionService | null,
+    @Inject(RUN_TRACKER) private readonly runs: RunTracker,
   ) {}
 
   private async authorizationFor(token: string) {
@@ -99,5 +109,51 @@ export class ExecutionController {
       this.tracker.outcome(payment.id) ??
       outcomeFromRecord(await this.repositories.executionPlans.findByAuthorization(payment.id));
     return view(running ? undefined : known, running);
+  }
+
+  /**
+   * Carries the authorized, priced payment out. Safe to repeat: a second call while one is running
+   * does nothing, and the database lock lets exactly one runner take the payment.
+   */
+  @Post("run")
+  @HttpCode(202)
+  @Header("Cache-Control", "no-store")
+  async run(@Headers("authorization") authorization?: string) {
+    const runner = this.runner;
+    if (!runner) throw new ServiceUnavailableException("payment execution is not enabled");
+    const payment = await this.authorizationFor(bearer(authorization));
+    const record = await this.repositories.executionPlans.findByAuthorization(payment.id);
+    if (!record) return paymentView(null, undefined);
+    this.runs.start(record.id, () => runner.run(record.id));
+    return paymentView(record, this.runs.outcome(record.id));
+  }
+
+  /** What to tell the person now. Codes and plain sentences only: never a hash, amount or secret. */
+  @Get("status")
+  @Header("Cache-Control", "no-store")
+  async status(@Headers("authorization") authorization?: string) {
+    const payment = await this.authorizationFor(bearer(authorization));
+    const record = await this.repositories.executionPlans.findByAuthorization(payment.id);
+    return paymentView(record, record ? this.runs.outcome(record.id) : undefined);
+  }
+
+  /**
+   * The secure link for the wallet-setup step of THIS payment, when one is waiting. Only the person
+   * holding the authorization link can ask, and only for their own pending root action.
+   */
+  @Post("root-action-link")
+  @HttpCode(200)
+  @Header("Cache-Control", "no-store")
+  async rootActionLink(@Headers("authorization") authorization?: string) {
+    const service = this.rootActions;
+    if (!service) throw new ServiceUnavailableException("wallet setup is not enabled");
+    const payment = await this.authorizationFor(bearer(authorization));
+    const record = await this.repositories.executionPlans.findByAuthorization(payment.id);
+    const pending = record
+      ? await this.repositories.rootActions.findPendingByExecution(record.id)
+      : null;
+    if (!pending) throw new UnauthorizedException("no wallet setup is waiting");
+    const link = await service.issueLink({ sessionId: pending.id, userId: payment.userId });
+    return { url: link.url, expiresAt: link.expiresAt.toISOString() };
   }
 }

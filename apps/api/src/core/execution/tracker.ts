@@ -81,6 +81,19 @@ export function outcomeFromRecord(
       return { status: "PREPARATION_IN_PROGRESS" };
     case "EXPIRED":
       return { status: "FINAL_PRICE_UNAVAILABLE", code: "EXPIRED" };
+    case "REQUIRES_USER_ACTION":
+    case "SIGNING":
+    case "SUBMITTING":
+    case "SUBMITTED":
+    case "SETTLING":
+    case "COMPLETED":
+      // Priced and past it: payment progress is reported by the run status, not by preparation.
+      return {
+        status: "EXECUTION_READY",
+        executionId: record.id,
+        expiresAt: planExpiresAt(record.plan) ?? new Date(0),
+        reused: true,
+      };
     case "FAILED":
       switch (record.failureCode) {
         case "OUTSIDE_AUTHORIZED_LIMITS":

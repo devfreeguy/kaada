@@ -203,6 +203,16 @@ export const FirmQuoteAttemptStatus = {
 export type FirmQuoteAttemptStatus = (typeof FirmQuoteAttemptStatus)[keyof typeof FirmQuoteAttemptStatus]
 
 
+export const RootActionStatus = {
+  PENDING: 'PENDING',
+  COMPLETED: 'COMPLETED',
+  EXPIRED: 'EXPIRED',
+  CANCELLED: 'CANCELLED'
+} as const
+
+export type RootActionStatus = (typeof RootActionStatus)[keyof typeof RootActionStatus]
+
+
 export const PasskeyChallengePurpose = {
   REGISTRATION: 'REGISTRATION',
   AUTHENTICATION: 'AUTHENTICATION'
@@ -253,6 +263,10 @@ export const ExecutionStatus = {
   PREPARING: 'PREPARING',
   READY: 'READY',
   BLOCKED: 'BLOCKED',
+  SIGNING: 'SIGNING',
+  SUBMITTING: 'SUBMITTING',
+  SUBMITTED: 'SUBMITTED',
+  REQUIRES_USER_ACTION: 'REQUIRES_USER_ACTION',
   AWAITING_CONFIRMATION: 'AWAITING_CONFIRMATION',
   CONFIRMED: 'CONFIRMED',
   EXECUTING: 'EXECUTING',
@@ -267,6 +281,8 @@ export type ExecutionStatus = (typeof ExecutionStatus)[keyof typeof ExecutionSta
 
 
 export const TransactionType = {
+  DEPLOYMENT: 'DEPLOYMENT',
+  PERMISSION_INSTALL: 'PERMISSION_INSTALL',
   APPROVAL: 'APPROVAL',
   TRANSFER: 'TRANSFER',
   SWAP: 'SWAP',
@@ -278,6 +294,7 @@ export type TransactionType = (typeof TransactionType)[keyof typeof TransactionT
 
 
 export const TransactionStatus = {
+  UNKNOWN: 'UNKNOWN',
   CREATED: 'CREATED',
   SIGNING: 'SIGNING',
   SUBMITTED: 'SUBMITTED',

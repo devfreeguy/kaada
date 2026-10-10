@@ -253,3 +253,12 @@ another one here (adding passkeys is a recovery-build feature).
 
 PIN, PaymentAuthorization, firm RFQ, execution, token approvals, delegated signing, Telegram/WhatsApp buttons, email
 recovery, general (non-setup-link) user authentication for the wallet API.
+
+## Root actions and the restricted signer (Build 13)
+
+Deploying the account and installing the restricted permission are **root actions**: the server prepares the operation
+and its hash, the person confirms with their passkey on a secure page ("Confirm wallet setup to continue payment"), and
+the page returns only the assertion. The PIN is never used for a root action and a root action never authorizes an
+amount. A `PENDING` permission is not authority; it becomes `ACTIVE` (with `installedAt`) only after the chain shows it.
+The session key behind a permission is stored only as ciphertext and used only by `ValidatedExecutionSigner`. See
+`docs/execution.md`.

@@ -62,6 +62,7 @@ export const ModelName = {
   PaymentAuthorization: 'PaymentAuthorization',
   ExecutionSecret: 'ExecutionSecret',
   FirmQuoteAttempt: 'FirmQuoteAttempt',
+  RootActionSession: 'RootActionSession',
   PasskeyChallenge: 'PasskeyChallenge',
   DelegatedPermission: 'DelegatedPermission',
   Asset: 'Asset',
@@ -259,6 +260,7 @@ export const ExecutionSecretScalarFieldEnum = {
   purpose: 'purpose',
   keyVersion: 'keyVersion',
   ciphertext: 'ciphertext',
+  tombstonedAt: 'tombstonedAt',
   createdAt: 'createdAt'
 } as const
 
@@ -299,6 +301,24 @@ export const FirmQuoteAttemptScalarFieldEnum = {
 export type FirmQuoteAttemptScalarFieldEnum = (typeof FirmQuoteAttemptScalarFieldEnum)[keyof typeof FirmQuoteAttemptScalarFieldEnum]
 
 
+export const RootActionSessionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  walletId: 'walletId',
+  executionId: 'executionId',
+  kind: 'kind',
+  tokenHash: 'tokenHash',
+  status: 'status',
+  challenge: 'challenge',
+  prepared: 'prepared',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type RootActionSessionScalarFieldEnum = (typeof RootActionSessionScalarFieldEnum)[keyof typeof RootActionSessionScalarFieldEnum]
+
+
 export const PasskeyChallengeScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -332,6 +352,10 @@ export const DelegatedPermissionScalarFieldEnum = {
   expiresAt: 'expiresAt',
   revokedAt: 'revokedAt',
   revocationReason: 'revocationReason',
+  sessionKeyAddress: 'sessionKeyAddress',
+  sessionKeySecretId: 'sessionKeySecretId',
+  approvalSecretId: 'approvalSecretId',
+  installedAt: 'installedAt',
   createdAt: 'createdAt'
 } as const
 
@@ -551,6 +575,13 @@ export const ExecutionScalarFieldEnum = {
   walletId: 'walletId',
   firmQuoteAttemptId: 'firmQuoteAttemptId',
   plan: 'plan',
+  authorizationConsumedAt: 'authorizationConsumedAt',
+  userActionKind: 'userActionKind',
+  providerSubmitState: 'providerSubmitState',
+  settledInputAmount: 'settledInputAmount',
+  settledOutputAmount: 'settledOutputAmount',
+  claimTombstonedAt: 'claimTombstonedAt',
+  lastReconciledAt: 'lastReconciledAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -572,6 +603,12 @@ export const TransactionScalarFieldEnum = {
   gasAmount: 'gasAmount',
   gasAssetId: 'gasAssetId',
   nonce: 'nonce',
+  userOpHash: 'userOpHash',
+  idempotencyKey: 'idempotencyKey',
+  blockNumber: 'blockNumber',
+  submittedAt: 'submittedAt',
+  confirmedAt: 'confirmedAt',
+  failureCode: 'failureCode',
   metadata: 'metadata',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
