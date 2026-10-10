@@ -208,16 +208,35 @@ byte-identical to mainnet), the RIP-7212 precompile path. **Nothing here validat
    operation was rejected with `AA25 invalid account nonce`. The runner now waits until its RPC node has seen a transaction before reading or building the next step.
 7. **Receipt lookup** depended on one bundler's index; it now falls back to the chain.
 
-### Open: the Alchemy Celo Sepolia bundler does not mine
+### Bundler inclusion: Alchemy did not mine; self-hosted Alto did
 
-Capability check passed (chain id, EntryPoint v0.7 among the supported entry points, `eth_getUserOperationReceipt` present). But **three
-operations** sent through its `eth_sendUserOperation` (root, delegated, and a one-wei probe) were **accepted and never bundled** (10+ minutes), although
-`EntryPoint.handleOps` simulated cleanly on the chain for the same operation and the operations mined when submitted directly (the harness's
-`HARNESS_SUBMIT=self`, a testnet-only seam; it is not wired into the application). Cause unknown. Until a bundler lands operations on
-Celo Sepolia, "real bundler inclusion" is **not** verified; consider a self-hosted bundler or another provider.
+**Alchemy (Celo Sepolia).** Capability check passed (chain id, EntryPoint v0.7 listed, receipt method present), but **three**
+operations sent through its `eth_sendUserOperation` were accepted and never bundled (10+ minutes), although
+`EntryPoint.handleOps` simulated cleanly and the same operations mined when submitted directly. Cause unknown; not pursued.
+
+**Pimlico Alto, self-hosted (test infrastructure only; nothing Alto-specific is in domain or application code).**
+
+|                                                            |                                                                                                                                                      |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Package / CLI                                              | `@pimlico/alto` 0.0.21 (the CLI prints `1.0.0`), Node 22 on Windows                                                                                  |
+| RPC                                                        | `https://forno.celo-sepolia.celo-testnet.org`, chain `0xaa044c` = 11142220                                                                           |
+| EntryPoint                                                 | v0.7 `0x0000000071727De22E5E9d8BAf0edAc6f37da032` (`eth_supportedEntryPoints` lists exactly that one)                                                |
+| Flags                                                      | `--chain-type op-stack --safe-mode false --block-time 1000`, one dedicated executor EOA and one utility EOA (throwaway, outside the repo)            |
+| Funding                                                    | executor 0.3 CELO; utility 0.3 + 0.5 CELO (see quirks), faucet funds only                                                                            |
+| Root UserOperation (passkey, installs a second permission) | accepted and **mined by Alto in ~5 s**; chain tx success; `UserOperationEvent.success = true`; the returned `userOpHash` equals the signed challenge |
+| Permission read-back                                       | exact scope with the installed window: `true`                                                                                                        |
+| Delegated UserOperation (session key, a 7-wei payout)      | accepted and **mined by Alto in ~6 s**; the recipient received exactly 7 wei                                                                         |
+| `userOpHash` -> `txHash`                                   | different values; Alto's `eth_getUserOperationReceipt` returns `success`, `receipt.transactionHash`, `receipt.blockNumber`; `null` until mined       |
+| Recovery (new process, stored hashes only)                 | both operations resolve to the recorded `txHash`; read-back from the persisted window `true`                                                         |
+| `handleOps` fallback                                       | **not used** for these steps                                                                                                                         |
+
+Quirks of Alto on this chain: (1) startup deploys "simulations" contracts through the deterministic deployer; the utility key needs enough
+CELO (Celo Sepolia gas is ~50 gwei; with 0.3 CELO the EntryPoint v0.7 simulations deploy failed with an unhelpful "execution reverted" from
+gas estimation); (2) the v0.9 simulations contract fails to deploy (irrelevant: only EntryPoint v0.7 is used); (3) Forno has no tracing, so
+`--safe-mode false` (ERC-7562 rules are not enforced locally, which is fine for a test bundler, not for production).
 
 ### Not verified (still open)
 
-A real browser passkey (only a software authenticator was used); USDT and the USDT reset-to-zero path (the test token was CELO's ERC-20 face, which
+A real browser passkey (only a software authenticator was used); a production-grade bundler on Celo (Alto here is a local test bundler with safe mode off); USDT and the USDT reset-to-zero path (the test token was CELO's ERC-20 face, which
 does not need one); the `ExecutionRunner` end to end on a chain (it was exercised against fakes and the real database, and its pieces against
-Sepolia, not as one run); bundler inclusion (above); Textile (not touched); anything on Celo mainnet.
+Sepolia, not as one run); Textile (not touched); anything on Celo mainnet.

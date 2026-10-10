@@ -68,6 +68,12 @@ interface State {
   fixtures?: { spender: Address; otherSpender: Address; recipient: Address; swapTarget: Address };
   /** The validity window that was INSTALLED: the permission id hashes it, so read-back must reuse it. */
   window?: { validFrom: string; expiresAt: string };
+  /** The permission installed and used through the self-hosted bundler run. */
+  alto?: {
+    session: { key: string; approval: string; address: Address };
+    window: { validFrom: string; expiresAt: string };
+    ops: Record<string, { userOpHash: Hex; txHash?: Hex; success?: boolean }>;
+  };
   session?: { key: string; approval: string; address: Address };
   ops: Record<string, { userOpHash: Hex; txHash?: Hex; success?: boolean }>;
 }
@@ -649,10 +655,211 @@ async function bundlerProbe(): Promise<void> {
   log("NOT bundled within 5 minutes");
 }
 
+/** The bundler's OWN answer for a hash (no chain fallback), so "mined by this bundler" is what is measured. */
+async function bundlerReceipt(
+  hash: Hex,
+): Promise<{ txHash: Hex; success: boolean; block: string } | null> {
+  const response = await fetch(bundlerUrl ?? "", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "eth_getUserOperationReceipt",
+      params: [hash],
+    }),
+  });
+  const body = (await response.json()) as {
+    result?: { success: boolean; receipt: { transactionHash: Hex; blockNumber: string } } | null;
+  };
+  if (!body.result) return null;
+  return {
+    txHash: body.result.receipt.transactionHash,
+    success: body.result.success,
+    block: BigInt(body.result.receipt.blockNumber).toString(),
+  };
+}
+
+/**
+ * ONE root operation and ONE delegated operation through the configured bundler ONLY (no handleOps
+ * fallback): the point is to learn whether the bundler accepts AND mines. The root operation installs a
+ * second permission (fresh session key, fresh window) on the already deployed account.
+ */
+async function bundlerValidate(): Promise<void> {
+  if (!bundlerUrl) throw new Error("BUNDLER_URL_TESTNET is not set");
+  const state = load();
+  const f = state.fixtures;
+  if (!f || !state.wallet) throw new Error("run `kernel` first");
+  const net = network(state);
+  const adapter = createZeroDevKernelAdapter({ bundlerUrl, rpcUrl: SEPOLIA_RPC, network: net });
+  const passkey = softPasskey(state);
+  const credential = {
+    credentialId: passkey.credentialId,
+    publicKeyX: passkey.x,
+    publicKeyY: passkey.y,
+    rpId: RP_ID,
+  };
+  const window = {
+    validFrom: new Date(Date.now() - 60_000).toISOString(),
+    expiresAt: new Date(Date.now() + 6 * 3_600_000).toISOString(),
+  };
+  const scope = harnessScope(f, window);
+  const wait = async (label: string, hash: Hex) => {
+    const started = Date.now();
+    for (let i = 0; i < 90; i += 1) {
+      const receipt = await bundlerReceipt(hash);
+      if (receipt) {
+        log(
+          `${label}: MINED by the bundler after ${Math.round((Date.now() - started) / 1000)}s | success`,
+          receipt.success,
+          "| txHash",
+          receipt.txHash,
+          "| block",
+          receipt.block,
+        );
+        return receipt;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 2_000));
+    }
+    log(`${label}: NOT mined within 3 minutes`);
+    throw new Error(`${label} not mined`);
+  };
+
+  // 1. root operation (passkey-signed) through the bundler
+  const prepared = await adapter.prepareRootOperation({
+    walletAddress: state.wallet,
+    credential,
+    calls: [],
+    permission: { scope },
+  });
+  const sessionKey = prepared.sessionKey?.privateKey.reveal() ?? "";
+  const sessionAddress = prepared.sessionKey?.address as Address;
+  state.alto = {
+    session: { key: sessionKey, approval: "", address: sessionAddress },
+    window,
+    ops: {},
+  };
+  save(state);
+  const root = await adapter.sendRootOperation({
+    prepared: prepared.prepared,
+    assertion: assertionFor(state, prepared.challenge as Hex),
+  });
+  state.alto.session.approval = root.approval?.reveal() ?? "";
+  log(
+    "root accepted by the bundler; userOpHash == signed challenge:",
+    root.userOpHash.toLowerCase() === prepared.challenge.toLowerCase(),
+  );
+  const rootReceipt = await wait("root", root.userOpHash as Hex);
+  state.alto.ops["root"] = {
+    userOpHash: root.userOpHash as Hex,
+    txHash: rootReceipt.txHash,
+    success: rootReceipt.success,
+  };
+  save(state);
+  const chainRoot = await publicClient.waitForTransactionReceipt({ hash: rootReceipt.txHash });
+  const rootEvent = parseEventLogs({
+    abi: entryPoint07Abi,
+    logs: chainRoot.logs,
+    eventName: "UserOperationEvent",
+  })[0];
+  log(
+    "root on chain: tx status",
+    chainRoot.status,
+    "| UserOperationEvent.userOpHash matches:",
+    rootEvent?.args.userOpHash === root.userOpHash.toLowerCase() ||
+      rootEvent?.args.userOpHash === root.userOpHash,
+    "| operation success",
+    rootEvent?.args.success,
+  );
+  await new Promise((resolve) => setTimeout(resolve, 8_000)); // RPC lag
+  log(
+    "permission read-back (exact scope + installed window):",
+    await adapter.isPermissionInstalled({
+      walletAddress: state.wallet,
+      sessionKeyAddress: sessionAddress,
+      scope,
+    }),
+  );
+
+  // 2. delegated operation (session key) through the bundler
+  const before = await publicClient.getBalance({ address: f.recipient });
+  const sent = await adapter.sendDelegatedCalls({
+    walletAddress: state.wallet,
+    sessionKey: { reveal: () => sessionKey } as never,
+    approval: { reveal: () => state.alto?.session.approval ?? "" } as never,
+    calls: [
+      {
+        to: CELO_ERC20,
+        data: encodeFunctionData({
+          abi: erc20Abi,
+          functionName: "transfer",
+          args: [f.recipient, 7n],
+        }),
+        value: "0",
+      },
+    ],
+  });
+  log("delegated accepted by the bundler:", sent.userOpHash);
+  const delegatedReceipt = await wait("delegated", sent.userOpHash as Hex);
+  state.alto.ops["delegated"] = {
+    userOpHash: sent.userOpHash as Hex,
+    txHash: delegatedReceipt.txHash,
+    success: delegatedReceipt.success,
+  };
+  save(state);
+  await new Promise((resolve) => setTimeout(resolve, 8_000));
+  log(
+    "recipient received (wei):",
+    ((await publicClient.getBalance({ address: f.recipient })) - before).toString(),
+  );
+  log(
+    "hash resolution: userOpHash",
+    sent.userOpHash,
+    "-> txHash",
+    delegatedReceipt.txHash,
+    "(different values:",
+    sent.userOpHash !== delegatedReceipt.txHash,
+    ")",
+  );
+}
+
+/** Recovery: a new adapter resolves both operations from the stored hashes, bundler first, chain as fallback. */
+async function bundlerRecovery(): Promise<void> {
+  if (!bundlerUrl) throw new Error("BUNDLER_URL_TESTNET is not set");
+  const state = load();
+  const alto = state.alto;
+  if (!alto || !state.wallet || !state.fixtures) throw new Error("run `bundler-validate` first");
+  const adapter = createZeroDevKernelAdapter({
+    bundlerUrl,
+    rpcUrl: SEPOLIA_RPC,
+    network: network(state),
+  });
+  for (const [name, op] of Object.entries(alto.ops)) {
+    const direct = await bundlerReceipt(op.userOpHash);
+    const viaAdapter = await adapter.getUserOperationReceipt(op.userOpHash);
+    const same =
+      viaAdapter.status === "INCLUDED" &&
+      viaAdapter.txHash.toLowerCase() === op.txHash?.toLowerCase();
+    log(
+      `${name}: bundler receipt = ${direct ? "present" : "absent"} | adapter = ${viaAdapter.status} | same txHash as recorded = ${same}`,
+    );
+  }
+  log(
+    "permission read-back from persisted window:",
+    await adapter.isPermissionInstalled({
+      walletAddress: state.wallet,
+      sessionKeyAddress: alto.session.address,
+      scope: harnessScope(state.fixtures, alto.window),
+    }),
+  );
+}
+
 const command = process.argv[2];
 if (!existsSync(statePath)) throw new Error("state file missing");
 if (command === "deploy-validator") await deployValidator();
 else if (command === "kernel") await kernel();
 else if (command === "restart-check") await restartCheck();
 else if (command === "bundler-probe") await bundlerProbe();
+else if (command === "bundler-validate") await bundlerValidate();
+else if (command === "bundler-recovery") await bundlerRecovery();
 else throw new Error("usage: deploy-validator | kernel | restart-check");
