@@ -75,6 +75,18 @@ export type AuthorizationSession = Prisma.AuthorizationSessionModel
  */
 export type PaymentAuthorization = Prisma.PaymentAuthorizationModel
 /**
+ * Model ExecutionSecret
+ * Encrypted execution material (a provider claim token). Only AES-256-GCM ciphertext is stored; the
+ * key lives in the environment, never in the database.
+ */
+export type ExecutionSecret = Prisma.ExecutionSecretModel
+/**
+ * Model FirmQuoteAttempt
+ * One request for a firm provider quote, recorded BEFORE the provider is called so retries and
+ * duplicates can never spend another provider slot. History is kept.
+ */
+export type FirmQuoteAttempt = Prisma.FirmQuoteAttemptModel
+/**
  * Model PasskeyChallenge
  * A one-time, short-lived WebAuthn challenge. Claimed with a single UPDATE so a replay gets nothing.
  */

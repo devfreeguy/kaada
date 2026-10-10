@@ -161,7 +161,9 @@ describe("Build 10.1 boundaries (source scan)", () => {
 
   it("routing never requests a firm Textile quote or executes anything", () => {
     for (const path of files(dir("apps/api/src"))) {
-      if (path.includes("infrastructure")) continue; // the quote-only client itself
+      if (path.includes("infrastructure")) continue; // the Textile client and adapters themselves
+      // Build 12: the one guarded firm-quote path (execution-security.test.ts pins who may call it).
+      if (path.includes("core\\execution") || path.includes("core/execution")) continue;
       const text = code(path);
       assert.equal(/requestFirm|\/rfq\/request|\.execute\(|submitOrder/.test(text), false, path);
     }

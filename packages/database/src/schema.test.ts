@@ -57,6 +57,8 @@ const modelNames = [
   "TransactionPinSecurity",
   "AuthorizationSession",
   "PaymentAuthorization",
+  "ExecutionSecret",
+  "FirmQuoteAttempt",
   "DelegatedPermission",
   "Asset",
   "Conversation",
@@ -123,10 +125,14 @@ const enumValues: Record<string, string[]> = {
   WalletSetupStatus: ["PENDING", "COMPLETED", "REVOKED"],
   AuthorizationSessionStatus: ["PENDING", "AUTHORIZED", "EXPIRED", "CANCELLED"],
   PaymentAuthorizationStatus: ["ACTIVE", "CONSUMED", "REVOKED", "EXPIRED"],
+  FirmQuoteAttemptStatus: ["REQUESTING", "QUOTED", "UNUSABLE", "EXPIRED", "FAILED", "TIMED_OUT"],
   RouteStatus: ["CREATED", "VALID", "EXPIRED", "SELECTED", "INVALID"],
   RouteStepType: ["TRANSFER", "SWAP", "BRIDGE", "ON_RAMP", "OFF_RAMP", "BANK_PAYOUT"],
   ExecutionStatus: [
     "CREATED",
+    "PREPARING",
+    "READY",
+    "BLOCKED",
     "AWAITING_CONFIRMATION",
     "CONFIRMED",
     "EXECUTING",
@@ -175,6 +181,9 @@ const permissionMoneyColumns = ["perTransactionAmount", "cumulativeAmount"];
 /** Payment authorization limits: canonical positive smallest-unit strings, checked in their own migration. */
 const authorizationMoneyColumns = ["maxInputAmount", "minOutputAmount"];
 
+/** Firm quote amounts: canonical smallest-unit strings, checked in the firm quote constraints migration. */
+const firmMoneyColumns = ["exactAmount", "inputAmount", "outputAmount", "feeAmount"];
+
 describe("prisma schema", () => {
   it("defines every required model and enum", () => {
     assert.deepEqual([...models.keys()].sort(), [...modelNames].sort());
@@ -208,6 +217,7 @@ describe("prisma schema", () => {
       ),
       ...permissionMoneyColumns.map((column) => `DelegatedPermission.${column}`),
       ...authorizationMoneyColumns.map((column) => `PaymentAuthorization.${column}`),
+      ...firmMoneyColumns.map((column) => `FirmQuoteAttempt.${column}`),
     ]);
     for (const [model, fields] of models) {
       for (const field of fields) {
@@ -296,6 +306,32 @@ describe("prisma schema", () => {
     assert.ok(sql.includes('"routeAssetPath"[1] = "inputAssetId"'));
     // An approval is bound to a quote by nothing: there is no quote column to bind to.
     assert.ok(!/bquoteIdb/.test(read("PaymentAuthorization")));
+  });
+
+  it("stores only encrypted execution secrets and guards provider slots in the database", () => {
+    const sql = readFileSync(
+      new URL(
+        "../prisma/migrations/20261017000001_firm_quote_constraints/migration.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    const read = (name: string) => {
+      const start = schema.indexOf(`model ${name}`);
+      return schema.slice(start, schema.indexOf("}", start));
+    };
+    // A secret is an AEAD envelope; there is no plaintext token column anywhere.
+    assert.ok(sql.includes('"ExecutionSecret_ciphertext_envelope"'));
+    assert.ok(!/claimToken/i.test(schema));
+    assert.ok(!/token\s+String/i.test(read("FirmQuoteAttempt")));
+    // One live firm attempt per authorization and provider, so a duplicate cannot take another slot.
+    assert.ok(sql.includes('"FirmQuoteAttempt_one_live_per_authorization_key"'));
+    assert.ok(sql.includes("WHERE \"status\" IN ('REQUESTING', 'QUOTED')"));
+    for (const column of firmMoneyColumns) assert.ok(sql.includes(`"${column}"`), column);
+    // A quote that exists is complete, and a plan stage never claims execution.
+    assert.ok(sql.includes('"FirmQuoteAttempt_quoted_is_complete"'));
+    assert.ok(sql.includes('"Execution_plan_stage_is_pre_execution"'));
+    assert.ok(sql.includes('"Execution_ready_has_plan"'));
   });
 
   it("uses application-generated UUID primary keys", () => {

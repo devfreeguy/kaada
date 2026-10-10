@@ -236,6 +236,11 @@ export function createPaymentAuthorizationRepository(db: Db): PaymentAuthorizati
       return row ? toPaymentAuthorization(row) : null;
     },
 
+    async findBySession(sessionId) {
+      const row = await db.paymentAuthorization.findFirst({ where: { sessionId } });
+      return row ? toPaymentAuthorization(row) : null;
+    },
+
     async findActiveByIntent(intentId) {
       const row = await db.paymentAuthorization.findFirst({
         where: { intentId, status: "ACTIVE" },

@@ -232,3 +232,25 @@ retrying. Previews cover discovery; a firm quote is requested once, close to aut
 retried blindly. `PAYMENT_READY` built from a preview stays `indicative: true` and can never flow straight into
 authorization or execution; it needs the firm step first. This matches the documented API behaviour; the product flow is
 unchanged in code for now.
+
+## Build 12: firm quotes after authorization (no submit, no signing)
+
+Confirmed against the current RFQ documentation (https://fx-docs.textilecredit.com/api/v2/rfq.html):
+
+- `POST /v2/rfq/request` returns `data.status: "quoted"` with `rfqId`, `claimToken`, `quote {sellAmount, buyAmount,
+feeAmount, takerPays, rateRay, expiresAt, orderDeadline, latestOrderDeadline, reactor, taker, encodedOrder, signature,
+orders[]}` and `transactions {approval, swap}`, each `{to, data, value, chainId}`. There is **no `gas` field**.
+- The claim token is returned **once**, `GET /v2/rfq/{id}` never replays it, and the docs say to "store the claim token
+  with the quote": it authorises submit, cancel and status. Kaada therefore keeps it, **encrypted** (AES-256-GCM,
+  `EXECUTION_SECRET_KEY`), in `ExecutionSecret`, bound to its own record. It never appears in a log, an audit row, a
+  response, a plan or a conversation. The docs do not say when it may be discarded, so it is kept until the submit build.
+- The approval is for `takerPays` of the sell token to `quote.reactor` (a distinct `quote.spender` is accepted when
+  present). The docs do not say the calldata is bounded, so Kaada **decodes** it (`approve(address,uint256)`) and blocks
+  the plan on an unlimited amount, an amount above `takerPays`, a different spender or token, or any native value.
+- A firm request is **never retried** (a repeat would take a second slot). A `429` with no `Retry-After` is the
+  outstanding-quote cap: reported as `PROVIDER_CAPACITY_REACHED`, with a 30 s cooldown before Kaada asks again. A
+  timeout may have reserved a quote, so it is counted as a held slot for 3 minutes.
+- Mapping: EXACT_INPUT sends the authorized input as `sellAmount`; EXACT_OUTPUT sends the exact output as `buyAmount`
+  and never the maximum input. The returned `takerPays` is the input compared with the authorization.
+- Not run live: a firm quote spends one of 4 slots and needs a funded wallet, and no safely funded test wallet exists.
+  The offline fixtures follow the documented shape and are not captured responses.

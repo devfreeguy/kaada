@@ -36,6 +36,11 @@ export class FakeTextileTransport implements TextileTransport {
     this.queue = [...replies];
   }
 
+  /** Adds a scripted reply after construction (a reply that depends on the test clock). */
+  enqueue(reply: Reply): void {
+    this.queue.push(reply);
+  }
+
   post(path: string, body: unknown, options: { timeoutMs: number }): Promise<TextileHttpResponse> {
     const call: RecordedCall = {
       path,

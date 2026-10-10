@@ -62,18 +62,38 @@ export const previewResponseSchema = z.looseObject({
   ]),
 });
 
-const unsignedTransactionChainSchema = z.looseObject({ chainId: z.number().int() });
+/** A value Textile sends as a decimal string, a hex string or a number, kept as a decimal string. */
+const nativeValueSchema = z
+  .union([z.string(), z.number().int().nonnegative()])
+  .transform((value, ctx) => {
+    try {
+      return BigInt(value).toString();
+    } catch {
+      ctx.addIssue({ code: "custom", message: "not an integer" });
+      return z.NEVER;
+    }
+  });
+
+/** The documented fields of an unsigned transaction: to, data, value, chainId (no gas field). */
+const unsignedTransactionSchema = z.looseObject({
+  to: z.string().min(1),
+  data: z.string().min(1),
+  value: nativeValueSchema,
+  chainId: z.number().int(),
+});
 
 /**
- * POST /rfq/request: a firm quote bound to a `taker` wallet. Only the fields Kaada reads are
- * declared; the signed orders, claim token and transaction calldata are deliberately NOT parsed
- * (executing is out of scope and a claim token is a secret).
+ * POST /rfq/request: a firm quote bound to a `taker` wallet. Only the fields Kaada reads are declared.
+ * `claimToken` is returned ONCE and authorises submit/cancel/status: it is parsed here so it can be
+ * encrypted and kept, and is a secret from this point on (the provider adapter wraps it in a
+ * SecretValue). The signed orders and encoded order are deliberately NOT parsed.
  */
 export const firmResponseSchema = z.looseObject({
   data: z.discriminatedUnion("status", [
     z.looseObject({
       status: z.literal("quoted"),
       rfqId: z.string().min(1),
+      claimToken: z.string().min(1),
       quote: z.looseObject({
         sellAmount: atomicAmountSchema,
         buyAmount: atomicAmountSchema,
@@ -82,10 +102,16 @@ export const firmResponseSchema = z.looseObject({
         // The accept cutoff: "treat as your deadline" (documented).
         expiresAt: z.iso.datetime(),
         orderDeadline: z.iso.datetime().optional(),
+        latestOrderDeadline: z.iso.datetime().optional(),
+        // The contract the order settles through, to which the sell token is approved (documented).
+        reactor: z.string().min(1),
+        // Documented as possibly different from the reactor; absent in the common case.
+        spender: z.string().min(1).optional(),
+        taker: z.string().min(1),
       }),
       transactions: z.looseObject({
-        approval: unsignedTransactionChainSchema,
-        swap: unsignedTransactionChainSchema,
+        approval: unsignedTransactionSchema,
+        swap: unsignedTransactionSchema,
       }),
     }),
     noQuoteSchema,

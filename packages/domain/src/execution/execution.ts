@@ -5,6 +5,9 @@ import type { PaymentRoute } from "../routing/index.js";
 
 export const EXECUTION_STATUSES = [
   "CREATED",
+  "PREPARING",
+  "READY",
+  "BLOCKED",
   "AWAITING_CONFIRMATION",
   "CONFIRMED",
   "EXECUTING",

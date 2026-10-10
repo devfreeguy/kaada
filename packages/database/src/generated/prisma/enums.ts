@@ -191,6 +191,18 @@ export const PaymentAuthorizationStatus = {
 export type PaymentAuthorizationStatus = (typeof PaymentAuthorizationStatus)[keyof typeof PaymentAuthorizationStatus]
 
 
+export const FirmQuoteAttemptStatus = {
+  REQUESTING: 'REQUESTING',
+  QUOTED: 'QUOTED',
+  UNUSABLE: 'UNUSABLE',
+  EXPIRED: 'EXPIRED',
+  FAILED: 'FAILED',
+  TIMED_OUT: 'TIMED_OUT'
+} as const
+
+export type FirmQuoteAttemptStatus = (typeof FirmQuoteAttemptStatus)[keyof typeof FirmQuoteAttemptStatus]
+
+
 export const PasskeyChallengePurpose = {
   REGISTRATION: 'REGISTRATION',
   AUTHENTICATION: 'AUTHENTICATION'
@@ -238,6 +250,9 @@ export type RouteStepType = (typeof RouteStepType)[keyof typeof RouteStepType]
 
 export const ExecutionStatus = {
   CREATED: 'CREATED',
+  PREPARING: 'PREPARING',
+  READY: 'READY',
+  BLOCKED: 'BLOCKED',
   AWAITING_CONFIRMATION: 'AWAITING_CONFIRMATION',
   CONFIRMED: 'CONFIRMED',
   EXECUTING: 'EXECUTING',

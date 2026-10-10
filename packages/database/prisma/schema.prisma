@@ -157,6 +157,15 @@ enum PaymentAuthorizationStatus {
   EXPIRED
 }
 
+enum FirmQuoteAttemptStatus {
+  REQUESTING
+  QUOTED
+  UNUSABLE
+  EXPIRED
+  FAILED
+  TIMED_OUT
+}
+
 enum PasskeyChallengePurpose {
   REGISTRATION
   AUTHENTICATION
@@ -192,6 +201,9 @@ enum RouteStepType {
 
 enum ExecutionStatus {
   CREATED
+  PREPARING
+  READY
+  BLOCKED
   AWAITING_CONFIRMATION
   CONFIRMED
   EXECUTING
@@ -265,6 +277,7 @@ model User {
   transactionPin        TransactionPinSecurity?
   authorizationSessions AuthorizationSession[]
   paymentAuthorizations PaymentAuthorization[]
+  firmQuoteAttempts     FirmQuoteAttempt[]
 }
 
 /// An external identity (Telegram account, phone, email, ...) attached to one Kaada user.
@@ -329,6 +342,8 @@ model Wallet {
   delegatedPermissions  DelegatedPermission[]
   authorizationSessions AuthorizationSession[]
   paymentAuthorizations PaymentAuthorization[]
+  firmQuoteAttempts     FirmQuoteAttempt[]
+  executions            Execution[]
 
   @@unique([chainId, address])
   @@index([userId])
@@ -444,16 +459,78 @@ model PaymentAuthorization {
   revocationReason   String?
   createdAt          DateTime                   @default(now()) @db.Timestamptz(3)
 
-  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  wallet      Wallet                @relation(fields: [walletId], references: [id], onDelete: Restrict)
-  intent      Intent                @relation(fields: [intentId], references: [id], onDelete: Restrict)
-  route       Route                 @relation(fields: [routeId], references: [id], onDelete: Restrict)
-  session     AuthorizationSession? @relation(fields: [sessionId], references: [id], onDelete: Restrict)
-  inputAsset  Asset                 @relation("AuthorizationInputAsset", fields: [inputAssetId], references: [id], onDelete: Restrict)
-  outputAsset Asset                 @relation("AuthorizationOutputAsset", fields: [outputAssetId], references: [id], onDelete: Restrict)
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet            Wallet                @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  intent            Intent                @relation(fields: [intentId], references: [id], onDelete: Restrict)
+  route             Route                 @relation(fields: [routeId], references: [id], onDelete: Restrict)
+  session           AuthorizationSession? @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  firmQuoteAttempts FirmQuoteAttempt[]
+  executions        Execution[]
+  inputAsset        Asset                 @relation("AuthorizationInputAsset", fields: [inputAssetId], references: [id], onDelete: Restrict)
+  outputAsset       Asset                 @relation("AuthorizationOutputAsset", fields: [outputAssetId], references: [id], onDelete: Restrict)
 
   @@index([userId, status])
   @@index([intentId, status])
+}
+
+/// Encrypted execution material (a provider claim token). Only AES-256-GCM ciphertext is stored; the
+/// key lives in the environment, never in the database.
+model ExecutionSecret {
+  id         String   @id @db.Uuid
+  purpose    String
+  keyVersion Int
+  ciphertext String
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  firmQuoteAttempts FirmQuoteAttempt[]
+}
+
+/// One request for a firm provider quote, recorded BEFORE the provider is called so retries and
+/// duplicates can never spend another provider slot. History is kept.
+model FirmQuoteAttempt {
+  id                     String                 @id @db.Uuid
+  paymentAuthorizationId String                 @db.Uuid
+  userId                 String                 @db.Uuid
+  walletId               String                 @db.Uuid
+  providerId             String                 @db.Uuid
+  status                 FirmQuoteAttemptStatus @default(REQUESTING)
+  idempotencyKey         String                 @unique
+  amountMode             AmountMode
+  exactAmount            String
+  exactAssetId           String                 @db.Uuid
+  takerAddress           String
+  providerQuoteId        String?
+  inputAmount            String?
+  inputAssetId           String?                @db.Uuid
+  outputAmount           String?
+  outputAssetId          String?                @db.Uuid
+  feeAmount              String?
+  feeAssetId             String?                @db.Uuid
+  reactor                String?
+  spender                String?
+  expiresAt              DateTime?              @db.Timestamptz(3)
+  orderDeadline          DateTime?              @db.Timestamptz(3)
+  latestOrderDeadline    DateTime?              @db.Timestamptz(3)
+  /// The provider's unsigned approval and swap transactions. Contains no secret.
+  unsignedTransactions   Json?
+  claimSecretId          String?                @db.Uuid
+  failureCode            String?
+  createdAt              DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt              DateTime               @updatedAt @db.Timestamptz(3)
+
+  paymentAuthorization PaymentAuthorization @relation(fields: [paymentAuthorizationId], references: [id], onDelete: Restrict)
+  user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet               Wallet               @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  provider             Provider             @relation(fields: [providerId], references: [id], onDelete: Restrict)
+  claimSecret          ExecutionSecret?     @relation(fields: [claimSecretId], references: [id], onDelete: Restrict)
+  exactAsset           Asset                @relation("FirmExactAsset", fields: [exactAssetId], references: [id], onDelete: Restrict)
+  inputAsset           Asset?               @relation("FirmInputAsset", fields: [inputAssetId], references: [id], onDelete: Restrict)
+  outputAsset          Asset?               @relation("FirmOutputAsset", fields: [outputAssetId], references: [id], onDelete: Restrict)
+  feeAsset             Asset?               @relation("FirmFeeAsset", fields: [feeAssetId], references: [id], onDelete: Restrict)
+  executions           Execution[]
+
+  @@index([paymentAuthorizationId, status])
+  @@index([providerId, status])
 }
 
 /// A one-time, short-lived WebAuthn challenge. Claimed with a single UPDATE so a replay gets nothing.
@@ -542,6 +619,10 @@ model Asset {
   quotesAsFee               Quote[]                @relation("QuoteFeeAsset")
   authorizationsAsInput     PaymentAuthorization[] @relation("AuthorizationInputAsset")
   authorizationsAsOutput    PaymentAuthorization[] @relation("AuthorizationOutputAsset")
+  firmAttemptsAsExact       FirmQuoteAttempt[]     @relation("FirmExactAsset")
+  firmAttemptsAsInput       FirmQuoteAttempt[]     @relation("FirmInputAsset")
+  firmAttemptsAsOutput      FirmQuoteAttempt[]     @relation("FirmOutputAsset")
+  firmAttemptsAsFee         FirmQuoteAttempt[]     @relation("FirmFeeAsset")
   routesAsInput             Route[]                @relation("RouteInputAsset")
   routesAsOutput            Route[]                @relation("RouteOutputAsset")
   routesAsFee               Route[]                @relation("RouteFeeAsset")
@@ -709,10 +790,11 @@ model Provider {
   createdAt DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt DateTime     @updatedAt @db.Timestamptz(3)
 
-  capabilities ProviderCapability[]
-  quotes       Quote[]
-  routeSteps   RouteStep[]
-  rampSessions RampSession[]
+  capabilities      ProviderCapability[]
+  quotes            Quote[]
+  routeSteps        RouteStep[]
+  rampSessions      RampSession[]
+  firmQuoteAttempts FirmQuoteAttempt[]
 }
 
 /// Data-driven corridor support: what a provider can do, for which assets/chain/country.
@@ -826,28 +908,37 @@ model RouteStep {
 // ───────────────────── Execution & settlement ─────────────────────
 
 model Execution {
-  id             String          @id @db.Uuid
-  intentId       String          @db.Uuid
-  routeId        String          @db.Uuid
-  userId         String          @db.Uuid
-  status         ExecutionStatus @default(CREATED)
+  id                     String          @id @db.Uuid
+  intentId               String          @db.Uuid
+  routeId                String          @db.Uuid
+  userId                 String          @db.Uuid
+  status                 ExecutionStatus @default(CREATED)
   /// Durable, globally unique: a retried request can never create a second execution.
-  idempotencyKey String          @unique
-  confirmedAt    DateTime?       @db.Timestamptz(3)
-  startedAt      DateTime?       @db.Timestamptz(3)
-  completedAt    DateTime?       @db.Timestamptz(3)
-  failedAt       DateTime?       @db.Timestamptz(3)
-  failureCode    String?
-  failureMessage String?
-  metadata       Json?
-  createdAt      DateTime        @default(now()) @db.Timestamptz(3)
-  updatedAt      DateTime        @updatedAt @db.Timestamptz(3)
+  idempotencyKey         String          @unique
+  confirmedAt            DateTime?       @db.Timestamptz(3)
+  startedAt              DateTime?       @db.Timestamptz(3)
+  completedAt            DateTime?       @db.Timestamptz(3)
+  failedAt               DateTime?       @db.Timestamptz(3)
+  failureCode            String?
+  failureMessage         String?
+  metadata               Json?
+  /// Set for a payment execution plan (Build 12): one per payment authorization.
+  paymentAuthorizationId String?         @unique @db.Uuid
+  walletId               String?         @db.Uuid
+  firmQuoteAttemptId     String?         @db.Uuid
+  /// The serialized ExecutionPlan. Holds no secret, signature or claim token.
+  plan                   Json?
+  createdAt              DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt              DateTime        @updatedAt @db.Timestamptz(3)
 
-  intent       Intent        @relation(fields: [intentId], references: [id], onDelete: Restrict)
-  route        Route         @relation(fields: [routeId], references: [id], onDelete: Restrict)
-  user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
-  transactions Transaction[]
-  auditEvents  AuditEvent[]
+  intent               Intent                @relation(fields: [intentId], references: [id], onDelete: Restrict)
+  route                Route                 @relation(fields: [routeId], references: [id], onDelete: Restrict)
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Restrict)
+  transactions         Transaction[]
+  paymentAuthorization PaymentAuthorization? @relation(fields: [paymentAuthorizationId], references: [id], onDelete: Restrict)
+  wallet               Wallet?               @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  firmQuoteAttempt     FirmQuoteAttempt?     @relation(fields: [firmQuoteAttemptId], references: [id], onDelete: Restrict)
+  auditEvents          AuditEvent[]
 
   @@index([intentId])
   @@index([routeId])

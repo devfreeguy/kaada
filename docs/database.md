@@ -94,6 +94,11 @@ with `randomUUID()` from `node:crypto`. Inserting without an id fails at the dat
    `20261016000001_authorization_constraints` (hand-written): `TransactionPinSecurity` (Argon2id hash only,
    attempt counters, lock), `AuthorizationSession` (token stored as SHA-256 only, one PENDING per payment),
    `PaymentAuthorization` (canonical positive amounts, one ACTIVE per intent, terminal fields consistent).
+9. `20261017000000_firm_quotes_and_execution_plan` (Build 12, Prisma-generated) and
+   `20261017000001_firm_quote_constraints` (hand-written): `ExecutionSecret` (AES-GCM envelope only; a bare token
+   cannot be stored), `FirmQuoteAttempt` (one live attempt per authorization and provider, a complete quote when
+   QUOTED), and the `Execution` table gains `paymentAuthorizationId` (unique), `walletId`, `firmQuoteAttemptId`,
+   `plan` and the PREPARING/READY/BLOCKED statuses. A payment execution row can never be EXECUTING or COMPLETED yet.
 
 ## Tradeoffs and decisions
 

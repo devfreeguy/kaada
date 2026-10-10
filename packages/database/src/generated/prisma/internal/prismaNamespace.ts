@@ -406,6 +406,8 @@ export const ModelName = {
   TransactionPinSecurity: 'TransactionPinSecurity',
   AuthorizationSession: 'AuthorizationSession',
   PaymentAuthorization: 'PaymentAuthorization',
+  ExecutionSecret: 'ExecutionSecret',
+  FirmQuoteAttempt: 'FirmQuoteAttempt',
   PasskeyChallenge: 'PasskeyChallenge',
   DelegatedPermission: 'DelegatedPermission',
   Asset: 'Asset',
@@ -438,7 +440,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "transactionPinSecurity" | "authorizationSession" | "paymentAuthorization" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent"
+    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "transactionPinSecurity" | "authorizationSession" | "paymentAuthorization" | "executionSecret" | "firmQuoteAttempt" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1105,6 +1107,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.PaymentAuthorizationCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.PaymentAuthorizationCountAggregateOutputType> | number
+        }
+      }
+    }
+    ExecutionSecret: {
+      payload: Prisma.$ExecutionSecretPayload<ExtArgs>
+      fields: Prisma.ExecutionSecretFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ExecutionSecretFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExecutionSecretPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ExecutionSecretFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExecutionSecretPayload>
+        }
+        findFirst: {
+          args: Prisma.ExecutionSecretFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExecutionSecretPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ExecutionSecretFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExecutionSecretPayload>
+        }
+        findMany: {
+          args: Prisma.ExecutionSecretFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExecutionSecretPayload>[]
+        }
+        create: {
+          args: Prisma.ExecutionSecretCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExecutionSecretPayload>
+        }
+        createMany: {
+          args: Prisma.ExecutionSecretCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ExecutionSecretCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExecutionSecretPayload>[]
+        }
+        delete: {
+          args: Prisma.ExecutionSecretDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExecutionSecretPayload>
+        }
+        update: {
+          args: Prisma.ExecutionSecretUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExecutionSecretPayload>
+        }
+        deleteMany: {
+          args: Prisma.ExecutionSecretDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ExecutionSecretUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ExecutionSecretUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExecutionSecretPayload>[]
+        }
+        upsert: {
+          args: Prisma.ExecutionSecretUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExecutionSecretPayload>
+        }
+        aggregate: {
+          args: Prisma.ExecutionSecretAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateExecutionSecret>
+        }
+        groupBy: {
+          args: Prisma.ExecutionSecretGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ExecutionSecretGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ExecutionSecretCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ExecutionSecretCountAggregateOutputType> | number
+        }
+      }
+    }
+    FirmQuoteAttempt: {
+      payload: Prisma.$FirmQuoteAttemptPayload<ExtArgs>
+      fields: Prisma.FirmQuoteAttemptFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.FirmQuoteAttemptFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FirmQuoteAttemptPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.FirmQuoteAttemptFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FirmQuoteAttemptPayload>
+        }
+        findFirst: {
+          args: Prisma.FirmQuoteAttemptFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FirmQuoteAttemptPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.FirmQuoteAttemptFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FirmQuoteAttemptPayload>
+        }
+        findMany: {
+          args: Prisma.FirmQuoteAttemptFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FirmQuoteAttemptPayload>[]
+        }
+        create: {
+          args: Prisma.FirmQuoteAttemptCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FirmQuoteAttemptPayload>
+        }
+        createMany: {
+          args: Prisma.FirmQuoteAttemptCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.FirmQuoteAttemptCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FirmQuoteAttemptPayload>[]
+        }
+        delete: {
+          args: Prisma.FirmQuoteAttemptDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FirmQuoteAttemptPayload>
+        }
+        update: {
+          args: Prisma.FirmQuoteAttemptUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FirmQuoteAttemptPayload>
+        }
+        deleteMany: {
+          args: Prisma.FirmQuoteAttemptDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.FirmQuoteAttemptUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.FirmQuoteAttemptUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FirmQuoteAttemptPayload>[]
+        }
+        upsert: {
+          args: Prisma.FirmQuoteAttemptUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FirmQuoteAttemptPayload>
+        }
+        aggregate: {
+          args: Prisma.FirmQuoteAttemptAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateFirmQuoteAttempt>
+        }
+        groupBy: {
+          args: Prisma.FirmQuoteAttemptGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FirmQuoteAttemptGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.FirmQuoteAttemptCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FirmQuoteAttemptCountAggregateOutputType> | number
         }
       }
     }
@@ -2562,6 +2712,51 @@ export const PaymentAuthorizationScalarFieldEnum = {
 export type PaymentAuthorizationScalarFieldEnum = (typeof PaymentAuthorizationScalarFieldEnum)[keyof typeof PaymentAuthorizationScalarFieldEnum]
 
 
+export const ExecutionSecretScalarFieldEnum = {
+  id: 'id',
+  purpose: 'purpose',
+  keyVersion: 'keyVersion',
+  ciphertext: 'ciphertext',
+  createdAt: 'createdAt'
+} as const
+
+export type ExecutionSecretScalarFieldEnum = (typeof ExecutionSecretScalarFieldEnum)[keyof typeof ExecutionSecretScalarFieldEnum]
+
+
+export const FirmQuoteAttemptScalarFieldEnum = {
+  id: 'id',
+  paymentAuthorizationId: 'paymentAuthorizationId',
+  userId: 'userId',
+  walletId: 'walletId',
+  providerId: 'providerId',
+  status: 'status',
+  idempotencyKey: 'idempotencyKey',
+  amountMode: 'amountMode',
+  exactAmount: 'exactAmount',
+  exactAssetId: 'exactAssetId',
+  takerAddress: 'takerAddress',
+  providerQuoteId: 'providerQuoteId',
+  inputAmount: 'inputAmount',
+  inputAssetId: 'inputAssetId',
+  outputAmount: 'outputAmount',
+  outputAssetId: 'outputAssetId',
+  feeAmount: 'feeAmount',
+  feeAssetId: 'feeAssetId',
+  reactor: 'reactor',
+  spender: 'spender',
+  expiresAt: 'expiresAt',
+  orderDeadline: 'orderDeadline',
+  latestOrderDeadline: 'latestOrderDeadline',
+  unsignedTransactions: 'unsignedTransactions',
+  claimSecretId: 'claimSecretId',
+  failureCode: 'failureCode',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type FirmQuoteAttemptScalarFieldEnum = (typeof FirmQuoteAttemptScalarFieldEnum)[keyof typeof FirmQuoteAttemptScalarFieldEnum]
+
+
 export const PasskeyChallengeScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -2810,6 +3005,10 @@ export const ExecutionScalarFieldEnum = {
   failureCode: 'failureCode',
   failureMessage: 'failureMessage',
   metadata: 'metadata',
+  paymentAuthorizationId: 'paymentAuthorizationId',
+  walletId: 'walletId',
+  firmQuoteAttemptId: 'firmQuoteAttemptId',
+  plan: 'plan',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -3113,6 +3312,20 @@ export type EnumAmountModeFieldRefInput<$PrismaModel> = FieldRefInputType<$Prism
  * Reference to a field of type 'AmountMode[]'
  */
 export type ListEnumAmountModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AmountMode[]'>
+    
+
+
+/**
+ * Reference to a field of type 'FirmQuoteAttemptStatus'
+ */
+export type EnumFirmQuoteAttemptStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FirmQuoteAttemptStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'FirmQuoteAttemptStatus[]'
+ */
+export type ListEnumFirmQuoteAttemptStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FirmQuoteAttemptStatus[]'>
     
 
 
@@ -3527,6 +3740,8 @@ export type GlobalOmitConfig = {
   transactionPinSecurity?: Prisma.TransactionPinSecurityOmit
   authorizationSession?: Prisma.AuthorizationSessionOmit
   paymentAuthorization?: Prisma.PaymentAuthorizationOmit
+  executionSecret?: Prisma.ExecutionSecretOmit
+  firmQuoteAttempt?: Prisma.FirmQuoteAttemptOmit
   passkeyChallenge?: Prisma.PasskeyChallengeOmit
   delegatedPermission?: Prisma.DelegatedPermissionOmit
   asset?: Prisma.AssetOmit

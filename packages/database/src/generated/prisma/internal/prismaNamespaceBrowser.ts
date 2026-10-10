@@ -60,6 +60,8 @@ export const ModelName = {
   TransactionPinSecurity: 'TransactionPinSecurity',
   AuthorizationSession: 'AuthorizationSession',
   PaymentAuthorization: 'PaymentAuthorization',
+  ExecutionSecret: 'ExecutionSecret',
+  FirmQuoteAttempt: 'FirmQuoteAttempt',
   PasskeyChallenge: 'PasskeyChallenge',
   DelegatedPermission: 'DelegatedPermission',
   Asset: 'Asset',
@@ -250,6 +252,51 @@ export const PaymentAuthorizationScalarFieldEnum = {
 } as const
 
 export type PaymentAuthorizationScalarFieldEnum = (typeof PaymentAuthorizationScalarFieldEnum)[keyof typeof PaymentAuthorizationScalarFieldEnum]
+
+
+export const ExecutionSecretScalarFieldEnum = {
+  id: 'id',
+  purpose: 'purpose',
+  keyVersion: 'keyVersion',
+  ciphertext: 'ciphertext',
+  createdAt: 'createdAt'
+} as const
+
+export type ExecutionSecretScalarFieldEnum = (typeof ExecutionSecretScalarFieldEnum)[keyof typeof ExecutionSecretScalarFieldEnum]
+
+
+export const FirmQuoteAttemptScalarFieldEnum = {
+  id: 'id',
+  paymentAuthorizationId: 'paymentAuthorizationId',
+  userId: 'userId',
+  walletId: 'walletId',
+  providerId: 'providerId',
+  status: 'status',
+  idempotencyKey: 'idempotencyKey',
+  amountMode: 'amountMode',
+  exactAmount: 'exactAmount',
+  exactAssetId: 'exactAssetId',
+  takerAddress: 'takerAddress',
+  providerQuoteId: 'providerQuoteId',
+  inputAmount: 'inputAmount',
+  inputAssetId: 'inputAssetId',
+  outputAmount: 'outputAmount',
+  outputAssetId: 'outputAssetId',
+  feeAmount: 'feeAmount',
+  feeAssetId: 'feeAssetId',
+  reactor: 'reactor',
+  spender: 'spender',
+  expiresAt: 'expiresAt',
+  orderDeadline: 'orderDeadline',
+  latestOrderDeadline: 'latestOrderDeadline',
+  unsignedTransactions: 'unsignedTransactions',
+  claimSecretId: 'claimSecretId',
+  failureCode: 'failureCode',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type FirmQuoteAttemptScalarFieldEnum = (typeof FirmQuoteAttemptScalarFieldEnum)[keyof typeof FirmQuoteAttemptScalarFieldEnum]
 
 
 export const PasskeyChallengeScalarFieldEnum = {
@@ -500,6 +547,10 @@ export const ExecutionScalarFieldEnum = {
   failureCode: 'failureCode',
   failureMessage: 'failureMessage',
   metadata: 'metadata',
+  paymentAuthorizationId: 'paymentAuthorizationId',
+  walletId: 'walletId',
+  firmQuoteAttemptId: 'firmQuoteAttemptId',
+  plan: 'plan',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

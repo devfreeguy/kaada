@@ -155,6 +155,29 @@ export class AuthorizationSessionService {
     throw invalid();
   }
 
+  /**
+   * The AUTHORIZED session a token belongs to, for the short window after the PIN was accepted, so the
+   * page can follow what happened next. Read only: it grants nothing and cannot authorize again.
+   */
+  async resolveAuthorized(token: string): Promise<AuthorizationSession> {
+    const invalid = () =>
+      new KaadaError("AUTHORIZATION_SESSION_INVALID", "this authorization link is not valid");
+    if (typeof token !== "string" || !OPAQUE_TOKEN_PATTERN.test(token)) throw invalid();
+    const session = await this.uow.read.authorizationSessions.findByTokenHash(
+      hashOpaqueToken(token),
+    );
+    const usedAt = session?.usedAt;
+    if (
+      !session ||
+      session.status !== "AUTHORIZED" ||
+      !usedAt ||
+      this.now().getTime() - usedAt.getTime() > 15 * 60 * 1000
+    ) {
+      throw invalid();
+    }
+    return session;
+  }
+
   /** What the secure page shows for a token. Read only; nothing is created or consumed. */
   async view(token: string): Promise<AuthorizationView> {
     const session = await this.resolveOpen(token);

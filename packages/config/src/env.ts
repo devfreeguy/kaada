@@ -17,6 +17,14 @@ const optionalSecret = z
   .optional()
   .transform((value) => (value ? value : undefined));
 
+/** A base64 string of exactly 32 bytes, or unset. */
+function isAesKey(value: string | undefined): boolean {
+  return (
+    value === undefined ||
+    (/^[A-Za-z0-9+/_-]+={0,2}$/.test(value) && Buffer.from(value, "base64").length === 32)
+  );
+}
+
 const envSchemaShape = {
   TEXTILE_API_URL: z
     .url()
@@ -56,6 +64,20 @@ const envSchema = z
     // A server-side secret mixed into every PIN hash (Argon2 "secret"). With only 10,000 possible
     // PINs, a leaked database alone must not be enough to recover them. Required in production.
     PIN_PEPPER: optionalSecret,
+    // A Celo-capable ERC-4337 bundler. Reserved for the signing build: only its presence is read today,
+    // to tell an execution plan whether sending UserOperations could work yet.
+    BUNDLER_URL: z.url().optional(),
+    // Firm Textile quotes. The claim token Textile returns once is encrypted at rest with this key
+    // (AES-256-GCM, 32 random bytes as base64). A previous key may stay for decryption after rotation.
+    EXECUTION_SECRET_KEY: optionalSecret,
+    EXECUTION_SECRET_KEY_VERSION: z.coerce.number().int().min(1).max(1_000_000).default(1),
+    EXECUTION_SECRET_KEY_PREVIOUS: optionalSecret,
+    // The least time that must remain on a firm quote before it is treated as executable.
+    FIRM_QUOTE_MIN_WINDOW_SECONDS: z.coerce.number().int().min(5).max(45).default(12),
+    // Textile documents ~70 s for a firm request and recommends a 75 s client timeout.
+    FIRM_QUOTE_TIMEOUT_MS: z.coerce.number().int().min(10_000).max(80_000).default(75_000),
+    // Textile allows 4 outstanding firm RFQs per key; Kaada counts its own to avoid avoidable 429s.
+    TEXTILE_MAX_OUTSTANDING_RFQS: z.coerce.number().int().min(1).max(4).default(4),
     // Which IntentInterpreter the agent uses. "none" disables the agent.
     AGENT_INTERPRETER: z.enum(["none", "mock", "groq"]).default("none"),
     // Which price source routing uses. "none" disables pricing (the agent stops at ROUTING_REQUIRED);
@@ -170,6 +192,24 @@ const envSchema = z
       path: ["PIN_PEPPER"],
     },
   )
+  .refine(
+    (env) => isAesKey(env.EXECUTION_SECRET_KEY) && isAesKey(env.EXECUTION_SECRET_KEY_PREVIOUS),
+    {
+      message: "EXECUTION_SECRET_KEY must be 32 random bytes encoded as base64",
+      path: ["EXECUTION_SECRET_KEY"],
+    },
+  )
+  .refine(
+    (env) =>
+      env.NODE_ENV !== "production" ||
+      env.WALLET_PROVIDER !== "kernel" ||
+      env.FX_PROVIDER !== "textile" ||
+      env.EXECUTION_SECRET_KEY !== undefined,
+    {
+      message: "production firm quotes need EXECUTION_SECRET_KEY to encrypt Textile claim tokens",
+      path: ["EXECUTION_SECRET_KEY"],
+    },
+  )
   .refine((env) => env.AGENT_INTERPRETER !== "groq" || env.GROQ_API_KEY !== undefined, {
     message: "GROQ_API_KEY is required when AGENT_INTERPRETER=groq",
     path: ["GROQ_API_KEY"],
@@ -210,6 +250,26 @@ const envSchema = z
       sessionTtlMs: env.AUTHORIZATION_SESSION_TTL_SECONDS * 1000,
       paymentTtlMs: env.PAYMENT_AUTHORIZATION_TTL_SECONDS * 1000,
       ...(env.PIN_PEPPER !== undefined && { pinPepper: env.PIN_PEPPER }),
+    },
+    execution: {
+      minFirmWindowMs: env.FIRM_QUOTE_MIN_WINDOW_SECONDS * 1000,
+      firmTimeoutMs: env.FIRM_QUOTE_TIMEOUT_MS,
+      bundlerConfigured: env.BUNDLER_URL !== undefined,
+      maxOutstandingRfqs: env.TEXTILE_MAX_OUTSTANDING_RFQS,
+      // Newest first. Absent when no key is configured: firm quoting is then disabled.
+      cipherKeys: [
+        ...(env.EXECUTION_SECRET_KEY
+          ? [{ version: env.EXECUTION_SECRET_KEY_VERSION, key: env.EXECUTION_SECRET_KEY }]
+          : []),
+        ...(env.EXECUTION_SECRET_KEY_PREVIOUS && env.EXECUTION_SECRET_KEY_VERSION > 1
+          ? [
+              {
+                version: env.EXECUTION_SECRET_KEY_VERSION - 1,
+                key: env.EXECUTION_SECRET_KEY_PREVIOUS,
+              },
+            ]
+          : []),
+      ],
     },
     fx: {
       provider: env.FX_PROVIDER,

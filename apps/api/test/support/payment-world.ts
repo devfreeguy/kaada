@@ -174,7 +174,9 @@ export function setup(options: { noMakersFrom?: "USDC"; authorize?: boolean } = 
     pricing: ({ assets, now }): FxProvider => {
       const inner = new MockFxProvider({ assets, now, quoteTtlMs: 30_000 });
       return {
-        id: inner.id,
+        // Priced as the real Textile adapter would be, so an authorization's provider is "textile" and
+        // the firm quote (also "textile") can match it. The numbers are still the mock's.
+        id: "textile",
         supports: (request: QuoteRequest) => inner.supports(request),
         execute: (quote, context) => inner.execute(quote, context),
         status: (id) => inner.status(id),

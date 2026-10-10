@@ -15,4 +15,5 @@ export * from "./routing/index.js";
 export * from "./settlement/index.js";
 export * from "./wallets/index.js";
 export * from "./authorization/index.js";
+export * from "./firm/index.js";
 export * from "./transactions/index.js";

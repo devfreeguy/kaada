@@ -207,6 +207,10 @@ export function createAuthorizationStores(
       const found = payments.find((p) => p.id === id);
       return Promise.resolve(found ? copy(found) : null);
     },
+    findBySession: (sessionId) => {
+      const found = payments.find((p) => p.sessionId === sessionId);
+      return Promise.resolve(found ? copy(found) : null);
+    },
     findActiveByIntent: (intentId) => {
       const found = payments.find((p) => p.intentId === intentId && p.status === "ACTIVE");
       return Promise.resolve(found ? copy(found) : null);

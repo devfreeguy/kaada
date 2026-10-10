@@ -14,7 +14,8 @@
     "smoke:groq": "node --import tsx scripts/groq-smoke.ts",
     "smoke:textile": "node --import tsx scripts/smoke-textile.ts",
     "smoke:wallet": "node --import tsx scripts/wallet-smoke.ts",
-    "smoke:setup": "node --import tsx scripts/setup-smoke.ts"
+    "smoke:setup": "node --import tsx scripts/setup-smoke.ts",
+    "demo:authorize": "node --import tsx scripts/authorize-demo.ts"
   },
   "dependencies": {
     "@kaada/blockchain": "workspace:*",

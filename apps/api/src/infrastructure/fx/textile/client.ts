@@ -112,20 +112,21 @@ export class TextileClient {
   }
 
   /**
-   * POST /v2/rfq/request: a firm quote bound to `taker`. Not used by routing yet: it needs a funded
-   * wallet that signs, and a live quote holds an outstanding-RFQ slot (4 per key) until its order
-   * deadline, so it must not be called speculatively. Kept here, validated against the documented
-   * shape, for the wallet build. Textile documents a 75 s client timeout for this call.
+   * POST /v2/rfq/request: a firm quote bound to `taker`. Called only after a payment authorization
+   * exists (never by routing): it needs a funded wallet, and a live quote holds an outstanding-RFQ slot
+   * (4 per key) until its order deadline. Textile documents a 75 s client timeout for this call.
    */
   requestFirm(
     request: TextileRfqRequest & { taker: string },
     timeoutMs?: number,
   ): Promise<{ data: FirmResponse["data"]; meta: TextileCallMeta }> {
+    // NEVER retried: a repeat of a request that may have succeeded would take a second outstanding slot.
     return this.call(
       "/v2/rfq/request",
       { ...rfqBody(request), taker: request.taker },
       firmResponseSchema,
       timeoutMs,
+      0,
     );
   }
 
@@ -134,11 +135,12 @@ export class TextileClient {
     body: Record<string, unknown>,
     schema: ZodType<T>,
     timeoutMs: number = this.timeoutMs,
+    maxRetries: number = this.maxRetries,
   ): Promise<{ data: T["data"]; meta: TextileCallMeta }> {
     let attempts = 0;
     for (;;) {
       attempts += 1;
-      const canRetry = attempts <= this.maxRetries;
+      const canRetry = attempts <= maxRetries;
       let response: TextileHttpResponse;
       try {
         response = await this.transport.post(path, body, { timeoutMs });

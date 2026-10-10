@@ -433,6 +433,23 @@ export type EnumAmountModeWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumAmountModeFilter<$PrismaModel>
 }
 
+export type EnumFirmQuoteAttemptStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.FirmQuoteAttemptStatus | Prisma.EnumFirmQuoteAttemptStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.FirmQuoteAttemptStatus[] | Prisma.ListEnumFirmQuoteAttemptStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.FirmQuoteAttemptStatus[] | Prisma.ListEnumFirmQuoteAttemptStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumFirmQuoteAttemptStatusFilter<$PrismaModel> | $Enums.FirmQuoteAttemptStatus
+}
+
+export type EnumFirmQuoteAttemptStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.FirmQuoteAttemptStatus | Prisma.EnumFirmQuoteAttemptStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.FirmQuoteAttemptStatus[] | Prisma.ListEnumFirmQuoteAttemptStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.FirmQuoteAttemptStatus[] | Prisma.ListEnumFirmQuoteAttemptStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumFirmQuoteAttemptStatusWithAggregatesFilter<$PrismaModel> | $Enums.FirmQuoteAttemptStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumFirmQuoteAttemptStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumFirmQuoteAttemptStatusFilter<$PrismaModel>
+}
+
 export type EnumPasskeyChallengePurposeFilter<$PrismaModel = never> = {
   equals?: $Enums.PasskeyChallengePurpose | Prisma.EnumPasskeyChallengePurposeFieldRefInput<$PrismaModel>
   in?: $Enums.PasskeyChallengePurpose[] | Prisma.ListEnumPasskeyChallengePurposeFieldRefInput<$PrismaModel>
@@ -1216,6 +1233,23 @@ export type NestedEnumAmountModeWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumAmountModeFilter<$PrismaModel>
   _max?: Prisma.NestedEnumAmountModeFilter<$PrismaModel>
+}
+
+export type NestedEnumFirmQuoteAttemptStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.FirmQuoteAttemptStatus | Prisma.EnumFirmQuoteAttemptStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.FirmQuoteAttemptStatus[] | Prisma.ListEnumFirmQuoteAttemptStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.FirmQuoteAttemptStatus[] | Prisma.ListEnumFirmQuoteAttemptStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumFirmQuoteAttemptStatusFilter<$PrismaModel> | $Enums.FirmQuoteAttemptStatus
+}
+
+export type NestedEnumFirmQuoteAttemptStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.FirmQuoteAttemptStatus | Prisma.EnumFirmQuoteAttemptStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.FirmQuoteAttemptStatus[] | Prisma.ListEnumFirmQuoteAttemptStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.FirmQuoteAttemptStatus[] | Prisma.ListEnumFirmQuoteAttemptStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumFirmQuoteAttemptStatusWithAggregatesFilter<$PrismaModel> | $Enums.FirmQuoteAttemptStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumFirmQuoteAttemptStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumFirmQuoteAttemptStatusFilter<$PrismaModel>
 }
 
 export type NestedEnumPasskeyChallengePurposeFilter<$PrismaModel = never> = {

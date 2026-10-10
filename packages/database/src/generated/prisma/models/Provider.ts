@@ -206,6 +206,7 @@ export type ProviderWhereInput = {
   quotes?: Prisma.QuoteListRelationFilter
   routeSteps?: Prisma.RouteStepListRelationFilter
   rampSessions?: Prisma.RampSessionListRelationFilter
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptListRelationFilter
 }
 
 export type ProviderOrderByWithRelationInput = {
@@ -221,6 +222,7 @@ export type ProviderOrderByWithRelationInput = {
   quotes?: Prisma.QuoteOrderByRelationAggregateInput
   routeSteps?: Prisma.RouteStepOrderByRelationAggregateInput
   rampSessions?: Prisma.RampSessionOrderByRelationAggregateInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptOrderByRelationAggregateInput
 }
 
 export type ProviderWhereUniqueInput = Prisma.AtLeast<{
@@ -239,6 +241,7 @@ export type ProviderWhereUniqueInput = Prisma.AtLeast<{
   quotes?: Prisma.QuoteListRelationFilter
   routeSteps?: Prisma.RouteStepListRelationFilter
   rampSessions?: Prisma.RampSessionListRelationFilter
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptListRelationFilter
 }, "id" | "slug">
 
 export type ProviderOrderByWithAggregationInput = {
@@ -282,6 +285,7 @@ export type ProviderCreateInput = {
   quotes?: Prisma.QuoteCreateNestedManyWithoutProviderInput
   routeSteps?: Prisma.RouteStepCreateNestedManyWithoutProviderInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutProviderInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutProviderInput
 }
 
 export type ProviderUncheckedCreateInput = {
@@ -297,6 +301,7 @@ export type ProviderUncheckedCreateInput = {
   quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutProviderInput
   routeSteps?: Prisma.RouteStepUncheckedCreateNestedManyWithoutProviderInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutProviderInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutProviderInput
 }
 
 export type ProviderUpdateInput = {
@@ -312,6 +317,7 @@ export type ProviderUpdateInput = {
   quotes?: Prisma.QuoteUpdateManyWithoutProviderNestedInput
   routeSteps?: Prisma.RouteStepUpdateManyWithoutProviderNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutProviderNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutProviderNestedInput
 }
 
 export type ProviderUncheckedUpdateInput = {
@@ -327,6 +333,7 @@ export type ProviderUncheckedUpdateInput = {
   quotes?: Prisma.QuoteUncheckedUpdateManyWithoutProviderNestedInput
   routeSteps?: Prisma.RouteStepUncheckedUpdateManyWithoutProviderNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutProviderNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutProviderNestedInput
 }
 
 export type ProviderCreateManyInput = {
@@ -362,6 +369,11 @@ export type ProviderUncheckedUpdateManyInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
+export type ProviderScalarRelationFilter = {
+  is?: Prisma.ProviderWhereInput
+  isNot?: Prisma.ProviderWhereInput
+}
+
 export type ProviderCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   slug?: Prisma.SortOrder
@@ -393,14 +405,23 @@ export type ProviderMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
-export type ProviderScalarRelationFilter = {
-  is?: Prisma.ProviderWhereInput
-  isNot?: Prisma.ProviderWhereInput
-}
-
 export type ProviderNullableScalarRelationFilter = {
   is?: Prisma.ProviderWhereInput | null
   isNot?: Prisma.ProviderWhereInput | null
+}
+
+export type ProviderCreateNestedOneWithoutFirmQuoteAttemptsInput = {
+  create?: Prisma.XOR<Prisma.ProviderCreateWithoutFirmQuoteAttemptsInput, Prisma.ProviderUncheckedCreateWithoutFirmQuoteAttemptsInput>
+  connectOrCreate?: Prisma.ProviderCreateOrConnectWithoutFirmQuoteAttemptsInput
+  connect?: Prisma.ProviderWhereUniqueInput
+}
+
+export type ProviderUpdateOneRequiredWithoutFirmQuoteAttemptsNestedInput = {
+  create?: Prisma.XOR<Prisma.ProviderCreateWithoutFirmQuoteAttemptsInput, Prisma.ProviderUncheckedCreateWithoutFirmQuoteAttemptsInput>
+  connectOrCreate?: Prisma.ProviderCreateOrConnectWithoutFirmQuoteAttemptsInput
+  upsert?: Prisma.ProviderUpsertWithoutFirmQuoteAttemptsInput
+  connect?: Prisma.ProviderWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ProviderUpdateToOneWithWhereWithoutFirmQuoteAttemptsInput, Prisma.ProviderUpdateWithoutFirmQuoteAttemptsInput>, Prisma.ProviderUncheckedUpdateWithoutFirmQuoteAttemptsInput>
 }
 
 export type EnumProviderTypeFieldUpdateOperationsInput = {
@@ -465,6 +486,82 @@ export type ProviderUpdateOneRequiredWithoutRampSessionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ProviderUpdateToOneWithWhereWithoutRampSessionsInput, Prisma.ProviderUpdateWithoutRampSessionsInput>, Prisma.ProviderUncheckedUpdateWithoutRampSessionsInput>
 }
 
+export type ProviderCreateWithoutFirmQuoteAttemptsInput = {
+  id: string
+  slug: string
+  name: string
+  type: $Enums.ProviderType
+  isActive?: boolean
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  capabilities?: Prisma.ProviderCapabilityCreateNestedManyWithoutProviderInput
+  quotes?: Prisma.QuoteCreateNestedManyWithoutProviderInput
+  routeSteps?: Prisma.RouteStepCreateNestedManyWithoutProviderInput
+  rampSessions?: Prisma.RampSessionCreateNestedManyWithoutProviderInput
+}
+
+export type ProviderUncheckedCreateWithoutFirmQuoteAttemptsInput = {
+  id: string
+  slug: string
+  name: string
+  type: $Enums.ProviderType
+  isActive?: boolean
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  capabilities?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutProviderInput
+  quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutProviderInput
+  routeSteps?: Prisma.RouteStepUncheckedCreateNestedManyWithoutProviderInput
+  rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutProviderInput
+}
+
+export type ProviderCreateOrConnectWithoutFirmQuoteAttemptsInput = {
+  where: Prisma.ProviderWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProviderCreateWithoutFirmQuoteAttemptsInput, Prisma.ProviderUncheckedCreateWithoutFirmQuoteAttemptsInput>
+}
+
+export type ProviderUpsertWithoutFirmQuoteAttemptsInput = {
+  update: Prisma.XOR<Prisma.ProviderUpdateWithoutFirmQuoteAttemptsInput, Prisma.ProviderUncheckedUpdateWithoutFirmQuoteAttemptsInput>
+  create: Prisma.XOR<Prisma.ProviderCreateWithoutFirmQuoteAttemptsInput, Prisma.ProviderUncheckedCreateWithoutFirmQuoteAttemptsInput>
+  where?: Prisma.ProviderWhereInput
+}
+
+export type ProviderUpdateToOneWithWhereWithoutFirmQuoteAttemptsInput = {
+  where?: Prisma.ProviderWhereInput
+  data: Prisma.XOR<Prisma.ProviderUpdateWithoutFirmQuoteAttemptsInput, Prisma.ProviderUncheckedUpdateWithoutFirmQuoteAttemptsInput>
+}
+
+export type ProviderUpdateWithoutFirmQuoteAttemptsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumProviderTypeFieldUpdateOperationsInput | $Enums.ProviderType
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  capabilities?: Prisma.ProviderCapabilityUpdateManyWithoutProviderNestedInput
+  quotes?: Prisma.QuoteUpdateManyWithoutProviderNestedInput
+  routeSteps?: Prisma.RouteStepUpdateManyWithoutProviderNestedInput
+  rampSessions?: Prisma.RampSessionUpdateManyWithoutProviderNestedInput
+}
+
+export type ProviderUncheckedUpdateWithoutFirmQuoteAttemptsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumProviderTypeFieldUpdateOperationsInput | $Enums.ProviderType
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  capabilities?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutProviderNestedInput
+  quotes?: Prisma.QuoteUncheckedUpdateManyWithoutProviderNestedInput
+  routeSteps?: Prisma.RouteStepUncheckedUpdateManyWithoutProviderNestedInput
+  rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutProviderNestedInput
+}
+
 export type ProviderCreateWithoutCapabilitiesInput = {
   id: string
   slug: string
@@ -477,6 +574,7 @@ export type ProviderCreateWithoutCapabilitiesInput = {
   quotes?: Prisma.QuoteCreateNestedManyWithoutProviderInput
   routeSteps?: Prisma.RouteStepCreateNestedManyWithoutProviderInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutProviderInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutProviderInput
 }
 
 export type ProviderUncheckedCreateWithoutCapabilitiesInput = {
@@ -491,6 +589,7 @@ export type ProviderUncheckedCreateWithoutCapabilitiesInput = {
   quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutProviderInput
   routeSteps?: Prisma.RouteStepUncheckedCreateNestedManyWithoutProviderInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutProviderInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutProviderInput
 }
 
 export type ProviderCreateOrConnectWithoutCapabilitiesInput = {
@@ -521,6 +620,7 @@ export type ProviderUpdateWithoutCapabilitiesInput = {
   quotes?: Prisma.QuoteUpdateManyWithoutProviderNestedInput
   routeSteps?: Prisma.RouteStepUpdateManyWithoutProviderNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutProviderNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutProviderNestedInput
 }
 
 export type ProviderUncheckedUpdateWithoutCapabilitiesInput = {
@@ -535,6 +635,7 @@ export type ProviderUncheckedUpdateWithoutCapabilitiesInput = {
   quotes?: Prisma.QuoteUncheckedUpdateManyWithoutProviderNestedInput
   routeSteps?: Prisma.RouteStepUncheckedUpdateManyWithoutProviderNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutProviderNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutProviderNestedInput
 }
 
 export type ProviderCreateWithoutQuotesInput = {
@@ -549,6 +650,7 @@ export type ProviderCreateWithoutQuotesInput = {
   capabilities?: Prisma.ProviderCapabilityCreateNestedManyWithoutProviderInput
   routeSteps?: Prisma.RouteStepCreateNestedManyWithoutProviderInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutProviderInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutProviderInput
 }
 
 export type ProviderUncheckedCreateWithoutQuotesInput = {
@@ -563,6 +665,7 @@ export type ProviderUncheckedCreateWithoutQuotesInput = {
   capabilities?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutProviderInput
   routeSteps?: Prisma.RouteStepUncheckedCreateNestedManyWithoutProviderInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutProviderInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutProviderInput
 }
 
 export type ProviderCreateOrConnectWithoutQuotesInput = {
@@ -593,6 +696,7 @@ export type ProviderUpdateWithoutQuotesInput = {
   capabilities?: Prisma.ProviderCapabilityUpdateManyWithoutProviderNestedInput
   routeSteps?: Prisma.RouteStepUpdateManyWithoutProviderNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutProviderNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutProviderNestedInput
 }
 
 export type ProviderUncheckedUpdateWithoutQuotesInput = {
@@ -607,6 +711,7 @@ export type ProviderUncheckedUpdateWithoutQuotesInput = {
   capabilities?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutProviderNestedInput
   routeSteps?: Prisma.RouteStepUncheckedUpdateManyWithoutProviderNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutProviderNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutProviderNestedInput
 }
 
 export type ProviderCreateWithoutRouteStepsInput = {
@@ -621,6 +726,7 @@ export type ProviderCreateWithoutRouteStepsInput = {
   capabilities?: Prisma.ProviderCapabilityCreateNestedManyWithoutProviderInput
   quotes?: Prisma.QuoteCreateNestedManyWithoutProviderInput
   rampSessions?: Prisma.RampSessionCreateNestedManyWithoutProviderInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutProviderInput
 }
 
 export type ProviderUncheckedCreateWithoutRouteStepsInput = {
@@ -635,6 +741,7 @@ export type ProviderUncheckedCreateWithoutRouteStepsInput = {
   capabilities?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutProviderInput
   quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutProviderInput
   rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutProviderInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutProviderInput
 }
 
 export type ProviderCreateOrConnectWithoutRouteStepsInput = {
@@ -665,6 +772,7 @@ export type ProviderUpdateWithoutRouteStepsInput = {
   capabilities?: Prisma.ProviderCapabilityUpdateManyWithoutProviderNestedInput
   quotes?: Prisma.QuoteUpdateManyWithoutProviderNestedInput
   rampSessions?: Prisma.RampSessionUpdateManyWithoutProviderNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutProviderNestedInput
 }
 
 export type ProviderUncheckedUpdateWithoutRouteStepsInput = {
@@ -679,6 +787,7 @@ export type ProviderUncheckedUpdateWithoutRouteStepsInput = {
   capabilities?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutProviderNestedInput
   quotes?: Prisma.QuoteUncheckedUpdateManyWithoutProviderNestedInput
   rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutProviderNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutProviderNestedInput
 }
 
 export type ProviderCreateWithoutRampSessionsInput = {
@@ -693,6 +802,7 @@ export type ProviderCreateWithoutRampSessionsInput = {
   capabilities?: Prisma.ProviderCapabilityCreateNestedManyWithoutProviderInput
   quotes?: Prisma.QuoteCreateNestedManyWithoutProviderInput
   routeSteps?: Prisma.RouteStepCreateNestedManyWithoutProviderInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutProviderInput
 }
 
 export type ProviderUncheckedCreateWithoutRampSessionsInput = {
@@ -707,6 +817,7 @@ export type ProviderUncheckedCreateWithoutRampSessionsInput = {
   capabilities?: Prisma.ProviderCapabilityUncheckedCreateNestedManyWithoutProviderInput
   quotes?: Prisma.QuoteUncheckedCreateNestedManyWithoutProviderInput
   routeSteps?: Prisma.RouteStepUncheckedCreateNestedManyWithoutProviderInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutProviderInput
 }
 
 export type ProviderCreateOrConnectWithoutRampSessionsInput = {
@@ -737,6 +848,7 @@ export type ProviderUpdateWithoutRampSessionsInput = {
   capabilities?: Prisma.ProviderCapabilityUpdateManyWithoutProviderNestedInput
   quotes?: Prisma.QuoteUpdateManyWithoutProviderNestedInput
   routeSteps?: Prisma.RouteStepUpdateManyWithoutProviderNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutProviderNestedInput
 }
 
 export type ProviderUncheckedUpdateWithoutRampSessionsInput = {
@@ -751,6 +863,7 @@ export type ProviderUncheckedUpdateWithoutRampSessionsInput = {
   capabilities?: Prisma.ProviderCapabilityUncheckedUpdateManyWithoutProviderNestedInput
   quotes?: Prisma.QuoteUncheckedUpdateManyWithoutProviderNestedInput
   routeSteps?: Prisma.RouteStepUncheckedUpdateManyWithoutProviderNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutProviderNestedInput
 }
 
 
@@ -763,6 +876,7 @@ export type ProviderCountOutputType = {
   quotes: number
   routeSteps: number
   rampSessions: number
+  firmQuoteAttempts: number
 }
 
 export type ProviderCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -770,6 +884,7 @@ export type ProviderCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensio
   quotes?: boolean | ProviderCountOutputTypeCountQuotesArgs
   routeSteps?: boolean | ProviderCountOutputTypeCountRouteStepsArgs
   rampSessions?: boolean | ProviderCountOutputTypeCountRampSessionsArgs
+  firmQuoteAttempts?: boolean | ProviderCountOutputTypeCountFirmQuoteAttemptsArgs
 }
 
 /**
@@ -810,6 +925,13 @@ export type ProviderCountOutputTypeCountRampSessionsArgs<ExtArgs extends runtime
   where?: Prisma.RampSessionWhereInput
 }
 
+/**
+ * ProviderCountOutputType without action
+ */
+export type ProviderCountOutputTypeCountFirmQuoteAttemptsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.FirmQuoteAttemptWhereInput
+}
+
 
 export type ProviderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -824,6 +946,7 @@ export type ProviderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   quotes?: boolean | Prisma.Provider$quotesArgs<ExtArgs>
   routeSteps?: boolean | Prisma.Provider$routeStepsArgs<ExtArgs>
   rampSessions?: boolean | Prisma.Provider$rampSessionsArgs<ExtArgs>
+  firmQuoteAttempts?: boolean | Prisma.Provider$firmQuoteAttemptsArgs<ExtArgs>
   _count?: boolean | Prisma.ProviderCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["provider"]>
 
@@ -866,6 +989,7 @@ export type ProviderInclude<ExtArgs extends runtime.Types.Extensions.InternalArg
   quotes?: boolean | Prisma.Provider$quotesArgs<ExtArgs>
   routeSteps?: boolean | Prisma.Provider$routeStepsArgs<ExtArgs>
   rampSessions?: boolean | Prisma.Provider$rampSessionsArgs<ExtArgs>
+  firmQuoteAttempts?: boolean | Prisma.Provider$firmQuoteAttemptsArgs<ExtArgs>
   _count?: boolean | Prisma.ProviderCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ProviderIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -878,6 +1002,7 @@ export type $ProviderPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     quotes: Prisma.$QuotePayload<ExtArgs>[]
     routeSteps: Prisma.$RouteStepPayload<ExtArgs>[]
     rampSessions: Prisma.$RampSessionPayload<ExtArgs>[]
+    firmQuoteAttempts: Prisma.$FirmQuoteAttemptPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1286,6 +1411,7 @@ export interface Prisma__ProviderClient<T, Null = never, ExtArgs extends runtime
   quotes<T extends Prisma.Provider$quotesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Provider$quotesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$QuotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   routeSteps<T extends Prisma.Provider$routeStepsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Provider$routeStepsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RouteStepPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   rampSessions<T extends Prisma.Provider$rampSessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Provider$rampSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RampSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  firmQuoteAttempts<T extends Prisma.Provider$firmQuoteAttemptsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Provider$firmQuoteAttemptsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FirmQuoteAttemptPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1809,6 +1935,30 @@ export type Provider$rampSessionsArgs<ExtArgs extends runtime.Types.Extensions.I
   take?: number
   skip?: number
   distinct?: Prisma.RampSessionScalarFieldEnum | Prisma.RampSessionScalarFieldEnum[]
+}
+
+/**
+ * Provider.firmQuoteAttempts
+ */
+export type Provider$firmQuoteAttemptsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the FirmQuoteAttempt
+   */
+  select?: Prisma.FirmQuoteAttemptSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the FirmQuoteAttempt
+   */
+  omit?: Prisma.FirmQuoteAttemptOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.FirmQuoteAttemptInclude<ExtArgs> | null
+  where?: Prisma.FirmQuoteAttemptWhereInput
+  orderBy?: Prisma.FirmQuoteAttemptOrderByWithRelationInput | Prisma.FirmQuoteAttemptOrderByWithRelationInput[]
+  cursor?: Prisma.FirmQuoteAttemptWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.FirmQuoteAttemptScalarFieldEnum | Prisma.FirmQuoteAttemptScalarFieldEnum[]
 }
 
 /**

@@ -369,3 +369,67 @@ describe("payment authorization configuration", () => {
     );
   });
 });
+
+describe("firm quote configuration", () => {
+  const base = { DATABASE_URL: databaseUrl };
+  const key = Buffer.alloc(32, 5).toString("base64");
+
+  it("defaults to a 12 s minimum window, a 75 s timeout, 4 slots and no key", () => {
+    const { execution } = loadConfig(base);
+    assert.equal(execution.minFirmWindowMs, 12_000);
+    assert.equal(execution.firmTimeoutMs, 75_000);
+    assert.equal(execution.maxOutstandingRfqs, 4);
+    assert.deepEqual(execution.cipherKeys, []);
+    assert.equal(execution.bundlerConfigured, false);
+  });
+
+  it("accepts only a 32-byte key, and keeps the previous one for rotation", () => {
+    assert.deepEqual(loadConfig({ ...base, EXECUTION_SECRET_KEY: key }).execution.cipherKeys, [
+      { version: 1, key },
+    ]);
+    assert.throws(() => loadConfig({ ...base, EXECUTION_SECRET_KEY: "c2hvcnQ=" }), ConfigError);
+    assert.throws(
+      () => loadConfig({ ...base, EXECUTION_SECRET_KEY: key, EXECUTION_SECRET_KEY_PREVIOUS: "x" }),
+      ConfigError,
+    );
+    const rotated = loadConfig({
+      ...base,
+      EXECUTION_SECRET_KEY: key,
+      EXECUTION_SECRET_KEY_VERSION: "2",
+      EXECUTION_SECRET_KEY_PREVIOUS: Buffer.alloc(32, 6).toString("base64"),
+    });
+    assert.deepEqual(
+      rotated.execution.cipherKeys.map((k) => k.version),
+      [2, 1],
+    );
+  });
+
+  it("bounds the safety window and the slot count", () => {
+    assert.throws(() => loadConfig({ ...base, FIRM_QUOTE_MIN_WINDOW_SECONDS: "1" }), ConfigError);
+    assert.throws(() => loadConfig({ ...base, FIRM_QUOTE_MIN_WINDOW_SECONDS: "120" }), ConfigError);
+    assert.throws(() => loadConfig({ ...base, TEXTILE_MAX_OUTSTANDING_RFQS: "9" }), ConfigError);
+    assert.equal(
+      loadConfig({ ...base, FIRM_QUOTE_MIN_WINDOW_SECONDS: "15" }).execution.minFirmWindowMs,
+      15_000,
+    );
+  });
+
+  it("production with Textile pricing and wallets needs the key", () => {
+    const production = {
+      ...base,
+      NODE_ENV: "production",
+      WALLET_PROVIDER: "kernel",
+      PASSKEY_RP_ID: "kaada.app",
+      PASSKEY_ORIGIN: "https://app.kaada.app",
+      PIN_PEPPER: "p".repeat(32),
+      FX_PROVIDER: "textile",
+      TEXTILE_ENV: "live",
+      TEXTILE_LIVE_API_KEY: "tx_live_abcd1234.supersecretvalue",
+    };
+    assert.throws(() => loadConfig(production), /EXECUTION_SECRET_KEY/);
+    assert.equal(
+      loadConfig({ ...production, EXECUTION_SECRET_KEY: key }).execution.cipherKeys.length,
+      1,
+    );
+  });
+});

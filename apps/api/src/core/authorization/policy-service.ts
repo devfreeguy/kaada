@@ -29,6 +29,21 @@ export class AuthorizationPolicyService {
   }
 
   /**
+   * Loads the authorization and checks the candidate against it. NEVER consumes: obtaining or planning
+   * a firm price must not burn the person's approval, because a later signing or broadcast can still
+   * fail. Consumption (below) belongs immediately before real execution.
+   */
+  async validate(
+    authorizationId: string,
+    candidate: ExecutionCandidate,
+  ): Promise<AuthorizationCheck> {
+    const authorization =
+      await this.deps.unitOfWork.read.paymentAuthorizations.findById(authorizationId);
+    if (!authorization) return { ok: false, violations: ["NOT_ACTIVE"] };
+    return this.check(authorization, candidate);
+  }
+
+  /**
    * Validates and then consumes in one go. The consumption is a single conditional UPDATE, so of two
    * concurrent executions exactly one gets the authorization; the other is refused with
    * AUTHORIZATION_REJECTED. A candidate outside the bounds consumes nothing and needs a new

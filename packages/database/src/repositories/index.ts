@@ -5,6 +5,9 @@ import type {
   AuditRepository,
   WalletSetupSessionRepository,
   AuthorizationSessionRepository,
+  ExecutionPlanRepository,
+  ExecutionSecretRepository,
+  FirmQuoteAttemptRepository,
   PaymentAuthorizationRepository,
   TransactionPinRepository,
   DelegatedPermissionRepository,
@@ -33,6 +36,11 @@ import {
 } from "./authorization.js";
 import { createClarificationChoiceRepository } from "./clarifications.js";
 import { createConversationRepository, createMessageRepository } from "./conversations.js";
+import {
+  createExecutionPlanRepository,
+  createExecutionSecretRepository,
+  createFirmQuoteAttemptRepository,
+} from "./firm.js";
 import { createIdentityRepository, createUserRepository } from "./identity.js";
 import { createIntentRepository } from "./intents.js";
 import {
@@ -71,6 +79,9 @@ export interface Repositories {
   transactionPins: TransactionPinRepository;
   authorizationSessions: AuthorizationSessionRepository;
   paymentAuthorizations: PaymentAuthorizationRepository;
+  firmQuoteAttempts: FirmQuoteAttemptRepository;
+  executionSecrets: ExecutionSecretRepository;
+  executionPlans: ExecutionPlanRepository;
 }
 
 function buildRepositories(db: Db): Repositories {
@@ -95,6 +106,9 @@ function buildRepositories(db: Db): Repositories {
     transactionPins: createTransactionPinRepository(db),
     authorizationSessions: createAuthorizationSessionRepository(db),
     paymentAuthorizations: createPaymentAuthorizationRepository(db),
+    firmQuoteAttempts: createFirmQuoteAttemptRepository(db),
+    executionSecrets: createExecutionSecretRepository(db),
+    executionPlans: createExecutionPlanRepository(db),
   };
 }
 

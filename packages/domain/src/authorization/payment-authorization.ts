@@ -83,6 +83,8 @@ export type NewPaymentAuthorization = Omit<
 export interface PaymentAuthorizationRepository {
   create(authorization: NewPaymentAuthorization): Promise<PaymentAuthorization>;
   findById(id: string): Promise<PaymentAuthorization | null>;
+  /** The authorization a UI session produced, if any (any status). */
+  findBySession(sessionId: string): Promise<PaymentAuthorization | null>;
   /** The intent's ACTIVE authorization (at most one exists), if any. */
   findActiveByIntent(intentId: string): Promise<PaymentAuthorization | null>;
   /**

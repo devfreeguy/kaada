@@ -27,6 +27,7 @@ export {
   toPaymentAuthorization,
   toTransactionPinSecurity,
 } from "./authorization.js";
+export { toExecutionPlanRecord, toFirmQuoteAttempt } from "./firm.js";
 export { DataIntegrityError } from "./support.js";
 export {
   permissionCreateData,

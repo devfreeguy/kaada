@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { PinKeypad } from "../../components/pin-keypad";
+import { FinalPricing } from "./final-pricing";
 
 interface MoneyView {
   display: string;
@@ -231,6 +232,7 @@ export function AuthorizeFlow({ token }: { token: string }) {
             and only within the limits you just approved. You can close this page and return to your
             chat.
           </p>
+          <FinalPricing token={token} />
         </section>
       )}
     </main>

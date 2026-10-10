@@ -1,3 +1,4 @@
+export { createViemAllowanceReader, createViemDeploymentChecker } from "./allowance-reader.js";
 export { ChainBalanceReader } from "./balance-reader.js";
 export type { BalanceReaderOptions, ChainReader } from "./balance-reader.js";
 export { DisabledExecutionSigner } from "./disabled-signer.js";
