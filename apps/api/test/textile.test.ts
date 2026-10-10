@@ -695,3 +695,81 @@ describe("through the RoutingService (offline)", () => {
     assert.equal([...r.world.intents.values()][0]?.status, "RESOLVED");
   });
 });
+
+describe("regression fixtures from the STRUCTURE of live TEST-environment responses", () => {
+  // Shapes observed from POST /v2/rfq/preview on BNB testnet (chain 97) with a tx_test_ key. Values are
+  // made-up test numbers; no ids, keys or addresses are copied. They guard the schema against drift.
+  const routing = {
+    preferenceApplied: false,
+    restrictionApplied: false,
+    fallbackUsed: false,
+    targetMakerWallets: [],
+    preferredQuotesReceived: 0,
+    openMarketQuotesReceived: 1,
+  };
+  const request = {
+    chainId: 42220,
+    sellToken: "0xa",
+    buyToken: "0xb",
+    exact: { mode: "EXACT_INPUT" as const, sellAmount: "100000000" },
+  };
+  const client = (reply: Reply) =>
+    new TextileClient({ transport: new FakeTextileTransport([reply]), timeoutMs: 1000 });
+
+  it("accepts a real-shaped preview with the extra documented fields (routing, availableSellAmount)", async () => {
+    const { data, meta } = await client({
+      status: 200,
+      headers: {
+        "x-request-id": "req_fixture",
+        "x-ratelimit-limit": "60",
+        "x-ratelimit-remaining": "46",
+      },
+      body: {
+        data: {
+          status: "preview",
+          sellAmount: "100000000",
+          buyAmount: "73490754631875000",
+          feeAmount: "49975",
+          takerPays: "100000000",
+          rateRay: "735275000000000000000000",
+          routing,
+          availableSellAmount: "5000000000",
+        },
+      },
+    }).preview(request);
+    assert.equal(data.status, "preview");
+    assert.equal(meta.requestId, "req_fixture");
+    // Observed: fee = floor(sellAmount * bps / (10000 + bps)), taken out of takerPays (5 bps on test).
+    assert.equal(49975n, (100000000n * 5n) / 10005n);
+  });
+
+  it("accepts a real-shaped no_quote that comes back as HTTP 200 (a tiny amount)", async () => {
+    const { data } = await client({
+      status: 200,
+      body: {
+        data: {
+          status: "no_quote",
+          reason: "no_valid_quote",
+          routing,
+          availableSellAmount: "5000000000",
+        },
+      },
+    }).preview(request);
+    assert.deepEqual(
+      [data.status, data.status === "no_quote" && data.reason],
+      ["no_quote", "no_valid_quote"],
+    );
+  });
+
+  it("classifies a real-shaped corridor_unavailable 400 (seen on Base Sepolia with a test key)", async () => {
+    await assert.rejects(
+      client(errorReply(400, "invalid_request", { reason: "corridor_unavailable" })).preview(
+        request,
+      ),
+      (error) =>
+        error instanceof TextileClientError &&
+        error.kind === "INVALID_REQUEST" &&
+        error.meta.reason === "corridor_unavailable",
+    );
+  });
+});

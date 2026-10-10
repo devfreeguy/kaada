@@ -127,3 +127,108 @@ environment is explicit and there is no default. With no credentials it prints
 ## Not implemented
 
 Firm quotes in routing, `submit` / `cancel` / `GET status`, approvals, signing, wallets, settlement, webhooks.
+
+## Live validation (Build 9.1)
+
+Quote-only throughout: only `POST /v2/rfq/preview` was called. No firm request, submit, cancel, signing or execution.
+Amounts below are atomic units; the keys were never printed (only the public prefix).
+
+### TEXTILE TEST environment (chain 97, BNB testnet, `tx_test_` key)
+
+Auth succeeded (`Authorization: Bearer`), the response matched the Zod schema, and the 5 bps testnet fee matched the docs.
+
+| Request                          | sellAmount        | takerPays         | feeAmount      | buyAmount                 | latency |
+| -------------------------------- | ----------------- | ----------------- | -------------- | ------------------------- | ------- |
+| exact-input 100 cNGN -> USDT     | 100000000         | 100000000         | 49975          | 73490754631875000         | 880 ms  |
+| exact-output 0.05 USDT from cNGN | 68035768          | 68035768          | 34000          | 50000000000000000 (exact) | 611 ms  |
+| exact-input 0.05 USDT -> cNGN    | 50000000000000000 | 50000000000000000 | 24987506246876 | 67954198                  | 241 ms  |
+| exact-output 100 cNGN from USDT  | 73578971100000000 | 73578971100000000 | 36771100000000 | 100000000 (exact)         | 236 ms  |
+
+**Base Sepolia (84532, cNGN <-> USDC) is documented but returned `400 invalid_request` / `corridor_unavailable`** for all
+four requests. Docs and live differ; it mapped correctly to `PAIR_NOT_SUPPORTED`. Only chain 97 works as a sandbox.
+
+### LIVE Celo (chain 42220, `tx_live_` key)
+
+| Request                     | sellAmount           | takerPays            | feeAmount       | buyAmount                                          | latency |
+| --------------------------- | -------------------- | -------------------- | --------------- | -------------------------------------------------- | ------- |
+| exact-input 2 USDT -> wBRL  | 2000000              | 2000000              | 199             | 10037001222382469411                               | 700 ms  |
+| exact-output 10 wBRL (USDT) | 1992627              | 1992627              | 199             | 10000000000000000000 (exact)                       | 254 ms  |
+| exact-input 2 USDT -> USDC  | 2000000              | 2000000              | 199             | 1998182                                            | 259 ms  |
+| exact-output 2 USDC (USDT)  | 2001800              | 2001800              | 200             | 2000000 (exact)                                    | 357 ms  |
+| exact-input 10 wBRL -> USDT | 10000000000000000000 | 10000000000000000000 | 999900009999000 | 1991233                                            | 258 ms  |
+| exact-input 2 USDC -> USDT  | -                    | -                    | -               | `no_quote` / `no_makers_online` (also on a repeat) | 261 ms  |
+| direct USDC -> wBRL         | -                    | -                    | -               | HTTP 400 `invalid_request` (no corridor)           | -       |
+
+- **Unsupported direct pair**: USDC -> wBRL is refused by Textile itself (400 `invalid_request`) and by Kaada's capability
+  registry (`supportsPair` = false). It is not treated as a direct corridor; the planner reaches wBRL from USDC only
+  through USDT.
+- **Multi-hop through the real `RoutingService`** (plan only, nothing persisted): `wBRL -> USDT -> USDC` worked with two
+  live previews: hop 1 in 10 wBRL, out 1.991193 USDT (fee 0.000999900009999 wBRL); hop 2 in 1.991193 USDT (exactly hop 1's
+  output), out 1.989382 USDC (fee 0.000199 USDT); route fees kept per asset, never summed; the route expires with its
+  earliest quote; `indicative`. `USDC -> USDT -> wBRL` could not be planned **because USDC -> USDT had no makers at the
+  time** (live liquidity, not a code fault). Both directions are seeded as capabilities, so a seeded capability does not
+  guarantee live liquidity: the planner correctly reports `ROUTING_UNAVAILABLE` and tries other paths.
+
+### Answers to the open questions
+
+1. **EXACT_INPUT**: `takerPays == sellAmount` in 3 of 3 live and 2 of 2 test samples. `sellAmount` behaved as the **exact
+   debit**; Textile documents it as a cap `takerPays` never exceeds. Keep input = the requested amount and `takerPays`
+   in metadata; tighten later only if a response ever shows less.
+2. **EXACT_OUTPUT**: the returned `buyAmount` equalled the request exactly (live 2 of 2, test 2 of 2). `sellAmount ==
+takerPays` in every sample, and **`takerPays` is the user's real, fee-inclusive debit**.
+3. **`rateRay`**: a RAY (1e27) scaled **price of the non-USDT token in USDT, with a fixed orientation in both directions**
+   (about 0.1992e27 USDT per wBRL in both USDT->wBRL and wBRL->USDT; about 1.0008e27 USDT per USDC). Applied to the net
+   amount: selling the base token `buy = (takerPays - fee) x rate`; selling USDT `buy = (takerPays - fee) / rate`. It differs slightly
+   between an exact-input and an exact-output quote of the same pair. It stays **metadata only**.
+4. **Fee**: `feeAmount = floor(sellAmount x bps / (10000 + bps))` in every sample (live Celo 1 bps: 2000000 -> 199; test
+   5 bps: 100000000 -> 49975), charged on the sell side and **contained in `takerPays`**. Kaada stores `fee = feeAmount` and never adds it
+   to the input.
+5. **Minimum size**: a preview did **not** return a 400 below the documented floors. On Celo, 0.01 USDT -> wBRL returned
+   HTTP 200 `no_quote` / `no_valid_quote` (with `availableSellAmount`, about 94 thousand USDT of depth), and 1 USDT was
+   quoted. The accepted minimum lies between 0.01 and 1 USDT; I did not narrow it further (no spam). On testnet, 1 cNGN
+   (about $0.0007) was quoted and 1 atom gave `no_valid_quote`. A universal $1 minimum is **not** confirmed for preview.
+6. **Rate limit**: headers `X-RateLimit-Limit: 60`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` (seconds) on every
+   response; no `Retry-After` was seen and the limit was never approached (about 15 preview calls).
+7. **Schema differences**: none needed. Responses add the documented `routing {...}` and `availableSellAmount`, which the
+   loose schemas ignore. Regression fixtures with these shapes are in `textile.test.ts`.
+
+### Firm RFQ (`POST /v2/rfq/request`): what Build 10+ must provide (documented; none requested)
+
+- **Request**: `chainId` (must match the key's environment), `sellToken`, `buyToken`, exactly one of `sellAmount` (exact
+  input, a gross fee-inclusive spend cap) or `buyAmount` (exact output), and **`taker`** (required; the quote is bound to
+  it). Optional: `preferredLiquidityWallets` / `restrictedLiquidityWallets` (max 10, mutually exclusive).
+- **Auth**: with a partner API key (`Authorization: Bearer`) no `takerProof` is needed; without one, the first firm request
+  needs `takerProof` (EIP-712 signature by the taker over `(taker, chainId, nonce, issuedAt)`, valid 12 h per wallet+chain).
+  Scope `trades:write` for request/cancel/submit, `trades:read` for status.
+- **Funding**: the taker must hold enough sell token, otherwise `400 invalid_request` with `details.reason:
+insufficient_funds` (`required` / `available` / `committed`). **A funded taker wallet is required before a firm quote.**
+- **Allowance**: the user approves `takerPays` of the sell token to the quote's `spender` (the OpenAPI notes it can differ
+  from `reactor`), confirmed before the swap is sent; USDT-style tokens may need the allowance reset to 0 first. Whether
+  Permit2 is part of the RFQ flow is **not stated** on the RFQ page (Permit2 is listed in the address book).
+- **Response** (`status: quoted`): `rfqId` (`rfq_...`), `claimToken` (`rfqc_...`, **returned once**; authorises cancel/submit/status),
+  `quote {sellAmount, buyAmount, feeAmount, takerPays, rateRay, expiresAt, orderDeadline, latestOrderDeadline, reactor,
+spender, taker, encodedOrder, signature, orders[]}`, and `transactions {approval, swap}` (unsigned). Always broadcast
+  `transactions.swap` (it may be an `executeBatch`), never the top-level `encodedOrder`.
+- **Expiry**: `quote.expiresAt` is the accept cutoff (earliest maker cutoff; corridor cap 60 s). `orderDeadline` is when the
+  signed order can no longer settle fully; `latestOrderDeadline` is when the reserved funds and the slot are released. After
+  `expiresAt`, `/submit` is rejected.
+- **Capacity**: 4 outstanding RFQs per key. A slot is held while a firm quote is live, **released immediately on `no_quote` or
+  error, not released by cancelling or reporting a tx**, and frees at `latestOrderDeadline`. The cap returns `429` with no
+  `Retry-After`. Firm requests can block about 70 s; use a 75 s client timeout. No partial fills.
+
+### Recommended payment lifecycle
+
+1. Conversational intent, deterministic intent state.
+2. **Indicative preview** (`/v2/rfq/preview`): discovery and UX; no wallet, no reserved quote, safe to repeat (60/min).
+3. Show the user an estimate, marked `indicative`.
+4. The user continues; wallet and authorization are available.
+5. **Only then** request the FIRM quote with the user's taker wallet (needs funding; consumes one of 4 slots).
+6. Show the final firm summary (exact `takerPays` / max spend, `expiresAt`).
+7. PIN authorization binds to that firm quote and its limits.
+8. Approve if needed, sign and submit before `expiresAt`.
+
+**Principle: never request firm quotes** while extracting an intent, to display an estimate, per keystroke, or when
+retrying. Previews cover discovery; a firm quote is requested once, close to authorization, and a failed firm request is not
+retried blindly. `PAYMENT_READY` built from a preview stays `indicative: true` and can never flow straight into
+authorization or execution; it needs the firm step first. This matches the documented API behaviour; the product flow is
+unchanged in code for now.

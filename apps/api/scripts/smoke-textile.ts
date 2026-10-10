@@ -149,6 +149,7 @@ if (environment === "test") {
     console.log(`== ${corridor.name} (chain ${corridor.chainId})`);
     for (const test of cases) {
       try {
+        const started = Date.now();
         const { data, meta } = await client.preview({
           chainId: corridor.chainId,
           sellToken: test.sell.address,
@@ -163,7 +164,9 @@ if (environment === "test") {
           console.log(
             `${test.label}: sell=${formatAmount(data.sellAmount, test.sell.decimals)} ${test.sell.symbol} ` +
               `takerPays=${formatAmount(data.takerPays, test.sell.decimals)} fee=${formatAmount(data.feeAmount, test.sell.decimals)} ` +
-              `buy=${formatAmount(data.buyAmount, test.buy.decimals)} ${test.buy.symbol} (request=${meta.requestId ?? "-"})`,
+              `buy=${formatAmount(data.buyAmount, test.buy.decimals)} ${test.buy.symbol} ` +
+              `| raw sell=${data.sellAmount} buy=${data.buyAmount} fee=${data.feeAmount} takerPays=${data.takerPays} rateRay=${data.rateRay ?? "-"} ` +
+              `| latency=${Date.now() - started}ms attempts=${meta.attempts} request=${meta.requestId ?? "-"}`,
           );
         }
       } catch (error) {
@@ -302,10 +305,10 @@ try {
   }
 
   if (has("routing")) {
-    console.log("\nrouting USDC -> USDT -> wBRL (plan only, nothing persisted)");
     const capabilities = createProviderCapabilityRegistry(repositories.providers);
     console.log(
-      `   capability registry: USDC->wBRL direct supported = ${String(await capabilities.supportsPair({ chainId: CELO_CHAIN_ID, inputAssetId: usdc.id, outputAssetId: wbrl.id, capability: "QUOTE" }))}`,
+      `
+capability registry: USDC->wBRL direct supported = ${String(await capabilities.supportsPair({ chainId: CELO_CHAIN_ID, inputAssetId: usdc.id, outputAssetId: wbrl.id, capability: "QUOTE" }))}`,
     );
     const routing = new RoutingService({
       candidates: createRoutingCandidateResolver({
@@ -324,36 +327,51 @@ try {
       assets: registry,
       read: repositories,
     });
-    const request: RoutingRequest = {
-      intentId: "00000000-0000-4000-8000-000000000000",
-      intentRevision: 1,
-      userId: "smoke",
-      operation: "QUOTE",
-      purpose: "QUOTE",
-      amount: human("2", usdc),
-      amountMode: "EXACT_INPUT",
-      sourceAssetId: usdc.id,
-      destinationAssetId: wbrl.id,
-    };
-    try {
-      const outcome = await routing.plan(request);
-      if (outcome.status === "PLANNED") {
-        const { route } = outcome;
-        console.log(
-          `   ${route.hops.length} hop(s): ${route.hops.map((h) => `${h.providerId}`).join(" > ")}`,
-        );
-        console.log(
-          `   input ${formatAmount(route.input.amount, usdc.decimals)} USDC -> output ${formatAmount(route.output.amount, wbrl.decimals)} wBRL`,
-        );
-      } else {
-        console.log(
-          `   not planned: ${outcome.status === "FAILED" ? JSON.stringify(outcome.response) : outcome.status}`,
-        );
+    // Plan only: nothing is persisted. The second scenario exists because a leg can have no live
+    // makers at a given moment (seen: USDC -> USDT), which says nothing about the code.
+    const scenarios: { label: string; from: Asset; to: Asset; amount: string }[] = [
+      { label: "USDC -> USDT -> wBRL", from: usdc, to: wbrl, amount: "2" },
+      { label: "wBRL -> USDT -> USDC", from: wbrl, to: usdc, amount: "10" },
+    ];
+    for (const scenario of scenarios) {
+      console.log(`routing ${scenario.label} (plan only, nothing persisted)`);
+      const request: RoutingRequest = {
+        intentId: "00000000-0000-4000-8000-000000000000",
+        intentRevision: 1,
+        userId: "smoke",
+        operation: "QUOTE",
+        purpose: "QUOTE",
+        amount: human(scenario.amount, scenario.from),
+        amountMode: "EXACT_INPUT",
+        sourceAssetId: scenario.from.id,
+        destinationAssetId: scenario.to.id,
+      };
+      try {
+        const outcome = await routing.plan(request);
+        if (outcome.status === "PLANNED") {
+          const { route } = outcome;
+          const symbol = (id: string) => [usdt, usdc, wbrl].find((a) => a.id === id);
+          console.log(
+            `   ${route.hops.length} hop(s) via ${route.hops.map((h) => h.providerId).join(" > ")}; ` +
+              `${route.hops.map((h) => `${symbol(h.input.assetId)?.symbol}>${symbol(h.output.assetId)?.symbol}`).join(", ")}`,
+          );
+          route.hops.forEach((h, i) =>
+            console.log(
+              `   hop ${i + 1}: in ${formatAmount(h.input.amount, symbol(h.input.assetId)?.decimals ?? 0)} out ${formatAmount(h.output.amount, symbol(h.output.assetId)?.decimals ?? 0)} fee ${h.quote.fee ? formatAmount(h.quote.fee.amount, symbol(h.quote.fee.assetId)?.decimals ?? 0) : "-"}`,
+            ),
+          );
+          console.log(
+            `   route: in ${formatAmount(route.input.amount, scenario.from.decimals)} ${scenario.from.symbol} -> out ${formatAmount(route.output.amount, scenario.to.decimals)} ${scenario.to.symbol}; expires in ${route.expiresAt ? Math.max(0, route.expiresAt.getTime() - Date.now()) : 0} ms; indicative`,
+          );
+        } else {
+          console.log(
+            `   not planned: ${outcome.status === "FAILED" ? JSON.stringify(outcome.response) : outcome.status}`,
+          );
+        }
+      } catch (error) {
         problems += 1;
+        console.log(`   FAILED: ${failure(error)}`);
       }
-    } catch (error) {
-      problems += 1;
-      console.log(`   FAILED: ${failure(error)}`);
     }
   }
 } finally {
