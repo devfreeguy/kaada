@@ -603,3 +603,77 @@ describe("lessons from the Celo Sepolia validation", () => {
     assert.ok(polls >= 3, String(polls));
   });
 });
+
+describe("a swap that consumes the allowance", () => {
+  it("is not followed by an approval the re-derived plan now 'needs' (found live on Celo Sepolia)", async () => {
+    const w = await runWorld();
+    w.chain.allowance = 10n ** 12n; // already approved: no approval step is ever recorded
+    await ready(w);
+    assert.equal((await w.runner.run(w.executionId)).status, "PAYMENT_SENT");
+    assert.equal((await record(w))?.status, "COMPLETED");
+    assert.equal(
+      w.kernel.delegated.length,
+      1,
+      "only the swap and payout; never an approval afterwards",
+    );
+    assert.equal(w.run.transactions.filter((t) => t.type === "APPROVAL").length, 0);
+  });
+
+  it("an audit write that fails never aborts a payment", async () => {
+    const w = await runWorld();
+    await ready(w);
+    w.uow.read.audit.append = () => Promise.reject(new Error("audit store down"));
+    assert.equal((await w.runner.run(w.executionId)).status, "PAYMENT_SENT");
+  });
+});
+
+describe("gas", () => {
+  it("an account that cannot pay the prefund is GAS_FUNDING_REQUIRED, not an exception", async () => {
+    const { KaadaError } = await import("@kaada/domain");
+    const w = await runWorld();
+    w.kernel.prepareRootOperation = () =>
+      Promise.reject(
+        new KaadaError("BUNDLER_REJECTED", "refused", {
+          details: {
+            rpc: "UserOperation reverted during simulation with reason: AA21 didn't pay prefund",
+          },
+        }),
+      );
+    assert.deepEqual(await w.runner.run(w.executionId), { status: "GAS_FUNDING_REQUIRED" });
+    assert.equal((await authorization(w))?.status, "ACTIVE", "nothing was consumed");
+  });
+});
+
+describe("a crash after the bundler accepted an operation (found by design review, fixed before the live run)", () => {
+  it("records the hash BEFORE submitting, so reconciliation can finish the payment without a resend", async () => {
+    const w = await runWorld();
+    await ready(w);
+    w.kernel.sendMode = "throw"; // the approval reaches the bundler; the process never hears back
+    assert.equal((await w.runner.run(w.executionId)).status, "PAYMENT_PENDING");
+    const row = w.run.transactions.find((t) => t.type === "APPROVAL");
+    assert.equal(row?.status, "UNKNOWN");
+    assert.ok(row?.userOpHash, "the hash was persisted before the send");
+    assert.equal(w.kernel.delegated.length, 1);
+
+    // A restarted process: nothing in memory, the bundler is fine again.
+    w.kernel.sendMode = "ok";
+    const result = await w.runner.reconcile();
+    assert.ok(result.examined >= 1);
+    assert.equal((await record(w))?.status, "COMPLETED");
+    assert.equal(w.kernel.delegated.length, 2, "the approval exactly once, then the swap");
+    assert.equal(w.run.transactions.filter((t) => t.type === "APPROVAL").length, 1);
+  });
+
+  it("does the same for the swap itself and never pays twice", async () => {
+    const w = await runWorld();
+    w.chain.allowance = 10n ** 12n;
+    await ready(w);
+    w.kernel.sendMode = "throw";
+    assert.equal((await w.runner.run(w.executionId)).status, "PAYMENT_PENDING");
+    w.kernel.sendMode = "ok";
+    await w.runner.reconcile();
+    await w.runner.reconcile();
+    assert.equal((await record(w))?.status, "COMPLETED");
+    assert.equal(w.kernel.delegated.filter((d) => d.calls.length === 2).length, 1);
+  });
+});

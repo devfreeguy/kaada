@@ -430,7 +430,7 @@ describe("firm quote configuration", () => {
     assert.deepEqual(execution.cipherKeys, []);
     assert.equal(execution.bundlerConfigured, false);
     assert.equal(execution.enabled, false, "moving funds is off by default");
-    assert.equal(execution.minNativeWei, 1_000_000_000_000_000n);
+    assert.equal(execution.minNativeWei, 50_000_000_000_000_000n);
   });
 
   it("accepts only a 32-byte key, and keeps the previous one for rotation", () => {

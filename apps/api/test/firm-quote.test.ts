@@ -723,9 +723,11 @@ describe("account, permission and allowance requirements", () => {
     enough.chain.allowance = 100_000_000n;
     await enough.service.prepare(enough.authorization.id);
     assert.equal(planOf(enough)["approvalRequirements"][0]?.required, false);
+    // The permission scope does NOT shrink when the allowance is already enough: it must stay identical
+    // to what was installed while the allowance changes during the run (found live on Celo Sepolia).
     assert.equal(
       planOf(enough)["permissionRequirement"].scope.allowedOperations.includes("APPROVE_TOKEN"),
-      false,
+      true,
     );
 
     const none = await exactOutput();

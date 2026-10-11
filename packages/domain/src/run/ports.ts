@@ -61,6 +61,11 @@ export interface KernelExecutionPort {
     sessionKey: SecretValue;
     approval: SecretValue;
     calls: AccountCall[];
+    /**
+     * Called with the UserOperation hash AFTER it is signed and BEFORE it is submitted, so the caller can
+     * persist it. If the process dies during or after the submit, the hash is what reconciliation looks up.
+     */
+    beforeSubmit?: (userOpHash: string) => Promise<void>;
   }): Promise<{ userOpHash: string }>;
   getUserOperationReceipt(userOpHash: string): Promise<OperationReceipt>;
   getTransactionReceipt(

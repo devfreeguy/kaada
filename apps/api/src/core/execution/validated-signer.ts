@@ -190,6 +190,14 @@ export class ValidatedExecutionSigner implements ExecutionSigner {
           ),
         ),
         calls: next.calls,
+        // Persist the operation's hash before it goes out: a crash after the bundler accepted it would
+        // otherwise leave a payment on chain with nothing to reconcile it by.
+        beforeSubmit: async (userOpHash) => {
+          await repositories.executionTransactions.recordUserOpHash(
+            transaction.id,
+            userOpHash.toLowerCase(),
+          );
+        },
       });
       await repositories.executionTransactions.markSubmitted(transaction.id, {
         userOpHash: sent.userOpHash.toLowerCase(),

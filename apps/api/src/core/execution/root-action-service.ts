@@ -240,6 +240,11 @@ export class RootActionService {
     if (transaction.status !== "CREATED") {
       throw new KaadaError("EXECUTION_FAILED", "this root action was already sent");
     }
+    // The root operation's hash IS the challenge the passkey signed: record it before anything is sent.
+    await repositories.executionTransactions.recordUserOpHash(
+      transaction.id,
+      session.challenge.toLowerCase(),
+    );
     try {
       const sent = await this.deps.kernel.sendRootOperation({ prepared: operation, assertion });
       await repositories.executionTransactions.markSubmitted(transaction.id, {

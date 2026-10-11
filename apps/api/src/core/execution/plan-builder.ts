@@ -103,12 +103,17 @@ export function buildExecutionPlan(input: PlanInputs): ExecutionPlan {
   // UserOperation. It needs a destination address; without one the payment cannot execute.
   const recipientAddress = input.candidate.recipient.address?.toLowerCase();
   if (!recipientAddress) blockers.push("RECIPIENT_ADDRESS_REQUIRED");
+  // The permission must NOT depend on the allowance as it is right now: the allowance changes mid-run
+  // (the approval confirms, then the plan is re-derived with "no approval needed"), and a scope that
+  // shrank would no longer match what was installed. So the approval leg is part of the scope whenever the
+  // quote has a spender, pinned to that spender and the exact amount, whether or not it is used.
+  const approvalPossible = spender !== undefined;
   const needsContracts = [
-    ...(approvalNeeded ? [sellAsset.contractAddress.toLowerCase()] : []),
+    ...(approvalPossible ? [sellAsset.contractAddress.toLowerCase()] : []),
     transactions.swap.to.toLowerCase(),
     input.buyAsset.contractAddress.toLowerCase(),
   ];
-  const needsOperations: PermissionScope["allowedOperations"] = approvalNeeded
+  const needsOperations: PermissionScope["allowedOperations"] = approvalPossible
     ? ["APPROVE_TOKEN", "EXECUTE_SWAP", "TRANSFER_TOKEN"]
     : ["EXECUTE_SWAP", "TRANSFER_TOKEN"];
   const mustLastUntil = quote.latestOrderDeadline ?? quote.expiresAt;
@@ -119,15 +124,14 @@ export function buildExecutionPlan(input: PlanInputs): ExecutionPlan {
     allowedAssetIds: [sellAsset.id, input.buyAsset.id],
     swapTarget: transactions.swap.to.toLowerCase(),
     swapSelector: transactions.swap.data.slice(0, 10).toLowerCase(),
-    ...(approvalNeeded &&
-      spender !== undefined && {
-        approval: {
-          tokenAddress: sellAsset.contractAddress.toLowerCase(),
-          spender: spender.toLowerCase(),
-          // The exact allowance this quote needs, never more.
-          limit: createMoney(required.toString(), sellAsset.id),
-        },
-      }),
+    ...(approvalPossible && {
+      approval: {
+        tokenAddress: sellAsset.contractAddress.toLowerCase(),
+        spender: spender.toLowerCase(),
+        // The exact allowance this quote needs, never more.
+        limit: createMoney(required.toString(), sellAsset.id),
+      },
+    }),
     // Never above the authorized maximum spend.
     perTransactionLimit: maxInput,
     // The payout may go to this one recipient and no more than the firm output.

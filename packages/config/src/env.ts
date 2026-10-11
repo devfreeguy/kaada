@@ -77,7 +77,7 @@ const envSchema = z
     EXECUTION_MIN_NATIVE_WEI: z
       .string()
       .regex(/^[1-9][0-9]{0,30}$/, "must be a positive integer in wei")
-      .default("1000000000000000"),
+      .default("50000000000000000"),
     // Receipt polling inside one run; the reconciler continues anything still pending afterwards.
     EXECUTION_POLL_INTERVAL_MS: z.coerce.number().int().min(250).max(30_000).default(2_000),
     EXECUTION_POLL_MAX_WAIT_MS: z.coerce.number().int().min(1_000).max(120_000).default(45_000),

@@ -61,6 +61,14 @@ export function createRunStores(): RunStores {
     },
     listByExecution: (executionId) =>
       Promise.resolve(transactions.filter((t) => t.executionId === executionId).map(copy)),
+    recordUserOpHash: (id, userOpHash) => {
+      const t = transactions.find((x) => x.id === id);
+      if (!t || t.status !== "CREATED" || (t.userOpHash && t.userOpHash !== userOpHash)) {
+        return Promise.resolve(null);
+      }
+      t.userOpHash = userOpHash;
+      return Promise.resolve(copy(t));
+    },
     markSubmitted: (id, { userOpHash, now }) => {
       const t = transactions.find((x) => x.id === id);
       if (!t || t.status !== "CREATED") return Promise.resolve(null);

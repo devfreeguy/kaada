@@ -376,67 +376,71 @@ export function createZeroDevKernelAdapter(
     nativeBalance: (address) => client.getBalance({ address: address as Address }),
 
     async prepareRootOperation(input): Promise<PreparedRootOperation> {
-      if (!input.permission) throw new Error("a root operation needs a permission to install");
-      // A fresh key for THIS permission. Its private half leaves this function once, wrapped.
-      const key = generatePrivateKey();
-      const sessionKeyAddress = privateKeyToAccount(key).address;
-      const stub = { value: "0x" as Hex };
-      const { account, permissionPlugin } = await rootAccount(input.credential, stub, {
-        scope: input.permission.scope,
-        sessionKeyAddress,
-      });
-      if (account.address.toLowerCase() !== input.walletAddress.toLowerCase()) {
-        throw new Error("the rebuilt account does not match the wallet address");
-      }
-      if (!permissionPlugin) throw new Error("no permission plugin");
-      stub.value = stubPasskeySignature(network.p256Precompile);
-      // A fresh account's validator nonce is 1; a deployed one is read from the chain.
-      const code = await client.getCode({ address: account.address });
-      const nonce =
-        code && code !== "0x"
-          ? Number(
-              await client.readContract({
-                address: account.address,
-                abi: KernelV3_3AccountAbi,
-                functionName: "currentNonce",
-              }),
-            )
-          : 1;
-      const installCalls = await permissionInstallCalls(account.address, permissionPlugin, nonce);
-      const calls = [
-        ...installCalls,
-        ...input.calls.map((call) => ({
-          to: call.to as Address,
-          data: call.data as Hex,
-          value: BigInt(call.value),
-        })),
-      ];
-      const accountClient = createKernelAccountClient({
-        account,
-        chain,
-        bundlerTransport: http(config.bundlerUrl),
-        client,
-        userOperation: { estimateFeesPerGas },
-      });
-      const userOperation = await accountClient.prepareUserOperation({
-        callData: await account.encodeCalls(calls),
-      });
-      const hash = getUserOperationHash({
-        userOperation: { ...userOperation, signature: "0x" },
-        entryPointAddress: ENTRY_POINT.address,
-        entryPointVersion: ENTRY_POINT.version,
-        chainId: chain.id,
-      });
-      return {
-        challenge: hash,
-        prepared: {
-          credential: { ...input.credential },
-          scope: JSON.parse(JSON.stringify(input.permission.scope)) as JsonObject,
+      try {
+        if (!input.permission) throw new Error("a root operation needs a permission to install");
+        // A fresh key for THIS permission. Its private half leaves this function once, wrapped.
+        const key = generatePrivateKey();
+        const sessionKeyAddress = privateKeyToAccount(key).address;
+        const stub = { value: "0x" as Hex };
+        const { account, permissionPlugin } = await rootAccount(input.credential, stub, {
+          scope: input.permission.scope,
           sessionKeyAddress,
-          userOperation: toJsonSafe({ ...userOperation, signature: "0x" }) as JsonObject,
-        },
-        sessionKey: { address: sessionKeyAddress, privateKey: new SecretValue(key) },
-      };
+        });
+        if (account.address.toLowerCase() !== input.walletAddress.toLowerCase()) {
+          throw new Error("the rebuilt account does not match the wallet address");
+        }
+        if (!permissionPlugin) throw new Error("no permission plugin");
+        stub.value = stubPasskeySignature(network.p256Precompile);
+        // A fresh account's validator nonce is 1; a deployed one is read from the chain.
+        const code = await client.getCode({ address: account.address });
+        const nonce =
+          code && code !== "0x"
+            ? Number(
+                await client.readContract({
+                  address: account.address,
+                  abi: KernelV3_3AccountAbi,
+                  functionName: "currentNonce",
+                }),
+              )
+            : 1;
+        const installCalls = await permissionInstallCalls(account.address, permissionPlugin, nonce);
+        const calls = [
+          ...installCalls,
+          ...input.calls.map((call) => ({
+            to: call.to as Address,
+            data: call.data as Hex,
+            value: BigInt(call.value),
+          })),
+        ];
+        const accountClient = createKernelAccountClient({
+          account,
+          chain,
+          bundlerTransport: http(config.bundlerUrl),
+          client,
+          userOperation: { estimateFeesPerGas },
+        });
+        const userOperation = await accountClient.prepareUserOperation({
+          callData: await account.encodeCalls(calls),
+        });
+        const hash = getUserOperationHash({
+          userOperation: { ...userOperation, signature: "0x" },
+          entryPointAddress: ENTRY_POINT.address,
+          entryPointVersion: ENTRY_POINT.version,
+          chainId: chain.id,
+        });
+        return {
+          challenge: hash,
+          prepared: {
+            credential: { ...input.credential },
+            scope: JSON.parse(JSON.stringify(input.permission.scope)) as JsonObject,
+            sessionKeyAddress,
+            userOperation: toJsonSafe({ ...userOperation, signature: "0x" }) as JsonObject,
+          },
+          sessionKey: { address: sessionKeyAddress, privateKey: new SecretValue(key) },
+        };
+      } catch (error) {
+        throw classify(error);
+      }
     },
 
     async sendRootOperation(input) {
@@ -549,13 +553,24 @@ export function createZeroDevKernelAdapter(
             value: BigInt(call.value),
           })),
         );
-        let userOpHash: Hex;
+        // Prepare and sign first, so the hash is KNOWN before anything is submitted.
+        const prepared = await accountClient.prepareUserOperation({ callData });
+        const signature = await account.signUserOperation(prepared);
+        const signed = { ...prepared, signature };
+        const userOpHash = getUserOperationHash({
+          userOperation: signed,
+          entryPointAddress: ENTRY_POINT.address,
+          entryPointVersion: ENTRY_POINT.version,
+          chainId: chain.id,
+        });
+        await input.beforeSubmit?.(userOpHash);
         if (config.submitUserOperation) {
-          const prepared = await accountClient.prepareUserOperation({ callData });
-          const signature = await account.signUserOperation(prepared);
-          userOpHash = await config.submitUserOperation({ ...prepared, signature });
+          await config.submitUserOperation(signed);
         } else {
-          userOpHash = await accountClient.sendUserOperation({ callData });
+          await bundler.sendUserOperation({
+            ...signed,
+            entryPointAddress: ENTRY_POINT.address,
+          });
         }
         return { userOpHash };
       } catch (error) {

@@ -28,6 +28,12 @@ export interface ExecutionTransactionRepository {
   findByKey(idempotencyKey: string): Promise<Transaction | null>;
   listByExecution(executionId: string): Promise<Transaction[]>;
   /** CREATED -> SUBMITTED, storing the UserOperation hash. Null if it was not CREATED. */
+  /**
+   * Records the UserOperation hash on a step that has NOT been sent yet (status CREATED), so a crash during
+   * or right after the send leaves a hash to look up on chain. The hash is computable before submitting.
+   * Returns null unless the row is CREATED and has no hash yet (or already has this same hash).
+   */
+  recordUserOpHash(id: string, userOpHash: string): Promise<Transaction | null>;
   markSubmitted(id: string, fields: { userOpHash: string; now: Date }): Promise<Transaction | null>;
   /** SUBMITTED / CONFIRMING / UNKNOWN -> CONFIRMED or FAILED from an on-chain receipt. */
   markIncluded(

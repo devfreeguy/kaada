@@ -51,6 +51,14 @@ export function createExecutionTransactionRepository(db: Db): ExecutionTransacti
       return rows.map(toExecutionTransaction);
     },
 
+    async recordUserOpHash(id, userOpHash) {
+      const { count } = await db.transaction.updateMany({
+        where: { id, status: "CREATED", OR: [{ userOpHash: null }, { userOpHash }] },
+        data: { userOpHash },
+      });
+      return count === 1 ? reload(id) : null;
+    },
+
     async markSubmitted(id, { userOpHash, now }) {
       const { count } = await db.transaction.updateMany({
         where: { id, status: "CREATED" },

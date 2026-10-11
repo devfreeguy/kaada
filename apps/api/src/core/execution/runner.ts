@@ -257,7 +257,23 @@ export class ExecutionRunner {
       plan.permissionRequirement.state === "SATISFIED" &&
       (await this.permissionReadBack(live, plan));
     if (plan.accountRequirements.rootSignatureRequired || !permissionReady) {
-      const session = await this.deps.rootActions.request(live, plan);
+      let session;
+      try {
+        session = await this.deps.rootActions.request(live, plan);
+      } catch (error) {
+        // Preparing the operation simulates it. "The account cannot pay the prefund" is a funding
+        // problem to tell the person about, not a failure to throw (found live on Celo Sepolia).
+        if (
+          error instanceof KaadaError &&
+          error.code === "BUNDLER_REJECTED" &&
+          /AA21|prefund/i.test(
+            typeof error.details?.["rpc"] === "string" ? error.details["rpc"] : "",
+          )
+        ) {
+          return { status: "GAS_FUNDING_REQUIRED" };
+        }
+        throw error;
+      }
       await this.deps.unitOfWork.read.executionPlans.transition(
         record.id,
         ["READY"],
@@ -436,6 +452,22 @@ export class ExecutionRunner {
         return { status: "PAYMENT_PENDING" };
       }
 
+      // Once the swap + payout is confirmed nothing before it is ever due again. (Found live: the swap
+      // consumes the allowance, so the re-derived plan "needed" an approval again and the runner tried
+      // to send it after the payment had already completed.)
+      if (
+        rows.some(
+          (tx) => tx.idempotencyKey === stepKey(record.id, "SWAP") && tx.status === "CONFIRMED",
+        )
+      ) {
+        await repositories.executionPlans.transition(
+          record.id,
+          ["SIGNING", "SUBMITTING", "SUBMITTED"],
+          "SETTLING",
+        );
+        return "CONTINUE";
+      }
+
       const loaded = await loadLiveExecution(repositories, this.deps.wallets, record.id);
       if (!loaded.ok) {
         await this.fail(record, loaded.reason);
@@ -479,7 +511,7 @@ export class ExecutionRunner {
       }
       if (next.kind === "SWAP") {
         await repositories.executionPlans.transition(record.id, ["SUBMITTING"], "SUBMITTED");
-        await this.audit(live, EXECUTION_AUDIT_EVENTS.stepSent, stepKey(record.id, "SWAP"));
+        await this.audit(live, EXECUTION_AUDIT_EVENTS.stepSent, record.id, { step: "SWAP" });
       }
     }
     // Many steps in a row: hand back to the state loop, which bounds the total work per call.
@@ -744,15 +776,22 @@ export class ExecutionRunner {
     entityId: string,
     data: Record<string, string> = {},
   ): Promise<void> {
-    await this.uow.read.audit.append({
-      id: createId(),
-      userId: live.wallet.userId,
-      executionId: live.record.id,
-      type,
-      entityType: "execution",
-      entityId,
-      // Identifiers and codes only: never an amount, calldata, a key or a token.
-      data: { authorizationId: live.authorization.id, ...data },
-    });
+    // The audit trail records what happened; it must never decide what happens. A failed write after an
+    // irreversible step (found live: a malformed id threw right after a UserOperation was sent) would
+    // otherwise abort the run and leave a sent payment unattended.
+    try {
+      await this.uow.read.audit.append({
+        id: createId(),
+        userId: live.wallet.userId,
+        executionId: live.record.id,
+        type,
+        entityType: "execution",
+        entityId,
+        // Identifiers and codes only: never an amount, calldata, a key or a token.
+        data: { authorizationId: live.authorization.id, ...data },
+      });
+    } catch {
+      this.log("error", "execution.audit_write_failed", { executionId: live.record.id, type });
+    }
   }
 }

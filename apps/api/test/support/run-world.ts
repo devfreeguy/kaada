@@ -91,8 +91,9 @@ export class FakeKernel implements KernelExecutionPort {
     this.readBacks.push(input.scope);
     return Promise.resolve(this.installed.has(input.sessionKeyAddress));
   }
-  sendDelegatedCalls(input: {
+  async sendDelegatedCalls(input: {
     calls: AccountCall[];
+    beforeSubmit?: (userOpHash: string) => Promise<void>;
   }): ReturnType<KernelExecutionPort["sendDelegatedCalls"]> {
     if (this.sendMode === "reject") {
       return Promise.reject(
@@ -100,15 +101,19 @@ export class FakeKernel implements KernelExecutionPort {
       );
     }
     const userOpHash = hash(`delegated:${this.delegated.length + 1}`);
+    await input.beforeSubmit?.(userOpHash);
     this.delegated.push({ calls: input.calls, hash: userOpHash });
-    if (this.sendMode === "throw") return Promise.reject(new Error("socket closed after sending"));
+    // The swap spends the approved allowance, like a real reactor does.
+    if (input.calls.length === 2) this.world.chain.allowance = 0n;
     // An approval changes what the chain shows, like a real one would once included.
     for (const call of input.calls) {
       if (call.data.startsWith("0x095ea7b3")) {
         this.world.chain.allowance = BigInt(`0x${call.data.slice(-64)}`);
       }
     }
-    return Promise.resolve({ userOpHash });
+    // "throw": the bundler HAS the operation, but the process never learns that.
+    if (this.sendMode === "throw") throw new Error("socket closed after sending");
+    return { userOpHash };
   }
   getUserOperationReceipt(userOpHash: string): Promise<OperationReceipt> {
     const pinned = this.receipts.get(userOpHash);
