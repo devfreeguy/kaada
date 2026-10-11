@@ -256,6 +256,67 @@ export function createExecutionPlanRepository(db: Db): ExecutionPlanRepository {
       return { status: "ACQUIRED", record };
     },
 
+    async releaseBeforeSubmission(id, failureCode, now) {
+      const locked = await db.$queryRaw<
+        { status: string; paymentAuthorizationId: string | null; consumedAt: Date | null }[]
+      >`SELECT "status", "paymentAuthorizationId", "authorizationConsumedAt" AS "consumedAt" FROM "Execution" WHERE "id" = ${id}::uuid FOR UPDATE`;
+      const row = locked[0];
+      if (
+        !row ||
+        !row.paymentAuthorizationId ||
+        !row.consumedAt ||
+        (row.status !== "SIGNING" && row.status !== "SUBMITTING")
+      ) {
+        return "NOT_ELIGIBLE";
+      }
+      // Every PAYMENT step must be a bundler rejection that never had a hash. Wallet setup is separate.
+      const steps = await db.transaction.findMany({
+        where: { executionId: id, type: { not: "PERMISSION_INSTALL" } },
+      });
+      const rejected = steps.filter(
+        (step) =>
+          step.status === "FAILED" &&
+          step.failureCode === "BUNDLER_REJECTED" &&
+          step.userOpHash === null &&
+          step.hash === null,
+      );
+      if (rejected.length === 0 || rejected.length !== steps.length) return "NOT_ELIGIBLE";
+
+      const authorization = await db.paymentAuthorization.findUnique({
+        where: { id: row.paymentAuthorizationId },
+      });
+      if (!authorization || authorization.status !== "CONSUMED" || authorization.expiresAt <= now) {
+        return "NOT_ELIGIBLE";
+      }
+      const otherActive = await db.paymentAuthorization.count({
+        where: { intentId: authorization.intentId, status: "ACTIVE" },
+      });
+      if (otherActive > 0) return "NOT_ELIGIBLE";
+
+      const restored = await db.paymentAuthorization.updateMany({
+        where: { id: authorization.id, status: "CONSUMED" },
+        data: { status: "ACTIVE", consumedAt: null },
+      });
+      if (restored.count !== 1) return "NOT_ELIGIBLE";
+      for (const step of rejected) {
+        await db.transaction.update({
+          where: { id: step.id },
+          data: { idempotencyKey: `${step.idempotencyKey ?? step.id}#released:${step.id}` },
+        });
+      }
+      await db.execution.update({
+        where: { id },
+        data: {
+          status: "FAILED",
+          failureCode,
+          failedAt: now,
+          authorizationConsumedAt: null,
+          startedAt: null,
+        },
+      });
+      return "RELEASED";
+    },
+
     async listByStatus(statuses, limit) {
       const rows = await db.execution.findMany({
         where: { status: { in: [...statuses] }, paymentAuthorizationId: { not: null } },

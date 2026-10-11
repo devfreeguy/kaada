@@ -195,8 +195,8 @@ export async function firmWorld(
     void logs.push({ level, event, fields });
   const provider = new TextileFirmQuoteProvider({ client, timeoutMs: 75_000, log });
   const cipher = new AesGcmSecretCipher([{ version: 1, key: SECRET_KEY }]);
-  const firm = createFirmStores(w.r.world.authorization.payments);
   const run = createRunStores();
+  const firm = createFirmStores(w.r.world.authorization.payments, run.transactions);
 
   const chain = { allowance: 0n, deployed: false };
   const permissions: DelegatedPermission[] = [];

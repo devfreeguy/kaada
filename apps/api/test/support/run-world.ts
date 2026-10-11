@@ -40,6 +40,12 @@ export class FakeKernel implements KernelExecutionPort {
   sessionKeys: string[] = [];
   /** How the next sends behave. */
   sendMode: "ok" | "reject" | "throw" = "ok";
+  /** Reject only the swap batch (earlier steps go through). Rejection happens before any hash exists. */
+  rejectSwapOnly = false;
+  /** Reject AFTER the hash was persisted and the signed operation went out of the signer's hands. */
+  rejectAfterHash = false;
+  /** Runs at the start of every delegated send (to move the clock, for instance). */
+  onSend: (() => void) | undefined;
   /** How the receipt lookups behave. */
   receiptMode: "included" | "pending" | "throw" | "revert" = "included";
   /** Receipts the test pins per user operation hash. */
@@ -95,13 +101,17 @@ export class FakeKernel implements KernelExecutionPort {
     calls: AccountCall[];
     beforeSubmit?: (userOpHash: string) => Promise<void>;
   }): ReturnType<KernelExecutionPort["sendDelegatedCalls"]> {
-    if (this.sendMode === "reject") {
+    this.onSend?.();
+    if (this.sendMode === "reject" || (this.rejectSwapOnly && input.calls.length === 2)) {
       return Promise.reject(
         new KaadaError("BUNDLER_REJECTED", "the bundler refused the operation"),
       );
     }
     const userOpHash = hash(`delegated:${this.delegated.length + 1}`);
     await input.beforeSubmit?.(userOpHash);
+    if (this.rejectAfterHash) {
+      throw new KaadaError("BUNDLER_REJECTED", "the bundler refused the signed operation");
+    }
     this.delegated.push({ calls: input.calls, hash: userOpHash });
     // The swap spends the approved allowance, like a real reactor does.
     if (input.calls.length === 2) this.world.chain.allowance = 0n;

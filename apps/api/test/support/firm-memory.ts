@@ -5,6 +5,7 @@ import type {
   ExecutionSecretRepository,
   FirmQuoteAttempt,
   FirmQuoteAttemptRepository,
+  Transaction,
 } from "@kaada/domain";
 
 /*
@@ -24,7 +25,10 @@ export interface FirmStores {
   };
 }
 
-export function createFirmStores(payments: PaymentAuthorization[] = []): FirmStores {
+export function createFirmStores(
+  payments: PaymentAuthorization[] = [],
+  transactions: Transaction[] = [],
+): FirmStores {
   const attempts: FirmQuoteAttempt[] = [];
   const secrets: FirmStores["secrets"] = [];
   const plans: ExecutionPlanRecord[] = [];
@@ -171,6 +175,42 @@ export function createFirmStores(payments: PaymentAuthorization[] = []): FirmSto
       else if (userActionKind !== undefined) p.userActionKind = userActionKind;
       if (plan) p.plan = plan;
       return Promise.resolve(copy(p));
+    },
+    releaseBeforeSubmission: (id, failureCode, now) => {
+      // Same rule as the database: every payment step is a hashless bundler rejection, the authorization
+      // is CONSUMED, unexpired and has no ACTIVE sibling; then all of it moves together.
+      const p = plans.find((x) => x.id === id);
+      if (!p || !p.paymentAuthorizationId || !p.authorizationConsumedAt) {
+        return Promise.resolve("NOT_ELIGIBLE" as const);
+      }
+      if (p.status !== "SIGNING" && p.status !== "SUBMITTING") {
+        return Promise.resolve("NOT_ELIGIBLE" as const);
+      }
+      const steps = transactions.filter(
+        (t) => t.executionId === id && t.type !== "PERMISSION_INSTALL",
+      );
+      const rejected = steps.filter(
+        (t) =>
+          t.status === "FAILED" && t.failureCode === "BUNDLER_REJECTED" && !t.userOpHash && !t.hash,
+      );
+      if (rejected.length === 0 || rejected.length !== steps.length) {
+        return Promise.resolve("NOT_ELIGIBLE" as const);
+      }
+      const auth = payments.find((a) => a.id === p.paymentAuthorizationId);
+      if (!auth || auth.status !== "CONSUMED" || auth.expiresAt.getTime() <= now.getTime()) {
+        return Promise.resolve("NOT_ELIGIBLE" as const);
+      }
+      if (payments.some((a) => a.intentId === auth.intentId && a.status === "ACTIVE")) {
+        return Promise.resolve("NOT_ELIGIBLE" as const);
+      }
+      auth.status = "ACTIVE";
+      delete auth.consumedAt;
+      for (const t of rejected) t.idempotencyKey = `${t.idempotencyKey ?? t.id}#released:${t.id}`;
+      p.status = "FAILED";
+      p.failureCode = failureCode;
+      delete p.authorizationConsumedAt;
+      p.updatedAt = now;
+      return Promise.resolve("RELEASED" as const);
     },
     acquire: (id, now) => {
       // One synchronous block: lock-check, consume and move, like the row lock + transaction.

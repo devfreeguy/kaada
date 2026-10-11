@@ -522,6 +522,22 @@ export class ExecutionRunner {
     if (error instanceof KaadaError) {
       if (error.code === "BUNDLER_UNAVAILABLE") return { status: "PAYMENT_PENDING" };
       if (error.code === "BUNDLER_REJECTED") {
+        // A refusal before anything was signed-and-submitted (no hash, no earlier payment step) sent
+        // nothing and moved nothing: give the authorization back. Anything else keeps it consumed.
+        const released = await this.uow.transaction((tx) =>
+          tx.executionPlans.releaseBeforeSubmission(record.id, "BUNDLER_REJECTED", this.now()),
+        );
+        if (released === "RELEASED") {
+          const loaded = await loadLiveExecution(this.uow.read, this.deps.wallets, record.id);
+          if (loaded.ok) {
+            await this.audit(
+              loaded.live,
+              "authorization.payment_authorization_released",
+              loaded.live.authorization.id,
+            );
+          }
+          return { status: "PAYMENT_FAILED", code: "BUNDLER_REJECTED" };
+        }
         await this.fail(record, "BUNDLER_REJECTED");
         return { status: "PAYMENT_FAILED", code: "BUNDLER_REJECTED" };
       }

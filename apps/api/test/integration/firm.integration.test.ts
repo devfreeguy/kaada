@@ -632,6 +632,142 @@ describe("firm quotes and execution plans on the real database", { skip }, () =>
       );
     });
 
+    it("gives the authorization back only for a provably pre-submission rejection, atomically", async () => {
+      const ctx = await ready("release");
+      const acquired = await uow.transaction((tx) =>
+        tx.executionPlans.acquire(ctx.executionId, new Date()),
+      );
+      assert.equal(acquired.status, "ACQUIRED");
+      const key = `exec:${ctx.executionId}:APPROVAL`;
+      const { transaction } = await repositories.executionTransactions.begin({
+        idempotencyKey: key,
+        executionId: ctx.executionId,
+        type: "APPROVAL",
+        chainId: CELO_CHAIN_ID,
+        fromAddress: ctx.wallet.address ?? "",
+      });
+      await repositories.executionTransactions.markNotSent(
+        transaction.id,
+        "BUNDLER_REJECTED",
+        new Date(),
+      );
+
+      // Two racing releases: exactly one restores the authorization.
+      const results = await Promise.all([
+        uow.transaction((tx) =>
+          tx.executionPlans.releaseBeforeSubmission(
+            ctx.executionId,
+            "BUNDLER_REJECTED",
+            new Date(),
+          ),
+        ),
+        uow.transaction((tx) =>
+          tx.executionPlans.releaseBeforeSubmission(
+            ctx.executionId,
+            "BUNDLER_REJECTED",
+            new Date(),
+          ),
+        ),
+      ]);
+      assert.deepEqual([...results].sort(), ["NOT_ELIGIBLE", "RELEASED"]);
+      const authorization = await repositories.paymentAuthorizations.findById(ctx.authorization.id);
+      assert.equal(authorization?.status, "ACTIVE");
+      assert.equal(authorization?.consumedAt, undefined);
+      const record = await repositories.executionPlans.findById(ctx.executionId);
+      assert.equal(record?.status, "FAILED");
+      assert.equal(record?.authorizationConsumedAt, undefined);
+      // The rejected step's key is retired, so a new attempt can begin the same step cleanly.
+      assert.equal(await repositories.executionTransactions.findByKey(key), null);
+      const fresh = await repositories.executionTransactions.begin({
+        idempotencyKey: key,
+        executionId: ctx.executionId,
+        type: "APPROVAL",
+        chainId: CELO_CHAIN_ID,
+        fromAddress: ctx.wallet.address ?? "",
+      });
+      assert.equal(fresh.created, true);
+    });
+
+    it("keeps the authorization consumed when a hash exists, or an earlier step ran", async () => {
+      const withHash = await ready("holdhash");
+      await uow.transaction((tx) => tx.executionPlans.acquire(withHash.executionId, new Date()));
+      const row = await repositories.executionTransactions.begin({
+        idempotencyKey: `exec:${withHash.executionId}:APPROVAL`,
+        executionId: withHash.executionId,
+        type: "APPROVAL",
+        chainId: CELO_CHAIN_ID,
+        fromAddress: withHash.wallet.address ?? "",
+      });
+      await repositories.executionTransactions.recordUserOpHash(
+        row.transaction.id,
+        `0x${"cd".repeat(32)}`,
+      );
+      await repositories.executionTransactions.markNotSent(
+        row.transaction.id,
+        "BUNDLER_REJECTED",
+        new Date(),
+      );
+      assert.equal(
+        await uow.transaction((tx) =>
+          tx.executionPlans.releaseBeforeSubmission(
+            withHash.executionId,
+            "BUNDLER_REJECTED",
+            new Date(),
+          ),
+        ),
+        "NOT_ELIGIBLE",
+      );
+      assert.equal(
+        (await repositories.paymentAuthorizations.findById(withHash.authorization.id))?.status,
+        "CONSUMED",
+      );
+      assert.equal(
+        (await repositories.executionPlans.findById(withHash.executionId))?.status,
+        "SIGNING",
+      );
+
+      // Not even a clean rejection when another payment step exists (an effect may exist).
+      const earlier = await ready("heldearlier");
+      await uow.transaction((tx) => tx.executionPlans.acquire(earlier.executionId, new Date()));
+      const sent = await repositories.executionTransactions.begin({
+        idempotencyKey: `exec:${earlier.executionId}:APPROVAL`,
+        executionId: earlier.executionId,
+        type: "APPROVAL",
+        chainId: CELO_CHAIN_ID,
+        fromAddress: earlier.wallet.address ?? "",
+      });
+      await repositories.executionTransactions.markSubmitted(sent.transaction.id, {
+        userOpHash: `0x${"ef".repeat(32)}`,
+        now: new Date(),
+      });
+      const rejected = await repositories.executionTransactions.begin({
+        idempotencyKey: `exec:${earlier.executionId}:SWAP`,
+        executionId: earlier.executionId,
+        type: "SWAP",
+        chainId: CELO_CHAIN_ID,
+        fromAddress: earlier.wallet.address ?? "",
+      });
+      await repositories.executionTransactions.markNotSent(
+        rejected.transaction.id,
+        "BUNDLER_REJECTED",
+        new Date(),
+      );
+      assert.equal(
+        await uow.transaction((tx) =>
+          tx.executionPlans.releaseBeforeSubmission(
+            earlier.executionId,
+            "BUNDLER_REJECTED",
+            new Date(),
+          ),
+        ),
+        "NOT_ELIGIBLE",
+      );
+      assert.equal(
+        (await repositories.paymentAuthorizations.findById(earlier.authorization.id))?.status,
+        "CONSUMED",
+      );
+    });
+
     it("destroys a secret by tombstone and the database keeps it consistent", async () => {
       const id = createId();
       const sealed = new AesGcmSecretCipher([{ version: 1, key: KEY }]).encrypt("x", `ctx:${id}`);

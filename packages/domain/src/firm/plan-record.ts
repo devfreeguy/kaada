@@ -91,6 +91,20 @@ export interface ExecutionPlanRepository {
    * all of it happens or none of it does; of racing callers exactly one is ACQUIRED.
    */
   acquire(id: string, now: Date): Promise<AcquireResult>;
+  /**
+   * The ONE way a consumed authorization is given back. In the caller's transaction: lock the row and
+   * restore the payment authorization (CONSUMED -> ACTIVE, if it has not expired and no other ACTIVE one
+   * exists for the intent) and fail the execution, but ONLY when the attempt is provably pre-submission:
+   * every payment step recorded is a bundler REJECTION with no userOpHash and no transaction hash (wallet
+   * setup rows are ignored). Anything else - a hash that exists, an ambiguous or sent step, a confirmed
+   * earlier step - returns NOT_ELIGIBLE and changes nothing. The rejected rows' idempotency keys are retired
+   * so a new attempt on the same record starts clean.
+   */
+  releaseBeforeSubmission(
+    id: string,
+    failureCode: string,
+    now: Date,
+  ): Promise<"RELEASED" | "NOT_ELIGIBLE">;
   /** Records in the given statuses, oldest first (for reconciliation). */
   listByStatus(
     statuses: readonly PlanRecordStatus[],

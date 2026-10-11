@@ -48,11 +48,21 @@ UserOperation. The batch is atomic: if the swap delivers less than the transfer,
 `READY`, consume the `PaymentAuthorization` (`ACTIVE` and unexpired), set `SIGNING` and `authorizationConsumedAt`. Many
 racing callers produce exactly one winner; a failure rolls both back. The consumption therefore happens immediately
 before the first irreversible payment step - **not** on quote, plan, deployment or permission install. A failure after
-that point keeps the authorization consumed (no silent replay); the person authorizes again. A database check
+that point keeps the authorization consumed (no silent replay) - with ONE exception, below. A database check
 (`Execution_consumed_before_signing`) refuses any payment status from `SIGNING` on without `authorizationConsumedAt`.
 
 If the firm quote has too little time left, **one** refresh is allowed under the same authorization (a new firm quote,
 within its attempt cap). The second time it is a stop (`REAUTHORIZATION_REQUIRED`), not a loop.
+
+### The one exception: a provably pre-submission rejection gives the authorization back
+
+When the bundler **definitely refuses** a payment step _before anything was signed-and-submitted_, nothing was sent and nothing moved, so
+`ExecutionPlanRepository.releaseBeforeSubmission` restores the authorization (`CONSUMED -> ACTIVE`) in one database transaction with
+the execution (`FAILED`) and the rejected step rows (their idempotency keys are retired so a new attempt starts clean). It applies **only if**
+every payment step recorded is a `BUNDLER_REJECTED` row with **no `userOpHash` and no transaction hash**, the authorization is still unexpired,
+and no other ACTIVE authorization exists for the intent. It never applies when a hash exists (the signed operation may have escaped), when a send was
+ambiguous (`UNKNOWN`), when any earlier payment step ran (an approval already set an allowance on chain), or after a revert. Wallet-setup rows are
+ignored. Nothing resumes by itself: a person must prepare the payment again; the firm quote is reused only while it is still valid.
 
 ## Never blindly resending
 
@@ -273,7 +283,7 @@ chain id 42220; only the transport is Sepolia. This is test wiring, not a change
 | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Fresh payment, current code               | `ROOT_ACTION_REQUIRED` -> passkey root action through Alto -> `PAYMENT_SENT`; transitions `REQUIRES_USER_ACTION -> READY -> acquire:ACQUIRED -> SUBMITTING -> SUBMITTED -> SETTLING -> COMPLETED`. Rows `CONFIRMED` with a `userOpHash` and a different `txHash`. Recipient +exactly 100 tBRL, wallet -exactly 20 tUSDT, allowance 0 afterwards (bounded and fully consumed). Authorization consumed after the root action and before the first payment row. Settled amounts recorded, claim tombstoned, one provider submit |
 | Crash after the bundler accepted the swap | The process-1 run returned `PAYMENT_PENDING`; the execution sat in `SUBMITTING`; the SWAP row was `UNKNOWN` **with its `userOpHash` already stored** and no `txHash`. A brand-new runner over the same database (`reconcile`) found the operation by that stored hash and completed it: `PAYMENT_SENT`, the same `userOpHash`, `txHash` filled in. **One** SWAP row, **one** payout on chain, **no resubmission**, authorization stayed `CONSUMED`                                                                           |
-| Known bundler rejection                   | A tampered approve spender (outside the permission) is refused by the bundler during preparation: the row is `FAILED` / `BUNDLER_REJECTED` with **no** `userOpHash` (nothing was submitted, unlike the ambiguous case above); the run returned `PAYMENT_FAILED`; running again created no new row and sent nothing; no funds moved; the authorization stays `CONSUMED` (an attempt was made; a new payment needs a new authorization)                                                                                        |
+| Known bundler rejection                   | A tampered approve spender (outside the permission) is refused by the bundler during preparation: the row is `FAILED` / `BUNDLER_REJECTED` with **no** `userOpHash` (nothing was submitted, unlike the ambiguous case above); the run returned `PAYMENT_FAILED`; running again created no new row and sent nothing; no funds moved; the authorization stayed `CONSUMED` **at the time of that live run**; the release described above was added afterwards                                                                   |
 
 The racing-runner scenario was **not** repeated: the later fixes touched the scope, the send path and the audit write, not the lock
 (`acquire`) or the single-winner transition.
@@ -286,5 +296,5 @@ fresh process.
 
 A production-grade bundler on Celo (Alto here is local, safe mode off); a real browser passkey (software authenticator only); Textile; USDT and
 the USDT reset-to-zero path; mainnet; the application's own HTTP/UI path (the runner was driven directly, with the root-action service called
-as the page would). A definitely-rejected operation currently keeps the authorization consumed; whether to refund the authorization when a
-rejection provably sent nothing is a product decision, not decided here.
+as the page would). A definitely-rejected operation that provably sent nothing now releases the authorization (see above); this was verified offline and on the real
+database, not repeated on Sepolia.

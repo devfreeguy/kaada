@@ -201,21 +201,6 @@ describe("the execution lock and the authorization", () => {
     assert.equal((await authorization(w))?.status, "ACTIVE");
   });
 
-  it("a failure after consumption keeps the authorization consumed", async () => {
-    const w = await runWorld();
-    await ready(w);
-    w.kernel.sendMode = "reject";
-    const outcome = await w.runner.run(w.executionId);
-    assert.equal(outcome.status, "PAYMENT_FAILED");
-    assert.equal((await record(w))?.status, "FAILED");
-    assert.equal((await authorization(w))?.status, "CONSUMED", "no silent replay");
-    assert.equal((await w.runner.run(w.executionId)).status, "PAYMENT_FAILED");
-    const attempts = w.run.transactions.filter((t) => t.type === "APPROVAL");
-    assert.equal(attempts.length, 1, "the rejected attempt is never repeated");
-    assert.equal(attempts[0]?.status, "FAILED");
-    assert.equal(w.kernel.delegated.length, 0, "the bundler took nothing");
-  });
-
   it("an expired authorization is a re-authorization, not a payment", async () => {
     const w = await runWorld();
     await ready(w);
@@ -675,5 +660,104 @@ describe("a crash after the bundler accepted an operation (found by design revie
     await w.runner.reconcile();
     assert.equal((await record(w))?.status, "COMPLETED");
     assert.equal(w.kernel.delegated.filter((d) => d.calls.length === 2).length, 1);
+  });
+});
+
+describe("giving the authorization back (only for a provably pre-submission failure)", () => {
+  it("a definite rejection before anything was signed-and-submitted releases the authorization, and it can be used again", async () => {
+    const w = await runWorld();
+    await ready(w);
+    w.kernel.sendMode = "reject";
+    assert.deepEqual(await w.runner.run(w.executionId), {
+      status: "PAYMENT_FAILED",
+      code: "BUNDLER_REJECTED",
+    });
+    assert.equal((await record(w))?.status, "FAILED");
+    const auth = await authorization(w);
+    assert.equal(auth?.status, "ACTIVE", "released: no hash, nothing sent");
+    assert.equal(auth?.consumedAt, undefined);
+    assert.equal((await record(w))?.authorizationConsumedAt, undefined);
+    assert.equal(w.kernel.delegated.length, 0, "the bundler took nothing");
+    // The rejected attempt is retired, not repeated, and never blindly: nothing resumes by itself.
+    assert.equal((await w.runner.run(w.executionId)).status, "PAYMENT_FAILED");
+    assert.equal(w.kernel.delegated.length, 0);
+
+    // The same authorization pays once the problem is gone: prepare again, then run.
+    w.kernel.sendMode = "ok";
+    const again = await w.service.prepare(w.authorization.id);
+    assert.equal(again.status, "EXECUTION_READY");
+    assert.equal((await w.runner.run(w.executionId)).status, "PAYMENT_SENT");
+    assert.equal((await authorization(w))?.status, "CONSUMED");
+    assert.equal(
+      w.run.transactions.filter((t) => t.type === "SWAP" && t.status === "CONFIRMED").length,
+      1,
+    );
+  });
+
+  it("an ambiguous send keeps the authorization consumed", async () => {
+    const w = await runWorld();
+    await ready(w);
+    w.kernel.sendMode = "throw";
+    assert.equal((await w.runner.run(w.executionId)).status, "PAYMENT_PENDING");
+    assert.equal((await authorization(w))?.status, "CONSUMED");
+  });
+
+  it("a rejection AFTER the signed operation's hash exists keeps it consumed (the operation may have escaped)", async () => {
+    const w = await runWorld();
+    await ready(w);
+    w.kernel.rejectAfterHash = true;
+    assert.equal((await w.runner.run(w.executionId)).status, "PAYMENT_FAILED");
+    const row = w.run.transactions.find((t) => t.type === "APPROVAL");
+    assert.ok(row?.userOpHash, "a hash was recorded");
+    assert.equal((await authorization(w))?.status, "CONSUMED");
+    assert.equal((await record(w))?.status, "FAILED");
+  });
+
+  it("a rejection after an earlier payment step already ran keeps it consumed (an on-chain effect exists)", async () => {
+    const w = await runWorld();
+    await ready(w);
+    w.kernel.rejectSwapOnly = true; // the approval goes through and is confirmed; the swap is refused
+    assert.equal((await w.runner.run(w.executionId)).status, "PAYMENT_FAILED");
+    assert.equal(
+      w.run.transactions.find((t) => t.type === "APPROVAL")?.status,
+      "CONFIRMED",
+      "the allowance was set on chain",
+    );
+    assert.equal((await authorization(w))?.status, "CONSUMED");
+  });
+
+  it("a reverted step keeps it consumed", async () => {
+    const w = await runWorld();
+    await ready(w);
+    w.kernel.receiptMode = "revert";
+    assert.equal((await w.runner.run(w.executionId)).status, "PAYMENT_FAILED");
+    assert.equal((await authorization(w))?.status, "CONSUMED");
+  });
+
+  it("is not released once the authorization has expired", async () => {
+    const w = await runWorld();
+    await ready(w);
+    w.kernel.sendMode = "reject";
+    // It lapses after it was consumed and before the rejection is handled.
+    w.kernel.onSend = () => {
+      w.w.r.clock.now = new Date(w.authorization.expiresAt.getTime() + 1_000);
+    };
+    assert.equal((await w.runner.run(w.executionId)).status, "PAYMENT_FAILED");
+    assert.equal((await authorization(w))?.status, "CONSUMED");
+  });
+
+  it("is not released when a different authorization is already ACTIVE for the same intent", async () => {
+    const w = await runWorld();
+    await ready(w);
+    w.kernel.sendMode = "reject";
+    w.kernel.onSend = () => {
+      w.w.r.world.authorization.payments.push({
+        ...w.authorization,
+        id: "00000000-0000-4000-8000-0000000000f1",
+        status: "ACTIVE",
+      });
+    };
+    assert.equal((await w.runner.run(w.executionId)).status, "PAYMENT_FAILED");
+    assert.equal((await authorization(w))?.status, "CONSUMED");
   });
 });
