@@ -136,7 +136,8 @@ export const orderStatusSchema = z.looseObject({
     sellAmount: atomicAmountSchema.optional(),
     buyAmount: atomicAmountSchema.optional(),
     feeAmount: atomicAmountSchema.optional(),
-    txHash: z.string().optional(),
+    // null until the order is submitted (observed live on the TEST environment).
+    txHash: z.string().nullish(),
     failReason: z.string().nullish(),
   }),
 });

@@ -613,8 +613,12 @@ export class ExecutionRunner {
     // Tell the provider (a courtesy it documents as repeat-safe), then read how the order settled.
     const claim = await this.claimToken(live);
     let status: ProviderOrderStatus;
-    try {
-      if (record.providerSubmitState !== "SUBMITTED") {
+    // Reporting the hash is OPTIONAL for the provider (it reconciles settlement from the chain), so a failed
+    // report must not stop us from reading the order's real status. Found on the Textile TEST environment:
+    // a submit after the accept window closed is a 409 ("RFQ accept window closed") even though the swap
+    // executed and the order fills.
+    if (record.providerSubmitState !== "SUBMITTED") {
+      try {
         await this.deps.orders.submit({
           providerQuoteId: live.quote.providerQuoteId,
           claimToken: claim,
@@ -624,7 +628,11 @@ export class ExecutionRunner {
           providerSubmitState: "SUBMITTED",
         });
         await this.audit(live, EXECUTION_AUDIT_EVENTS.providerSubmitted, record.id);
+      } catch {
+        this.log("warn", "execution.provider_submit_failed", { executionId: record.id });
       }
+    }
+    try {
       status = await this.deps.orders.status({
         providerQuoteId: live.quote.providerQuoteId,
         claimToken: claim,

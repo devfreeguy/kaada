@@ -267,3 +267,46 @@ After the swap UserOperation is included, Kaada reports the on-chain transaction
 
 Only `TextileOrderProvider` calls these, and only the execution runner calls the provider. The claim token is decrypted
 for the length of one request. There is no cancel call. See `docs/execution.md`.
+
+## TEST-environment validation (BNB Smart Chain testnet, chain 97)
+
+Script: `apps/api/test/testnet/textile-bsc-testnet.ts` (testnet only, not part of `pnpm test`). It drives the **production**
+`TextileClient`, `TextileFirmQuoteProvider`, `TextileOrderProvider` and approval inspector with a throwaway EOA that signs the
+approval and swap itself. This is a **provider-contract** validation only: nothing here touches Celo, the Kernel, or the database
+orchestration, and the application still refuses `TEXTILE_ENV=test`. The one-time claim token is AES-256-GCM encrypted (bound to its
+rfq id) before it reaches the persisted state and is never printed.
+
+Corridor: cNGN (`0x8a07...9dA8`, 6 decimals) <-> USDT (`0x3376...4dDd`, 18 decimals), reactor `0x65B2...a7Df`, 5 bps fee. Base Sepolia
+was not used (it returned `corridor_unavailable` in Build 9.1). Celo Sepolia is unsupported by Textile (a 400), as documented.
+
+| Check                                                                        | Result                                                                                                                                                                                                                                |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Preview, EXACT_INPUT and EXACT_OUTPUT, both directions                       | PASS; the fixed side is exact in all four                                                                                                                                                                                             |
+| Firm RFQ                                                                     | PASS: `rfqId`, taker bound to the wallet, a one-time claim token, `expiresAt = orderDeadline = latestOrderDeadline` (60 s), unsigned `approval` and `swap` (`value` "0", `swap.to` = reactor, a stable selector `0x0d7a16c3`)         |
+| Approval                                                                     | the provider's approval passes Kaada's inspector (exact token, spender, amount; not unlimited); bounded (`allowance == takerPays`); consumed by each swap (so every payment needs a fresh approval)                                   |
+| EXACT_INPUT settlement (sell 100 cNGN)                                       | PASS: cNGN -100000000 exactly; USDT +73230084966675000 == the firm quote's `buyAmount`; status `FILLED` with the same amounts                                                                                                         |
+| EXACT_OUTPUT settlement (buy 0.05 USDT)                                      | PASS: USDT +50000000000000000 exactly; cNGN -68277948 == the firm quote's `takerPays`; `FILLED`                                                                                                                                       |
+| Insufficient balance (unfunded taker)                                        | PASS: `400 insufficient_funds` -> `INSUFFICIENT_FUNDS_AT_PROVIDER`, no slot held                                                                                                                                                      |
+| No maker                                                                     | reproduced: buying 50 USDT (far beyond depth) returned `no_quote` / `no_valid_quote` -> `NO_QUOTE`                                                                                                                                    |
+| Expired quote                                                                | PASS: Kaada refuses to broadcast after `expiresAt`; the order stays `quoted` at the provider (it does not become `expired` unsubmitted); a late submit is `409 conflict "RFQ accept window closed"`                                   |
+| Crash after broadcast, recovery in a fresh process from persisted state only | PASS: the claim token decrypts, the swap receipt is found by its stored hash, submit + status complete (`FILLED`), balances moved exactly once. A repeated submit of the same hash is idempotent; a different hash is refused (`409`) |
+| Outstanding-quote cap                                                        | PASS: six firm requests -> four `QUOTED`, then `PROVIDER_CAPACITY_REACHED` (429 without `Retry-After`)                                                                                                                                |
+
+Semantics: **EXACT_INPUT** debits exactly `sellAmount`, fee-inclusive (`takerPays == sellAmount` in every sample) and delivers `buyAmount`;
+**EXACT_OUTPUT** delivers exactly `buyAmount` and debits `takerPays`. Settled on-chain balances equalled the firm quote to the atom in
+every settlement. `quoted` status carries `txHash: null`, `submittedAt: null`, `filledAt: null`.
+
+### Bugs found by this run (fixed, with offline regression tests)
+
+1. **The order status schema rejected a valid response.** A never-submitted order has `"txHash": null`; the schema allowed only a string or
+   absence, so the whole `200` was treated as malformed and a perfectly readable status became `PROVIDER_UNAVAILABLE`. `txHash` is now nullish.
+2. **A refused `submit` blocked completion.** The runner treated any submit failure as "keep waiting" and never read the order's status. Textile
+   documents the report as optional (settlement is reconciled from the chain), and a submit after the accept window is a `409`. With a swap
+   that was included after `expiresAt` (slow bundler or chain), the payment would have stayed pending although the order fills. A failed report is
+   now logged and the status is still read; a status of `FILLED` completes the payment.
+
+### Not covered here
+
+A firm quote on **Celo mainnet** (Textile has no Celo test deployment, so the Celo corridor, its liquidity and the wBRL/USDT tokens are
+validated only by previews and by the Celo Sepolia fixtures), the app's own HTTP path for Textile TEST (the config refuses `TEXTILE_ENV=test`),
+Permit2, webhooks, and the late-fill window (a failed or expired order can flip to filled for 24 h).

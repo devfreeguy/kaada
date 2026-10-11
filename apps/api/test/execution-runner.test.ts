@@ -283,15 +283,27 @@ describe("never blindly resending", () => {
     assert.equal(w.orders.submits.length, 0, "nothing is reported to the provider");
   });
 
-  it("an unreachable provider after the swap is pending, not failed, and not resent", async () => {
+  it("a provider that is unreachable after the swap is pending, not failed, and not resent", async () => {
     const w = await runWorld();
     await ready(w);
     w.orders.submitFails = true;
+    w.orders.statusFails = true;
     assert.equal((await w.runner.run(w.executionId)).status, "PAYMENT_PENDING");
     assert.equal(w.kernel.delegated.length, 2);
     w.orders.submitFails = false;
+    w.orders.statusFails = false;
     assert.equal((await w.runner.run(w.executionId)).status, "PAYMENT_SENT");
     assert.equal(w.kernel.delegated.length, 2);
+  });
+
+  it("a REFUSED report of the hash does not block completion: the order's own status decides (found on Textile TEST)", async () => {
+    const w = await runWorld();
+    await ready(w);
+    // Textile answers a late submit with 409 "RFQ accept window closed"; the order still fills.
+    w.orders.submitFails = true;
+    assert.equal((await w.runner.run(w.executionId)).status, "PAYMENT_SENT");
+    assert.equal((await record(w))?.status, "COMPLETED");
+    assert.equal(w.kernel.delegated.length, 2, "nothing was sent again");
   });
 });
 
@@ -759,5 +771,47 @@ describe("giving the authorization back (only for a provably pre-submission fail
     };
     assert.equal((await w.runner.run(w.executionId)).status, "PAYMENT_FAILED");
     assert.equal((await authorization(w))?.status, "CONSUMED");
+  });
+});
+
+describe("the order status as Textile really answers it (found on the TEST environment)", () => {
+  it("accepts a never-submitted order whose txHash and failReason are null", async () => {
+    const { TextileOrderProvider } = await import("../src/infrastructure/fx/textile/index.js");
+    const { orderStatusSchema } = await import("../src/infrastructure/fx/textile/schemas.js");
+    const wire = {
+      data: {
+        rfqId: "rfq_abc",
+        status: "quoted",
+        lateFillCorrectionClosed: false,
+        chainId: 97,
+        sellAmount: "10000000",
+        buyAmount: "7323008863001000",
+        feeAmount: "4997",
+        txHash: null,
+        submittedAt: null,
+        filledAt: null,
+        failReason: null,
+        noQuoteReason: null,
+        routing: { fallbackUsed: false },
+      },
+    };
+    assert.equal(orderStatusSchema.safeParse(wire).success, true);
+    const provider = new TextileOrderProvider({
+      client: {
+        submit: () => Promise.reject(new Error("unused")),
+        status: () =>
+          Promise.resolve({
+            ...orderStatusSchema.parse(wire),
+            meta: { attempts: 1, httpStatus: 200, requestId: "req_test" },
+          }),
+      },
+    });
+    const { SecretValue } = await import("@kaada/domain");
+    const status = await provider.status({
+      providerQuoteId: "rfq_abc",
+      claimToken: new SecretValue("rfqc_x"),
+    });
+    assert.equal(status.state, "QUOTED");
+    assert.equal(status.txHash, undefined);
   });
 });
