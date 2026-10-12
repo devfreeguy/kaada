@@ -1,4 +1,5 @@
 export * from "./assets/index.js";
+export * from "./attestation/index.js";
 export * from "./conversations/index.js";
 export * from "./errors/index.js";
 export * from "./execution/index.js";

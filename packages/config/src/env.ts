@@ -142,6 +142,30 @@ const envSchema = z
       .enum(["true", "false"])
       .default("false")
       .transform((value) => value === "true"),
+    // Device attestation (docs/device-attestation.md): proves, with platform evidence the server verifies, where a native
+    // device key lives. OFF unless exactly "true". It needs DEVICE_KEY_ROOTS_ENABLED and at least one app identity: without
+    // one no key can ever be classed above UNKNOWN, so the combination is refused at start-up.
+    DEVICE_ATTESTATION_ENABLED: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((value) => value === "true"),
+    // "package=sha256hex|sha256hex,package2=sha256hex": the Android apps (and the SHA-256 of each signing certificate) whose
+    // keys Kaada trusts. An attestation of any other app, or of the same app signed by another key, never qualifies.
+    ATTESTATION_ANDROID_APPS: z.string().trim().min(1).optional(),
+    ATTESTATION_ANDROID_MIN_LEVEL: z.enum(["TEE", "STRONGBOX"]).default("TEE"),
+    // "TEAMID.com.bundle.id,...": the iOS App IDs App Attest evidence is accepted for.
+    ATTESTATION_IOS_APP_IDS: z.string().trim().min(1).optional(),
+    // Accept Apple's sandbox App Attest environment (development builds). Refused in production.
+    ATTESTATION_IOS_ALLOW_DEVELOPMENT: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((value) => value === "true"),
+    ATTESTATION_CHALLENGE_TTL_SECONDS: z.coerce.number().int().min(30).max(900).default(300),
+    // Google's certificate revocation list for Android attestation keys. Unreachable and uncached means evidence is refused.
+    ATTESTATION_REVOCATION_URL: z
+      .url()
+      .default("https://android.googleapis.com/attestation/status"),
+    ATTESTATION_REVOCATION_CACHE_SECONDS: z.coerce.number().int().min(60).max(86_400).default(3600),
     // Which IntentInterpreter the agent uses. "none" disables the agent.
     AGENT_INTERPRETER: z.enum(["none", "mock", "groq"]).default("none"),
     // Which price source routing uses. "none" disables pricing (the agent stops at ROUTING_REQUIRED);
@@ -313,6 +337,30 @@ const envSchema = z
       path: ["RECOVERY_ENABLED"],
     },
   )
+  .refine((env) => parseAndroidApps(env.ATTESTATION_ANDROID_APPS) !== null, {
+    message:
+      'ATTESTATION_ANDROID_APPS must look like "app.id=<64 hex>|<64 hex>,other.app=<64 hex>"',
+    path: ["ATTESTATION_ANDROID_APPS"],
+  })
+  .refine((env) => parseIosAppIds(env.ATTESTATION_IOS_APP_IDS) !== null, {
+    message: 'ATTESTATION_IOS_APP_IDS must look like "TEAMID123.com.example.app,..."',
+    path: ["ATTESTATION_IOS_APP_IDS"],
+  })
+  .refine(
+    (env) =>
+      !env.DEVICE_ATTESTATION_ENABLED ||
+      (env.DEVICE_KEY_ROOTS_ENABLED &&
+        (env.ATTESTATION_ANDROID_APPS !== undefined || env.ATTESTATION_IOS_APP_IDS !== undefined)),
+    {
+      message:
+        "DEVICE_ATTESTATION_ENABLED=true needs DEVICE_KEY_ROOTS_ENABLED=true and ATTESTATION_ANDROID_APPS or ATTESTATION_IOS_APP_IDS",
+      path: ["DEVICE_ATTESTATION_ENABLED"],
+    },
+  )
+  .refine((env) => !(env.NODE_ENV === "production" && env.ATTESTATION_IOS_ALLOW_DEVELOPMENT), {
+    message: "ATTESTATION_IOS_ALLOW_DEVELOPMENT is not allowed in production",
+    path: ["ATTESTATION_IOS_ALLOW_DEVELOPMENT"],
+  })
   .refine(
     (env) =>
       !env.DEVICE_KEY_ROOTS_ENABLED ||
@@ -394,6 +442,17 @@ const envSchema = z
             relayerKeyFile: env.RECOVERY_RELAYER_KEY_FILE,
           },
         }),
+      ...(env.DEVICE_ATTESTATION_ENABLED && {
+        deviceAttestation: {
+          androidApps: parseAndroidApps(env.ATTESTATION_ANDROID_APPS) ?? [],
+          androidMinimumLevel: env.ATTESTATION_ANDROID_MIN_LEVEL,
+          iosAppIds: parseIosAppIds(env.ATTESTATION_IOS_APP_IDS) ?? [],
+          iosAllowDevelopment: env.ATTESTATION_IOS_ALLOW_DEVELOPMENT,
+          challengeTtlMs: env.ATTESTATION_CHALLENGE_TTL_SECONDS * 1000,
+          revocationUrl: env.ATTESTATION_REVOCATION_URL,
+          revocationCacheMs: env.ATTESTATION_REVOCATION_CACHE_SECONDS * 1000,
+        },
+      }),
       ...(env.WALLET_PROVIDER === "kernel" &&
         env.PASSKEY_RP_ID !== undefined &&
         env.PASSKEY_ORIGIN !== undefined && {
@@ -507,6 +566,33 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     throw new ConfigError(`Invalid environment configuration:\n${issues}`);
   }
   return result.data;
+}
+
+export interface AndroidAppIdentity {
+  packageName: string;
+  signatureDigests: string[];
+}
+
+/** "app.id=<64 hex>|<64 hex>,other.app=<64 hex>" → identities; undefined → []; malformed → null. */
+export function parseAndroidApps(raw: string | undefined): AndroidAppIdentity[] | null {
+  if (raw === undefined) return [];
+  const apps: AndroidAppIdentity[] = [];
+  for (const entry of raw.split(",")) {
+    const [packageName, digests, ...extra] = entry.trim().split("=");
+    if (!packageName || !digests || extra.length > 0) return null;
+    if (!/^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+$/.test(packageName)) return null;
+    const list = digests.split("|").map((digest) => digest.trim().toLowerCase());
+    if (!list.every((digest) => /^[0-9a-f]{64}$/.test(digest))) return null;
+    apps.push({ packageName, signatureDigests: list });
+  }
+  return apps;
+}
+
+/** "TEAMID.com.example.app,..." → App IDs; undefined → []; malformed → null. */
+export function parseIosAppIds(raw: string | undefined): string[] | null {
+  if (raw === undefined) return [];
+  const ids = raw.split(",").map((id) => id.trim());
+  return ids.every((id) => /^[A-Z0-9]{10}\.[A-Za-z0-9.-]+$/.test(id)) ? ids : null;
 }
 
 function parseOrigins(raw: string, fallback: string): string[] {

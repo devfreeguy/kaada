@@ -25,6 +25,8 @@ import {
   ROOT_VALIDATOR_DEPLOYER,
 } from "../roots/roots.tokens.js";
 import { WalletModule } from "../wallet/wallet.module.js";
+import { DEVICE_TIER_SERVICE } from "../wallet/wallet.tokens.js";
+import type { DeviceTierService } from "../core/attestation/device-tier-service.js";
 import { RecoveryController } from "./recovery.controller.js";
 import { createRecoveryChainAndAttestor, createRecoveryRuntime } from "./recovery.runtime.js";
 import type { RecoveryRuntime } from "./recovery.runtime.js";
@@ -41,11 +43,12 @@ import { RECOVERY_RUNTIME } from "./recovery.tokens.js";
   providers: [
     {
       provide: RECOVERY_RUNTIME,
-      inject: [DATABASE, APP_CONFIG, TRANSACTION_PIN_SERVICE],
+      inject: [DATABASE, APP_CONFIG, TRANSACTION_PIN_SERVICE, DEVICE_TIER_SERVICE],
       useFactory: (
         database: Database,
         config: AppConfig,
         pins: TransactionPinService | null,
+        deviceTiers: DeviceTierService | null,
       ): RecoveryRuntime | null => {
         const recovery = config.recovery;
         const passkey = config.wallet.passkey;
@@ -88,6 +91,7 @@ import { RECOVERY_RUNTIME } from "./recovery.tokens.js";
           origin: passkey.origin,
           webUrl: config.webUrl,
           challengeSecret: Buffer.from(recovery.setup.challengeSecret, "base64"),
+          ...(deviceTiers && { deviceTiers }),
           policy: {
             defaultDelaySeconds: recovery.delaySeconds,
             minDelaySeconds: recovery.minDelaySeconds,
@@ -107,6 +111,7 @@ import { RECOVERY_RUNTIME } from "./recovery.tokens.js";
         ROOT_CREDENTIAL_SERVICE,
         ROOT_ADAPTERS,
         ROOT_VALIDATOR_DEPLOYER,
+        DEVICE_TIER_SERVICE,
       ],
       useFactory: (
         database: Database,
@@ -116,6 +121,7 @@ import { RECOVERY_RUNTIME } from "./recovery.tokens.js";
         roots: RootCredentialService | null,
         adapters: RootAdapters | null,
         validators: RootValidatorDeployer | null,
+        deviceTiers: DeviceTierService | null,
       ): RootChangeService | null => {
         const passkey = config.wallet.passkey;
         const deviceKeyRoots = config.wallet.deviceKeyRoots;
@@ -155,6 +161,7 @@ import { RECOVERY_RUNTIME } from "./recovery.tokens.js";
           passkeyVerifier: new SimpleWebAuthnVerifier(),
           rpId: passkey.rpId,
           origin: passkey.origin,
+          ...(deviceTiers && { deviceTiers }),
         });
       },
     },

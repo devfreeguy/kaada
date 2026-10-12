@@ -379,6 +379,7 @@ export type WalletCredentialStatus = (typeof WalletCredentialStatus)[keyof typeo
 export const DeviceSecurityTier = {
   UNKNOWN: 'UNKNOWN',
   WEB_NON_EXTRACTABLE: 'WEB_NON_EXTRACTABLE',
+  APP_ATTESTED_DEVICE: 'APP_ATTESTED_DEVICE',
   TRUSTED_DEVICE: 'TRUSTED_DEVICE'
 } as const
 
@@ -421,3 +422,38 @@ export const RecoveryTerminator = {
 } as const
 
 export type RecoveryTerminator = (typeof RecoveryTerminator)[keyof typeof RecoveryTerminator]
+
+
+export const AttestationPlatform = {
+  ANDROID: 'ANDROID',
+  IOS: 'IOS'
+} as const
+
+export type AttestationPlatform = (typeof AttestationPlatform)[keyof typeof AttestationPlatform]
+
+
+export const AttestationChallengePurpose = {
+  ROOT_ENROLLMENT: 'ROOT_ENROLLMENT',
+  BACKUP_ENROLLMENT: 'BACKUP_ENROLLMENT',
+  RECOVERY_ROOT: 'RECOVERY_ROOT'
+} as const
+
+export type AttestationChallengePurpose = (typeof AttestationChallengePurpose)[keyof typeof AttestationChallengePurpose]
+
+
+export const AttestationResult = {
+  VERIFIED_QUALIFIED: 'VERIFIED_QUALIFIED',
+  VERIFIED_NOT_QUALIFIED: 'VERIFIED_NOT_QUALIFIED',
+  REJECTED: 'REJECTED'
+} as const
+
+export type AttestationResult = (typeof AttestationResult)[keyof typeof AttestationResult]
+
+
+export const AttestationHardwareLevel = {
+  STRONGBOX: 'STRONGBOX',
+  TEE: 'TEE',
+  SOFTWARE: 'SOFTWARE'
+} as const
+
+export type AttestationHardwareLevel = (typeof AttestationHardwareLevel)[keyof typeof AttestationHardwareLevel]

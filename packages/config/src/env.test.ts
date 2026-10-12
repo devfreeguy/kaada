@@ -620,3 +620,78 @@ describe("device-key root configuration", () => {
     }
   });
 });
+
+describe("device attestation configuration", () => {
+  const address = (n: number) => `0x${n.toString(16).padStart(40, "0")}`;
+  const digest = "ab".repeat(32);
+  const ready = {
+    DATABASE_URL: databaseUrl,
+    WALLET_PROVIDER: "kernel",
+    PASSKEY_RP_ID: "kaada.app",
+    PASSKEY_ORIGIN: "https://app.kaada.app",
+    DEVICE_KEY_ROOTS_ENABLED: "true",
+    RECOVERY_PASSKEY_FACTORY_ADDRESS: address(2),
+    RECOVERY_PASSKEY_IMPLEMENTATION_ADDRESS: address(3),
+    RECOVERY_DEVICE_FACTORY_ADDRESS: address(4),
+    RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS: address(5),
+    RECOVERY_RELAYER_KEY_FILE: "/secrets/relayer.key",
+    DEVICE_ATTESTATION_ENABLED: "true",
+    ATTESTATION_ANDROID_APPS: `app.kaada.wallet=${digest}|${"cd".repeat(32)}`,
+    ATTESTATION_IOS_APP_IDS: "ABCDE12345.app.kaada.wallet",
+  };
+
+  it("is off by default and on only when exactly true", () => {
+    assert.equal("deviceAttestation" in loadConfig({ DATABASE_URL: databaseUrl }).wallet, false);
+    assert.throws(() => loadConfig({ ...ready, DEVICE_ATTESTATION_ENABLED: "yes" }), ConfigError);
+  });
+
+  it("parses the accepted app identities and applies the safe defaults", () => {
+    const config = loadConfig(ready).wallet.deviceAttestation;
+    assert.deepEqual(config?.androidApps, [
+      { packageName: "app.kaada.wallet", signatureDigests: [digest, "cd".repeat(32)] },
+    ]);
+    assert.deepEqual(config?.iosAppIds, ["ABCDE12345.app.kaada.wallet"]);
+    assert.equal(config?.androidMinimumLevel, "TEE");
+    assert.equal(config?.iosAllowDevelopment, false);
+    assert.equal(config?.challengeTtlMs, 300_000);
+  });
+
+  it("refuses to start enabled without device-key roots or without any app identity", () => {
+    const { DEVICE_KEY_ROOTS_ENABLED: _off, ...withoutRoots } = ready;
+    assert.throws(() => loadConfig(withoutRoots), ConfigError);
+    const { ATTESTATION_ANDROID_APPS: _a, ATTESTATION_IOS_APP_IDS: _i, ...withoutApps } = ready;
+    assert.throws(() => loadConfig(withoutApps), ConfigError);
+  });
+
+  it("rejects malformed app identities", () => {
+    for (const bad of [
+      "app.kaada.wallet",
+      "nodots=" + digest,
+      `app.kaada.wallet=${digest.slice(1)}`,
+    ]) {
+      assert.throws(
+        () => loadConfig({ ...ready, ATTESTATION_ANDROID_APPS: bad }),
+        ConfigError,
+        bad,
+      );
+    }
+    assert.throws(
+      () => loadConfig({ ...ready, ATTESTATION_IOS_APP_IDS: "short.app" }),
+      ConfigError,
+    );
+  });
+
+  it("never accepts Apple's development environment in production", () => {
+    const production = {
+      ...ready,
+      ATTESTATION_IOS_ALLOW_DEVELOPMENT: "true",
+      NODE_ENV: "production",
+    };
+    assert.throws(() => loadConfig(production), ConfigError);
+    assert.equal(
+      loadConfig({ ...ready, ATTESTATION_IOS_ALLOW_DEVELOPMENT: "true" }).wallet.deviceAttestation
+        ?.iosAllowDevelopment,
+      true,
+    );
+  });
+});

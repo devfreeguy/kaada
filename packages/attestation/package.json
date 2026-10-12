@@ -1,0 +1,44 @@
+{
+  "name": "@kaada/attestation",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "default": "./dist/testing/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
+    "verify:android": "node --import tsx src/cli/verify-android.ts"
+  },
+  "devDependencies": {
+    "@kaada/eslint-config": "workspace:*",
+    "@kaada/tsconfig": "workspace:*",
+    "@peculiar/x509": "2.1.0",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "reflect-metadata": "0.2.2",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  },
+  "dependencies": {
+    "@levischuck/tiny-cbor": "0.2.11",
+    "@peculiar/asn1-android": "2.10.0",
+    "@peculiar/asn1-schema": "2.10.0",
+    "@peculiar/asn1-x509": "2.10.0"
+  }
+}

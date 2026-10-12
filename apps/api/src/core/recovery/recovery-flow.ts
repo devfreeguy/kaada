@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 
-import { classifyDeviceKey, deviceKeyIdFromPoint, isOnP256Curve } from "@kaada/contracts";
-import type { AttestationEvidence, AttestationVerifier, EnrolmentChannel } from "@kaada/contracts";
+import { deviceKeyIdFromPoint, isOnP256Curve } from "@kaada/contracts";
+import type { EnrolmentChannel } from "@kaada/contracts";
 import {
   CELO_CHAIN_ID,
   KaadaError,
@@ -50,6 +50,13 @@ import {
 } from "./messages.js";
 import type { RecoveryRepositories } from "./ports.js";
 
+import { resolveDeviceTier } from "../attestation/device-tier-service.js";
+import type {
+  AttestationEvidence,
+  DeviceTierResolver,
+  IssuedAttestationChallenge,
+} from "../attestation/device-tier-service.js";
+
 const HEX64 = /^[0-9a-f]{64}$/;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -81,22 +88,16 @@ export interface DeviceRootInput {
   publicKeyY: string;
   /** Where the request came from, as OBSERVED by the HTTP edge (never read from the request body). */
   channel: EnrolmentChannel;
-  evidence?: AttestationEvidence;
+  /** Platform evidence from a native client. A claim until the server verifies it; refused on the web route. */
+  attestation?: AttestationEvidence | undefined;
 }
 
 export interface RecoveryFlowDeps {
   context: RecoveryContext;
-  /** Verifies a real platform attestation. Absent today: nothing can become TRUSTED_DEVICE. */
-  attestationVerifier?: AttestationVerifier;
+  /** Absent unless device attestation is enabled: then a key's tier is whatever its route implies and never more. */
+  deviceTiers?: DeviceTierResolver;
   limiters?: { start?: RateLimiter; ip?: RateLimiter; step?: RateLimiter };
 }
-
-const toTier = (tier: "trusted-device" | "web-non-extractable" | "unknown"): DeviceSecurityTier =>
-  tier === "trusted-device"
-    ? "TRUSTED_DEVICE"
-    : tier === "web-non-extractable"
-      ? "WEB_NON_EXTRACTABLE"
-      : "UNKNOWN";
 
 /** The challenge a WebAuthn response was made for, read from clientDataJSON. */
 function challengeOf(response: unknown): string | undefined {
@@ -384,6 +385,24 @@ export class RecoveryFlowService {
     );
   }
 
+  /** The one-time nonce the new native device passes to the platform when it generates its key (bound to this recovery). */
+  async issueAttestationChallenge(
+    token: unknown,
+    platform: "ANDROID" | "IOS",
+  ): Promise<IssuedAttestationChallenge> {
+    if (!this.deps.deviceTiers) {
+      throw new KaadaError("CREDENTIAL_REJECTED", "device attestation is not enabled");
+    }
+    const attempt = await resolveAttempt(this.ctx, token, { allow: ["EMAIL_VERIFIED"] });
+    this.requireStep(attempt);
+    return this.deps.deviceTiers.issueChallenge({
+      userId: attempt.userId,
+      walletId: attempt.walletId,
+      platform,
+      purpose: "RECOVERY_ROOT",
+    });
+  }
+
   /** The new device generated a P-256 key: validate it and propose the exact new root. */
   async proposeDeviceRoot(token: unknown, input: DeviceRootInput): Promise<RootProposal> {
     const attempt = await resolveAttempt(this.ctx, token, { allow: ["EMAIL_VERIFIED"] });
@@ -394,15 +413,20 @@ export class RecoveryFlowService {
     }
     const point = { x: BigInt(`0x${input.publicKeyX}`), y: BigInt(`0x${input.publicKeyY}`) };
     if (!isOnP256Curve(point)) throw reject("the public key is not a valid P-256 point");
-    const tier = toTier(
-      await classifyDeviceKey({
-        channel: input.channel,
-        point,
-        evidence: input.evidence,
-        verifier: this.deps.attestationVerifier,
-      }),
-    );
-    await audit(this.ctx.uow.read, attempt, RECOVERY_AUDIT_EVENTS.deviceTierAssigned, { tier });
+    // The route (never the body) decides whether platform evidence may be considered; only verified evidence raises the tier.
+    const { tier, outcome, reason } = await resolveDeviceTier(this.deps.deviceTiers, {
+      route: input.channel === "web" ? "web" : "native",
+      userId: attempt.userId,
+      walletId: attempt.walletId,
+      purpose: "RECOVERY_ROOT",
+      point: { x: input.publicKeyX, y: input.publicKeyY },
+      evidence: input.attestation,
+    });
+    await audit(this.ctx.uow.read, attempt, RECOVERY_AUDIT_EVENTS.deviceTierAssigned, {
+      tier,
+      attestation: outcome,
+      ...(reason && { reason }),
+    });
     return this.propose(
       attempt,
       {

@@ -62,6 +62,8 @@ const modelNames = [
   "RootActionSession",
   "WalletCredential",
   "RootChange",
+  "DeviceAttestationChallenge",
+  "DeviceAttestation",
   "RecoveryConfiguration",
   "RecoveryAttempt",
   "RecoveryEmailChallenge",
@@ -133,11 +135,15 @@ const enumValues: Record<string, string[]> = {
   PaymentAuthorizationStatus: ["ACTIVE", "CONSUMED", "REVOKED", "EXPIRED"],
   RootActionStatus: ["PENDING", "COMPLETED", "EXPIRED", "CANCELLED"],
   RootChangeKind: ["ROTATE_ROOT", "ENROLL_BACKUP"],
+  AttestationPlatform: ["ANDROID", "IOS"],
+  AttestationChallengePurpose: ["ROOT_ENROLLMENT", "BACKUP_ENROLLMENT", "RECOVERY_ROOT"],
+  AttestationResult: ["VERIFIED_QUALIFIED", "VERIFIED_NOT_QUALIFIED", "REJECTED"],
+  AttestationHardwareLevel: ["STRONGBOX", "TEE", "SOFTWARE"],
   RootChangeStatus: ["PREPARED", "SUBMITTED", "CONFIRMED", "FAILED", "EXPIRED", "CANCELLED"],
   WalletCredentialKind: ["PASSKEY", "DEVICE_KEY"],
   WalletCredentialRole: ["PRIMARY", "BACKUP", "RECOVERY"],
   WalletCredentialStatus: ["PENDING", "ACTIVE", "REPLACED", "REVOKED"],
-  DeviceSecurityTier: ["UNKNOWN", "WEB_NON_EXTRACTABLE", "TRUSTED_DEVICE"],
+  DeviceSecurityTier: ["UNKNOWN", "WEB_NON_EXTRACTABLE", "APP_ATTESTED_DEVICE", "TRUSTED_DEVICE"],
   RecoveryConfigurationStatus: ["PENDING_INSTALL", "ACTIVE", "CONSUMED", "SUPERSEDED", "DISABLED"],
   RecoveryAttemptStatus: [
     "EMAIL_PENDING",
@@ -265,6 +271,8 @@ describe("prisma schema", () => {
       // Monotonic counters of the recovery validator (decimal strings), not money.
       "RecoveryConfiguration.recoveryNonce",
       "RecoveryAttempt.recoveryNonce",
+      // A random hex challenge, not money.
+      "DeviceAttestationChallenge.nonce",
     ]);
     for (const [model, fields] of models) {
       for (const field of fields) {

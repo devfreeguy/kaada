@@ -61,14 +61,27 @@ const registrationResponseSchema = z.looseObject({
   }),
 });
 
+import {
+  attestationChallengeSchema,
+  attestationEvidenceSchema,
+  challengeView,
+} from "../attestation/attestation.schema.js";
+
 const hex64 = z.string().regex(/^[0-9a-f]{64}$/);
 const devicePublicKey = { publicKeyX: hex64, publicKeyY: hex64 };
 const deviceOptionsSchema = z.strictObject(devicePublicKey);
-const deviceRegisterSchema = z.strictObject({
+const deviceRegisterFields = {
   ...devicePublicKey,
   challenge: z.string().regex(/^0x[0-9a-f]{64}$/),
   r: hex64,
   s: hex64,
+};
+/** The WEB route: strict, so a body carrying "attestation" (or any claim of a tier) is refused outright. */
+const deviceRegisterSchema = z.strictObject(deviceRegisterFields);
+/** The NATIVE route: the same, plus platform evidence the server verifies. */
+const nativeDeviceRegisterSchema = z.strictObject({
+  ...deviceRegisterFields,
+  attestation: attestationEvidenceSchema.optional(),
 });
 
 const devSessionSchema = z.strictObject({
@@ -194,6 +207,60 @@ export class WalletController {
     if (!parsed.success) throw new BadRequestException("invalid request");
     try {
       const done = await service.completeDeviceKeyRegistration(token, parsed.data);
+      return {
+        status: done.status,
+        rootType: done.rootType,
+        wallet: done.wallet ? walletView(done.wallet) : null,
+      };
+    } catch (error) {
+      return httpError(error);
+    }
+  }
+
+  /**
+   * Native enrolment, attestation step 0: the one-time nonce the device passes to Android's `setAttestationChallenge` (or
+   * hashes into the App Attest client data) when it generates the key. Bound to this person, the platform and the purpose.
+   */
+  @Post("device-keys/attestation/challenge")
+  @HttpCode(200)
+  @Header("Cache-Control", "no-store")
+  async deviceKeyAttestationChallenge(
+    @Body() body: unknown,
+    @Headers("authorization") authorization?: string,
+  ) {
+    const token = bearer(authorization);
+    const service = this.service();
+    if (!service.deviceKeysEnabled)
+      throw new ServiceUnavailableException("device keys are not enabled");
+    const parsed = attestationChallengeSchema.safeParse(body);
+    if (!parsed.success) throw new BadRequestException("invalid request");
+    try {
+      return challengeView(await service.issueAttestationChallenge(token, parsed.data.platform));
+    } catch (error) {
+      return httpError(error);
+    }
+  }
+
+  /**
+   * Device-key enrolment, step 2, from a NATIVE app. The route (not the body) tells the server this is a native client, so
+   * platform evidence is considered; it raises the tier only if it verifies for this key and this one-time challenge.
+   * Missing or failing evidence does not block the enrolment: the key is recorded at the weaker tier.
+   */
+  @Post("device-keys/native/register")
+  @HttpCode(200)
+  @Header("Cache-Control", "no-store")
+  async nativeDeviceKeyRegister(
+    @Body() body: unknown,
+    @Headers("authorization") authorization?: string,
+  ) {
+    const token = bearer(authorization);
+    const service = this.service();
+    if (!service.deviceKeysEnabled)
+      throw new ServiceUnavailableException("device keys are not enabled");
+    const parsed = nativeDeviceRegisterSchema.safeParse(body);
+    if (!parsed.success) throw new BadRequestException("invalid request");
+    try {
+      const done = await service.completeDeviceKeyRegistration(token, parsed.data, "native");
       return {
         status: done.status,
         rootType: done.rootType,

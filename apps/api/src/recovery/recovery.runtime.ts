@@ -17,7 +17,6 @@ import type {
   RecoveryChainPort,
   RecoveryEmailSender,
 } from "@kaada/domain";
-import type { AttestationVerifier } from "@kaada/contracts";
 import type { Hex } from "viem";
 
 import type { AgentLog } from "../core/agent/ports.js";
@@ -43,6 +42,8 @@ export interface RecoveryRuntime {
   configuration: RecoveryConfigurationService;
 }
 
+import type { DeviceTierResolver } from "../core/attestation/device-tier-service.js";
+
 export interface RecoveryRuntimeParams {
   database: Database;
   chain: RecoveryChainPort;
@@ -56,7 +57,7 @@ export interface RecoveryRuntimeParams {
   /** 32 random bytes keying the email-code hash. */
   challengeSecret: Buffer;
   policy?: Partial<RecoveryPolicy>;
-  attestationVerifier?: AttestationVerifier;
+  deviceTiers?: DeviceTierResolver;
   messengers?: ChannelMessenger[];
   now?: () => Date;
   log?: AgentLog;
@@ -94,7 +95,7 @@ export function createRecoveryRuntime(params: RecoveryRuntimeParams): RecoveryRu
   };
   const flow = new RecoveryFlowService({
     context,
-    ...(params.attestationVerifier && { attestationVerifier: params.attestationVerifier }),
+    ...(params.deviceTiers && { deviceTiers: params.deviceTiers }),
   });
   const cleanup = new RecoveryCleanup(context);
   return {

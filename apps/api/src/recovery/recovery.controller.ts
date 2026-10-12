@@ -23,6 +23,12 @@ import { WALLET_SETUP_SERVICE } from "../wallet/wallet.tokens.js";
 import { RECOVERY_RUNTIME } from "./recovery.tokens.js";
 import type { RecoveryRuntime } from "./recovery.runtime.js";
 
+import {
+  attestationChallengeSchema,
+  attestationEvidenceSchema,
+  challengeView,
+} from "../attestation/attestation.schema.js";
+
 const hex = (bytes: number) => z.string().regex(new RegExp(`^[0-9a-f]{${bytes * 2}}$`));
 const startBody = z.strictObject({ email: z.string().max(254) });
 const verifyBody = z.strictObject({ code: z.string().max(12) });
@@ -38,6 +44,12 @@ const passkeyBody = z.strictObject({
   }),
 });
 const deviceBody = z.strictObject({ publicKeyX: hex(32), publicKeyY: hex(32) });
+/** The NATIVE route: the same, plus platform evidence the server verifies. The web route's strict schema refuses it. */
+const nativeDeviceBody = z.strictObject({
+  publicKeyX: hex(32),
+  publicKeyY: hex(32),
+  attestation: attestationEvidenceSchema.optional(),
+});
 const proofBody = z.strictObject({ signature: z.string().regex(/^0x[0-9a-fA-F]{130}$/) });
 /** A passkey assertion (an object) or a device signature (a hex string): validated by the chain adapter. */
 const materialBody = z.strictObject({
@@ -202,6 +214,49 @@ export class RecoveryController {
       return await this.services().flow.proposeDeviceRoot(bearer(authorization), {
         ...parsed.data,
         channel: "web",
+      });
+    } catch (error) {
+      return httpError(error);
+    }
+  }
+
+  /** Native: the one-time nonce the new device passes to the platform when it generates its key (bound to this recovery). */
+  @Post("root/attestation/challenge")
+  @HttpCode(200)
+  @Header("Cache-Control", "no-store")
+  async attestationChallenge(
+    @Body() body: unknown,
+    @Headers("authorization") authorization?: string,
+  ) {
+    const parsed = attestationChallengeSchema.safeParse(body);
+    if (!parsed.success) throw new BadRequestException("invalid request");
+    try {
+      return challengeView(
+        await this.services().flow.issueAttestationChallenge(
+          bearer(authorization),
+          parsed.data.platform,
+        ),
+      );
+    } catch (error) {
+      return httpError(error);
+    }
+  }
+
+  /** Native: like `root/device-key`, but platform evidence is considered (the route, not the body, says it is native). */
+  @Post("root/device-key/native")
+  @HttpCode(200)
+  @Header("Cache-Control", "no-store")
+  async nativeDeviceRoot(@Body() body: unknown, @Headers("authorization") authorization?: string) {
+    const parsed = nativeDeviceBody.safeParse(body);
+    if (!parsed.success) throw new BadRequestException("invalid request");
+    const platform = parsed.data.attestation?.platform;
+    try {
+      return await this.services().flow.proposeDeviceRoot(bearer(authorization), {
+        publicKeyX: parsed.data.publicKeyX,
+        publicKeyY: parsed.data.publicKeyY,
+        attestation: parsed.data.attestation,
+        channel:
+          platform === "IOS" ? "native-ios" : platform === "ANDROID" ? "native-android" : "unknown",
       });
     } catch (error) {
       return httpError(error);

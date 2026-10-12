@@ -18,6 +18,7 @@
     "demo:authorize": "node --import tsx scripts/authorize-demo.ts"
   },
   "dependencies": {
+    "@kaada/attestation": "workspace:*",
     "@kaada/blockchain": "workspace:*",
     "@kaada/config": "workspace:*",
     "@kaada/contracts": "workspace:*",

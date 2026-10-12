@@ -10,3 +10,5 @@ export const WALLET_SETUP_SERVICE = Symbol("WALLET_SETUP_SERVICE");
 export const WALLET_BALANCE_SERVICE = Symbol("WALLET_BALANCE_SERVICE");
 /** Repositories for the wallet edge (development user creation only). */
 export const WALLET_REPOSITORIES = Symbol("WALLET_REPOSITORIES");
+/** The DeviceTierService (verifies platform key attestation and derives device-key tiers), or null when it is not enabled. */
+export const DEVICE_TIER_SERVICE = Symbol("DEVICE_TIER_SERVICE");

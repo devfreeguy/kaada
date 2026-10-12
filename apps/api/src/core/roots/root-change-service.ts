@@ -3,18 +3,13 @@ import { randomBytes } from "node:crypto";
 import {
   PASSKEY_PURPOSE,
   buildRecoveryRoot,
-  classifyDeviceKey,
   deviceKeyIdFromPoint,
   deviceProofPayload,
   isOnP256Curve,
   rootChangeCalls,
   validatorLaneInstallCalls,
 } from "@kaada/contracts";
-import type {
-  AttestationVerifier,
-  NewRootCredential,
-  ValidatorDeployments,
-} from "@kaada/contracts";
+import type { NewRootCredential, ValidatorDeployments } from "@kaada/contracts";
 import {
   CELO_CHAIN_ID,
   KaadaError,
@@ -52,6 +47,14 @@ import type { AgentLog } from "../agent/ports.js";
 import { noopLog } from "../agent/ports.js";
 import { verifyP256 } from "./p256.js";
 import type { RootAdapters, RootCredentialService } from "./root-credentials.js";
+
+import { resolveDeviceTier } from "../attestation/device-tier-service.js";
+import type {
+  AttestationEvidence,
+  DeviceTierResolver,
+  EnrolmentRoute,
+  IssuedAttestationChallenge,
+} from "../attestation/device-tier-service.js";
 
 const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
 const HEX64 = /^[0-9a-f]{64}$/;
@@ -92,8 +95,8 @@ export interface RootChangeServiceDeps {
   passkeyVerifier: PasskeyVerifier;
   rpId: string;
   origin: string;
-  /** Absent until a real platform-attestation verifier exists: then no key is ever TRUSTED_DEVICE. */
-  attestationVerifier?: AttestationVerifier;
+  /** Absent unless device attestation is enabled: then a key's tier is whatever its route implies and never more. */
+  deviceTiers?: DeviceTierResolver;
   /** How long a prepared change can be signed. */
   ttlMs?: number;
   /** How long `confirm` waits for the chain to show the change before leaving it SUBMITTED for the next call. */
@@ -113,6 +116,8 @@ export type NewCredentialInput =
       challenge: string;
       r: string;
       s: string;
+      /** Platform evidence from a native client. A claim until the server verifies it; refused on the web route. */
+      attestation?: AttestationEvidence | undefined;
     };
 
 /** What a person is shown after a change was prepared: what to sign, by which root, for which new credential. */
@@ -132,13 +137,6 @@ export interface RootChangeView {
   newRootType: "PASSKEY" | "DEVICE_KEY";
   expiresAt: Date;
 }
-
-const toTier = (tier: "trusted-device" | "web-non-extractable" | "unknown"): DeviceSecurityTier =>
-  tier === "trusted-device"
-    ? "TRUSTED_DEVICE"
-    : tier === "web-non-extractable"
-      ? "WEB_NON_EXTRACTABLE"
-      : "UNKNOWN";
 
 /** The per-change salt: a fresh validator instance for every change, never one the wallet has used. */
 export const rootChangeDeploymentSalt = (changeId: string): Hex =>
@@ -237,6 +235,24 @@ export class RootChangeService {
     };
   }
 
+  /** The one-time nonce a native device passes to the platform when it generates the NEW key (bound to this wallet). */
+  async issueAttestationChallenge(
+    userId: string,
+    kind: RootChangeKind,
+    platform: "ANDROID" | "IOS",
+  ): Promise<IssuedAttestationChallenge> {
+    if (!this.deps.deviceTiers) {
+      throw new KaadaError("CREDENTIAL_REJECTED", "device attestation is not enabled");
+    }
+    const wallet = await this.activeWallet(userId);
+    return this.deps.deviceTiers.issueChallenge({
+      userId,
+      walletId: wallet.id,
+      platform,
+      purpose: kind === "ROTATE_ROOT" ? "ROOT_ENROLLMENT" : "BACKUP_ENROLLMENT",
+    });
+  }
+
   // ───────────────────────────────── prepare ─────────────────────────────────
 
   /**
@@ -247,6 +263,7 @@ export class RootChangeService {
     userId: string,
     kind: RootChangeKind,
     input: NewCredentialInput,
+    route: EnrolmentRoute = "web",
   ): Promise<PreparedRootChange> {
     const wallet = await this.activeWallet(userId);
     const address = wallet.address as string;
@@ -272,7 +289,11 @@ export class RootChangeService {
       );
     }
 
-    const credential = await this.verifiedCredential(userId, input);
+    const credential = await this.verifiedCredential(userId, input, {
+      route,
+      kind,
+      walletId: wallet.id,
+    });
     const changeId = createId();
     const purpose = kind === "ROTATE_ROOT" ? PASSKEY_PURPOSE.ROTATION : PASSKEY_PURPOSE.BACKUP;
     const built = buildRecoveryRoot({
@@ -666,6 +687,7 @@ export class RootChangeService {
   private async verifiedCredential(
     userId: string,
     input: NewCredentialInput,
+    context: { route: EnrolmentRoute; kind: RootChangeKind; walletId: string },
   ): Promise<{
     public: NewRootCredential;
     ref: string;
@@ -705,7 +727,10 @@ export class RootChangeService {
         tier: "UNKNOWN",
       };
     }
-    const { keyId, point } = this.checkedPoint(input);
+    if (context.route === "web" && input.attestation) {
+      throw reject("attestation evidence is not accepted on the web route");
+    }
+    const { keyId } = this.checkedPoint(input);
     if (!/^0x[0-9a-f]{64}$/.test(input.challenge)) throw reject("the challenge is malformed");
     const consumed = await this.uow.read.passkeys.consumeChallenge({
       userId,
@@ -722,14 +747,15 @@ export class RootChangeService {
       s: input.s,
     });
     if (!proven) throw reject("the device key could not be verified");
-    const tier = toTier(
-      await classifyDeviceKey({
-        // This is the WEB enrolment path: the server, not the client, decides the channel.
-        channel: "web",
-        point,
-        verifier: this.deps.attestationVerifier,
-      }),
-    );
+    // The route (never the body) decides whether platform evidence may be considered; only verified evidence raises the tier.
+    const { tier } = await resolveDeviceTier(this.deps.deviceTiers, {
+      route: context.route,
+      userId,
+      walletId: context.walletId,
+      purpose: context.kind === "ROTATE_ROOT" ? "ROOT_ENROLLMENT" : "BACKUP_ENROLLMENT",
+      point: { x: input.publicKeyX, y: input.publicKeyY },
+      evidence: input.attestation,
+    });
     return {
       public: {
         kind: "DEVICE_KEY",

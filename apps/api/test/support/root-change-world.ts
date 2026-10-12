@@ -37,6 +37,8 @@ import { createWalletWorld } from "./wallet-memory.js";
  * when one is given (then the SAME service runs over real repositories and real transactions).
  */
 
+import type { DeviceTierResolver } from "../../src/core/attestation/device-tier-service.js";
+
 export const RP_ID = "kaada.test";
 export const ORIGIN = "https://app.kaada.test";
 export const CHAIN = 42220;
@@ -189,7 +191,7 @@ const b64 = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("bas
 
 export async function build(
   rootType: "PASSKEY" | "DEVICE_KEY",
-  options: { database?: Database } = {},
+  options: { database?: Database; deviceTiers?: DeviceTierResolver } = {},
 ) {
   let base = new Date("2026-10-21T12:00:00.000Z").getTime();
   const now = () => new Date(base);
@@ -247,6 +249,7 @@ export async function build(
     origin: ORIGIN,
     inclusionWaitMs: 0,
     sleep: () => Promise.resolve(),
+    ...(options.deviceTiers && { deviceTiers: options.deviceTiers }),
     now,
   });
 

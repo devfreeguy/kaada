@@ -29,7 +29,12 @@ export type WalletCredentialStatus = (typeof WALLET_CREDENTIAL_STATUSES)[number]
  * How much Kaada can vouch for where a DEVICE_KEY lives. Never taken from a client claim: TRUSTED_DEVICE only when a
  * server-side verifier proved a platform attestation. Passkeys are UNKNOWN here (their authenticator is not attested).
  */
-export const DEVICE_SECURITY_TIERS = ["UNKNOWN", "WEB_NON_EXTRACTABLE", "TRUSTED_DEVICE"] as const;
+export const DEVICE_SECURITY_TIERS = [
+  "UNKNOWN",
+  "WEB_NON_EXTRACTABLE",
+  "APP_ATTESTED_DEVICE",
+  "TRUSTED_DEVICE",
+] as const;
 export type DeviceSecurityTier = (typeof DEVICE_SECURITY_TIERS)[number];
 
 export interface WalletCredential {

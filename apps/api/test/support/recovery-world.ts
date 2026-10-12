@@ -139,6 +139,8 @@ export function newPasskeyRoot(): NewRoot {
   };
 }
 
+import type { DeviceTierResolver } from "../../src/core/attestation/device-tier-service.js";
+
 export async function newDeviceRoot(): Promise<NewRoot> {
   const { publicKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
   const jwk = publicKey.export({ format: "jwk" });
@@ -162,7 +164,12 @@ export const TEST_POLICY: RecoveryPolicy = {
 };
 
 export function createRecoveryWorld(
-  options: { policy?: Partial<RecoveryPolicy>; webUrl?: string; database?: Database } = {},
+  options: {
+    policy?: Partial<RecoveryPolicy>;
+    webUrl?: string;
+    database?: Database;
+    deviceTiers?: DeviceTierResolver;
+  } = {},
 ) {
   // Fake time that still advances in real time, so bounded waits end; tests jump it with `advance`.
   let base = new Date("2026-10-20T12:00:00.000Z").getTime();
@@ -261,7 +268,10 @@ export function createRecoveryWorld(
     now,
   });
 
-  const flow = new RecoveryFlowService({ context });
+  const flow = new RecoveryFlowService({
+    context,
+    ...(options.deviceTiers && { deviceTiers: options.deviceTiers }),
+  });
   const cleanup = new RecoveryCleanup(context);
   const finalizer = (owner?: string) =>
     new RecoveryFinalizer({ context, flow, cleanup, pins, pollMs: 2, ...(owner && { owner }) });

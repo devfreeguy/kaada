@@ -297,6 +297,7 @@ enum WalletCredentialStatus {
 enum DeviceSecurityTier {
   UNKNOWN
   WEB_NON_EXTRACTABLE
+  APP_ATTESTED_DEVICE
   TRUSTED_DEVICE
 }
 
@@ -365,6 +366,8 @@ model User {
   rootChanges            RootChange[]
   recoveryConfigurations RecoveryConfiguration[]
   recoveryAttempts       RecoveryAttempt[]
+  attestationChallenges  DeviceAttestationChallenge[]
+  deviceAttestations     DeviceAttestation[]
 }
 
 /// An external identity (Telegram account, phone, email, ...) attached to one Kaada user.
@@ -436,6 +439,8 @@ model Wallet {
   recoveryConfigurations RecoveryConfiguration[]
   recoveryAttempts       RecoveryAttempt[]
   rootChanges            RootChange[]
+  attestationChallenges  DeviceAttestationChallenge[]
+  deviceAttestations     DeviceAttestation[]
 
   @@unique([chainId, address])
   @@index([userId])
@@ -1352,4 +1357,81 @@ model RecoveryEmailChallenge {
 
   @@index([attemptId, createdAt])
   @@index([sessionTokenHash, createdAt])
+}
+
+enum AttestationPlatform {
+  ANDROID
+  IOS
+}
+
+enum AttestationChallengePurpose {
+  ROOT_ENROLLMENT
+  BACKUP_ENROLLMENT
+  RECOVERY_ROOT
+}
+
+enum AttestationResult {
+  VERIFIED_QUALIFIED
+  VERIFIED_NOT_QUALIFIED
+  REJECTED
+}
+
+enum AttestationHardwareLevel {
+  STRONGBOX
+  TEE
+  SOFTWARE
+}
+
+/// A one-time, short-lived server nonce a device passes to the platform attestation API when it generates a key. Bound to
+/// the user, the wallet (absent for a first wallet), the platform and the purpose. The public key is bound at consumption.
+model DeviceAttestationChallenge {
+  id                    String                      @id @db.Uuid
+  userId                String                      @db.Uuid
+  walletId              String?                     @db.Uuid
+  platform              AttestationPlatform
+  purpose               AttestationChallengePurpose
+  /// 32 random bytes, hex.
+  nonce                 String                      @unique
+  expiresAt             DateTime                    @db.Timestamptz(3)
+  consumedAt            DateTime?                   @db.Timestamptz(3)
+  consumedPublicKeyHash String?
+  createdAt             DateTime                    @default(now()) @db.Timestamptz(3)
+
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet      Wallet?             @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  attestation DeviceAttestation?
+
+  @@index([userId, purpose])
+  @@index([expiresAt])
+}
+
+/// The outcome of verifying platform evidence for ONE key and ONE challenge. Holds hashes and extracted facts, never the raw
+/// certificate chain or attestation object. One per challenge; at most one VERIFIED per key (manual migration).
+model DeviceAttestation {
+  id              String                   @id @db.Uuid
+  userId          String                   @db.Uuid
+  walletId        String?                  @db.Uuid
+  challengeId     String                   @unique @db.Uuid
+  platform        AttestationPlatform
+  attestationType String
+  /// The keyId (0x + 64 hex) of the credential the evidence was presented for.
+  credentialRef   String
+  /// SHA-256 of the public point (x || y), hex.
+  publicKeyHash   String
+  result          AttestationResult
+  reason          String?
+  hardwareLevel   AttestationHardwareLevel?
+  derivedTier     DeviceSecurityTier
+  verifierVersion Int
+  facts           Json
+  chainHashes     String[]
+  trustAnchor     String?
+  verifiedAt      DateTime                 @db.Timestamptz(3)
+  createdAt       DateTime                 @default(now()) @db.Timestamptz(3)
+
+  user      User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet    Wallet?                    @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  challenge DeviceAttestationChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([userId, publicKeyHash])
 }

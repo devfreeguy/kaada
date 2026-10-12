@@ -225,3 +225,15 @@ export type RecoveryAttempt = Prisma.RecoveryAttemptModel
  * A short-lived email challenge for one recovery attempt. Only a keyed hash of the code is stored.
  */
 export type RecoveryEmailChallenge = Prisma.RecoveryEmailChallengeModel
+/**
+ * Model DeviceAttestationChallenge
+ * A one-time, short-lived server nonce a device passes to the platform attestation API when it generates a key. Bound to
+ * the user, the wallet (absent for a first wallet), the platform and the purpose. The public key is bound at consumption.
+ */
+export type DeviceAttestationChallenge = Prisma.DeviceAttestationChallengeModel
+/**
+ * Model DeviceAttestation
+ * The outcome of verifying platform evidence for ONE key and ONE challenge. Holds hashes and extracted facts, never the raw
+ * certificate chain or attestation object. One per challenge; at most one VERIFIED per key (manual migration).
+ */
+export type DeviceAttestation = Prisma.DeviceAttestationModel

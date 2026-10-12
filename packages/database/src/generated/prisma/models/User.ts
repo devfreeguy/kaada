@@ -213,6 +213,8 @@ export type UserWhereInput = {
   rootChanges?: Prisma.RootChangeListRelationFilter
   recoveryConfigurations?: Prisma.RecoveryConfigurationListRelationFilter
   recoveryAttempts?: Prisma.RecoveryAttemptListRelationFilter
+  attestationChallenges?: Prisma.DeviceAttestationChallengeListRelationFilter
+  deviceAttestations?: Prisma.DeviceAttestationListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -245,6 +247,8 @@ export type UserOrderByWithRelationInput = {
   rootChanges?: Prisma.RootChangeOrderByRelationAggregateInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationOrderByRelationAggregateInput
   recoveryAttempts?: Prisma.RecoveryAttemptOrderByRelationAggregateInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeOrderByRelationAggregateInput
+  deviceAttestations?: Prisma.DeviceAttestationOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -280,6 +284,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   rootChanges?: Prisma.RootChangeListRelationFilter
   recoveryConfigurations?: Prisma.RecoveryConfigurationListRelationFilter
   recoveryAttempts?: Prisma.RecoveryAttemptListRelationFilter
+  attestationChallenges?: Prisma.DeviceAttestationChallengeListRelationFilter
+  deviceAttestations?: Prisma.DeviceAttestationListRelationFilter
 }, "id" | "username">
 
 export type UserOrderByWithAggregationInput = {
@@ -336,6 +342,8 @@ export type UserCreateInput = {
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -368,6 +376,8 @@ export type UserUncheckedCreateInput = {
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -400,6 +410,8 @@ export type UserUpdateInput = {
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -432,6 +444,8 @@ export type UserUncheckedUpdateInput = {
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -838,6 +852,34 @@ export type UserUpdateOneRequiredWithoutRecoveryAttemptsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutRecoveryAttemptsInput, Prisma.UserUpdateWithoutRecoveryAttemptsInput>, Prisma.UserUncheckedUpdateWithoutRecoveryAttemptsInput>
 }
 
+export type UserCreateNestedOneWithoutAttestationChallengesInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutAttestationChallengesInput, Prisma.UserUncheckedCreateWithoutAttestationChallengesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutAttestationChallengesInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutAttestationChallengesNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutAttestationChallengesInput, Prisma.UserUncheckedCreateWithoutAttestationChallengesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutAttestationChallengesInput
+  upsert?: Prisma.UserUpsertWithoutAttestationChallengesInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutAttestationChallengesInput, Prisma.UserUpdateWithoutAttestationChallengesInput>, Prisma.UserUncheckedUpdateWithoutAttestationChallengesInput>
+}
+
+export type UserCreateNestedOneWithoutDeviceAttestationsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutDeviceAttestationsInput, Prisma.UserUncheckedCreateWithoutDeviceAttestationsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutDeviceAttestationsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutDeviceAttestationsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutDeviceAttestationsInput, Prisma.UserUncheckedCreateWithoutDeviceAttestationsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutDeviceAttestationsInput
+  upsert?: Prisma.UserUpsertWithoutDeviceAttestationsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutDeviceAttestationsInput, Prisma.UserUpdateWithoutDeviceAttestationsInput>, Prisma.UserUncheckedUpdateWithoutDeviceAttestationsInput>
+}
+
 export type UserCreateWithoutIdentitiesInput = {
   id: string
   username?: string | null
@@ -867,6 +909,8 @@ export type UserCreateWithoutIdentitiesInput = {
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutIdentitiesInput = {
@@ -898,6 +942,8 @@ export type UserUncheckedCreateWithoutIdentitiesInput = {
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutIdentitiesInput = {
@@ -945,6 +991,8 @@ export type UserUpdateWithoutIdentitiesInput = {
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutIdentitiesInput = {
@@ -976,6 +1024,8 @@ export type UserUncheckedUpdateWithoutIdentitiesInput = {
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutSessionsInput = {
@@ -1007,6 +1057,8 @@ export type UserCreateWithoutSessionsInput = {
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutSessionsInput = {
@@ -1038,6 +1090,8 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutSessionsInput = {
@@ -1085,6 +1139,8 @@ export type UserUpdateWithoutSessionsInput = {
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSessionsInput = {
@@ -1116,6 +1172,8 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutWalletsInput = {
@@ -1147,6 +1205,8 @@ export type UserCreateWithoutWalletsInput = {
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutWalletsInput = {
@@ -1178,6 +1238,8 @@ export type UserUncheckedCreateWithoutWalletsInput = {
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutWalletsInput = {
@@ -1225,6 +1287,8 @@ export type UserUpdateWithoutWalletsInput = {
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutWalletsInput = {
@@ -1256,6 +1320,8 @@ export type UserUncheckedUpdateWithoutWalletsInput = {
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutPasskeyCredentialsInput = {
@@ -1287,6 +1353,8 @@ export type UserCreateWithoutPasskeyCredentialsInput = {
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutPasskeyCredentialsInput = {
@@ -1318,6 +1386,8 @@ export type UserUncheckedCreateWithoutPasskeyCredentialsInput = {
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutPasskeyCredentialsInput = {
@@ -1365,6 +1435,8 @@ export type UserUpdateWithoutPasskeyCredentialsInput = {
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPasskeyCredentialsInput = {
@@ -1396,6 +1468,8 @@ export type UserUncheckedUpdateWithoutPasskeyCredentialsInput = {
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutWalletSetupSessionsInput = {
@@ -1427,6 +1501,8 @@ export type UserCreateWithoutWalletSetupSessionsInput = {
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutWalletSetupSessionsInput = {
@@ -1458,6 +1534,8 @@ export type UserUncheckedCreateWithoutWalletSetupSessionsInput = {
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutWalletSetupSessionsInput = {
@@ -1505,6 +1583,8 @@ export type UserUpdateWithoutWalletSetupSessionsInput = {
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutWalletSetupSessionsInput = {
@@ -1536,6 +1616,8 @@ export type UserUncheckedUpdateWithoutWalletSetupSessionsInput = {
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutTransactionPinInput = {
@@ -1567,6 +1649,8 @@ export type UserCreateWithoutTransactionPinInput = {
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutTransactionPinInput = {
@@ -1598,6 +1682,8 @@ export type UserUncheckedCreateWithoutTransactionPinInput = {
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutTransactionPinInput = {
@@ -1645,6 +1731,8 @@ export type UserUpdateWithoutTransactionPinInput = {
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutTransactionPinInput = {
@@ -1676,6 +1764,8 @@ export type UserUncheckedUpdateWithoutTransactionPinInput = {
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutAuthorizationSessionsInput = {
@@ -1707,6 +1797,8 @@ export type UserCreateWithoutAuthorizationSessionsInput = {
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutAuthorizationSessionsInput = {
@@ -1738,6 +1830,8 @@ export type UserUncheckedCreateWithoutAuthorizationSessionsInput = {
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutAuthorizationSessionsInput = {
@@ -1785,6 +1879,8 @@ export type UserUpdateWithoutAuthorizationSessionsInput = {
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAuthorizationSessionsInput = {
@@ -1816,6 +1912,8 @@ export type UserUncheckedUpdateWithoutAuthorizationSessionsInput = {
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutPaymentAuthorizationsInput = {
@@ -1847,6 +1945,8 @@ export type UserCreateWithoutPaymentAuthorizationsInput = {
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutPaymentAuthorizationsInput = {
@@ -1878,6 +1978,8 @@ export type UserUncheckedCreateWithoutPaymentAuthorizationsInput = {
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutPaymentAuthorizationsInput = {
@@ -1925,6 +2027,8 @@ export type UserUpdateWithoutPaymentAuthorizationsInput = {
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPaymentAuthorizationsInput = {
@@ -1956,6 +2060,8 @@ export type UserUncheckedUpdateWithoutPaymentAuthorizationsInput = {
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutFirmQuoteAttemptsInput = {
@@ -1987,6 +2093,8 @@ export type UserCreateWithoutFirmQuoteAttemptsInput = {
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutFirmQuoteAttemptsInput = {
@@ -2018,6 +2126,8 @@ export type UserUncheckedCreateWithoutFirmQuoteAttemptsInput = {
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutFirmQuoteAttemptsInput = {
@@ -2065,6 +2175,8 @@ export type UserUpdateWithoutFirmQuoteAttemptsInput = {
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutFirmQuoteAttemptsInput = {
@@ -2096,6 +2208,8 @@ export type UserUncheckedUpdateWithoutFirmQuoteAttemptsInput = {
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutRootActionSessionsInput = {
@@ -2127,6 +2241,8 @@ export type UserCreateWithoutRootActionSessionsInput = {
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutRootActionSessionsInput = {
@@ -2158,6 +2274,8 @@ export type UserUncheckedCreateWithoutRootActionSessionsInput = {
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutRootActionSessionsInput = {
@@ -2205,6 +2323,8 @@ export type UserUpdateWithoutRootActionSessionsInput = {
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRootActionSessionsInput = {
@@ -2236,6 +2356,8 @@ export type UserUncheckedUpdateWithoutRootActionSessionsInput = {
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutPasskeyChallengesInput = {
@@ -2267,6 +2389,8 @@ export type UserCreateWithoutPasskeyChallengesInput = {
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutPasskeyChallengesInput = {
@@ -2298,6 +2422,8 @@ export type UserUncheckedCreateWithoutPasskeyChallengesInput = {
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutPasskeyChallengesInput = {
@@ -2345,6 +2471,8 @@ export type UserUpdateWithoutPasskeyChallengesInput = {
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPasskeyChallengesInput = {
@@ -2376,6 +2504,8 @@ export type UserUncheckedUpdateWithoutPasskeyChallengesInput = {
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutDelegatedPermissionsInput = {
@@ -2407,6 +2537,8 @@ export type UserCreateWithoutDelegatedPermissionsInput = {
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutDelegatedPermissionsInput = {
@@ -2438,6 +2570,8 @@ export type UserUncheckedCreateWithoutDelegatedPermissionsInput = {
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutDelegatedPermissionsInput = {
@@ -2485,6 +2619,8 @@ export type UserUpdateWithoutDelegatedPermissionsInput = {
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutDelegatedPermissionsInput = {
@@ -2516,6 +2652,8 @@ export type UserUncheckedUpdateWithoutDelegatedPermissionsInput = {
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutConversationsInput = {
@@ -2547,6 +2685,8 @@ export type UserCreateWithoutConversationsInput = {
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutConversationsInput = {
@@ -2578,6 +2718,8 @@ export type UserUncheckedCreateWithoutConversationsInput = {
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutConversationsInput = {
@@ -2625,6 +2767,8 @@ export type UserUpdateWithoutConversationsInput = {
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutConversationsInput = {
@@ -2656,6 +2800,8 @@ export type UserUncheckedUpdateWithoutConversationsInput = {
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutIntentsInput = {
@@ -2687,6 +2833,8 @@ export type UserCreateWithoutIntentsInput = {
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutIntentsInput = {
@@ -2718,6 +2866,8 @@ export type UserUncheckedCreateWithoutIntentsInput = {
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutIntentsInput = {
@@ -2765,6 +2915,8 @@ export type UserUpdateWithoutIntentsInput = {
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutIntentsInput = {
@@ -2796,6 +2948,8 @@ export type UserUncheckedUpdateWithoutIntentsInput = {
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutOwnedRecipientsInput = {
@@ -2827,6 +2981,8 @@ export type UserCreateWithoutOwnedRecipientsInput = {
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutOwnedRecipientsInput = {
@@ -2858,6 +3014,8 @@ export type UserUncheckedCreateWithoutOwnedRecipientsInput = {
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutOwnedRecipientsInput = {
@@ -2894,6 +3052,8 @@ export type UserCreateWithoutLinkedRecipientsInput = {
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutLinkedRecipientsInput = {
@@ -2925,6 +3085,8 @@ export type UserUncheckedCreateWithoutLinkedRecipientsInput = {
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutLinkedRecipientsInput = {
@@ -2972,6 +3134,8 @@ export type UserUpdateWithoutOwnedRecipientsInput = {
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutOwnedRecipientsInput = {
@@ -3003,6 +3167,8 @@ export type UserUncheckedUpdateWithoutOwnedRecipientsInput = {
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUpsertWithoutLinkedRecipientsInput = {
@@ -3045,6 +3211,8 @@ export type UserUpdateWithoutLinkedRecipientsInput = {
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutLinkedRecipientsInput = {
@@ -3076,6 +3244,8 @@ export type UserUncheckedUpdateWithoutLinkedRecipientsInput = {
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutExecutionsInput = {
@@ -3107,6 +3277,8 @@ export type UserCreateWithoutExecutionsInput = {
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutExecutionsInput = {
@@ -3138,6 +3310,8 @@ export type UserUncheckedCreateWithoutExecutionsInput = {
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutExecutionsInput = {
@@ -3185,6 +3359,8 @@ export type UserUpdateWithoutExecutionsInput = {
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutExecutionsInput = {
@@ -3216,6 +3392,8 @@ export type UserUncheckedUpdateWithoutExecutionsInput = {
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutRampSessionsInput = {
@@ -3247,6 +3425,8 @@ export type UserCreateWithoutRampSessionsInput = {
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutRampSessionsInput = {
@@ -3278,6 +3458,8 @@ export type UserUncheckedCreateWithoutRampSessionsInput = {
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutRampSessionsInput = {
@@ -3325,6 +3507,8 @@ export type UserUpdateWithoutRampSessionsInput = {
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRampSessionsInput = {
@@ -3356,6 +3540,8 @@ export type UserUncheckedUpdateWithoutRampSessionsInput = {
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutAuditEventsInput = {
@@ -3387,6 +3573,8 @@ export type UserCreateWithoutAuditEventsInput = {
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutAuditEventsInput = {
@@ -3418,6 +3606,8 @@ export type UserUncheckedCreateWithoutAuditEventsInput = {
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutAuditEventsInput = {
@@ -3465,6 +3655,8 @@ export type UserUpdateWithoutAuditEventsInput = {
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAuditEventsInput = {
@@ -3496,6 +3688,8 @@ export type UserUncheckedUpdateWithoutAuditEventsInput = {
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutWalletCredentialsInput = {
@@ -3527,6 +3721,8 @@ export type UserCreateWithoutWalletCredentialsInput = {
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutWalletCredentialsInput = {
@@ -3558,6 +3754,8 @@ export type UserUncheckedCreateWithoutWalletCredentialsInput = {
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutWalletCredentialsInput = {
@@ -3605,6 +3803,8 @@ export type UserUpdateWithoutWalletCredentialsInput = {
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutWalletCredentialsInput = {
@@ -3636,6 +3836,8 @@ export type UserUncheckedUpdateWithoutWalletCredentialsInput = {
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutRootChangesInput = {
@@ -3667,6 +3869,8 @@ export type UserCreateWithoutRootChangesInput = {
   walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutRootChangesInput = {
@@ -3698,6 +3902,8 @@ export type UserUncheckedCreateWithoutRootChangesInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutRootChangesInput = {
@@ -3745,6 +3951,8 @@ export type UserUpdateWithoutRootChangesInput = {
   walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRootChangesInput = {
@@ -3776,6 +3984,8 @@ export type UserUncheckedUpdateWithoutRootChangesInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutRecoveryConfigurationsInput = {
@@ -3807,6 +4017,8 @@ export type UserCreateWithoutRecoveryConfigurationsInput = {
   walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutRecoveryConfigurationsInput = {
@@ -3838,6 +4050,8 @@ export type UserUncheckedCreateWithoutRecoveryConfigurationsInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutRecoveryConfigurationsInput = {
@@ -3885,6 +4099,8 @@ export type UserUpdateWithoutRecoveryConfigurationsInput = {
   walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRecoveryConfigurationsInput = {
@@ -3916,6 +4132,8 @@ export type UserUncheckedUpdateWithoutRecoveryConfigurationsInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutRecoveryAttemptsInput = {
@@ -3947,6 +4165,8 @@ export type UserCreateWithoutRecoveryAttemptsInput = {
   walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutRecoveryAttemptsInput = {
@@ -3978,6 +4198,8 @@ export type UserUncheckedCreateWithoutRecoveryAttemptsInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutRecoveryAttemptsInput = {
@@ -4025,6 +4247,8 @@ export type UserUpdateWithoutRecoveryAttemptsInput = {
   walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
   rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRecoveryAttemptsInput = {
@@ -4056,6 +4280,304 @@ export type UserUncheckedUpdateWithoutRecoveryAttemptsInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutAttestationChallengesInput = {
+  id: string
+  username?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
+  conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
+  ownedRecipients?: Prisma.RecipientCreateNestedManyWithoutOwnerInput
+  linkedRecipients?: Prisma.RecipientCreateNestedManyWithoutLinkedUserInput
+  intents?: Prisma.IntentCreateNestedManyWithoutUserInput
+  executions?: Prisma.ExecutionCreateNestedManyWithoutUserInput
+  rampSessions?: Prisma.RampSessionCreateNestedManyWithoutUserInput
+  auditEvents?: Prisma.AuditEventCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutUserInput
+  walletSetupSessions?: Prisma.WalletSetupSessionCreateNestedManyWithoutUserInput
+  transactionPin?: Prisma.TransactionPinSecurityCreateNestedOneWithoutUserInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutUserInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
+  rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutAttestationChallengesInput = {
+  id: string
+  username?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
+  conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
+  ownedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutOwnerInput
+  linkedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutLinkedUserInput
+  intents?: Prisma.IntentUncheckedCreateNestedManyWithoutUserInput
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutUserInput
+  rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutUserInput
+  auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutUserInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUncheckedCreateNestedManyWithoutUserInput
+  transactionPin?: Prisma.TransactionPinSecurityUncheckedCreateNestedOneWithoutUserInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutUserInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutAttestationChallengesInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutAttestationChallengesInput, Prisma.UserUncheckedCreateWithoutAttestationChallengesInput>
+}
+
+export type UserUpsertWithoutAttestationChallengesInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutAttestationChallengesInput, Prisma.UserUncheckedUpdateWithoutAttestationChallengesInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutAttestationChallengesInput, Prisma.UserUncheckedCreateWithoutAttestationChallengesInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutAttestationChallengesInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutAttestationChallengesInput, Prisma.UserUncheckedUpdateWithoutAttestationChallengesInput>
+}
+
+export type UserUpdateWithoutAttestationChallengesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
+  conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
+  ownedRecipients?: Prisma.RecipientUpdateManyWithoutOwnerNestedInput
+  linkedRecipients?: Prisma.RecipientUpdateManyWithoutLinkedUserNestedInput
+  intents?: Prisma.IntentUpdateManyWithoutUserNestedInput
+  executions?: Prisma.ExecutionUpdateManyWithoutUserNestedInput
+  rampSessions?: Prisma.RampSessionUpdateManyWithoutUserNestedInput
+  auditEvents?: Prisma.AuditEventUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutUserNestedInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUpdateManyWithoutUserNestedInput
+  transactionPin?: Prisma.TransactionPinSecurityUpdateOneWithoutUserNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutUserNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutAttestationChallengesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
+  conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
+  ownedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutOwnerNestedInput
+  linkedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutLinkedUserNestedInput
+  intents?: Prisma.IntentUncheckedUpdateManyWithoutUserNestedInput
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutUserNestedInput
+  rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutUserNestedInput
+  auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutUserNestedInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUncheckedUpdateManyWithoutUserNestedInput
+  transactionPin?: Prisma.TransactionPinSecurityUncheckedUpdateOneWithoutUserNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutUserNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutDeviceAttestationsInput = {
+  id: string
+  username?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
+  conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
+  ownedRecipients?: Prisma.RecipientCreateNestedManyWithoutOwnerInput
+  linkedRecipients?: Prisma.RecipientCreateNestedManyWithoutLinkedUserInput
+  intents?: Prisma.IntentCreateNestedManyWithoutUserInput
+  executions?: Prisma.ExecutionCreateNestedManyWithoutUserInput
+  rampSessions?: Prisma.RampSessionCreateNestedManyWithoutUserInput
+  auditEvents?: Prisma.AuditEventCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutUserInput
+  walletSetupSessions?: Prisma.WalletSetupSessionCreateNestedManyWithoutUserInput
+  transactionPin?: Prisma.TransactionPinSecurityCreateNestedOneWithoutUserInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutUserInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
+  rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutDeviceAttestationsInput = {
+  id: string
+  username?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
+  conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
+  ownedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutOwnerInput
+  linkedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutLinkedUserInput
+  intents?: Prisma.IntentUncheckedCreateNestedManyWithoutUserInput
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutUserInput
+  rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutUserInput
+  auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutUserInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUncheckedCreateNestedManyWithoutUserInput
+  transactionPin?: Prisma.TransactionPinSecurityUncheckedCreateNestedOneWithoutUserInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutUserInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutDeviceAttestationsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutDeviceAttestationsInput, Prisma.UserUncheckedCreateWithoutDeviceAttestationsInput>
+}
+
+export type UserUpsertWithoutDeviceAttestationsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutDeviceAttestationsInput, Prisma.UserUncheckedUpdateWithoutDeviceAttestationsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutDeviceAttestationsInput, Prisma.UserUncheckedCreateWithoutDeviceAttestationsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutDeviceAttestationsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutDeviceAttestationsInput, Prisma.UserUncheckedUpdateWithoutDeviceAttestationsInput>
+}
+
+export type UserUpdateWithoutDeviceAttestationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
+  conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
+  ownedRecipients?: Prisma.RecipientUpdateManyWithoutOwnerNestedInput
+  linkedRecipients?: Prisma.RecipientUpdateManyWithoutLinkedUserNestedInput
+  intents?: Prisma.IntentUpdateManyWithoutUserNestedInput
+  executions?: Prisma.ExecutionUpdateManyWithoutUserNestedInput
+  rampSessions?: Prisma.RampSessionUpdateManyWithoutUserNestedInput
+  auditEvents?: Prisma.AuditEventUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutUserNestedInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUpdateManyWithoutUserNestedInput
+  transactionPin?: Prisma.TransactionPinSecurityUpdateOneWithoutUserNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutUserNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutDeviceAttestationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
+  conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
+  ownedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutOwnerNestedInput
+  linkedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutLinkedUserNestedInput
+  intents?: Prisma.IntentUncheckedUpdateManyWithoutUserNestedInput
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutUserNestedInput
+  rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutUserNestedInput
+  auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutUserNestedInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUncheckedUpdateManyWithoutUserNestedInput
+  transactionPin?: Prisma.TransactionPinSecurityUncheckedUpdateOneWithoutUserNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutUserNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
 }
 
 
@@ -4086,6 +4608,8 @@ export type UserCountOutputType = {
   rootChanges: number
   recoveryConfigurations: number
   recoveryAttempts: number
+  attestationChallenges: number
+  deviceAttestations: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -4111,6 +4635,8 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   rootChanges?: boolean | UserCountOutputTypeCountRootChangesArgs
   recoveryConfigurations?: boolean | UserCountOutputTypeCountRecoveryConfigurationsArgs
   recoveryAttempts?: boolean | UserCountOutputTypeCountRecoveryAttemptsArgs
+  attestationChallenges?: boolean | UserCountOutputTypeCountAttestationChallengesArgs
+  deviceAttestations?: boolean | UserCountOutputTypeCountDeviceAttestationsArgs
 }
 
 /**
@@ -4277,6 +4803,20 @@ export type UserCountOutputTypeCountRecoveryAttemptsArgs<ExtArgs extends runtime
   where?: Prisma.RecoveryAttemptWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountAttestationChallengesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.DeviceAttestationChallengeWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountDeviceAttestationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.DeviceAttestationWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -4308,6 +4848,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   rootChanges?: boolean | Prisma.User$rootChangesArgs<ExtArgs>
   recoveryConfigurations?: boolean | Prisma.User$recoveryConfigurationsArgs<ExtArgs>
   recoveryAttempts?: boolean | Prisma.User$recoveryAttemptsArgs<ExtArgs>
+  attestationChallenges?: boolean | Prisma.User$attestationChallengesArgs<ExtArgs>
+  deviceAttestations?: boolean | Prisma.User$deviceAttestationsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -4363,6 +4905,8 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   rootChanges?: boolean | Prisma.User$rootChangesArgs<ExtArgs>
   recoveryConfigurations?: boolean | Prisma.User$recoveryConfigurationsArgs<ExtArgs>
   recoveryAttempts?: boolean | Prisma.User$recoveryAttemptsArgs<ExtArgs>
+  attestationChallenges?: boolean | Prisma.User$attestationChallengesArgs<ExtArgs>
+  deviceAttestations?: boolean | Prisma.User$deviceAttestationsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -4394,6 +4938,8 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     rootChanges: Prisma.$RootChangePayload<ExtArgs>[]
     recoveryConfigurations: Prisma.$RecoveryConfigurationPayload<ExtArgs>[]
     recoveryAttempts: Prisma.$RecoveryAttemptPayload<ExtArgs>[]
+    attestationChallenges: Prisma.$DeviceAttestationChallengePayload<ExtArgs>[]
+    deviceAttestations: Prisma.$DeviceAttestationPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -4819,6 +5365,8 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   rootChanges<T extends Prisma.User$rootChangesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$rootChangesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RootChangePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   recoveryConfigurations<T extends Prisma.User$recoveryConfigurationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$recoveryConfigurationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RecoveryConfigurationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   recoveryAttempts<T extends Prisma.User$recoveryAttemptsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$recoveryAttemptsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RecoveryAttemptPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  attestationChallenges<T extends Prisma.User$attestationChallengesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$attestationChallengesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DeviceAttestationChallengePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  deviceAttestations<T extends Prisma.User$deviceAttestationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$deviceAttestationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DeviceAttestationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -5791,6 +6339,54 @@ export type User$recoveryAttemptsArgs<ExtArgs extends runtime.Types.Extensions.I
   take?: number
   skip?: number
   distinct?: Prisma.RecoveryAttemptScalarFieldEnum | Prisma.RecoveryAttemptScalarFieldEnum[]
+}
+
+/**
+ * User.attestationChallenges
+ */
+export type User$attestationChallengesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the DeviceAttestationChallenge
+   */
+  select?: Prisma.DeviceAttestationChallengeSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the DeviceAttestationChallenge
+   */
+  omit?: Prisma.DeviceAttestationChallengeOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DeviceAttestationChallengeInclude<ExtArgs> | null
+  where?: Prisma.DeviceAttestationChallengeWhereInput
+  orderBy?: Prisma.DeviceAttestationChallengeOrderByWithRelationInput | Prisma.DeviceAttestationChallengeOrderByWithRelationInput[]
+  cursor?: Prisma.DeviceAttestationChallengeWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.DeviceAttestationChallengeScalarFieldEnum | Prisma.DeviceAttestationChallengeScalarFieldEnum[]
+}
+
+/**
+ * User.deviceAttestations
+ */
+export type User$deviceAttestationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the DeviceAttestation
+   */
+  select?: Prisma.DeviceAttestationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the DeviceAttestation
+   */
+  omit?: Prisma.DeviceAttestationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DeviceAttestationInclude<ExtArgs> | null
+  where?: Prisma.DeviceAttestationWhereInput
+  orderBy?: Prisma.DeviceAttestationOrderByWithRelationInput | Prisma.DeviceAttestationOrderByWithRelationInput[]
+  cursor?: Prisma.DeviceAttestationWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.DeviceAttestationScalarFieldEnum | Prisma.DeviceAttestationScalarFieldEnum[]
 }
 
 /**

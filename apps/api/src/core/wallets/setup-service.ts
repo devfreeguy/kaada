@@ -2,13 +2,12 @@ import { createHash, randomBytes } from "node:crypto";
 
 import {
   buildPrimaryRoot,
-  classifyDeviceKey,
   deviceKeyIdFromPoint,
   deviceProofPayload,
   isOnP256Curve,
   primaryRootDeploymentSalt,
 } from "@kaada/contracts";
-import type { AttestationVerifier, ValidatorDeployments } from "@kaada/contracts";
+import type { ValidatorDeployments } from "@kaada/contracts";
 import {
   CELO_CHAIN_ID,
   KaadaError,
@@ -19,7 +18,6 @@ import {
   isSetupSessionViewable,
 } from "@kaada/domain";
 import type {
-  DeviceSecurityTier,
   RootType,
   RootValidatorDeployer,
   UserRepository,
@@ -27,6 +25,14 @@ import type {
   WalletSetupSession,
 } from "@kaada/domain";
 import type { Address, Hex } from "viem";
+
+import { resolveDeviceTier } from "../attestation/device-tier-service.js";
+import type {
+  AttestationEvidence,
+  DeviceTierResolver,
+  EnrolmentRoute,
+  IssuedAttestationChallenge,
+} from "../attestation/device-tier-service.js";
 
 import { verifyP256 } from "../roots/p256.js";
 import type { PasskeyService } from "./passkey-service.js";
@@ -54,13 +60,13 @@ export interface WalletSetupServiceDeps {
   rpName: string;
   /**
    * Device-key onboarding. Absent: a person without passkeys cannot create a wallet here (the route answers "not enabled").
-   * `onChainId` is the chain the validator clones run on; `attestationVerifier` stays absent until a real verifier exists,
-   * so no device key can be classified TRUSTED_DEVICE.
+   * `onChainId` is the chain the validator clones run on; `deviceTiers` stays absent unless device attestation is enabled,
+   * so no device key can then be classified above what its route implies.
    */
   deviceKeys?: {
     deployments: ValidatorDeployments;
     onChainId: number;
-    attestationVerifier?: AttestationVerifier;
+    deviceTiers?: DeviceTierResolver;
     /**
      * Puts the device key's FRESH clone on chain before the account is derived: the account is derived by simulating its
      * creation, which installs the validator, so the clone must exist first. Anyone may deploy a clone and it holds no
@@ -89,16 +95,11 @@ export interface DeviceKeyRegistration {
   challenge: string;
   r: string;
   s: string;
+  /** Platform evidence from a native client. A claim until the server verifies it; refused on the web route. */
+  attestation?: AttestationEvidence | undefined;
 }
 
 const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
-const toTier = (tier: "trusted-device" | "web-non-extractable" | "unknown"): DeviceSecurityTier =>
-  tier === "trusted-device"
-    ? "TRUSTED_DEVICE"
-    : tier === "web-non-extractable"
-      ? "WEB_NON_EXTRACTABLE"
-      : "UNKNOWN";
-
 /** What a channel hands to the user. The token appears here and nowhere else. */
 export interface CreatedSetupSession {
   sessionId: string;
@@ -323,6 +324,26 @@ export class WalletSetupService {
   }
 
   /**
+   * Issues the one-time nonce a native device passes to the platform attestation API when it generates its key. The
+   * challenge is bound to this person, the platform and the purpose; it does nothing without evidence for a key.
+   */
+  async issueAttestationChallenge(
+    token: string,
+    platform: "ANDROID" | "IOS",
+  ): Promise<IssuedAttestationChallenge> {
+    const config = this.requireDeviceKeys();
+    if (!config.deviceTiers)
+      throw new KaadaError("CREDENTIAL_REJECTED", "device attestation is not enabled");
+    const session = await this.resolve(token, "open");
+    await this.assertCanRegister(session.userId);
+    return config.deviceTiers.issueChallenge({
+      userId: session.userId,
+      platform,
+      purpose: "ROOT_ENROLLMENT",
+    });
+  }
+
+  /**
    * Step 2: verifies the signature over the issued challenge, records the device key as the root of a new wallet (a FRESH
    * clone, scoped to this wallet's owner and never used before), derives the counterfactual account and consumes the setup
    * link. Only public data crosses this call. The security tier is decided here from the route (web) and attestation
@@ -331,12 +352,17 @@ export class WalletSetupService {
   async completeDeviceKeyRegistration(
     token: string,
     input: DeviceKeyRegistration,
+    route: EnrolmentRoute = "web",
   ): Promise<SetupView> {
     const config = this.requireDeviceKeys();
     const session = await this.resolve(token, "open");
     await this.assertCanRegister(session.userId);
     const reject = (message: string) => new KaadaError("CREDENTIAL_REJECTED", message);
-    const { keyId, point } = this.checkedPoint(input);
+    // Before anything is spent: the web can never carry platform evidence, so a body that does is refused untouched.
+    if (route === "web" && input.attestation) {
+      throw reject("attestation evidence is not accepted on the web route");
+    }
+    const { keyId } = this.checkedPoint(input);
     if (!/^0x[0-9a-f]{64}$/.test(input.challenge)) throw reject("the challenge is malformed");
 
     const consumed = await this.uow.read.passkeys.consumeChallenge({
@@ -366,14 +392,14 @@ export class WalletSetupService {
       throw reject("the device key could not be verified");
     }
 
-    const tier = toTier(
-      await classifyDeviceKey({
-        // This route is the WEB enrolment path: the server, not the client, decides the channel.
-        channel: "web",
-        point,
-        verifier: config.attestationVerifier,
-      }),
-    );
+    // The route (never the body) says whether platform evidence may be considered; only verified evidence raises the tier.
+    const { tier } = await resolveDeviceTier(config.deviceTiers, {
+      route,
+      userId: session.userId,
+      purpose: "ROOT_ENROLLMENT",
+      point: { x: input.publicKeyX, y: input.publicKeyY },
+      evidence: input.attestation,
+    });
     const primary = buildPrimaryRoot({
       deployments: config.deployments,
       credential: {

@@ -23,6 +23,8 @@ import { WalletService } from "../core/wallets/wallet-service.js";
 import { SimpleWebAuthnVerifier } from "../infrastructure/wallet/simplewebauthn-verifier.js";
 import { WalletBalanceService } from "../core/wallets/balance-service.js";
 import { WalletSetupService } from "../core/wallets/setup-service.js";
+import { DeviceTierService } from "../core/attestation/device-tier-service.js";
+import { GoogleRevocationList } from "../infrastructure/attestation/google-revocation-list.js";
 import { repositoryRoot } from "../recovery/recovery.runtime.js";
 import { ROOT_VALIDATOR_DEPLOYER } from "../roots/roots.tokens.js";
 import { WalletController } from "./wallet.controller.js";
@@ -33,6 +35,7 @@ import {
   WALLET_REPOSITORIES,
   WALLET_SERVICE,
   WALLET_SETUP_SERVICE,
+  DEVICE_TIER_SERVICE,
 } from "./wallet.tokens.js";
 
 function unitOfWork(database: Database): WalletUnitOfWork {
@@ -115,14 +118,51 @@ function unitOfWork(database: Database): WalletUnitOfWork {
       },
     },
     {
+      // Verifies platform key attestation and derives device-key tiers. Off unless DEVICE_ATTESTATION_ENABLED.
+      provide: DEVICE_TIER_SERVICE,
+      inject: [DATABASE, APP_CONFIG],
+      useFactory: (database: Database, config: AppConfig): DeviceTierService | null => {
+        const attestation = config.wallet.deviceAttestation;
+        if (!attestation || !config.wallet.deviceKeyRoots) return null;
+        return new DeviceTierService({
+          attestations: createRepositories(database).deviceAttestations,
+          challengeTtlMs: attestation.challengeTtlMs,
+          ...(attestation.androidApps.length > 0 && {
+            android: {
+              applications: attestation.androidApps,
+              minimumLevel: attestation.androidMinimumLevel,
+              revocation: new GoogleRevocationList({
+                url: attestation.revocationUrl,
+                cacheMs: attestation.revocationCacheMs,
+              }),
+            },
+          }),
+          ...(attestation.iosAppIds.length > 0 && {
+            ios: {
+              appIds: attestation.iosAppIds,
+              allowDevelopment: attestation.iosAllowDevelopment,
+            },
+          }),
+        });
+      },
+    },
+    {
       provide: WALLET_SETUP_SERVICE,
-      inject: [DATABASE, APP_CONFIG, WALLET_SERVICE, PASSKEY_SERVICE, ROOT_VALIDATOR_DEPLOYER],
+      inject: [
+        DATABASE,
+        APP_CONFIG,
+        WALLET_SERVICE,
+        PASSKEY_SERVICE,
+        ROOT_VALIDATOR_DEPLOYER,
+        DEVICE_TIER_SERVICE,
+      ],
       useFactory: (
         database: Database,
         config: AppConfig,
         wallets: WalletService | null,
         passkeys: PasskeyService | null,
         validators: RootValidatorDeployer | null,
+        deviceTiers: DeviceTierService | null,
       ): WalletSetupService | null => {
         const passkey = config.wallet.passkey;
         if (!wallets || !passkeys || !passkey) return null;
@@ -138,6 +178,7 @@ function unitOfWork(database: Database): WalletUnitOfWork {
             deviceKeys: {
               onChainId: config.wallet.onChainId,
               ...(validators && { validators }),
+              ...(deviceTiers && { deviceTiers }),
               deployments: {
                 passkey: {
                   factory: config.wallet.deviceKeyRoots.contracts.passkeyFactory as `0x${string}`,
@@ -194,6 +235,7 @@ function unitOfWork(database: Database): WalletUnitOfWork {
     WALLET_SETUP_SERVICE,
     WALLET_BALANCE_SERVICE,
     ROOT_VALIDATOR_DEPLOYER,
+    DEVICE_TIER_SERVICE,
   ],
 })
 export class WalletModule {}

@@ -430,7 +430,9 @@ export const ModelName = {
   RootChange: 'RootChange',
   RecoveryConfiguration: 'RecoveryConfiguration',
   RecoveryAttempt: 'RecoveryAttempt',
-  RecoveryEmailChallenge: 'RecoveryEmailChallenge'
+  RecoveryEmailChallenge: 'RecoveryEmailChallenge',
+  DeviceAttestationChallenge: 'DeviceAttestationChallenge',
+  DeviceAttestation: 'DeviceAttestation'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -446,7 +448,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "transactionPinSecurity" | "authorizationSession" | "paymentAuthorization" | "executionSecret" | "firmQuoteAttempt" | "rootActionSession" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent" | "walletCredential" | "rootChange" | "recoveryConfiguration" | "recoveryAttempt" | "recoveryEmailChallenge"
+    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "transactionPinSecurity" | "authorizationSession" | "paymentAuthorization" | "executionSecret" | "firmQuoteAttempt" | "rootActionSession" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent" | "walletCredential" | "rootChange" | "recoveryConfiguration" | "recoveryAttempt" | "recoveryEmailChallenge" | "deviceAttestationChallenge" | "deviceAttestation"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2966,6 +2968,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    DeviceAttestationChallenge: {
+      payload: Prisma.$DeviceAttestationChallengePayload<ExtArgs>
+      fields: Prisma.DeviceAttestationChallengeFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.DeviceAttestationChallengeFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DeviceAttestationChallengePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.DeviceAttestationChallengeFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DeviceAttestationChallengePayload>
+        }
+        findFirst: {
+          args: Prisma.DeviceAttestationChallengeFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DeviceAttestationChallengePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.DeviceAttestationChallengeFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DeviceAttestationChallengePayload>
+        }
+        findMany: {
+          args: Prisma.DeviceAttestationChallengeFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DeviceAttestationChallengePayload>[]
+        }
+        create: {
+          args: Prisma.DeviceAttestationChallengeCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DeviceAttestationChallengePayload>
+        }
+        createMany: {
+          args: Prisma.DeviceAttestationChallengeCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.DeviceAttestationChallengeCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DeviceAttestationChallengePayload>[]
+        }
+        delete: {
+          args: Prisma.DeviceAttestationChallengeDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DeviceAttestationChallengePayload>
+        }
+        update: {
+          args: Prisma.DeviceAttestationChallengeUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DeviceAttestationChallengePayload>
+        }
+        deleteMany: {
+          args: Prisma.DeviceAttestationChallengeDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.DeviceAttestationChallengeUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.DeviceAttestationChallengeUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DeviceAttestationChallengePayload>[]
+        }
+        upsert: {
+          args: Prisma.DeviceAttestationChallengeUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DeviceAttestationChallengePayload>
+        }
+        aggregate: {
+          args: Prisma.DeviceAttestationChallengeAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateDeviceAttestationChallenge>
+        }
+        groupBy: {
+          args: Prisma.DeviceAttestationChallengeGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DeviceAttestationChallengeGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.DeviceAttestationChallengeCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DeviceAttestationChallengeCountAggregateOutputType> | number
+        }
+      }
+    }
+    DeviceAttestation: {
+      payload: Prisma.$DeviceAttestationPayload<ExtArgs>
+      fields: Prisma.DeviceAttestationFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.DeviceAttestationFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DeviceAttestationPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.DeviceAttestationFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DeviceAttestationPayload>
+        }
+        findFirst: {
+          args: Prisma.DeviceAttestationFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DeviceAttestationPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.DeviceAttestationFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DeviceAttestationPayload>
+        }
+        findMany: {
+          args: Prisma.DeviceAttestationFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DeviceAttestationPayload>[]
+        }
+        create: {
+          args: Prisma.DeviceAttestationCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DeviceAttestationPayload>
+        }
+        createMany: {
+          args: Prisma.DeviceAttestationCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.DeviceAttestationCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DeviceAttestationPayload>[]
+        }
+        delete: {
+          args: Prisma.DeviceAttestationDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DeviceAttestationPayload>
+        }
+        update: {
+          args: Prisma.DeviceAttestationUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DeviceAttestationPayload>
+        }
+        deleteMany: {
+          args: Prisma.DeviceAttestationDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.DeviceAttestationUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.DeviceAttestationUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DeviceAttestationPayload>[]
+        }
+        upsert: {
+          args: Prisma.DeviceAttestationUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DeviceAttestationPayload>
+        }
+        aggregate: {
+          args: Prisma.DeviceAttestationAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateDeviceAttestation>
+        }
+        groupBy: {
+          args: Prisma.DeviceAttestationGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DeviceAttestationGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.DeviceAttestationCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DeviceAttestationCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -3697,6 +3847,46 @@ export const RecoveryEmailChallengeScalarFieldEnum = {
 export type RecoveryEmailChallengeScalarFieldEnum = (typeof RecoveryEmailChallengeScalarFieldEnum)[keyof typeof RecoveryEmailChallengeScalarFieldEnum]
 
 
+export const DeviceAttestationChallengeScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  walletId: 'walletId',
+  platform: 'platform',
+  purpose: 'purpose',
+  nonce: 'nonce',
+  expiresAt: 'expiresAt',
+  consumedAt: 'consumedAt',
+  consumedPublicKeyHash: 'consumedPublicKeyHash',
+  createdAt: 'createdAt'
+} as const
+
+export type DeviceAttestationChallengeScalarFieldEnum = (typeof DeviceAttestationChallengeScalarFieldEnum)[keyof typeof DeviceAttestationChallengeScalarFieldEnum]
+
+
+export const DeviceAttestationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  walletId: 'walletId',
+  challengeId: 'challengeId',
+  platform: 'platform',
+  attestationType: 'attestationType',
+  credentialRef: 'credentialRef',
+  publicKeyHash: 'publicKeyHash',
+  result: 'result',
+  reason: 'reason',
+  hardwareLevel: 'hardwareLevel',
+  derivedTier: 'derivedTier',
+  verifierVersion: 'verifierVersion',
+  facts: 'facts',
+  chainHashes: 'chainHashes',
+  trustAnchor: 'trustAnchor',
+  verifiedAt: 'verifiedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type DeviceAttestationScalarFieldEnum = (typeof DeviceAttestationScalarFieldEnum)[keyof typeof DeviceAttestationScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -4333,6 +4523,62 @@ export type ListEnumRecoveryTerminatorFieldRefInput<$PrismaModel> = FieldRefInpu
 
 
 /**
+ * Reference to a field of type 'AttestationPlatform'
+ */
+export type EnumAttestationPlatformFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AttestationPlatform'>
+    
+
+
+/**
+ * Reference to a field of type 'AttestationPlatform[]'
+ */
+export type ListEnumAttestationPlatformFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AttestationPlatform[]'>
+    
+
+
+/**
+ * Reference to a field of type 'AttestationChallengePurpose'
+ */
+export type EnumAttestationChallengePurposeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AttestationChallengePurpose'>
+    
+
+
+/**
+ * Reference to a field of type 'AttestationChallengePurpose[]'
+ */
+export type ListEnumAttestationChallengePurposeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AttestationChallengePurpose[]'>
+    
+
+
+/**
+ * Reference to a field of type 'AttestationResult'
+ */
+export type EnumAttestationResultFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AttestationResult'>
+    
+
+
+/**
+ * Reference to a field of type 'AttestationResult[]'
+ */
+export type ListEnumAttestationResultFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AttestationResult[]'>
+    
+
+
+/**
+ * Reference to a field of type 'AttestationHardwareLevel'
+ */
+export type EnumAttestationHardwareLevelFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AttestationHardwareLevel'>
+    
+
+
+/**
+ * Reference to a field of type 'AttestationHardwareLevel[]'
+ */
+export type ListEnumAttestationHardwareLevelFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AttestationHardwareLevel[]'>
+    
+
+
+/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -4530,6 +4776,8 @@ export type GlobalOmitConfig = {
   recoveryConfiguration?: Prisma.RecoveryConfigurationOmit
   recoveryAttempt?: Prisma.RecoveryAttemptOmit
   recoveryEmailChallenge?: Prisma.RecoveryEmailChallengeOmit
+  deviceAttestationChallenge?: Prisma.DeviceAttestationChallengeOmit
+  deviceAttestation?: Prisma.DeviceAttestationOmit
 }
 
 /* Types for Logging */

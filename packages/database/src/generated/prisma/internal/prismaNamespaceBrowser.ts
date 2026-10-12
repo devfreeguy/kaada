@@ -84,7 +84,9 @@ export const ModelName = {
   RootChange: 'RootChange',
   RecoveryConfiguration: 'RecoveryConfiguration',
   RecoveryAttempt: 'RecoveryAttempt',
-  RecoveryEmailChallenge: 'RecoveryEmailChallenge'
+  RecoveryEmailChallenge: 'RecoveryEmailChallenge',
+  DeviceAttestationChallenge: 'DeviceAttestationChallenge',
+  DeviceAttestation: 'DeviceAttestation'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -793,6 +795,46 @@ export const RecoveryEmailChallengeScalarFieldEnum = {
 } as const
 
 export type RecoveryEmailChallengeScalarFieldEnum = (typeof RecoveryEmailChallengeScalarFieldEnum)[keyof typeof RecoveryEmailChallengeScalarFieldEnum]
+
+
+export const DeviceAttestationChallengeScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  walletId: 'walletId',
+  platform: 'platform',
+  purpose: 'purpose',
+  nonce: 'nonce',
+  expiresAt: 'expiresAt',
+  consumedAt: 'consumedAt',
+  consumedPublicKeyHash: 'consumedPublicKeyHash',
+  createdAt: 'createdAt'
+} as const
+
+export type DeviceAttestationChallengeScalarFieldEnum = (typeof DeviceAttestationChallengeScalarFieldEnum)[keyof typeof DeviceAttestationChallengeScalarFieldEnum]
+
+
+export const DeviceAttestationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  walletId: 'walletId',
+  challengeId: 'challengeId',
+  platform: 'platform',
+  attestationType: 'attestationType',
+  credentialRef: 'credentialRef',
+  publicKeyHash: 'publicKeyHash',
+  result: 'result',
+  reason: 'reason',
+  hardwareLevel: 'hardwareLevel',
+  derivedTier: 'derivedTier',
+  verifierVersion: 'verifierVersion',
+  facts: 'facts',
+  chainHashes: 'chainHashes',
+  trustAnchor: 'trustAnchor',
+  verifiedAt: 'verifiedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type DeviceAttestationScalarFieldEnum = (typeof DeviceAttestationScalarFieldEnum)[keyof typeof DeviceAttestationScalarFieldEnum]
 
 
 export const SortOrder = {

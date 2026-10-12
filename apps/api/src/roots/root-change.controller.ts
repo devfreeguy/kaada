@@ -23,6 +23,8 @@ import { WALLET_SETUP_SERVICE } from "../wallet/wallet.tokens.js";
 import { rootProofSchema } from "./root-proof.schema.js";
 import { ROOT_CHANGE_SERVICE } from "./roots.tokens.js";
 
+import { attestationEvidenceSchema, challengeView } from "../attestation/attestation.schema.js";
+
 const hex64 = z.string().regex(/^[0-9a-f]{64}$/);
 
 const deviceKeyBody = z.strictObject({ publicKeyX: hex64, publicKeyY: hex64 });
@@ -53,6 +55,24 @@ const newCredentialSchema = z.discriminatedUnion("type", [
 const prepareBody = z.strictObject({
   kind: z.enum(["ROTATE_ROOT", "ENROLL_BACKUP"]),
   credential: newCredentialSchema,
+});
+
+/** The NATIVE route: a device-key credential may carry platform evidence. The web route's strict schema refuses it. */
+const nativePrepareBody = z.strictObject({
+  kind: z.enum(["ROTATE_ROOT", "ENROLL_BACKUP"]),
+  credential: z.strictObject({
+    type: z.literal("DEVICE_KEY"),
+    publicKeyX: hex64,
+    publicKeyY: hex64,
+    challenge: z.string().regex(/^0x[0-9a-f]{64}$/),
+    r: hex64,
+    s: hex64,
+    attestation: attestationEvidenceSchema.optional(),
+  }),
+});
+const attestationChallengeBody = z.strictObject({
+  kind: z.enum(["ROTATE_ROOT", "ENROLL_BACKUP"]),
+  platform: z.enum(["ANDROID", "IOS"]),
 });
 
 const completeBody = z.strictObject({ proof: rootProofSchema });
@@ -144,6 +164,51 @@ export class RootChangeController {
         await setup.userForView(bearer(authorization)),
         parsed.data.kind,
         parsed.data.credential,
+      );
+      return { ...prepared, expiresAt: prepared.expiresAt.toISOString() };
+    } catch (error) {
+      return httpError(error);
+    }
+  }
+
+  /** Native: the one-time nonce a device passes to the platform when it generates the NEW key (bound to this wallet). */
+  @Post("attestation/challenge")
+  @HttpCode(200)
+  @Header("Cache-Control", "no-store")
+  async attestationChallenge(
+    @Body() body: unknown,
+    @Headers("authorization") authorization?: string,
+  ) {
+    const { setup, changes } = this.services();
+    const parsed = attestationChallengeBody.safeParse(body);
+    if (!parsed.success) throw new BadRequestException("invalid request");
+    try {
+      return challengeView(
+        await changes.issueAttestationChallenge(
+          await setup.userForView(bearer(authorization)),
+          parsed.data.kind,
+          parsed.data.platform,
+        ),
+      );
+    } catch (error) {
+      return httpError(error);
+    }
+  }
+
+  /** Native: like `changes`, but platform evidence for the new device key is considered (the route says it is native). */
+  @Post("native/changes")
+  @HttpCode(200)
+  @Header("Cache-Control", "no-store")
+  async prepareNative(@Body() body: unknown, @Headers("authorization") authorization?: string) {
+    const { setup, changes } = this.services();
+    const parsed = nativePrepareBody.safeParse(body);
+    if (!parsed.success) throw new BadRequestException("invalid request");
+    try {
+      const prepared = await changes.prepare(
+        await setup.userForView(bearer(authorization)),
+        parsed.data.kind,
+        parsed.data.credential,
+        "native",
       );
       return { ...prepared, expiresAt: prepared.expiresAt.toISOString() };
     } catch (error) {

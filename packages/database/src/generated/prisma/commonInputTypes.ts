@@ -1021,6 +1021,74 @@ export type EnumRecoveryTerminatorNullableWithAggregatesFilter<$PrismaModel = ne
   _max?: Prisma.NestedEnumRecoveryTerminatorNullableFilter<$PrismaModel>
 }
 
+export type EnumAttestationPlatformFilter<$PrismaModel = never> = {
+  equals?: $Enums.AttestationPlatform | Prisma.EnumAttestationPlatformFieldRefInput<$PrismaModel>
+  in?: $Enums.AttestationPlatform[] | Prisma.ListEnumAttestationPlatformFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AttestationPlatform[] | Prisma.ListEnumAttestationPlatformFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAttestationPlatformFilter<$PrismaModel> | $Enums.AttestationPlatform
+}
+
+export type EnumAttestationChallengePurposeFilter<$PrismaModel = never> = {
+  equals?: $Enums.AttestationChallengePurpose | Prisma.EnumAttestationChallengePurposeFieldRefInput<$PrismaModel>
+  in?: $Enums.AttestationChallengePurpose[] | Prisma.ListEnumAttestationChallengePurposeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AttestationChallengePurpose[] | Prisma.ListEnumAttestationChallengePurposeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAttestationChallengePurposeFilter<$PrismaModel> | $Enums.AttestationChallengePurpose
+}
+
+export type EnumAttestationPlatformWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.AttestationPlatform | Prisma.EnumAttestationPlatformFieldRefInput<$PrismaModel>
+  in?: $Enums.AttestationPlatform[] | Prisma.ListEnumAttestationPlatformFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AttestationPlatform[] | Prisma.ListEnumAttestationPlatformFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAttestationPlatformWithAggregatesFilter<$PrismaModel> | $Enums.AttestationPlatform
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumAttestationPlatformFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumAttestationPlatformFilter<$PrismaModel>
+}
+
+export type EnumAttestationChallengePurposeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.AttestationChallengePurpose | Prisma.EnumAttestationChallengePurposeFieldRefInput<$PrismaModel>
+  in?: $Enums.AttestationChallengePurpose[] | Prisma.ListEnumAttestationChallengePurposeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AttestationChallengePurpose[] | Prisma.ListEnumAttestationChallengePurposeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAttestationChallengePurposeWithAggregatesFilter<$PrismaModel> | $Enums.AttestationChallengePurpose
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumAttestationChallengePurposeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumAttestationChallengePurposeFilter<$PrismaModel>
+}
+
+export type EnumAttestationResultFilter<$PrismaModel = never> = {
+  equals?: $Enums.AttestationResult | Prisma.EnumAttestationResultFieldRefInput<$PrismaModel>
+  in?: $Enums.AttestationResult[] | Prisma.ListEnumAttestationResultFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AttestationResult[] | Prisma.ListEnumAttestationResultFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAttestationResultFilter<$PrismaModel> | $Enums.AttestationResult
+}
+
+export type EnumAttestationHardwareLevelNullableFilter<$PrismaModel = never> = {
+  equals?: $Enums.AttestationHardwareLevel | Prisma.EnumAttestationHardwareLevelFieldRefInput<$PrismaModel> | null
+  in?: $Enums.AttestationHardwareLevel[] | Prisma.ListEnumAttestationHardwareLevelFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.AttestationHardwareLevel[] | Prisma.ListEnumAttestationHardwareLevelFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumAttestationHardwareLevelNullableFilter<$PrismaModel> | $Enums.AttestationHardwareLevel | null
+}
+
+export type EnumAttestationResultWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.AttestationResult | Prisma.EnumAttestationResultFieldRefInput<$PrismaModel>
+  in?: $Enums.AttestationResult[] | Prisma.ListEnumAttestationResultFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AttestationResult[] | Prisma.ListEnumAttestationResultFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAttestationResultWithAggregatesFilter<$PrismaModel> | $Enums.AttestationResult
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumAttestationResultFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumAttestationResultFilter<$PrismaModel>
+}
+
+export type EnumAttestationHardwareLevelNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.AttestationHardwareLevel | Prisma.EnumAttestationHardwareLevelFieldRefInput<$PrismaModel> | null
+  in?: $Enums.AttestationHardwareLevel[] | Prisma.ListEnumAttestationHardwareLevelFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.AttestationHardwareLevel[] | Prisma.ListEnumAttestationHardwareLevelFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumAttestationHardwareLevelNullableWithAggregatesFilter<$PrismaModel> | $Enums.AttestationHardwareLevel | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumAttestationHardwareLevelNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumAttestationHardwareLevelNullableFilter<$PrismaModel>
+}
+
 export type NestedUuidFilter<$PrismaModel = never> = {
   equals?: string | Prisma.StringFieldRefInput<$PrismaModel>
   in?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
@@ -1981,6 +2049,74 @@ export type NestedEnumRecoveryTerminatorNullableWithAggregatesFilter<$PrismaMode
   _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
   _min?: Prisma.NestedEnumRecoveryTerminatorNullableFilter<$PrismaModel>
   _max?: Prisma.NestedEnumRecoveryTerminatorNullableFilter<$PrismaModel>
+}
+
+export type NestedEnumAttestationPlatformFilter<$PrismaModel = never> = {
+  equals?: $Enums.AttestationPlatform | Prisma.EnumAttestationPlatformFieldRefInput<$PrismaModel>
+  in?: $Enums.AttestationPlatform[] | Prisma.ListEnumAttestationPlatformFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AttestationPlatform[] | Prisma.ListEnumAttestationPlatformFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAttestationPlatformFilter<$PrismaModel> | $Enums.AttestationPlatform
+}
+
+export type NestedEnumAttestationChallengePurposeFilter<$PrismaModel = never> = {
+  equals?: $Enums.AttestationChallengePurpose | Prisma.EnumAttestationChallengePurposeFieldRefInput<$PrismaModel>
+  in?: $Enums.AttestationChallengePurpose[] | Prisma.ListEnumAttestationChallengePurposeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AttestationChallengePurpose[] | Prisma.ListEnumAttestationChallengePurposeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAttestationChallengePurposeFilter<$PrismaModel> | $Enums.AttestationChallengePurpose
+}
+
+export type NestedEnumAttestationPlatformWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.AttestationPlatform | Prisma.EnumAttestationPlatformFieldRefInput<$PrismaModel>
+  in?: $Enums.AttestationPlatform[] | Prisma.ListEnumAttestationPlatformFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AttestationPlatform[] | Prisma.ListEnumAttestationPlatformFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAttestationPlatformWithAggregatesFilter<$PrismaModel> | $Enums.AttestationPlatform
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumAttestationPlatformFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumAttestationPlatformFilter<$PrismaModel>
+}
+
+export type NestedEnumAttestationChallengePurposeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.AttestationChallengePurpose | Prisma.EnumAttestationChallengePurposeFieldRefInput<$PrismaModel>
+  in?: $Enums.AttestationChallengePurpose[] | Prisma.ListEnumAttestationChallengePurposeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AttestationChallengePurpose[] | Prisma.ListEnumAttestationChallengePurposeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAttestationChallengePurposeWithAggregatesFilter<$PrismaModel> | $Enums.AttestationChallengePurpose
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumAttestationChallengePurposeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumAttestationChallengePurposeFilter<$PrismaModel>
+}
+
+export type NestedEnumAttestationResultFilter<$PrismaModel = never> = {
+  equals?: $Enums.AttestationResult | Prisma.EnumAttestationResultFieldRefInput<$PrismaModel>
+  in?: $Enums.AttestationResult[] | Prisma.ListEnumAttestationResultFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AttestationResult[] | Prisma.ListEnumAttestationResultFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAttestationResultFilter<$PrismaModel> | $Enums.AttestationResult
+}
+
+export type NestedEnumAttestationHardwareLevelNullableFilter<$PrismaModel = never> = {
+  equals?: $Enums.AttestationHardwareLevel | Prisma.EnumAttestationHardwareLevelFieldRefInput<$PrismaModel> | null
+  in?: $Enums.AttestationHardwareLevel[] | Prisma.ListEnumAttestationHardwareLevelFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.AttestationHardwareLevel[] | Prisma.ListEnumAttestationHardwareLevelFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumAttestationHardwareLevelNullableFilter<$PrismaModel> | $Enums.AttestationHardwareLevel | null
+}
+
+export type NestedEnumAttestationResultWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.AttestationResult | Prisma.EnumAttestationResultFieldRefInput<$PrismaModel>
+  in?: $Enums.AttestationResult[] | Prisma.ListEnumAttestationResultFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AttestationResult[] | Prisma.ListEnumAttestationResultFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAttestationResultWithAggregatesFilter<$PrismaModel> | $Enums.AttestationResult
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumAttestationResultFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumAttestationResultFilter<$PrismaModel>
+}
+
+export type NestedEnumAttestationHardwareLevelNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.AttestationHardwareLevel | Prisma.EnumAttestationHardwareLevelFieldRefInput<$PrismaModel> | null
+  in?: $Enums.AttestationHardwareLevel[] | Prisma.ListEnumAttestationHardwareLevelFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.AttestationHardwareLevel[] | Prisma.ListEnumAttestationHardwareLevelFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumAttestationHardwareLevelNullableWithAggregatesFilter<$PrismaModel> | $Enums.AttestationHardwareLevel | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumAttestationHardwareLevelNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumAttestationHardwareLevelNullableFilter<$PrismaModel>
 }
 
 
