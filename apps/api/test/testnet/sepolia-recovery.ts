@@ -627,7 +627,7 @@ async function proposeAndProve(
     },
   });
   const proof = await api("POST", "/proof", { token, body: { signature } });
-  return { proposal, proof };
+  return { proposal, proof, signature };
 }
 
 const only = new Set(
@@ -986,7 +986,12 @@ try {
     const codeC = contracts.generateRecoveryCode();
     await armRecovery(worldC, codeC, worldC.setupToken, rootC, rootValidatorC);
     const tokenC = await startVerified(worldC);
-    const { proof: proofC } = await proposeAndProve(worldC, tokenC, codeC, newDeviceKey());
+    const { proof: proofC, signature: signatureC } = await proposeAndProve(
+      worldC,
+      tokenC,
+      codeC,
+      newDeviceKey(),
+    );
     record("C: a recovery is pending on chain", proofC.body["status"] === "PENDING", "");
     const cancelToken = reportToken(worldC.email);
     const prepC = await api("POST", "/cancel/prepare", { token: cancelToken });
@@ -1018,12 +1023,36 @@ try {
         (await chain.validatorState(worldC.account)).recoveryNonce === "1",
       "",
     );
-    await sleep(30_000);
+    await sleep(30_000); // the 25 s test delay has now passed: the cancelled recovery would be mature
+    const finalizeC = await api("POST", "/finalize", { token: tokenC });
     record(
-      "C: a cancelled attempt can never be finalized",
-      (await api("POST", "/finalize", { token: tokenC })).status !== 200 ||
-        (await api("POST", "/finalize", { token: tokenC })).body["outcome"] === "NOT_ELIGIBLE",
+      "C: a matured-but-cancelled attempt cannot finalize",
+      finalizeC.status !== 200 || finalizeC.body["outcome"] === "NOT_ELIGIBLE",
+      JSON.stringify(finalizeC.body),
+    );
+    const replayC = await api("POST", "/proof", { token: tokenC, body: { signature: signatureC } });
+    record(
+      "C: the old Recovery Code signature cannot be replayed",
+      replayC.status !== 200 || replayC.body["status"] === "CANCELLED",
+      JSON.stringify(replayC.body),
+    );
+    record(
+      "C: no recovery is pending on chain after the replay attempt and the root is unchanged",
+      (await chain.validatorState(worldC.account)).pending === undefined &&
+        (await currentRoot(worldC)).toLowerCase() === rootValidatorC.toLowerCase(),
       "",
+    );
+    const { RecoverySweeper } = await import("../../src/recovery/recovery-sweeper.js");
+    await app.get(RecoverySweeper).sweepNow(); // what a restarted process does first
+    const rowC = await db.client.recoveryAttempt.findFirst({
+      where: { walletId: worldC.walletId },
+      orderBy: { createdAt: "desc" },
+    });
+    record(
+      "C: a sweep (restart reconciliation) leaves the attempt CANCELLED and the root unchanged",
+      rowC?.status === "CANCELLED" &&
+        (await currentRoot(worldC)).toLowerCase() === rootValidatorC.toLowerCase(),
+      String(rowC?.status),
     );
   }
   if (only.has("D")) {
@@ -1056,6 +1085,38 @@ try {
       /^0x[0-9a-f]{64}$/.test(storedD?.terminationTxHash ?? "") &&
         (await chain.validatorState(worldD.account)).pending === undefined,
       "",
+    );
+    const strangerD = privateKeyToAccount(generatePrivateKey());
+    let strangerRefused = false;
+    try {
+      await pub.simulateContract({
+        address: state.recoveryProbe.validator as Hex,
+        abi: viem.parseAbi(["function attestorCancel(address account)"]),
+        functionName: "attestorCancel",
+        args: [worldD.account],
+        account: strangerD,
+      });
+    } catch {
+      strangerRefused = true;
+    }
+    record("D: a stranger cannot veto (the contract refuses attestorCancel)", strangerRefused, "");
+    await sleep(30_000); // past the test delay: the vetoed recovery would be mature
+    const finalizeD = await api("POST", "/finalize", { token: tokenD });
+    record(
+      "D: a matured-but-vetoed attempt cannot finalize",
+      finalizeD.status !== 200 || finalizeD.body["outcome"] === "NOT_ELIGIBLE",
+      JSON.stringify(finalizeD.body),
+    );
+    const { RecoverySweeper: SweeperD } = await import("../../src/recovery/recovery-sweeper.js");
+    await app.get(SweeperD).sweepNow();
+    const rowD = await db.client.recoveryAttempt.findFirst({
+      where: { walletId: worldD.walletId },
+      orderBy: { createdAt: "desc" },
+    });
+    record(
+      "D: after a sweep (restart reconciliation) the attempt is still VETOED, never stranded PENDING",
+      rowD?.status === "VETOED",
+      String(rowD?.status),
     );
     record(
       "D: the attestor alone cannot start or finish a recovery (its veto moved no root)",

@@ -134,14 +134,14 @@ that binds this exact key, hardware backing and the server challenge. **No verif
 `apps/api/test/testnet/sepolia-recovery.ts` boots the real Nest API over Postgres, the real `ViemRecoveryChain`, the self-hosted Alto bundler and the file-based attestor key outside the repo.
 The 25 s delay exists only in the test-build recovery validator; the production minimum stays 24 h (72 h default) and is enforced by config validation.
 
-| Scenario                           | Result                                                                                                                                                                                         |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A. passkey root -> device-key root | all checks pass: arm, email, proof, attestor, maturity gate, finalize via Alto, nonce advanced, old passkey and lane W void, sessions/PIN retired, signing proof, PIN reset, new Recovery Code |
-| B. device-key root -> passkey root | all checks pass, including a real WebAuthn registration and assertion accepted on chain                                                                                                        |
-| C. cancel by existing root         | all checks pass (non-root cancel refused; root-signed UserOperation cancels; never finalizable)                                                                                                |
-| D. attestor veto                   | run 1 failed one check (below); fixed and unit-tested. **Not re-run live yet**                                                                                                                 |
+| Scenario                           | Result                                                                                                                                                                                                                 |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A. passkey root -> device-key root | all checks pass: arm, email, proof, attestor, maturity gate, finalize via Alto, nonce advanced, old passkey and lane W void, sessions/PIN retired, signing proof, PIN reset, new Recovery Code                         |
+| B. device-key root -> passkey root | all checks pass, including a real WebAuthn registration and assertion accepted on chain                                                                                                                                |
+| C. cancel by existing root         | all checks pass (non-root cancel refused; root-signed UserOperation cancels; never finalizable)                                                                                                                        |
+| D. attestor veto                   | all checks pass with the final code: veto succeeds, attempt reaches VETOED (not PENDING), a stranger's `attestorCancel` is refused, a matured vetoed attempt cannot finalize, a sweep leaves it VETOED, root unchanged |
 
-Run 1 was 39/40; run 3 re-passed all of A and B with the final code before the deployer ran out of Sepolia CELO (each full run costs about 0.7-0.8 CELO). **Live confirmation of C and D with the final code is pending funding** (`SCENARIOS=C,D`).
+Final live results (final committed code): A and B passed in run 3; C and D passed 15/15 in a dedicated `SCENARIOS=C,D` run, which also checks the post-maturity finalize, the replayed signature, the stranger veto and a recovery sweep. The sweep runs `RecoverySweeper.sweepNow()` inside the same process; it exercises the reconciliation path a restarted process would take, but is not a literal process restart.
 
 ### Bugs found and fixed
 
