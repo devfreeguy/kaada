@@ -172,10 +172,19 @@ export interface Account {
 }
 
 export async function newAccount(owner: Hex, salt: Hex): Promise<Account> {
+  return newAccountWithRoot(ECDSA_X, ownerData(owner), salt);
+}
+
+/** A counterfactual Kernel whose creation-time root is `rootValidator` installed with `rootData`. */
+export async function newAccountWithRoot(
+  rootValidator: Address,
+  rootData: Hex,
+  salt: Hex,
+): Promise<Account> {
   const initData = encodeFunctionData({
     abi: KernelV3_3AccountAbi,
     functionName: "initialize",
-    args: [vid(ECDSA_X), zeroAddress, ownerData(owner), "0x", []],
+    args: [vid(rootValidator), zeroAddress, rootData, "0x", []],
   });
   const address = await pub.readContract({
     address: FACTORY,
@@ -192,11 +201,14 @@ export interface Outcome {
   detail: string;
 }
 
-/** One userOp: signed by `signerKey` through `validator` (`null` = the root validator). */
+/** Signs a UserOperation hash (a passkey assertion, say) when the validator is not ECDSA. */
+export type HashSigner = (hash: Hex) => Promise<Hex> | Hex;
+
+/** One userOp: signed by `signer` (an ECDSA key, or a function over the hash) through `validator` (`null` = the root). */
 export async function submit(
   account: Account,
   validator: Address | null,
-  signerKey: Hex,
+  signer: Hex | HashSigner,
   callData: Hex,
   gas: { verification?: bigint; call?: bigint } = {},
 ): Promise<Outcome> {
@@ -257,7 +269,10 @@ export async function submit(
     entryPointVersion: "0.7",
     chainId: celoSepolia.id,
   });
-  operation.signature = await privateKeyToAccount(signerKey).sign({ hash });
+  operation.signature =
+    typeof signer === "function"
+      ? await signer(hash)
+      : await privateKeyToAccount(signer).sign({ hash });
   const packed = toPackedUserOperation(operation);
   try {
     const { request } = await pub.simulateContract({

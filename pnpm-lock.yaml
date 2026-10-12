@@ -262,6 +262,9 @@ importers:
       '@kaada/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
+      '@noble/curves':
+        specifier: 1.9.7
+        version: 1.9.7
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.1

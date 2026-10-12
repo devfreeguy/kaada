@@ -4,6 +4,7 @@ import { createEVM } from "@ethereumjs/evm";
 import type { EVM } from "@ethereumjs/evm";
 import { SimpleStateManager } from "@ethereumjs/statemanager";
 import { Account, bytesToHex, createAddressFromString, hexToBytes } from "@ethereumjs/util";
+import { p256 } from "@noble/curves/p256";
 import {
   decodeErrorResult,
   decodeFunctionResult,
@@ -26,6 +27,37 @@ export interface CallResult {
   gasUsed: bigint;
 }
 
+/** RIP-7212 (Celo, 0x100): input hash|r|s|x|y (160 bytes); output uint256(1) when valid, empty otherwise. */
+function p256Precompile(input: { data: Uint8Array; gasLimit: bigint }) {
+  const gas = 3450n;
+  if (input.gasLimit < gas) {
+    return {
+      executionGasUsed: input.gasLimit,
+      returnValue: new Uint8Array(),
+      exceptionError: undefined,
+    };
+  }
+  const empty = { executionGasUsed: gas, returnValue: new Uint8Array() };
+  if (input.data.length !== 160) return empty;
+  const word = (i: number) => BigInt(bytesToHex(input.data.subarray(i * 32, i * 32 + 32)));
+  try {
+    const point = p256.ProjectivePoint.fromAffine({ x: word(3), y: word(4) });
+    const sig = new p256.Signature(word(1), word(2));
+    const valid = p256.verify(
+      sig.toCompactRawBytes(),
+      input.data.subarray(0, 32),
+      point.toRawBytes(false),
+      { lowS: false },
+    );
+    if (!valid) return empty;
+    const out = new Uint8Array(32);
+    out[31] = 1;
+    return { executionGasUsed: gas, returnValue: out };
+  } catch {
+    return empty;
+  }
+}
+
 export class TestChain {
   private constructor(
     private readonly evm: EVM,
@@ -37,7 +69,16 @@ export class TestChain {
 
   static async create(chainId = 1n): Promise<TestChain> {
     const common = new Common({ chain: Mainnet, hardfork: Hardfork.Cancun });
-    const evm = await createEVM({ common, stateManager: new SimpleStateManager() });
+    const evm = await createEVM({
+      common,
+      stateManager: new SimpleStateManager(),
+      customPrecompiles: [
+        {
+          address: createAddressFromString("0x0000000000000000000000000000000000000100"),
+          function: p256Precompile as never,
+        },
+      ],
+    });
     return new TestChain(evm, chainId);
   }
 
@@ -51,6 +92,18 @@ export class TestChain {
     const existing = await this.evm.stateManager.getAccount(key);
     if (existing && existing.balance >= wei) return;
     await this.evm.stateManager.putAccount(key, new Account(existing?.nonce ?? 0n, wei));
+  }
+
+  /** Installs runtime code at an address (a verified third-party contract, without its constructor). */
+  async setCode(address: Address, runtime: Hex): Promise<void> {
+    const key = createAddressFromString(address);
+    const existing = await this.evm.stateManager.getAccount(key);
+    await this.evm.stateManager.putAccount(key, existing ?? new Account(0n, 0n));
+    await this.evm.stateManager.putCode(key, hexToBytes(runtime));
+  }
+
+  async getCode(address: Address): Promise<Hex> {
+    return bytesToHex(await this.evm.stateManager.getCode(createAddressFromString(address)));
   }
 
   private block() {

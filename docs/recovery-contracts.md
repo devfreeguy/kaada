@@ -128,6 +128,107 @@ Events for audit: `AttestorRotationProposed/Cancelled/Finalized` (with a rotatio
 `ShortDelayAttestorRegistry` (`contracts/testnet`) lowers the floor to 10 s for Sepolia runs and must never be deployed on a
 production chain.
 
+## KaadaPasskeyValidatorFactory
+
+Source: `packages/contracts/contracts/KaadaPasskeyValidatorFactory.sol`; shared derivation: `src/passkey-factory.ts`.
+
+The ZeroDev passkey validator (v0.0.3, the runtime already verified and used by Kaada) stores **one key per Kernel account**.
+Kernel's `changeRootValidator` to an instance that is already initialized for the account is a silent no-op that keeps the
+old key. So every root credential an account will ever use (initial, recovered, backup, rotated) needs its own
+never-initialized instance at an address that can be committed to in advance (the recovery commitment names the new root
+validator address). The factory creates those instances as deterministic EIP-1167 clones of the unmodified validator. It
+has no owner, no upgrade path, no payable function, no token logic, and never calls an instance except the
+`isInitialized` view.
+
+### Exact salt derivation
+
+```
+credentialCommitment = keccak256(abi.encode(CREDENTIAL_DOMAIN, x, y, authenticatorIdHash))
+    CREDENTIAL_DOMAIN = keccak256("kaada.passkey-credential")
+    (x, y, authenticatorIdHash) are exactly the validator's onInstall data: abi.encode((uint256 x, uint256 y), bytes32 idHash)
+
+salt = keccak256(abi.encode(SALT_DOMAIN, FACTORY_VERSION, scope, purpose, credentialCommitment, deploymentSalt))
+    SALT_DOMAIN     = keccak256("kaada.passkey-validator-instance")
+    FACTORY_VERSION = 1 (uint16)
+    scope           = the Kernel account (address(0) only for PRIMARY, see below)
+    purpose         = uint8: 0 PRIMARY, 1 RECOVERY, 2 BACKUP, 3 ROTATION (anything else reverts)
+    deploymentSalt  = bytes32 chosen by the caller (zero is fine): a fresh instance for the same credential and role
+
+instance = CREATE2(factory, salt, keccak256(initcode))
+    initcode = 3d602d80600a3d3981f3 363d3d373d3d3d363d73 <IMPLEMENTATION> 5af43d82803e903d91602b57fd5bf3   (EIP-1167)
+```
+
+The address therefore commits to the factory, the exact implementation address, the account, the role, the credential and the
+extra salt. Every field is fixed-width in `abi.encode`, so no two different inputs encode alike. `src/passkey-factory.ts`
+(`passkeyInstanceSalt`, `predictPasskeyInstance`, `passkeyCredentialCommitment`) is byte-for-byte the same computation,
+checked against the contract by unit tests (including a 300-input fuzz).
+
+### Creation-time root
+
+A Kernel account's address is derived from its initialization data, which names its root validator. The first root instance
+therefore cannot commit to an account address that depends on it. `scope == address(0)` is accepted **only** for
+`PURPOSE_PRIMARY`; the credential and a per-wallet `deploymentSalt` make it unique. This is safe because the validator keeps
+its state per account: sharing an address never shares a key. Every later role must use the real, non-zero account, so a
+recovery or rotation instance is always bound to the account it recovers.
+
+### API
+
+| Function                                | Purpose                                                                                                            |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `credentialCommitment(validatorData)`   | Commitment from the exact install data; rejects bad length or a zero coordinate                                    |
+| `saltFor`, `predictInstance`            | The derivation above                                                                                               |
+| `isDeployed`                            | Does the predicted address have code?                                                                              |
+| `statusOf(scope, account, ...)`         | `NOT_DEPLOYED`, `DEPLOYED_UNUSED` or `INITIALIZED_FOR_ACCOUNT`                                                     |
+| `canUseForAccount(scope, account, ...)` | False when the instance is already initialized for `account`; never silently reuse it                              |
+| `deploy`                                | Creates the clone if absent. Idempotent: returns `(instance, created)`, emits `InstanceDeployed` only when created |
+
+Rejected inputs: zero scope for any role other than PRIMARY, zero credential commitment, purpose above 3 (and the preflight
+refuses a zero `account`). The constructor requires the implementation to have code and its code hash to equal the expected,
+pinned hash (`0x726d98…9eea`), and the implementation contains no `SELFDESTRUCT`, `DELEGATECALL`, `CALLCODE`, `CALL`,
+`CREATE` or `ADDRESS` opcode (tested), which is what makes it safe behind a delegatecall proxy.
+
+### Front-running and griefing
+
+- **Anyone can deploy any instance, and that is harmless.** A fresh clone has empty storage. The validator writes its key under
+  `msg.sender` inside `onInstall`, so only the Kernel account itself (running its own installation) can initialize its own
+  entry. An attacker who deploys the instance early, or calls `onInstall` on it directly, only writes an entry for the
+  attacker's own address. Tested in-process and on Celo Sepolia.
+- **Deployment and initialization do not need to be atomic.** There is nothing to race: initialization is performed by
+  Kernel inside the account's own batch (`changeRootValidator`, creation-time `initialize`, or recovery).
+- **The attacker cannot occupy the address with other code.** The address is a CREATE2 of the factory with fixed initcode;
+  only this factory can produce code there, and only this clone code.
+- **The credential commitment in the address is a derivation convention, not enforced on-chain**: the validator does not check
+  it. The binding that matters is the data the account installs, and for a recovery that is committed by the recovery
+  validator's root commitment (`rootId` + hash of the install data).
+- **A deployed instance is useless without the account's own install.** Deploying instances costs the attacker gas and
+  yields nothing; the wallet owner pays nothing extra if the instance already exists.
+
+### Assumptions
+
+- The pinned ZeroDev runtime is correct and stateless apart from the per-account mapping (its code was scanned: no
+  `SELFDESTRUCT`, no `DELEGATECALL`, no `ADDRESS`, no `CODECOPY`; the only external dependency is the P-256 verification,
+  RIP-7212 at `0x100` on Celo).
+- The factory address and the implementation address are part of every instance address: a new implementation or a new
+  factory (`FACTORY_VERSION`) can never collide with an old address.
+- Roles are a label in the salt only; the factory grants no authority to a purpose.
+- The factory does not remove or rotate anything: an old instance keeps existing forever. After a rotation it is the
+  Kernel-level `invalidateNonce` (part of the same atomic batch) that stops the old key from acting.
+
+### Celo Sepolia proof (30/30)
+
+`packages/blockchain/src/testnet/passkey-factory-sepolia.ts`, real Kernel v3.3, EntryPoint 0.7, the Sepolia copy of the
+verified ZeroDev runtime behind clones, software WebAuthn authenticator, RIP-7212 precompile:
+
+- Rotation: clone #1 is the creation-time root (P1); P1 rotates to clone #2 (P2) atomically with `invalidateNonce`. The wallet
+  address is unchanged, P2 signs, P1 fails through the root (`AA24`) and through its own old instance (`InvalidNonce`).
+  The old instance keeps its code and its initialized entry but cannot act.
+- Front-running: an outsider calling `onInstall` on the predicted instance only initializes its own entry; the wallet's is
+  untouched and the wallet later installs normally.
+- Recovery: `KaadaRecoveryValidator` refuses a commitment to a clone with no code, accepts it once deployed, the exact batch
+  switches the root to the predicted clone, P4 signs, P3 fails, replay fails (`NoPendingRecovery`).
+- Gas: factory deployment 623,550 (runtime 2,609 B); a clone deployment 70,122 to 70,261 per transaction, including the
+  21,000 base cost (about 48,000 execution).
+
 ## Tooling
 
 - `pnpm --filter @kaada/contracts generate` compiles every `.sol` with solc-js into `src/generated/artifacts.ts` (EVM
