@@ -38,7 +38,7 @@ export interface PlanInputs {
   currentAllowance: bigint;
   /** Read-only: whether the Kernel account exists on chain. */
   deployed: boolean;
-  passkeyRootAvailable: boolean;
+  rootAvailable: boolean;
   infrastructure: { rpcConfigured: boolean; bundlerConfigured: boolean };
   permissions: readonly DelegatedPermission[];
   now: Date;
@@ -163,19 +163,19 @@ export function buildExecutionPlan(input: PlanInputs): ExecutionPlan {
         state: "SATISFIED",
         existingPermissionId: covering.id,
         scope,
-        installSigner: "ROOT_PASSKEY",
+        installSigner: "ROOT",
       }
-    : { state: "INSTALLATION_REQUIRED", scope, installSigner: "ROOT_PASSKEY" };
+    : { state: "INSTALLATION_REQUIRED", scope, installSigner: "ROOT" };
 
   // ── account
   const deploymentRequired = !input.deployed;
   const rootSignatureRequired =
     deploymentRequired || permissionRequirement.state === "INSTALLATION_REQUIRED";
-  if (rootSignatureRequired && !input.passkeyRootAvailable) blockers.push("NO_PASSKEY_ROOT");
+  if (rootSignatureRequired && !input.rootAvailable) blockers.push("NO_ROOT");
   const accountRequirements: AccountRequirements = {
     deploymentRequired,
     rootSignatureRequired,
-    passkeyRootAvailable: input.passkeyRootAvailable,
+    rootAvailable: input.rootAvailable,
     infrastructure: input.infrastructure,
   };
 

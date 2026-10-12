@@ -39,7 +39,7 @@ try {
 
 const url = process.env["DATABASE_URL"];
 const skip = url ? false : "DATABASE_URL is not set";
-const PIN = "7351";
+const PIN = "735142";
 const KEY = randomBytes(32).toString("base64");
 const REACTOR = `0x${"33".repeat(20)}`;
 const SWAP_TARGET = `0x${"44".repeat(20)}`;

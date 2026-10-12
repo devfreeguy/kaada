@@ -35,8 +35,8 @@ try {
 
 const url = process.env["DATABASE_URL"];
 const skip = url ? false : "DATABASE_URL is not set";
-const PIN = "7351";
-const WRONG = "2468";
+const PIN = "735142";
+const WRONG = "246813";
 
 describe("PIN and authorization on the real database", { skip }, () => {
   let database: Database;

@@ -93,7 +93,7 @@ describe("recovery HTTP", () => {
   it("walks a whole recovery over HTTP: start, verify, root, proof, wait, finalize, prove, PIN", async () => {
     const world = createRecoveryWorld();
     const user = await world.createUser();
-    await world.pins.setPin(user.userId, "7351");
+    await world.pins.setPin(user.userId, "735142");
     const app = await boot(world);
 
     const start = await call(app, "POST", "/start", { body: { email: user.email } });
@@ -143,11 +143,11 @@ describe("recovery HTTP", () => {
     assert.equal(completed.status, 200);
     assert.equal(completed.body["status"], "COMPLETED");
 
-    const pin = await call(app, "POST", "/pin", { token, body: { pin: "2468" } });
+    const pin = await call(app, "POST", "/pin", { token, body: { pin: "246813" } });
     assert.equal(pin.status, 200);
     assert.equal(pin.body["nextStep"], "CREATE_RECOVERY_CODE");
     assert.equal(
-      (await call(app, "POST", "/pin", { token, body: { pin: "1357" } })).status,
+      (await call(app, "POST", "/pin", { token, body: { pin: "135790" } })).status,
       400,
       "a second reset is refused",
     );
@@ -197,7 +197,7 @@ describe("recovery HTTP", () => {
       400,
     );
     assert.equal(
-      (await call(app, "POST", "/pin", { token, body: { pin: "2468", userId: "x" } })).status,
+      (await call(app, "POST", "/pin", { token, body: { pin: "246813", userId: "x" } })).status,
       400,
     );
     assert.equal(

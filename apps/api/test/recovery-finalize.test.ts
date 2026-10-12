@@ -62,7 +62,7 @@ describe("a successful recovery", () => {
     it(`${name}: root changed on chain, confirmed, then completed with proof, a new PIN and a new Recovery Code`, async () => {
       const world = createRecoveryWorld();
       const user = await world.createUser({ rootKind: from, telegram: true });
-      await world.pins.setPin(user.userId, "7351");
+      await world.pins.setPin(user.userId, "735142");
       const permission = await world.addPermission(user);
       world.addPaymentArtifacts(user);
       const newRoot = to === "PASSKEY" ? newPasskeyRoot() : await newDeviceRoot();
@@ -126,7 +126,7 @@ describe("a successful recovery", () => {
 
       // The email says nothing is complete until the new credential proves itself.
       assert.equal((await world.flow.status(token)).nextStep, "PROVE_NEW_CREDENTIAL");
-      await expectKaada(finalizer.resetPin(token, "2468"), "RECOVERY_REJECTED");
+      await expectKaada(finalizer.resetPin(token, "246813"), "RECOVERY_REJECTED");
       const request = await finalizer.beginSigningProof(token);
       assert.equal(request.rootKind, to);
       if (to === "DEVICE_KEY") assert.equal(request.device?.keyId, newRoot.credentialRef);
@@ -147,12 +147,12 @@ describe("a successful recovery", () => {
       assert.equal(done.nextStep, "RESET_PIN");
 
       // PIN reset through the verified session, once.
-      assert.equal((await world.pins.verify(user.userId, "7351")).status, "RESET_REQUIRED");
-      const pinDone = await finalizer.resetPin(token, "2468");
+      assert.equal((await world.pins.verify(user.userId, "735142")).status, "RESET_REQUIRED");
+      const pinDone = await finalizer.resetPin(token, "246813");
       assert.equal(pinDone.nextStep, "CREATE_RECOVERY_CODE");
-      assert.equal((await world.pins.verify(user.userId, "2468")).status, "VERIFIED");
-      assert.equal((await world.pins.verify(user.userId, "7351")).status, "INVALID");
-      await expectKaada(finalizer.resetPin(token, "1357"), "RECOVERY_REJECTED");
+      assert.equal((await world.pins.verify(user.userId, "246813")).status, "VERIFIED");
+      assert.equal((await world.pins.verify(user.userId, "735142")).status, "INVALID");
+      await expectKaada(finalizer.resetPin(token, "135790"), "RECOVERY_REJECTED");
 
       // A NEW Recovery Code is required, and the new root arms it.
       const { generateRecoveryCode, deriveRecoveryKey } = await import("@kaada/contracts");
@@ -572,7 +572,7 @@ describe("cleanup after the root changed", () => {
   it("retires every permission, secret, session, authorization and old passkey, and locks the old PIN", async () => {
     const world = createRecoveryWorld();
     const user = await world.createUser();
-    await world.pins.setPin(user.userId, "7351");
+    await world.pins.setPin(user.userId, "735142");
     const permission = await world.addPermission(user);
     world.addPaymentArtifacts(user);
     world.repositories.walletSetupSessions.create({
@@ -603,7 +603,7 @@ describe("cleanup after the root changed", () => {
     assert.ok(world.recovery.extras.webSessions.every((s) => s.revokedAt));
     assert.ok(world.wallet.setupSessions.every((s) => s.status === "REVOKED"));
     assert.equal((await world.pins.status(user.userId)).resetRequired, true);
-    assert.equal((await world.pins.verify(user.userId, "7351")).status, "RESET_REQUIRED");
+    assert.equal((await world.pins.verify(user.userId, "735142")).status, "RESET_REQUIRED");
     const done = await world.repositories.recoveryAttempts.findById(attempt.id);
     assert.ok(done?.cleanupCompletedAt);
   });
@@ -732,7 +732,7 @@ describe("audit and secrecy", () => {
   it("records the whole lifecycle and never a token, code, signature or key", async () => {
     const world = createRecoveryWorld();
     const user = await world.createUser({ telegram: true });
-    await world.pins.setPin(user.userId, "7351");
+    await world.pins.setPin(user.userId, "735142");
     const { token, attempt, signature } = await pending(world, user);
     const cancelToken = world.cancelTokenFrom(user);
     world.advance(MATURE_MS);
@@ -760,7 +760,7 @@ describe("audit and secrecy", () => {
       signature,
       user.code.canonical(),
       user.recoveryKey.privateKey,
-      "7351",
+      "735142",
     ]) {
       assert.ok(!everything.includes(secret), "a secret leaked into the audit trail or the logs");
     }

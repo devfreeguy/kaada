@@ -81,6 +81,7 @@ export const ModelName = {
   RampSession: 'RampSession',
   AuditEvent: 'AuditEvent',
   WalletCredential: 'WalletCredential',
+  RootChange: 'RootChange',
   RecoveryConfiguration: 'RecoveryConfiguration',
   RecoveryAttempt: 'RecoveryAttempt',
   RecoveryEmailChallenge: 'RecoveryEmailChallenge'
@@ -681,6 +682,27 @@ export const WalletCredentialScalarFieldEnum = {
 } as const
 
 export type WalletCredentialScalarFieldEnum = (typeof WalletCredentialScalarFieldEnum)[keyof typeof WalletCredentialScalarFieldEnum]
+
+
+export const RootChangeScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  walletId: 'walletId',
+  kind: 'kind',
+  status: 'status',
+  newCredentialId: 'newCredentialId',
+  signerCredentialId: 'signerCredentialId',
+  challenge: 'challenge',
+  prepared: 'prepared',
+  userOpHash: 'userOpHash',
+  expiresAt: 'expiresAt',
+  failureCode: 'failureCode',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  completedAt: 'completedAt'
+} as const
+
+export type RootChangeScalarFieldEnum = (typeof RootChangeScalarFieldEnum)[keyof typeof RootChangeScalarFieldEnum]
 
 
 export const RecoveryConfigurationScalarFieldEnum = {

@@ -13,26 +13,19 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { isKaadaError } from "@kaada/domain";
+import type { RootProof } from "@kaada/domain";
 import { z } from "zod";
 
 import type { PinEnrollmentService } from "../core/authorization/pin-enrollment.js";
 import type { TransactionPinService } from "../core/authorization/pin-service.js";
 import type { WalletSetupService } from "../core/wallets/setup-service.js";
 import { WALLET_SETUP_SERVICE } from "../wallet/wallet.tokens.js";
+import { rootProofSchema } from "../roots/root-proof.schema.js";
 import { PIN_ENROLLMENT_SERVICE, TRANSACTION_PIN_SERVICE } from "./authorization.tokens.js";
 
 const setPinBody = z.strictObject({
   pin: z.string().max(16),
-  assertion: z.looseObject({
-    id: z.string().min(1).max(1024),
-    rawId: z.string().min(1).max(1024),
-    type: z.literal("public-key"),
-    response: z.looseObject({
-      clientDataJSON: z.string().min(1).max(8192),
-      authenticatorData: z.string().min(1).max(8192),
-      signature: z.string().min(1).max(8192),
-    }),
-  }),
+  proof: rootProofSchema,
 });
 
 function bearer(header: string | undefined): string {
@@ -47,9 +40,9 @@ function httpError(error: unknown): never {
       case "SETUP_SESSION_INVALID":
         throw new UnauthorizedException("this link is not valid or has expired");
       case "CREDENTIAL_REJECTED":
-        throw new BadRequestException("your passkey could not be verified");
+        throw new BadRequestException("your credential could not be verified");
       case "PIN_REJECTED":
-        throw new BadRequestException("a PIN is exactly four digits");
+        throw new BadRequestException("a PIN is exactly six digits");
       case "WALLET_NOT_ACTIVE":
         throw new ConflictException("set up your wallet before creating a PIN");
       default:
@@ -61,7 +54,7 @@ function httpError(error: unknown): never {
 
 /**
  * Create or change the transaction PIN. Identity comes from the wallet setup link; the strong
- * credential is a fresh passkey assertion. The old PIN alone never changes the PIN, and "forgot PIN"
+ * credential is a fresh proof by the wallet's root (a passkey assertion or a device-key signature). The old PIN alone never changes the PIN, and "forgot PIN"
  * has no reset here: it needs account recovery, which is a later build.
  */
 @Controller({ path: "wallet/pin", version: "1" })
@@ -116,7 +109,10 @@ export class PinController {
     const parsed = setPinBody.safeParse(body);
     if (!parsed.success) throw new BadRequestException("invalid request");
     try {
-      const outcome = await enrollment.complete(await setup.userForView(token), parsed.data);
+      const outcome = await enrollment.complete(await setup.userForView(token), {
+        pin: parsed.data.pin,
+        proof: parsed.data.proof as RootProof,
+      });
       return { status: outcome };
     } catch (error) {
       return httpError(error);

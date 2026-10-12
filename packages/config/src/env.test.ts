@@ -10,7 +10,12 @@ describe("loadConfig", () => {
     const config = loadConfig({ DATABASE_URL: databaseUrl });
     assert.equal(config.port, 4000);
     assert.deepEqual(config.corsOrigins, [config.webUrl]);
-    assert.deepEqual(config.database, { url: databaseUrl, poolMax: 10, poolTimeoutMs: 10_000 });
+    assert.deepEqual(config.database, {
+      url: databaseUrl,
+      poolMax: 10,
+      poolTimeoutMs: 10_000,
+      transactionTimeoutMs: 5_000,
+    });
   });
 
   it("accepts a direct URL and pool overrides", () => {
@@ -578,5 +583,40 @@ describe("account recovery configuration", () => {
 
   it("the default delay may not be below the floor", () => {
     assert.throws(() => loadConfig({ ...ready, RECOVERY_DELAY_SECONDS: "3600" }), ConfigError);
+  });
+});
+
+describe("device-key root configuration", () => {
+  const address = (n: number) => `0x${n.toString(16).padStart(40, "0")}`;
+  const ready = {
+    DATABASE_URL: databaseUrl,
+    WALLET_PROVIDER: "kernel",
+    PASSKEY_RP_ID: "kaada.app",
+    PASSKEY_ORIGIN: "https://app.kaada.app",
+    DEVICE_KEY_ROOTS_ENABLED: "true",
+    RECOVERY_PASSKEY_FACTORY_ADDRESS: address(2),
+    RECOVERY_PASSKEY_IMPLEMENTATION_ADDRESS: address(3),
+    RECOVERY_DEVICE_FACTORY_ADDRESS: address(4),
+    RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS: address(5),
+    RECOVERY_RELAYER_KEY_FILE: "/secrets/relayer.key",
+  };
+
+  it("is off by default and the chain id defaults to Celo mainnet", () => {
+    const off = loadConfig({ DATABASE_URL: databaseUrl });
+    assert.equal("deviceKeyRoots" in off.wallet, false);
+    assert.equal(off.wallet.onChainId, 42220);
+  });
+
+  it("is on only when exactly true, and then needs the factories, the relayer key and the kernel wallet", () => {
+    assert.throws(() => loadConfig({ ...ready, DEVICE_KEY_ROOTS_ENABLED: "yes" }), ConfigError);
+    const config = loadConfig(ready);
+    assert.equal(config.wallet.deviceKeyRoots?.contracts.deviceFactory, address(4));
+    assert.equal(config.wallet.deviceKeyRoots?.relayerKeyFile, "/secrets/relayer.key");
+    for (const key of Object.keys(ready).filter(
+      (k) => k !== "DEVICE_KEY_ROOTS_ENABLED" && k !== "DATABASE_URL",
+    )) {
+      const { [key]: _removed, ...without } = ready as Record<string, string>;
+      assert.throws(() => loadConfig(without), ConfigError, key);
+    }
   });
 });

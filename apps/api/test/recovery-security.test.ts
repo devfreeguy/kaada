@@ -21,10 +21,16 @@ function code(path: string): string {
 const sources = readdirSync(dir).filter((n) => n.endsWith(".ts") && !n.endsWith(".test.ts"));
 const attestor = code(join(dir, "attestor.ts"));
 const chain = code(join(dir, "viem-chain.ts"));
+const deployer = code(join(dir, "validator-deployer.ts"));
 
 describe("recovery signer boundary (source scan)", () => {
   it("scans the recovery adapter files", () => {
-    assert.deepEqual(sources.sort(), ["attestor.ts", "index.ts", "viem-chain.ts"]);
+    assert.deepEqual(sources.sort(), [
+      "attestor.ts",
+      "index.ts",
+      "validator-deployer.ts",
+      "viem-chain.ts",
+    ]);
   });
 
   it("no recovery file handles a mnemonic, seed or raw signing", () => {
@@ -50,7 +56,7 @@ describe("recovery signer boundary (source scan)", () => {
 
   it("the attestor key is read from outside the repository and nothing generates a key", () => {
     assert.ok(/must be stored outside the repository/.test(attestor));
-    assert.equal(/generatePrivateKey/.test(attestor + chain), false);
+    assert.equal(/generatePrivateKey/.test(attestor + chain + deployer), false);
   });
 
   it("the relayer only pays gas and relays: it never signs typed data or messages", () => {
@@ -58,10 +64,58 @@ describe("recovery signer boundary (source scan)", () => {
     assert.equal((chain.match(/privateKeyToAccount\(/g) ?? []).length, 1);
   });
 
+  it("the clone deployer only calls the factory's deploy, paid by the relayer", () => {
+    assert.equal((deployer.match(/writeContract\(/g) ?? []).length, 1);
+    assert.ok(/functionName:\s*"deploy"/.test(deployer));
+    assert.equal(
+      /sendTransaction|signTypedData|signMessage|signUserOperation/.test(deployer),
+      false,
+    );
+    assert.equal((deployer.match(/privateKeyToAccount\(/g) ?? []).length, 1);
+    assert.equal(/generatePrivateKey/.test(deployer), false);
+  });
+
   it("uses Number only for on-chain counters, never for money", () => {
     for (const m of chain.matchAll(/Number\(([^)]*)\)/g)) {
       assert.ok(/nonce|current|config\[1\]|pending\[1\]/.test(m[1] ?? ""), m[0]);
     }
     assert.equal(/parseFloat|toFixed|Math\.(round|floor|ceil)/.test(attestor + chain), false);
+  });
+});
+
+describe("the web device key (source scan)", () => {
+  const web = code(join(root, "apps/web/app/lib/device-key.ts"));
+  const proof = code(join(root, "apps/web/app/lib/root-proof.ts"));
+
+  it("generates a non-extractable key and never exports the private half", () => {
+    assert.ok(/generateKey\(ECDSA, false,/.test(web));
+    assert.equal(/extractable:\s*true/.test(web), false);
+    // Only the public key is ever exported (raw); no pkcs8 or jwk export exists in the client.
+    assert.equal(/exportKey\(\s*["'](pkcs8|jwk)["']/.test(web + proof), false);
+    assert.equal((web.match(/exportKey\(/g) ?? []).length, 1);
+    assert.ok(/exportKey\("raw", pair\.publicKey\)/.test(web));
+  });
+
+  it("keeps the key only in IndexedDB as an opaque CryptoKey: never in web storage, a cookie, a URL or a log", () => {
+    for (const text of [web, proof]) {
+      assert.equal(/localStorage|sessionStorage|document\.cookie|console\./.test(text), false);
+    }
+    assert.ok(/indexedDB\.open/.test(web));
+  });
+
+  it("the setup page passes the opaque key only to signDevicePayload and saveDeviceKey, never into a request", () => {
+    const setup = code(join(root, "apps/web/app/setup/[token]/setup-flow.tsx"));
+    const uses = [...setup.matchAll(/privateKey/g)].length;
+    // generate -> sign (1) -> save (1): the key object appears exactly in those three places.
+    assert.ok(uses <= 3, String(uses));
+    assert.ok(/signDevicePayload\(key\.privateKey/.test(setup));
+    assert.ok(/saveDeviceKey\(challenge\.keyId, key\.privateKey\)/.test(setup));
+    assert.equal(/JSON\.stringify\([^)]*privateKey/.test(setup), false);
+  });
+
+  it("signs only a payload it is handed, with ECDSA P-256 over SHA-256, and normalises to low-s", () => {
+    assert.equal((web.match(/subtle\.sign\(/g) ?? []).length, 1);
+    assert.ok(/name:\s*"ECDSA",\s*hash:\s*"SHA-256"/.test(web));
+    assert.ok(/P256_HALF_N/.test(web));
   });
 });

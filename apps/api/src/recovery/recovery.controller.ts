@@ -268,7 +268,7 @@ export class RecoveryController {
   @Header("Cache-Control", "no-store")
   async resetPin(@Body() body: unknown, @Headers("authorization") authorization?: string) {
     const parsed = pinBody.safeParse(body);
-    if (!parsed.success) throw new BadRequestException("a PIN is exactly four digits");
+    if (!parsed.success) throw new BadRequestException("a PIN is exactly six digits");
     try {
       return await this.services().finalizer.resetPin(bearer(authorization), parsed.data.pin);
     } catch (error) {

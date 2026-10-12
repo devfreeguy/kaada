@@ -7,18 +7,19 @@ import type { FirmExecutionCandidate, UnsignedTransaction } from "./firm-quote.j
  * private material and no claim token, and building it writes nothing to any chain.
  *
  * Which key signs each step matters and is stated, never assumed:
- *   ROOT_PASSKEY     - the user's passkey (account deployment, installing a delegated permission)
+ *   ROOT             - the wallet's root credential, whatever its type: a passkey or a P-256 device key (account
+ *                      deployment, installing a delegated permission)
  *   DELEGATED_SIGNER - the restricted session key a permission authorizes (the payment itself)
  */
-export type SignerKind = "ROOT_PASSKEY" | "DELEGATED_SIGNER";
+export type SignerKind = "ROOT" | "DELEGATED_SIGNER";
 
 export interface AccountRequirements {
   /** The smart account does not exist on chain yet; the first operation must deploy it. */
   deploymentRequired: boolean;
-  /** True when deployment or a permission installation needs the user's passkey signature. */
+  /** True when deployment or a permission installation needs the wallet's root signature. */
   rootSignatureRequired: boolean;
-  /** An unrevoked passkey credential exists to provide that signature. */
-  passkeyRootAvailable: boolean;
+  /** The wallet has a usable root credential (a passkey or a device key) to provide that signature. */
+  rootAvailable: boolean;
   infrastructure: {
     /** A Celo RPC is configured (needed to read state). */
     rpcConfigured: boolean;
@@ -66,8 +67,8 @@ export interface PermissionRequirement {
   existingPermissionId?: string;
   /** What to install when it is required (or what is missing). */
   scope: PermissionScope;
-  /** Installing a permission is signed by the user's passkey. */
-  installSigner: "ROOT_PASSKEY";
+  /** Installing a permission is signed by the wallet's root, whatever its type. */
+  installSigner: "ROOT";
 }
 
 export interface TokenApprovalRequirement {
@@ -124,7 +125,7 @@ export const PLAN_BLOCKERS = [
   "SWAP_CARRIES_UNEXPECTED_VALUE",
   "SWAP_CALLDATA_INVALID",
   "TAKER_MISMATCH",
-  "NO_PASSKEY_ROOT",
+  "NO_ROOT",
   "RECIPIENT_ADDRESS_REQUIRED",
 ] as const;
 export type PlanBlocker = (typeof PLAN_BLOCKERS)[number];

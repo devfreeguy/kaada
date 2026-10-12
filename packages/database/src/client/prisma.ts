@@ -7,6 +7,11 @@ export interface DatabaseConfig {
   url: string;
   poolMax: number;
   poolTimeoutMs: number;
+  /**
+   * How long one interactive transaction may run before the database layer cancels it. Prisma's own default is 5 s; a database
+   * far from the API (a remote, pooled host) may need more for a transaction of several statements. Absent: Prisma's default.
+   */
+  transactionTimeoutMs?: number;
   /** Called for errors on idle pooled connections, e.g. Neon closing them. */
   onError?: (error: Error) => void;
   /**
@@ -42,9 +47,13 @@ export function createDatabase(config: DatabaseConfig): Database {
     },
     config.onError && { onPoolError: config.onError, onConnectionError: config.onError },
   );
+  const transactionOptions =
+    config.transactionTimeoutMs !== undefined
+      ? { transactionOptions: { timeout: config.transactionTimeoutMs } }
+      : {};
   const client = config.onQuery
-    ? new PrismaClient({ adapter, log: [{ emit: "event", level: "query" }] })
-    : new PrismaClient({ adapter });
+    ? new PrismaClient({ adapter, ...transactionOptions, log: [{ emit: "event", level: "query" }] })
+    : new PrismaClient({ adapter, ...transactionOptions });
   if (config.onQuery) {
     const onQuery = config.onQuery;
     // The typed overload for the "query" event depends on the log option; this client has it.

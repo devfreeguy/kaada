@@ -23,6 +23,8 @@ import { PreparationTracker, outcomeFromRecord } from "../core/execution/tracker
 import type { ExecutionRunner } from "../core/execution/runner.js";
 import type { RootActionService } from "../core/execution/root-action-service.js";
 import { paymentView } from "../core/execution/run-status.js";
+import type { PaymentView } from "../core/execution/run-status.js";
+import type { ClientAction } from "@kaada/domain";
 import type { RunTracker } from "../core/execution/run-tracker.js";
 import {
   EXECUTION_PREPARATION_SERVICE,
@@ -88,6 +90,31 @@ export class ExecutionController {
     }
   }
 
+  /**
+   * The structured next step for the client, so it picks the right UX without guessing: which root signer a wallet setup needs
+   * (decided by the wallet's root), when the PIN must be entered again, and when the payment is ready to run.
+   */
+  private async present(
+    walletId: string,
+    value: PaymentView,
+  ): Promise<PaymentView & { action?: ClientAction }> {
+    let action: ClientAction | undefined;
+    switch (value.state) {
+      case "ROOT_ACTION_REQUIRED":
+        action = await this.rootActions?.requiredAction(walletId);
+        break;
+      case "REAUTHORIZATION_REQUIRED":
+        action = "PIN_REQUIRED";
+        break;
+      case "NOT_STARTED":
+        action = "PAYMENT_READY";
+        break;
+      default:
+        break;
+    }
+    return action ? { ...value, action } : value;
+  }
+
   /** Begins confirming the final price. Safe to repeat: a duplicate never costs another provider slot. */
   @Post("prepare")
   @HttpCode(202)
@@ -123,9 +150,9 @@ export class ExecutionController {
     if (!runner) throw new ServiceUnavailableException("payment execution is not enabled");
     const payment = await this.authorizationFor(bearer(authorization));
     const record = await this.repositories.executionPlans.findByAuthorization(payment.id);
-    if (!record) return paymentView(null, undefined);
+    if (!record) return this.present(payment.walletId, paymentView(null, undefined));
     this.runs.start(record.id, () => runner.run(record.id));
-    return paymentView(record, this.runs.outcome(record.id));
+    return this.present(payment.walletId, paymentView(record, this.runs.outcome(record.id)));
   }
 
   /** What to tell the person now. Codes and plain sentences only: never a hash, amount or secret. */
@@ -134,7 +161,10 @@ export class ExecutionController {
   async status(@Headers("authorization") authorization?: string) {
     const payment = await this.authorizationFor(bearer(authorization));
     const record = await this.repositories.executionPlans.findByAuthorization(payment.id);
-    return paymentView(record, record ? this.runs.outcome(record.id) : undefined);
+    return this.present(
+      payment.walletId,
+      paymentView(record, record ? this.runs.outcome(record.id) : undefined),
+    );
   }
 
   /**

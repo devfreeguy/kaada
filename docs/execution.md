@@ -102,7 +102,9 @@ code. Never a claim token, UserOperation internals, calldata, a hash or an amoun
 
 HTTP (`/api/v1`): `POST execution/run`, `GET execution/status`, `POST execution/root-action-link` (Bearer = the
 authorization link token); `GET root-action/view`, `GET root-action/options`, `POST root-action/complete` (Bearer = the
-opaque root-action link token; the body is the passkey assertion and nothing else).
+opaque root-action link token; the body is `{ proof }`, the root's proof and nothing else: a passkey assertion or a
+device-key signature, whichever the wallet's root is; `options` and `status` carry the structured `action`; see
+`docs/root-agnostic-flow.md`).
 
 ## Gas
 

@@ -1,7 +1,7 @@
 import type { JsonObject } from "../json.js";
 import type { PermissionScope } from "../firm/plan.js";
 import type { SecretValue } from "../firm/secret.js";
-import type { RootCredential } from "../wallets/ports.js";
+import type { RootCredential, RootProof } from "../wallets/root.js";
 
 /** One call an account makes. `value` is native currency in wei (decimal string), normally "0". */
 export interface AccountCall {
@@ -45,10 +45,10 @@ export interface KernelExecutionPort {
     /** The permission to install; the adapter creates the session key that will use it. */
     permission?: { scope: PermissionScope };
   }): Promise<PreparedRootOperation>;
-  /** Completes a prepared root operation with the passkey assertion and sends it. */
+  /** Completes a prepared root operation with the root's proof (passkey assertion or device-key signature) and sends it. */
   sendRootOperation(input: {
     prepared: JsonObject;
-    assertion: unknown;
+    proof: RootProof;
   }): Promise<{ userOpHash: string; approval?: SecretValue }>;
   /** Reads the chain: is the session key's permission installed on this account? */
   isPermissionInstalled(input: {

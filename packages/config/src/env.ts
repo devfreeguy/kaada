@@ -50,6 +50,9 @@ const envSchema = z
     DATABASE_DIRECT_URL: postgresUrl.optional(),
     DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),
     DATABASE_POOL_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60_000).default(10_000),
+    // How long one interactive database transaction may run (Prisma's default is 5 s). Raise it only for a database that is far
+    // from the API; the services keep their transactions short and never hold one across a chain or provider call.
+    DATABASE_TRANSACTION_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120_000).default(5_000),
     // Wallet stack. "none" disables wallets; "kernel" is ZeroDev Kernel v3.3 with a passkey root
     // (see docs/wallet-architecture.md). No signing happens in this build either way.
     WALLET_PROVIDER: z.enum(["none", "kernel"]).default("none"),
@@ -132,6 +135,13 @@ const envSchema = z
       .string()
       .regex(/^[0-9]{1,30}$/)
       .default("0"),
+    // Device-key roots (docs/root-agnostic-flow.md): a wallet whose root is a P-256 key held by the device, for people whose
+    // browser or phone has no passkeys. OFF unless exactly "true". It needs the validator factories (the RECOVERY_*
+    // addresses above: they ship together) and the relayer key file that pays for the clone deployment.
+    DEVICE_KEY_ROOTS_ENABLED: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((value) => value === "true"),
     // Which IntentInterpreter the agent uses. "none" disables the agent.
     AGENT_INTERPRETER: z.enum(["none", "mock", "groq"]).default("none"),
     // Which price source routing uses. "none" disables pricing (the agent stops at ROUTING_REQUIRED);
@@ -303,6 +313,21 @@ const envSchema = z
       path: ["RECOVERY_ENABLED"],
     },
   )
+  .refine(
+    (env) =>
+      !env.DEVICE_KEY_ROOTS_ENABLED ||
+      (env.WALLET_PROVIDER === "kernel" &&
+        env.RECOVERY_PASSKEY_FACTORY_ADDRESS !== undefined &&
+        env.RECOVERY_PASSKEY_IMPLEMENTATION_ADDRESS !== undefined &&
+        env.RECOVERY_DEVICE_FACTORY_ADDRESS !== undefined &&
+        env.RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS !== undefined &&
+        env.RECOVERY_RELAYER_KEY_FILE !== undefined),
+    {
+      message:
+        "DEVICE_KEY_ROOTS_ENABLED=true needs WALLET_PROVIDER=kernel, the validator factory and implementation addresses and RECOVERY_RELAYER_KEY_FILE",
+      path: ["DEVICE_KEY_ROOTS_ENABLED"],
+    },
+  )
   .refine((env) => env.NODE_ENV !== "production" || env.RECOVERY_EMAIL_PROVIDER !== "outbox", {
     message: "the file outbox is for development; production needs a real email provider",
     path: ["RECOVERY_EMAIL_PROVIDER"],
@@ -351,6 +376,24 @@ const envSchema = z
     wallet: {
       provider: env.WALLET_PROVIDER,
       rpcUrl: env.CELO_RPC_URL,
+      // The chain the validators run on (what a device key's signed payload is bound to).
+      onChainId: env.RECOVERY_CHAIN_ID ?? env.CELO_CHAIN_ID,
+      ...(env.DEVICE_KEY_ROOTS_ENABLED &&
+        env.RECOVERY_PASSKEY_FACTORY_ADDRESS !== undefined &&
+        env.RECOVERY_PASSKEY_IMPLEMENTATION_ADDRESS !== undefined &&
+        env.RECOVERY_DEVICE_FACTORY_ADDRESS !== undefined &&
+        env.RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS !== undefined &&
+        env.RECOVERY_RELAYER_KEY_FILE !== undefined && {
+          deviceKeyRoots: {
+            contracts: {
+              passkeyFactory: env.RECOVERY_PASSKEY_FACTORY_ADDRESS,
+              passkeyImplementation: env.RECOVERY_PASSKEY_IMPLEMENTATION_ADDRESS,
+              deviceFactory: env.RECOVERY_DEVICE_FACTORY_ADDRESS,
+              deviceImplementation: env.RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS,
+            },
+            relayerKeyFile: env.RECOVERY_RELAYER_KEY_FILE,
+          },
+        }),
       ...(env.WALLET_PROVIDER === "kernel" &&
         env.PASSKEY_RP_ID !== undefined &&
         env.PASSKEY_ORIGIN !== undefined && {
@@ -444,6 +487,7 @@ const envSchema = z
       ...(env.DATABASE_DIRECT_URL && { directUrl: env.DATABASE_DIRECT_URL }),
       poolMax: env.DATABASE_POOL_MAX,
       poolTimeoutMs: env.DATABASE_POOL_TIMEOUT_MS,
+      transactionTimeoutMs: env.DATABASE_TRANSACTION_TIMEOUT_MS,
     },
   }));
 

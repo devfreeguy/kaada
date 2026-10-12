@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -13,6 +14,7 @@ import {
 import { isKaadaError } from "@kaada/domain";
 
 import type { RootActionService } from "../core/execution/root-action-service.js";
+import { parseRootProof } from "../roots/root-proof.schema.js";
 import { ROOT_ACTION_SERVICE } from "./execution.tokens.js";
 
 function bearer(header: string | undefined): string {
@@ -24,7 +26,8 @@ function bearer(header: string | undefined): string {
 /**
  * The secure page for wallet setup (account deployment and permission installation). The only identity
  * is the opaque link token. The server fixes the operation and its challenge; the browser can send back
- * nothing but the passkey's assertion over that challenge. The PIN is never involved here.
+ * nothing but the root's proof over that challenge (a passkey assertion or a device-key signature, as
+ * the wallet's root requires). The PIN is never involved here.
  */
 @Controller({ path: "root-action", version: "1" })
 export class RootActionController {
@@ -61,15 +64,17 @@ export class RootActionController {
     return this.guarded(() => this.active().options(bearer(authorization)));
   }
 
-  /** Takes the passkey assertion and nothing else: no operation, address, amount or calldata. */
+  /** Takes the root's proof and nothing else: no operation, address, amount or calldata. */
   @Post("complete")
   @HttpCode(202)
   @Header("Cache-Control", "no-store")
   async complete(
     @Headers("authorization") authorization: string | undefined,
-    @Body() body: { assertion?: unknown },
+    @Body() body: { proof?: unknown },
   ) {
-    await this.guarded(() => this.active().complete(bearer(authorization), body.assertion));
+    const proof = parseRootProof(body?.proof);
+    if (!proof) throw new BadRequestException("invalid request");
+    await this.guarded(() => this.active().complete(bearer(authorization), proof));
     // The result is "accepted"; whether it reached the chain is reported by the payment status.
     return { state: "PROCESSING_PAYMENT" };
   }

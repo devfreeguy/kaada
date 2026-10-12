@@ -1,12 +1,12 @@
 "use client";
 
 /*
- * A numeric keypad for the 4-digit PIN. There is deliberately NO <input>: the digits live only in the
+ * A numeric keypad for the 6-digit PIN. There is deliberately NO <input>: the digits live only in the
  * parent component's memory (never in the URL, local/session storage, a cookie, an autofill field or a
  * form), and the parent clears them the moment they are submitted.
  */
 
-export const PIN_LENGTH = 4;
+export const PIN_LENGTH = 6;
 
 interface PinKeypadProps {
   value: string;

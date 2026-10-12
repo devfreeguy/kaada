@@ -262,6 +262,20 @@ enum RampStatus {
   EXPIRED
 }
 
+enum RootChangeKind {
+  ROTATE_ROOT
+  ENROLL_BACKUP
+}
+
+enum RootChangeStatus {
+  PREPARED
+  SUBMITTED
+  CONFIRMED
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
 enum WalletCredentialKind {
   PASSKEY
   DEVICE_KEY
@@ -348,6 +362,7 @@ model User {
   rootActionSessions    RootActionSession[]
 
   walletCredentials      WalletCredential[]
+  rootChanges            RootChange[]
   recoveryConfigurations RecoveryConfiguration[]
   recoveryAttempts       RecoveryAttempt[]
 }
@@ -420,6 +435,7 @@ model Wallet {
   walletCredentials      WalletCredential[]
   recoveryConfigurations RecoveryConfiguration[]
   recoveryAttempts       RecoveryAttempt[]
+  rootChanges            RootChange[]
 
   @@unique([chainId, address])
   @@index([userId])
@@ -459,7 +475,7 @@ model WalletSetupSession {
   @@index([userId, status])
 }
 
-/// The 4-digit transaction PIN state of one user. Only an Argon2id hash is stored. Attempts are counted
+/// The 6-digit transaction PIN state of one user. Only an Argon2id hash is stored. Attempts are counted
 /// in a single atomic UPDATE, so guessing is bounded no matter how many requests arrive at once.
 model TransactionPinSecurity {
   id             String    @id @db.Uuid
@@ -1190,6 +1206,38 @@ model WalletCredential {
   wallet              Wallet                  @relation(fields: [walletId], references: [id], onDelete: Restrict)
   recoveryAttempts    RecoveryAttempt[]       @relation("RecoveryNewCredential")
   armedConfigurations RecoveryConfiguration[]
+  rootChanges         RootChange[]            @relation("RootChangeNewCredential")
+
+  @@index([walletId, status])
+  @@index([userId])
+}
+
+/// A root-signed change of a wallet's credentials that is NOT part of a payment: rotating the root to a fresh credential, or
+/// enrolling a backup. The server fixes the operation and its challenge (the UserOperation hash); the root signs exactly that.
+/// Holds only public data. At most one live (PREPARED or SUBMITTED) change per wallet (manual migration).
+model RootChange {
+  id                 String           @id @db.Uuid
+  userId             String           @db.Uuid
+  walletId           String           @db.Uuid
+  kind               RootChangeKind
+  status             RootChangeStatus @default(PREPARED)
+  /// The PENDING credential being rotated to or enrolled, and the root that must sign.
+  newCredentialId    String           @db.Uuid
+  signerCredentialId String?          @db.Uuid
+  /// The UserOperation hash the root signs (0x + 64 hex).
+  challenge          String
+  /// The prepared, UNSIGNED operation. Contains no secret.
+  prepared           Json
+  userOpHash         String?
+  expiresAt          DateTime         @db.Timestamptz(3)
+  failureCode        String?
+  createdAt          DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime         @updatedAt @db.Timestamptz(3)
+  completedAt        DateTime?        @db.Timestamptz(3)
+
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet        Wallet           @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  newCredential WalletCredential @relation("RootChangeNewCredential", fields: [newCredentialId], references: [id], onDelete: Restrict)
 
   @@index([walletId, status])
   @@index([userId])

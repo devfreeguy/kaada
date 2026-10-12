@@ -2,10 +2,12 @@
 // recompute what it signs), the backend (which builds and verifies it) and the chain adapter (which submits it).
 import {
   bytesToHex,
+  concat,
   encodeAbiParameters,
   encodeFunctionData,
   keccak256,
   parseAbi,
+  toFunctionSelector,
   zeroAddress,
 } from "viem";
 import type { Address, Hex } from "viem";
@@ -156,19 +158,17 @@ const kernelAbi = parseAbi([
 export const KERNEL_MODE_BATCH: Hex = `0x01${"00".repeat(31)}`;
 
 /**
- * The ONE call data the recovery validator accepts, and nothing else:
- *   execute(MODE_BATCH, abi.encode([
- *     (account, 0, changeRootValidator(rootId, hook, validatorData, hookData)),
- *     (account, 0, invalidateNonce(currentNonce + 1)),
- *   ]))
+ * The two calls that change an account's root, in order: switch the root validator to the new instance, then invalidate every
+ * validator installed before (so no old lane, permission or session key survives the change). The recovery batch and a root's
+ * own voluntary rotation are exactly these two calls.
  */
-export function recoveryBatchCallData(input: {
+export function rootChangeCalls(input: {
   account: Address;
   root: RecoveryRoot;
   currentNonce: number;
-}): Hex {
+}): { target: Address; value: bigint; callData: Hex }[] {
   const c = recoveryCommitment(input.root);
-  const calls = [
+  return [
     {
       target: input.account,
       value: 0n,
@@ -188,6 +188,21 @@ export function recoveryBatchCallData(input: {
       }),
     },
   ];
+}
+
+/**
+ * The ONE call data the recovery validator accepts, and nothing else:
+ *   execute(MODE_BATCH, abi.encode([
+ *     (account, 0, changeRootValidator(rootId, hook, validatorData, hookData)),
+ *     (account, 0, invalidateNonce(currentNonce + 1)),
+ *   ]))
+ */
+export function recoveryBatchCallData(input: {
+  account: Address;
+  root: RecoveryRoot;
+  currentNonce: number;
+}): Hex {
+  const calls = rootChangeCalls(input);
   return encodeFunctionData({
     abi: kernelAbi,
     functionName: "execute",
@@ -208,4 +223,49 @@ export function recoveryBatchCallData(input: {
       ),
     ],
   });
+}
+
+const laneAbi = parseAbi([
+  "function installValidations(bytes21[] vIds, (uint32 nonce, address hook)[] configs, bytes[] validationData, bytes[] hookData) payable",
+  "function grantAccess(bytes21 vId, bytes4 selector, bool allow) payable",
+]);
+const EXECUTE_SELECTOR = toFunctionSelector("execute(bytes32,bytes)");
+
+/**
+ * The two calls the account's root signs to install a validator instance as an ADDITIONAL validator lane (a backup
+ * credential): install it under the account's current nonce, then allow it to use `execute`. `currentNonce` must equal the
+ * account's current validator nonce. Anything installed is voided by the next `invalidateNonce`.
+ */
+export function validatorLaneInstallCalls(input: {
+  account: Address;
+  validator: Address;
+  validatorData: Hex;
+  currentNonce: number;
+}): { to: Address; value: bigint; data: Hex }[] {
+  const laneId = concat(["0x01", input.validator]);
+  return [
+    {
+      to: input.account,
+      value: 0n,
+      data: encodeFunctionData({
+        abi: laneAbi,
+        functionName: "installValidations",
+        args: [
+          [laneId],
+          [{ nonce: input.currentNonce, hook: zeroAddress }],
+          [input.validatorData],
+          ["0x"],
+        ],
+      }),
+    },
+    {
+      to: input.account,
+      value: 0n,
+      data: encodeFunctionData({
+        abi: laneAbi,
+        functionName: "grantAccess",
+        args: [laneId, EXECUTE_SELECTOR, true],
+      }),
+    },
+  ];
 }

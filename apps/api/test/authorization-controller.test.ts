@@ -18,8 +18,8 @@ import type { AuthorizationRequiredResponse } from "../src/core/responses/agent-
 import { SENDER } from "./support/harness.js";
 import { setup } from "./support/payment-world.js";
 
-const PIN = "7351";
-const WRONG = "2468";
+const PIN = "735142";
+const WRONG = "246813";
 
 async function ready(nodeEnv: AppConfig["nodeEnv"] = "development") {
   const w = setup({ authorize: true });

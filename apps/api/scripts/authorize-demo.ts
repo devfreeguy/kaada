@@ -27,7 +27,7 @@ if (!databaseUrl) {
   process.exit(1);
 }
 const origin = process.env["PASSKEY_ORIGIN"] ?? "http://localhost:3000";
-const DEMO_PIN = "2468";
+const DEMO_PIN = "246813";
 const database = createDatabase({ url: databaseUrl, poolMax: 2, poolTimeoutMs: 20_000 });
 
 try {

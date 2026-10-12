@@ -919,6 +919,40 @@ export type EnumDeviceSecurityTierWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumDeviceSecurityTierFilter<$PrismaModel>
 }
 
+export type EnumRootChangeKindFilter<$PrismaModel = never> = {
+  equals?: $Enums.RootChangeKind | Prisma.EnumRootChangeKindFieldRefInput<$PrismaModel>
+  in?: $Enums.RootChangeKind[] | Prisma.ListEnumRootChangeKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RootChangeKind[] | Prisma.ListEnumRootChangeKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRootChangeKindFilter<$PrismaModel> | $Enums.RootChangeKind
+}
+
+export type EnumRootChangeStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.RootChangeStatus | Prisma.EnumRootChangeStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.RootChangeStatus[] | Prisma.ListEnumRootChangeStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RootChangeStatus[] | Prisma.ListEnumRootChangeStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRootChangeStatusFilter<$PrismaModel> | $Enums.RootChangeStatus
+}
+
+export type EnumRootChangeKindWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RootChangeKind | Prisma.EnumRootChangeKindFieldRefInput<$PrismaModel>
+  in?: $Enums.RootChangeKind[] | Prisma.ListEnumRootChangeKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RootChangeKind[] | Prisma.ListEnumRootChangeKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRootChangeKindWithAggregatesFilter<$PrismaModel> | $Enums.RootChangeKind
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumRootChangeKindFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumRootChangeKindFilter<$PrismaModel>
+}
+
+export type EnumRootChangeStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RootChangeStatus | Prisma.EnumRootChangeStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.RootChangeStatus[] | Prisma.ListEnumRootChangeStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RootChangeStatus[] | Prisma.ListEnumRootChangeStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRootChangeStatusWithAggregatesFilter<$PrismaModel> | $Enums.RootChangeStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumRootChangeStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumRootChangeStatusFilter<$PrismaModel>
+}
+
 export type EnumRecoveryConfigurationStatusFilter<$PrismaModel = never> = {
   equals?: $Enums.RecoveryConfigurationStatus | Prisma.EnumRecoveryConfigurationStatusFieldRefInput<$PrismaModel>
   in?: $Enums.RecoveryConfigurationStatus[] | Prisma.ListEnumRecoveryConfigurationStatusFieldRefInput<$PrismaModel>
@@ -1845,6 +1879,40 @@ export type NestedEnumDeviceSecurityTierWithAggregatesFilter<$PrismaModel = neve
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumDeviceSecurityTierFilter<$PrismaModel>
   _max?: Prisma.NestedEnumDeviceSecurityTierFilter<$PrismaModel>
+}
+
+export type NestedEnumRootChangeKindFilter<$PrismaModel = never> = {
+  equals?: $Enums.RootChangeKind | Prisma.EnumRootChangeKindFieldRefInput<$PrismaModel>
+  in?: $Enums.RootChangeKind[] | Prisma.ListEnumRootChangeKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RootChangeKind[] | Prisma.ListEnumRootChangeKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRootChangeKindFilter<$PrismaModel> | $Enums.RootChangeKind
+}
+
+export type NestedEnumRootChangeStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.RootChangeStatus | Prisma.EnumRootChangeStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.RootChangeStatus[] | Prisma.ListEnumRootChangeStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RootChangeStatus[] | Prisma.ListEnumRootChangeStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRootChangeStatusFilter<$PrismaModel> | $Enums.RootChangeStatus
+}
+
+export type NestedEnumRootChangeKindWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RootChangeKind | Prisma.EnumRootChangeKindFieldRefInput<$PrismaModel>
+  in?: $Enums.RootChangeKind[] | Prisma.ListEnumRootChangeKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RootChangeKind[] | Prisma.ListEnumRootChangeKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRootChangeKindWithAggregatesFilter<$PrismaModel> | $Enums.RootChangeKind
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumRootChangeKindFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumRootChangeKindFilter<$PrismaModel>
+}
+
+export type NestedEnumRootChangeStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RootChangeStatus | Prisma.EnumRootChangeStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.RootChangeStatus[] | Prisma.ListEnumRootChangeStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RootChangeStatus[] | Prisma.ListEnumRootChangeStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRootChangeStatusWithAggregatesFilter<$PrismaModel> | $Enums.RootChangeStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumRootChangeStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumRootChangeStatusFilter<$PrismaModel>
 }
 
 export type NestedEnumRecoveryConfigurationStatusFilter<$PrismaModel = never> = {

@@ -82,6 +82,7 @@ export class AuthorizationController {
         expiresAt: view.expiresAt.toISOString(),
         indicative: view.indicative,
         ...(view.mock && { mock: true }),
+        action: "PIN_REQUIRED",
         pin: {
           isSet: view.pin.isSet,
           resetRequired: view.pin.resetRequired,
@@ -113,7 +114,12 @@ export class AuthorizationController {
       const result = await this.payments.authorize(token, parsed.data.pin);
       switch (result.status) {
         case "AUTHORIZED":
-          return { status: "AUTHORIZED", expiresAt: result.authorization.expiresAt.toISOString() };
+          return {
+            status: "AUTHORIZED",
+            // The PIN made the payment authorization; running it is the next step (a root signature only if a setup is needed).
+            action: "PAYMENT_READY",
+            expiresAt: result.authorization.expiresAt.toISOString(),
+          };
         case "INVALID_PIN":
           throw new HttpException(
             {
@@ -141,7 +147,7 @@ export class AuthorizationController {
             message: "Your PIN must be reset through account recovery.",
           });
         case "INVALID_FORMAT":
-          throw new BadRequestException({ code: "INVALID_FORMAT", message: "Enter four digits." });
+          throw new BadRequestException({ code: "INVALID_FORMAT", message: "Enter six digits." });
       }
     } catch (error) {
       if (error instanceof HttpException) throw error;

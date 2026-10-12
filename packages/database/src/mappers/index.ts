@@ -38,3 +38,4 @@ export {
   toWallet,
   toWalletSetupSession,
 } from "./wallet.js";
+export { toRootChange } from "./root-change.js";

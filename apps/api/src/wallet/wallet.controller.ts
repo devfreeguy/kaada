@@ -61,6 +61,16 @@ const registrationResponseSchema = z.looseObject({
   }),
 });
 
+const hex64 = z.string().regex(/^[0-9a-f]{64}$/);
+const devicePublicKey = { publicKeyX: hex64, publicKeyY: hex64 };
+const deviceOptionsSchema = z.strictObject(devicePublicKey);
+const deviceRegisterSchema = z.strictObject({
+  ...devicePublicKey,
+  challenge: z.string().regex(/^0x[0-9a-f]{64}$/),
+  r: hex64,
+  s: hex64,
+});
+
 const devSessionSchema = z.strictObject({
   userId: z.uuid().optional(),
   /** SECURITY: a link for someone whose wallet is already active (to set or change the PIN). */
@@ -81,11 +91,11 @@ function httpError(error: unknown): never {
       case "SETUP_SESSION_INVALID":
         throw new UnauthorizedException("this setup link is not valid or has expired");
       case "CREDENTIAL_REJECTED":
-        throw new BadRequestException("the passkey could not be verified");
+        throw new BadRequestException("the credential could not be verified");
       case "WALLET_ALREADY_SETUP":
         throw new ConflictException("this wallet is already set up or has a passkey");
       case "ROOT_CREDENTIAL_REQUIRED":
-        throw new ConflictException("register a passkey first");
+        throw new ConflictException("register a passkey or a device key first");
       case "WALLET_NOT_ACTIVE":
         throw new NotFoundException("no active wallet yet");
       case "WALLET_PROVISIONING_FAILED":
@@ -139,7 +149,56 @@ export class WalletController {
     }
     try {
       const done = await this.service().completeRegistration(token, body);
-      return { status: done.status, wallet: done.wallet ? walletView(done.wallet) : null };
+      return {
+        status: done.status,
+        rootType: done.rootType,
+        wallet: done.wallet ? walletView(done.wallet) : null,
+      };
+    } catch (error) {
+      return httpError(error);
+    }
+  }
+
+  /**
+   * Device-key enrolment, step 1: for people whose browser or phone has no passkeys. The client sends only the PUBLIC half of
+   * a P-256 key it generated (non-extractable where the platform allows); the server derives the key id itself and returns
+   * the single-use challenge the key must sign to prove it holds the private half.
+   */
+  @Post("device-keys/options")
+  @HttpCode(200)
+  @Header("Cache-Control", "no-store")
+  async deviceKeyOptions(@Body() body: unknown, @Headers("authorization") authorization?: string) {
+    const token = bearer(authorization);
+    const service = this.service();
+    if (!service.deviceKeysEnabled)
+      throw new ServiceUnavailableException("device keys are not enabled");
+    const parsed = deviceOptionsSchema.safeParse(body);
+    if (!parsed.success) throw new BadRequestException("invalid request");
+    try {
+      return await service.beginDeviceKeyRegistration(token, parsed.data);
+    } catch (error) {
+      return httpError(error);
+    }
+  }
+
+  /** Device-key enrolment, step 2: the proof, the fresh validator clone, the counterfactual wallet. */
+  @Post("device-keys/register")
+  @HttpCode(200)
+  @Header("Cache-Control", "no-store")
+  async deviceKeyRegister(@Body() body: unknown, @Headers("authorization") authorization?: string) {
+    const token = bearer(authorization);
+    const service = this.service();
+    if (!service.deviceKeysEnabled)
+      throw new ServiceUnavailableException("device keys are not enabled");
+    const parsed = deviceRegisterSchema.safeParse(body);
+    if (!parsed.success) throw new BadRequestException("invalid request");
+    try {
+      const done = await service.completeDeviceKeyRegistration(token, parsed.data);
+      return {
+        status: done.status,
+        rootType: done.rootType,
+        wallet: done.wallet ? walletView(done.wallet) : null,
+      };
     } catch (error) {
       return httpError(error);
     }
@@ -162,10 +221,14 @@ export class WalletController {
   @Header("Cache-Control", "no-store")
   async details(@Headers("authorization") authorization?: string) {
     try {
-      const view = await this.service().view(bearer(authorization));
+      const service = this.service();
+      const view = await service.view(bearer(authorization));
       return {
         setup: { status: view.status, expiresAt: view.expiresAt.toISOString() },
+        rootRegistered: view.rootRegistered,
+        rootType: view.rootType,
         passkeyRegistered: view.passkeyRegistered,
+        deviceKeysEnabled: service.deviceKeysEnabled,
         wallet: view.wallet ? walletView(view.wallet) : null,
       };
     } catch (error) {

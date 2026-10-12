@@ -12,12 +12,17 @@ import type {
 } from "@kaada/domain";
 
 import { ExecutionRunner } from "../../src/core/execution/runner.js";
+import { DeviceKeyRootAdapter, PasskeyRootAdapter } from "../../src/core/roots/adapters.js";
+import { RootAdapters, RootCredentialService } from "../../src/core/roots/root-credentials.js";
+import type { ExecutionRepositories, ExecutionUnitOfWork } from "../../src/core/execution/ports.js";
 import { RootActionService } from "../../src/core/execution/root-action-service.js";
 import { ValidatedExecutionSigner } from "../../src/core/execution/validated-signer.js";
 import { AesGcmSecretCipher } from "../../src/infrastructure/security/aes-gcm-cipher.js";
 import { firmWorld, quotedReply, SECRET_KEY } from "./firm-world.js";
 import type { FirmWorld } from "./firm-world.js";
 import { WALLET_ADDRESS } from "./payment-world.js";
+import { SENDER } from "./harness.js";
+import type { SoftDeviceKey } from "./soft-device-key.js";
 
 /*
  * A run world: the firm world (a PIN-authorized, planned payment) plus a scripted Kernel/bundler and a
@@ -197,7 +202,9 @@ export interface RunWorld extends FirmWorld {
   rootActions: RootActionService;
   cipher: AesGcmSecretCipher;
   executionId: string;
-  /** Completes the pending root action as the user's passkey would. */
+  /** The wallet's root device key, when the wallet has one instead of a passkey. */
+  deviceKey?: SoftDeviceKey;
+  /** Completes the pending root action as the wallet's root would (a passkey, or its device key). */
   confirmRootAction(good?: boolean): Promise<void>;
 }
 
@@ -211,6 +218,8 @@ export async function runWorld(
     minNativeWei?: bigint;
     held?: number;
     quote?: Partial<Parameters<typeof quotedReply>[0]>;
+    /** The wallet's root is this device key (a fresh clone), not a passkey. */
+    deviceRoot?: SoftDeviceKey;
   } = {},
 ): Promise<RunWorld> {
   const world = await firmWorld({
@@ -226,10 +235,14 @@ export async function runWorld(
       ...options.quote,
     }),
   );
-  return attachRunner(world, options.minNativeWei);
+  return attachRunner(world, options.minNativeWei, options.deviceRoot);
 }
 
-export async function attachRunner(world: FirmWorld, minNativeWei = 10n ** 15n): Promise<RunWorld> {
+export async function attachRunner(
+  world: FirmWorld,
+  minNativeWei = 10n ** 15n,
+  deviceRoot?: SoftDeviceKey,
+): Promise<RunWorld> {
   const kernel = new FakeKernel(world);
   const orders = new FakeOrders();
   const cipher = new AesGcmSecretCipher([{ version: 1, key: SECRET_KEY }]);
@@ -248,8 +261,16 @@ export async function attachRunner(world: FirmWorld, minNativeWei = 10n ** 15n):
     infrastructure,
     now,
   });
+  // A device-key wallet has a recorded DEVICE_KEY root (a fresh clone) and no passkey for the root actions to find.
+  const rootUow: ExecutionUnitOfWork = deviceRoot
+    ? {
+        read: deviceRootRepositories(uow.read, world, deviceRoot),
+        transaction: (work) =>
+          uow.transaction((tx) => work(deviceRootRepositories(tx, world, deviceRoot))),
+      }
+    : uow;
   const rootActions = new RootActionService({
-    unitOfWork: uow,
+    unitOfWork: rootUow,
     kernel,
     cipher,
     wallets: {
@@ -278,8 +299,18 @@ export async function attachRunner(world: FirmWorld, minNativeWei = 10n ** 15n):
           expiresAt: request.expiresAt,
         }),
     },
-    verifier,
-    rpId: "kaada.test",
+    roots: new RootCredentialService({ repositories: rootUow.read, rpId: "kaada.test" }),
+    adapters: new RootAdapters(
+      new PasskeyRootAdapter({
+        verifier,
+        passkeys: rootUow.read.passkeys,
+        rpId: "kaada.test",
+        origin: "https://app.kaada.test",
+        now,
+      }),
+      new DeviceKeyRootAdapter(),
+    ),
+    onChainId: 42220,
     origin: "https://app.kaada.test",
     now,
   });
@@ -319,6 +350,7 @@ export async function attachRunner(world: FirmWorld, minNativeWei = 10n ** 15n):
     rootActions,
     cipher,
     executionId: record.id,
+    ...(deviceRoot && { deviceKey: deviceRoot }),
     async confirmRootAction(good = true) {
       const session = await uow.read.rootActions.findPendingByExecution(record.id);
       if (!session) throw new Error("no pending root action");
@@ -326,10 +358,56 @@ export async function attachRunner(world: FirmWorld, minNativeWei = 10n ** 15n):
         sessionId: session.id,
         userId: record.userId,
       });
-      await rootActions.complete(token, { id: "credential-0", good });
+      if (deviceRoot) {
+        const challenge = await rootActions.options(token);
+        if (challenge.type !== "DEVICE_KEY") throw new Error("expected a device-key challenge");
+        await rootActions.complete(token, deviceRoot.proof(challenge.payload, { highS: !good }));
+        return;
+      }
+      await rootActions.complete(token, {
+        type: "PASSKEY",
+        assertion: { id: "credential-0", good },
+      });
     },
   };
   return run;
 }
 
 export { WALLET_ADDRESS };
+
+/** The repositories as a device-key wallet sees them: one recorded DEVICE_KEY root, no passkey. */
+function deviceRootRepositories(
+  repositories: ExecutionRepositories,
+  world: FirmWorld,
+  key: SoftDeviceKey,
+): ExecutionRepositories {
+  const row = {
+    id: "00000000-0000-4000-8000-0000000000d1",
+    userId: SENDER,
+    walletId: "",
+    kind: "DEVICE_KEY" as const,
+    role: "PRIMARY" as const,
+    status: "ACTIVE" as const,
+    isRoot: true,
+    validatorAddress: `0x${"d1".repeat(20)}`,
+    validatorPurpose: 0,
+    deploymentSalt: `0x${"00".repeat(32)}`,
+    credentialRef: key.keyId,
+    publicKeyX: key.publicKeyX,
+    publicKeyY: key.publicKeyY,
+    securityTier: "WEB_NON_EXTRACTABLE" as const,
+    createdAt: world.now(),
+  };
+  return {
+    ...repositories,
+    passkeys: {
+      ...repositories.passkeys,
+      listActiveForUser: () => Promise.resolve([]),
+      findByCredentialId: () => Promise.resolve(null),
+    },
+    walletCredentials: {
+      ...repositories.walletCredentials,
+      findRoot: (walletId: string) => Promise.resolve({ ...row, walletId }),
+    },
+  };
+}

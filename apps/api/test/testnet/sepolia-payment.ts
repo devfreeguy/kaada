@@ -253,6 +253,8 @@ try {
     await database.client.passkeyCredential.deleteMany({ where: byUser });
     await database.client.passkeyChallenge.deleteMany({ where: byUser });
     await database.client.walletSetupSession.deleteMany({ where: byUser });
+    await database.client.rootChange.deleteMany({ where: byUser });
+    await database.client.walletCredential.deleteMany({ where: byUser });
     await database.client.wallet.deleteMany({ where: byUser });
     await database.client.user.deleteMany({ where: { id: { in: users } } });
     await database.client.executionSecret.deleteMany({

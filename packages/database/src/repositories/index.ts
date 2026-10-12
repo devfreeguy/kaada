@@ -13,6 +13,7 @@ import type {
   RecoveryCleanupRepository,
   RecoveryConfigurationRepository,
   RecoveryEmailChallengeRepository,
+  RootChangeRepository,
   WalletCredentialRepository,
   FirmQuoteAttemptRepository,
   PaymentAuthorizationRepository,
@@ -55,6 +56,7 @@ import {
   createRecoveryEmailChallengeRepository,
   createWalletCredentialRepository,
 } from "./recovery.js";
+import { createRootChangeRepository } from "./root-change.js";
 import { createExecutionTransactionRepository, createRootActionSessionRepository } from "./run.js";
 import { createIdentityRepository, createUserRepository } from "./identity.js";
 import { createIntentRepository } from "./intents.js";
@@ -100,6 +102,7 @@ export interface Repositories {
   executionTransactions: ExecutionTransactionRepository;
   rootActions: RootActionSessionRepository;
   walletCredentials: WalletCredentialRepository;
+  rootChanges: RootChangeRepository;
   recoveryConfigurations: RecoveryConfigurationRepository;
   recoveryAttempts: RecoveryAttemptRepository;
   recoveryEmailChallenges: RecoveryEmailChallengeRepository;
@@ -134,6 +137,7 @@ function buildRepositories(db: Db): Repositories {
     executionTransactions: createExecutionTransactionRepository(db),
     rootActions: createRootActionSessionRepository(db),
     walletCredentials: createWalletCredentialRepository(db),
+    rootChanges: createRootChangeRepository(db),
     recoveryConfigurations: createRecoveryConfigurationRepository(db),
     recoveryAttempts: createRecoveryAttemptRepository(db),
     recoveryEmailChallenges: createRecoveryEmailChallengeRepository(db),

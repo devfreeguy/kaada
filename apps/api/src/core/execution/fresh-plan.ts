@@ -1,5 +1,6 @@
 import type { ExecutionPlan, TokenPolicy } from "@kaada/domain";
 
+import { hasRoot } from "../roots/root-credentials.js";
 import type { LiveExecution } from "./live-execution.js";
 import { buildExecutionPlan } from "./plan-builder.js";
 import type { ChainState, ExecutionRepositories } from "./ports.js";
@@ -14,7 +15,7 @@ export interface FreshPlanDeps {
 
 /**
  * The plan for an execution, re-derived from stored facts plus fresh READ-ONLY chain state (allowance,
- * whether the account exists, the wallet's permissions and passkeys). Nothing here trusts a plan that
+ * whether the account exists, the wallet's permissions and root). Nothing here trusts a plan that
  * was stored earlier, and nothing writes.
  */
 export async function freshPlan(
@@ -24,9 +25,9 @@ export async function freshPlan(
 ): Promise<ExecutionPlan> {
   const { repositories } = deps;
   const spender = live.quote.spender ?? live.quote.reactor;
-  const [deployed, credentials, permissions, currentAllowance] = await Promise.all([
+  const [deployed, rootAvailable, permissions, currentAllowance] = await Promise.all([
     deps.chain.isDeployed({ chainId: live.quote.chainId, address: live.wallet.address }),
-    repositories.passkeys.listActiveForUser(live.wallet.userId),
+    hasRoot(repositories, live.wallet),
     repositories.delegatedPermissions.listForWallet(live.wallet.id),
     spender
       ? deps.chain.allowances.readAllowance({
@@ -49,7 +50,7 @@ export async function freshPlan(
     tokenPolicy: deps.tokenPolicy ?? defaultTokenPolicy,
     currentAllowance,
     deployed,
-    passkeyRootAvailable: credentials.length > 0,
+    rootAvailable,
     infrastructure: deps.infrastructure,
     permissions,
     now,

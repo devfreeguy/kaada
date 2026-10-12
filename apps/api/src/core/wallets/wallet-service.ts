@@ -11,6 +11,7 @@ import {
 } from "@kaada/domain";
 import type {
   DelegatedPermission,
+  DeviceSecurityTier,
   FirmQuoteContext,
   PaymentRoute,
   PermissionOperation,
@@ -24,6 +25,7 @@ import type {
 
 import type { AgentLog } from "../agent/ports.js";
 import { noopLog } from "../agent/ports.js";
+import { toRootCredential } from "../roots/root-credentials.js";
 import type { WalletRepositories, WalletUnitOfWork } from "./ports.js";
 
 /** The longest a delegated permission may live. Short on purpose: it is renewed, not left open. */
@@ -33,8 +35,23 @@ export interface WalletServiceDeps {
   unitOfWork: WalletUnitOfWork;
   provisioning: WalletProvisioningAdapter;
   policy: WalletPolicyAdapter;
+  /** The relying party id a recorded passkey root falls back to. */
+  rpId?: string;
   now?: () => Date;
   log?: AgentLog;
+}
+
+/** A device-key root, enrolled and verified, ready to be recorded as a new wallet's creation-time root. */
+export interface DeviceKeyEnrollment {
+  /** The validator keyId (0x + 64 hex), derived by the server from the key. */
+  keyId: string;
+  publicKeyX: string;
+  publicKeyY: string;
+  /** The fresh clone that holds the key, the factory purpose (PRIMARY) and the salt it was derived with. */
+  validatorAddress: string;
+  deploymentSalt: string;
+  /** What the server could verify about where the key lives. Never taken from the client. */
+  securityTier: DeviceSecurityTier;
 }
 
 /**
@@ -51,8 +68,10 @@ export class WalletService {
   private readonly policy: WalletPolicyAdapter;
   private readonly now: () => Date;
   private readonly log: AgentLog;
+  private readonly rpId: string;
 
   constructor(deps: WalletServiceDeps) {
+    this.rpId = deps.rpId ?? "";
     this.uow = deps.unitOfWork;
     this.provisioning = deps.provisioning;
     this.policy = deps.policy;
@@ -108,14 +127,25 @@ export class WalletService {
       const existing = await repositories.wallets.findEmbedded(userId, CELO_CHAIN_ID);
       if (existing && existing.status !== "PROVISIONING") return { done: existing } as const;
 
-      const [root] = await repositories.passkeys.listActiveForUser(userId);
+      // The wallet's recorded root first (a device key, or a recorded passkey); otherwise the user's oldest active passkey.
+      const recorded = existing ? await repositories.walletCredentials.findRoot(existing.id) : null;
+      const [passkey] = recorded ? [] : await repositories.passkeys.listActiveForUser(userId);
+      const root: RootCredential | undefined = recorded
+        ? toRootCredential(recorded, this.rpId)
+        : passkey && {
+            type: "PASSKEY",
+            credentialId: passkey.credentialId,
+            publicKeyX: passkey.publicKeyX,
+            publicKeyY: passkey.publicKeyY,
+            rpId: passkey.rpId,
+          };
       if (!root) {
         throw new KaadaError(
           "ROOT_CREDENTIAL_REQUIRED",
-          "register a passkey before creating a wallet",
+          "register a passkey or a device key before creating a wallet",
         );
       }
-      if (existing) return { wallet: existing, root: toRoot(root) } as const;
+      if (existing) return { wallet: existing, root } as const;
 
       const created = await repositories.wallets.create({
         id: createId(),
@@ -127,7 +157,7 @@ export class WalletService {
         deployment: "NOT_APPLICABLE",
       });
       await this.audit(repositories, userId, WALLET_AUDIT_EVENTS.provisioningStarted, created.id);
-      return { wallet: created, root: toRoot(root) } as const;
+      return { wallet: created, root } as const;
     });
     if ("done" in started) return started.done;
 
@@ -189,6 +219,63 @@ export class WalletService {
       const current = await repositories.wallets.findById(started.wallet.id);
       if (!current) throw new KaadaError("WALLET_PROVISIONING_FAILED", "the wallet disappeared");
       return current;
+    });
+  }
+
+  /**
+   * Records a device key as the creation-time root of the user's new wallet: the wallet is created PROVISIONING and the key
+   * recorded as its ACTIVE PRIMARY root in one transaction (serialised per user, like provisioning). It derives and deploys
+   * nothing: `ensureEmbeddedWallet` then derives the counterfactual address from this root. Idempotent for the same key.
+   */
+  async beginDeviceKeyWallet(userId: string, enrollment: DeviceKeyEnrollment): Promise<Wallet> {
+    return this.uow.transaction(async (repositories) => {
+      await repositories.wallets.lockUser(userId);
+      const existing = await repositories.wallets.findEmbedded(userId, CELO_CHAIN_ID);
+      if (existing && existing.status !== "PROVISIONING") {
+        throw new KaadaError("WALLET_ALREADY_SETUP", "this user's wallet is already set up");
+      }
+      const wallet =
+        existing ??
+        (await repositories.wallets.create({
+          id: createId(),
+          userId,
+          chainId: CELO_CHAIN_ID,
+          isPrimary: true,
+          type: "EMBEDDED",
+          status: "PROVISIONING",
+          deployment: "NOT_APPLICABLE",
+        }));
+      if (!existing) {
+        await this.audit(repositories, userId, WALLET_AUDIT_EVENTS.provisioningStarted, wallet.id);
+      }
+      const root = await repositories.walletCredentials.findRoot(wallet.id);
+      if (root) {
+        if (root.credentialRef.toLowerCase() !== enrollment.keyId.toLowerCase()) {
+          throw new KaadaError("WALLET_ALREADY_SETUP", "this wallet already has a different root");
+        }
+        return wallet;
+      }
+      await repositories.walletCredentials.create({
+        id: createId(),
+        userId,
+        walletId: wallet.id,
+        kind: "DEVICE_KEY",
+        role: "PRIMARY",
+        status: "ACTIVE",
+        isRoot: true,
+        validatorAddress: enrollment.validatorAddress.toLowerCase(),
+        validatorPurpose: 0,
+        deploymentSalt: enrollment.deploymentSalt.toLowerCase(),
+        credentialRef: enrollment.keyId.toLowerCase(),
+        publicKeyX: enrollment.publicKeyX,
+        publicKeyY: enrollment.publicKeyY,
+        securityTier: enrollment.securityTier,
+      });
+      await this.audit(repositories, userId, WALLET_AUDIT_EVENTS.credentialRegistered, wallet.id, {
+        rootType: "DEVICE_KEY",
+        tier: enrollment.securityTier,
+      });
+      return wallet;
     });
   }
 
@@ -426,18 +513,4 @@ export class WalletService {
       ...(data && { data }),
     });
   }
-}
-
-function toRoot(credential: {
-  credentialId: string;
-  publicKeyX: string;
-  publicKeyY: string;
-  rpId: string;
-}): RootCredential {
-  return {
-    credentialId: credential.credentialId,
-    publicKeyX: credential.publicKeyX,
-    publicKeyY: credential.publicKeyY,
-    rpId: credential.rpId,
-  };
 }

@@ -358,6 +358,7 @@ export type WalletCredentialWhereInput = {
   wallet?: Prisma.XOR<Prisma.WalletScalarRelationFilter, Prisma.WalletWhereInput>
   recoveryAttempts?: Prisma.RecoveryAttemptListRelationFilter
   armedConfigurations?: Prisma.RecoveryConfigurationListRelationFilter
+  rootChanges?: Prisma.RootChangeListRelationFilter
 }
 
 export type WalletCredentialOrderByWithRelationInput = {
@@ -387,6 +388,7 @@ export type WalletCredentialOrderByWithRelationInput = {
   wallet?: Prisma.WalletOrderByWithRelationInput
   recoveryAttempts?: Prisma.RecoveryAttemptOrderByRelationAggregateInput
   armedConfigurations?: Prisma.RecoveryConfigurationOrderByRelationAggregateInput
+  rootChanges?: Prisma.RootChangeOrderByRelationAggregateInput
 }
 
 export type WalletCredentialWhereUniqueInput = Prisma.AtLeast<{
@@ -419,6 +421,7 @@ export type WalletCredentialWhereUniqueInput = Prisma.AtLeast<{
   wallet?: Prisma.XOR<Prisma.WalletScalarRelationFilter, Prisma.WalletWhereInput>
   recoveryAttempts?: Prisma.RecoveryAttemptListRelationFilter
   armedConfigurations?: Prisma.RecoveryConfigurationListRelationFilter
+  rootChanges?: Prisma.RootChangeListRelationFilter
 }, "id">
 
 export type WalletCredentialOrderByWithAggregationInput = {
@@ -504,6 +507,7 @@ export type WalletCredentialCreateInput = {
   wallet: Prisma.WalletCreateNestedOneWithoutWalletCredentialsInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutNewCredentialInput
   armedConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutArmedByInput
+  rootChanges?: Prisma.RootChangeCreateNestedManyWithoutNewCredentialInput
 }
 
 export type WalletCredentialUncheckedCreateInput = {
@@ -531,6 +535,7 @@ export type WalletCredentialUncheckedCreateInput = {
   revokedAt?: Date | string | null
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutNewCredentialInput
   armedConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutArmedByInput
+  rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutNewCredentialInput
 }
 
 export type WalletCredentialUpdateInput = {
@@ -558,6 +563,7 @@ export type WalletCredentialUpdateInput = {
   wallet?: Prisma.WalletUpdateOneRequiredWithoutWalletCredentialsNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutNewCredentialNestedInput
   armedConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutArmedByNestedInput
+  rootChanges?: Prisma.RootChangeUpdateManyWithoutNewCredentialNestedInput
 }
 
 export type WalletCredentialUncheckedUpdateInput = {
@@ -585,6 +591,7 @@ export type WalletCredentialUncheckedUpdateInput = {
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutNewCredentialNestedInput
   armedConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutArmedByNestedInput
+  rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutNewCredentialNestedInput
 }
 
 export type WalletCredentialCreateManyInput = {
@@ -753,6 +760,11 @@ export type WalletCredentialSumOrderByAggregateInput = {
   validatorPurpose?: Prisma.SortOrder
 }
 
+export type WalletCredentialScalarRelationFilter = {
+  is?: Prisma.WalletCredentialWhereInput
+  isNot?: Prisma.WalletCredentialWhereInput
+}
+
 export type WalletCredentialNullableScalarRelationFilter = {
   is?: Prisma.WalletCredentialWhereInput | null
   isNot?: Prisma.WalletCredentialWhereInput | null
@@ -858,6 +870,20 @@ export type EnumDeviceSecurityTierFieldUpdateOperationsInput = {
   set?: $Enums.DeviceSecurityTier
 }
 
+export type WalletCredentialCreateNestedOneWithoutRootChangesInput = {
+  create?: Prisma.XOR<Prisma.WalletCredentialCreateWithoutRootChangesInput, Prisma.WalletCredentialUncheckedCreateWithoutRootChangesInput>
+  connectOrCreate?: Prisma.WalletCredentialCreateOrConnectWithoutRootChangesInput
+  connect?: Prisma.WalletCredentialWhereUniqueInput
+}
+
+export type WalletCredentialUpdateOneRequiredWithoutRootChangesNestedInput = {
+  create?: Prisma.XOR<Prisma.WalletCredentialCreateWithoutRootChangesInput, Prisma.WalletCredentialUncheckedCreateWithoutRootChangesInput>
+  connectOrCreate?: Prisma.WalletCredentialCreateOrConnectWithoutRootChangesInput
+  upsert?: Prisma.WalletCredentialUpsertWithoutRootChangesInput
+  connect?: Prisma.WalletCredentialWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.WalletCredentialUpdateToOneWithWhereWithoutRootChangesInput, Prisma.WalletCredentialUpdateWithoutRootChangesInput>, Prisma.WalletCredentialUncheckedUpdateWithoutRootChangesInput>
+}
+
 export type WalletCredentialCreateNestedOneWithoutArmedConfigurationsInput = {
   create?: Prisma.XOR<Prisma.WalletCredentialCreateWithoutArmedConfigurationsInput, Prisma.WalletCredentialUncheckedCreateWithoutArmedConfigurationsInput>
   connectOrCreate?: Prisma.WalletCredentialCreateOrConnectWithoutArmedConfigurationsInput
@@ -914,6 +940,7 @@ export type WalletCredentialCreateWithoutUserInput = {
   wallet: Prisma.WalletCreateNestedOneWithoutWalletCredentialsInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutNewCredentialInput
   armedConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutArmedByInput
+  rootChanges?: Prisma.RootChangeCreateNestedManyWithoutNewCredentialInput
 }
 
 export type WalletCredentialUncheckedCreateWithoutUserInput = {
@@ -940,6 +967,7 @@ export type WalletCredentialUncheckedCreateWithoutUserInput = {
   revokedAt?: Date | string | null
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutNewCredentialInput
   armedConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutArmedByInput
+  rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutNewCredentialInput
 }
 
 export type WalletCredentialCreateOrConnectWithoutUserInput = {
@@ -1020,6 +1048,7 @@ export type WalletCredentialCreateWithoutWalletInput = {
   user: Prisma.UserCreateNestedOneWithoutWalletCredentialsInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutNewCredentialInput
   armedConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutArmedByInput
+  rootChanges?: Prisma.RootChangeCreateNestedManyWithoutNewCredentialInput
 }
 
 export type WalletCredentialUncheckedCreateWithoutWalletInput = {
@@ -1046,6 +1075,7 @@ export type WalletCredentialUncheckedCreateWithoutWalletInput = {
   revokedAt?: Date | string | null
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutNewCredentialInput
   armedConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutArmedByInput
+  rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutNewCredentialInput
 }
 
 export type WalletCredentialCreateOrConnectWithoutWalletInput = {
@@ -1074,6 +1104,130 @@ export type WalletCredentialUpdateManyWithWhereWithoutWalletInput = {
   data: Prisma.XOR<Prisma.WalletCredentialUpdateManyMutationInput, Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletInput>
 }
 
+export type WalletCredentialCreateWithoutRootChangesInput = {
+  id: string
+  kind: $Enums.WalletCredentialKind
+  role: $Enums.WalletCredentialRole
+  status?: $Enums.WalletCredentialStatus
+  isRoot?: boolean
+  validatorAddress: string
+  validatorPurpose: number
+  deploymentSalt: string
+  credentialRef: string
+  publicKeyX: string
+  publicKeyY: string
+  rpId?: string | null
+  passkeyCredentialId?: string | null
+  securityTier?: $Enums.DeviceSecurityTier
+  label?: string | null
+  replacedByCredentialId?: string | null
+  createdAt?: Date | string
+  activatedAt?: Date | string | null
+  replacedAt?: Date | string | null
+  revokedAt?: Date | string | null
+  user: Prisma.UserCreateNestedOneWithoutWalletCredentialsInput
+  wallet: Prisma.WalletCreateNestedOneWithoutWalletCredentialsInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutNewCredentialInput
+  armedConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutArmedByInput
+}
+
+export type WalletCredentialUncheckedCreateWithoutRootChangesInput = {
+  id: string
+  userId: string
+  walletId: string
+  kind: $Enums.WalletCredentialKind
+  role: $Enums.WalletCredentialRole
+  status?: $Enums.WalletCredentialStatus
+  isRoot?: boolean
+  validatorAddress: string
+  validatorPurpose: number
+  deploymentSalt: string
+  credentialRef: string
+  publicKeyX: string
+  publicKeyY: string
+  rpId?: string | null
+  passkeyCredentialId?: string | null
+  securityTier?: $Enums.DeviceSecurityTier
+  label?: string | null
+  replacedByCredentialId?: string | null
+  createdAt?: Date | string
+  activatedAt?: Date | string | null
+  replacedAt?: Date | string | null
+  revokedAt?: Date | string | null
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutNewCredentialInput
+  armedConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutArmedByInput
+}
+
+export type WalletCredentialCreateOrConnectWithoutRootChangesInput = {
+  where: Prisma.WalletCredentialWhereUniqueInput
+  create: Prisma.XOR<Prisma.WalletCredentialCreateWithoutRootChangesInput, Prisma.WalletCredentialUncheckedCreateWithoutRootChangesInput>
+}
+
+export type WalletCredentialUpsertWithoutRootChangesInput = {
+  update: Prisma.XOR<Prisma.WalletCredentialUpdateWithoutRootChangesInput, Prisma.WalletCredentialUncheckedUpdateWithoutRootChangesInput>
+  create: Prisma.XOR<Prisma.WalletCredentialCreateWithoutRootChangesInput, Prisma.WalletCredentialUncheckedCreateWithoutRootChangesInput>
+  where?: Prisma.WalletCredentialWhereInput
+}
+
+export type WalletCredentialUpdateToOneWithWhereWithoutRootChangesInput = {
+  where?: Prisma.WalletCredentialWhereInput
+  data: Prisma.XOR<Prisma.WalletCredentialUpdateWithoutRootChangesInput, Prisma.WalletCredentialUncheckedUpdateWithoutRootChangesInput>
+}
+
+export type WalletCredentialUpdateWithoutRootChangesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumWalletCredentialKindFieldUpdateOperationsInput | $Enums.WalletCredentialKind
+  role?: Prisma.EnumWalletCredentialRoleFieldUpdateOperationsInput | $Enums.WalletCredentialRole
+  status?: Prisma.EnumWalletCredentialStatusFieldUpdateOperationsInput | $Enums.WalletCredentialStatus
+  isRoot?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  validatorAddress?: Prisma.StringFieldUpdateOperationsInput | string
+  validatorPurpose?: Prisma.IntFieldUpdateOperationsInput | number
+  deploymentSalt?: Prisma.StringFieldUpdateOperationsInput | string
+  credentialRef?: Prisma.StringFieldUpdateOperationsInput | string
+  publicKeyX?: Prisma.StringFieldUpdateOperationsInput | string
+  publicKeyY?: Prisma.StringFieldUpdateOperationsInput | string
+  rpId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passkeyCredentialId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  securityTier?: Prisma.EnumDeviceSecurityTierFieldUpdateOperationsInput | $Enums.DeviceSecurityTier
+  label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  replacedByCredentialId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  replacedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  user?: Prisma.UserUpdateOneRequiredWithoutWalletCredentialsNestedInput
+  wallet?: Prisma.WalletUpdateOneRequiredWithoutWalletCredentialsNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutNewCredentialNestedInput
+  armedConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutArmedByNestedInput
+}
+
+export type WalletCredentialUncheckedUpdateWithoutRootChangesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  walletId?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumWalletCredentialKindFieldUpdateOperationsInput | $Enums.WalletCredentialKind
+  role?: Prisma.EnumWalletCredentialRoleFieldUpdateOperationsInput | $Enums.WalletCredentialRole
+  status?: Prisma.EnumWalletCredentialStatusFieldUpdateOperationsInput | $Enums.WalletCredentialStatus
+  isRoot?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  validatorAddress?: Prisma.StringFieldUpdateOperationsInput | string
+  validatorPurpose?: Prisma.IntFieldUpdateOperationsInput | number
+  deploymentSalt?: Prisma.StringFieldUpdateOperationsInput | string
+  credentialRef?: Prisma.StringFieldUpdateOperationsInput | string
+  publicKeyX?: Prisma.StringFieldUpdateOperationsInput | string
+  publicKeyY?: Prisma.StringFieldUpdateOperationsInput | string
+  rpId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passkeyCredentialId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  securityTier?: Prisma.EnumDeviceSecurityTierFieldUpdateOperationsInput | $Enums.DeviceSecurityTier
+  label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  replacedByCredentialId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  replacedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutNewCredentialNestedInput
+  armedConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutArmedByNestedInput
+}
+
 export type WalletCredentialCreateWithoutArmedConfigurationsInput = {
   id: string
   kind: $Enums.WalletCredentialKind
@@ -1098,6 +1252,7 @@ export type WalletCredentialCreateWithoutArmedConfigurationsInput = {
   user: Prisma.UserCreateNestedOneWithoutWalletCredentialsInput
   wallet: Prisma.WalletCreateNestedOneWithoutWalletCredentialsInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutNewCredentialInput
+  rootChanges?: Prisma.RootChangeCreateNestedManyWithoutNewCredentialInput
 }
 
 export type WalletCredentialUncheckedCreateWithoutArmedConfigurationsInput = {
@@ -1124,6 +1279,7 @@ export type WalletCredentialUncheckedCreateWithoutArmedConfigurationsInput = {
   replacedAt?: Date | string | null
   revokedAt?: Date | string | null
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutNewCredentialInput
+  rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutNewCredentialInput
 }
 
 export type WalletCredentialCreateOrConnectWithoutArmedConfigurationsInput = {
@@ -1166,6 +1322,7 @@ export type WalletCredentialUpdateWithoutArmedConfigurationsInput = {
   user?: Prisma.UserUpdateOneRequiredWithoutWalletCredentialsNestedInput
   wallet?: Prisma.WalletUpdateOneRequiredWithoutWalletCredentialsNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutNewCredentialNestedInput
+  rootChanges?: Prisma.RootChangeUpdateManyWithoutNewCredentialNestedInput
 }
 
 export type WalletCredentialUncheckedUpdateWithoutArmedConfigurationsInput = {
@@ -1192,6 +1349,7 @@ export type WalletCredentialUncheckedUpdateWithoutArmedConfigurationsInput = {
   replacedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutNewCredentialNestedInput
+  rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutNewCredentialNestedInput
 }
 
 export type WalletCredentialCreateWithoutRecoveryAttemptsInput = {
@@ -1218,6 +1376,7 @@ export type WalletCredentialCreateWithoutRecoveryAttemptsInput = {
   user: Prisma.UserCreateNestedOneWithoutWalletCredentialsInput
   wallet: Prisma.WalletCreateNestedOneWithoutWalletCredentialsInput
   armedConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutArmedByInput
+  rootChanges?: Prisma.RootChangeCreateNestedManyWithoutNewCredentialInput
 }
 
 export type WalletCredentialUncheckedCreateWithoutRecoveryAttemptsInput = {
@@ -1244,6 +1403,7 @@ export type WalletCredentialUncheckedCreateWithoutRecoveryAttemptsInput = {
   replacedAt?: Date | string | null
   revokedAt?: Date | string | null
   armedConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutArmedByInput
+  rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutNewCredentialInput
 }
 
 export type WalletCredentialCreateOrConnectWithoutRecoveryAttemptsInput = {
@@ -1286,6 +1446,7 @@ export type WalletCredentialUpdateWithoutRecoveryAttemptsInput = {
   user?: Prisma.UserUpdateOneRequiredWithoutWalletCredentialsNestedInput
   wallet?: Prisma.WalletUpdateOneRequiredWithoutWalletCredentialsNestedInput
   armedConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutArmedByNestedInput
+  rootChanges?: Prisma.RootChangeUpdateManyWithoutNewCredentialNestedInput
 }
 
 export type WalletCredentialUncheckedUpdateWithoutRecoveryAttemptsInput = {
@@ -1312,6 +1473,7 @@ export type WalletCredentialUncheckedUpdateWithoutRecoveryAttemptsInput = {
   replacedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   armedConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutArmedByNestedInput
+  rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutNewCredentialNestedInput
 }
 
 export type WalletCredentialCreateManyUserInput = {
@@ -1362,6 +1524,7 @@ export type WalletCredentialUpdateWithoutUserInput = {
   wallet?: Prisma.WalletUpdateOneRequiredWithoutWalletCredentialsNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutNewCredentialNestedInput
   armedConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutArmedByNestedInput
+  rootChanges?: Prisma.RootChangeUpdateManyWithoutNewCredentialNestedInput
 }
 
 export type WalletCredentialUncheckedUpdateWithoutUserInput = {
@@ -1388,6 +1551,7 @@ export type WalletCredentialUncheckedUpdateWithoutUserInput = {
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutNewCredentialNestedInput
   armedConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutArmedByNestedInput
+  rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutNewCredentialNestedInput
 }
 
 export type WalletCredentialUncheckedUpdateManyWithoutUserInput = {
@@ -1462,6 +1626,7 @@ export type WalletCredentialUpdateWithoutWalletInput = {
   user?: Prisma.UserUpdateOneRequiredWithoutWalletCredentialsNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutNewCredentialNestedInput
   armedConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutArmedByNestedInput
+  rootChanges?: Prisma.RootChangeUpdateManyWithoutNewCredentialNestedInput
 }
 
 export type WalletCredentialUncheckedUpdateWithoutWalletInput = {
@@ -1488,6 +1653,7 @@ export type WalletCredentialUncheckedUpdateWithoutWalletInput = {
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutNewCredentialNestedInput
   armedConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutArmedByNestedInput
+  rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutNewCredentialNestedInput
 }
 
 export type WalletCredentialUncheckedUpdateManyWithoutWalletInput = {
@@ -1522,11 +1688,13 @@ export type WalletCredentialUncheckedUpdateManyWithoutWalletInput = {
 export type WalletCredentialCountOutputType = {
   recoveryAttempts: number
   armedConfigurations: number
+  rootChanges: number
 }
 
 export type WalletCredentialCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   recoveryAttempts?: boolean | WalletCredentialCountOutputTypeCountRecoveryAttemptsArgs
   armedConfigurations?: boolean | WalletCredentialCountOutputTypeCountArmedConfigurationsArgs
+  rootChanges?: boolean | WalletCredentialCountOutputTypeCountRootChangesArgs
 }
 
 /**
@@ -1551,6 +1719,13 @@ export type WalletCredentialCountOutputTypeCountRecoveryAttemptsArgs<ExtArgs ext
  */
 export type WalletCredentialCountOutputTypeCountArmedConfigurationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.RecoveryConfigurationWhereInput
+}
+
+/**
+ * WalletCredentialCountOutputType without action
+ */
+export type WalletCredentialCountOutputTypeCountRootChangesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.RootChangeWhereInput
 }
 
 
@@ -1581,6 +1756,7 @@ export type WalletCredentialSelect<ExtArgs extends runtime.Types.Extensions.Inte
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
   recoveryAttempts?: boolean | Prisma.WalletCredential$recoveryAttemptsArgs<ExtArgs>
   armedConfigurations?: boolean | Prisma.WalletCredential$armedConfigurationsArgs<ExtArgs>
+  rootChanges?: boolean | Prisma.WalletCredential$rootChangesArgs<ExtArgs>
   _count?: boolean | Prisma.WalletCredentialCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["walletCredential"]>
 
@@ -1669,6 +1845,7 @@ export type WalletCredentialInclude<ExtArgs extends runtime.Types.Extensions.Int
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
   recoveryAttempts?: boolean | Prisma.WalletCredential$recoveryAttemptsArgs<ExtArgs>
   armedConfigurations?: boolean | Prisma.WalletCredential$armedConfigurationsArgs<ExtArgs>
+  rootChanges?: boolean | Prisma.WalletCredential$rootChangesArgs<ExtArgs>
   _count?: boolean | Prisma.WalletCredentialCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type WalletCredentialIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1687,6 +1864,7 @@ export type $WalletCredentialPayload<ExtArgs extends runtime.Types.Extensions.In
     wallet: Prisma.$WalletPayload<ExtArgs>
     recoveryAttempts: Prisma.$RecoveryAttemptPayload<ExtArgs>[]
     armedConfigurations: Prisma.$RecoveryConfigurationPayload<ExtArgs>[]
+    rootChanges: Prisma.$RootChangePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2112,6 +2290,7 @@ export interface Prisma__WalletCredentialClient<T, Null = never, ExtArgs extends
   wallet<T extends Prisma.WalletDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.WalletDefaultArgs<ExtArgs>>): Prisma.Prisma__WalletClient<runtime.Types.Result.GetResult<Prisma.$WalletPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   recoveryAttempts<T extends Prisma.WalletCredential$recoveryAttemptsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.WalletCredential$recoveryAttemptsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RecoveryAttemptPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   armedConfigurations<T extends Prisma.WalletCredential$armedConfigurationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.WalletCredential$armedConfigurationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RecoveryConfigurationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  rootChanges<T extends Prisma.WalletCredential$rootChangesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.WalletCredential$rootChangesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RootChangePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2609,6 +2788,30 @@ export type WalletCredential$armedConfigurationsArgs<ExtArgs extends runtime.Typ
   take?: number
   skip?: number
   distinct?: Prisma.RecoveryConfigurationScalarFieldEnum | Prisma.RecoveryConfigurationScalarFieldEnum[]
+}
+
+/**
+ * WalletCredential.rootChanges
+ */
+export type WalletCredential$rootChangesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the RootChange
+   */
+  select?: Prisma.RootChangeSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the RootChange
+   */
+  omit?: Prisma.RootChangeOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.RootChangeInclude<ExtArgs> | null
+  where?: Prisma.RootChangeWhereInput
+  orderBy?: Prisma.RootChangeOrderByWithRelationInput | Prisma.RootChangeOrderByWithRelationInput[]
+  cursor?: Prisma.RootChangeWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.RootChangeScalarFieldEnum | Prisma.RootChangeScalarFieldEnum[]
 }
 
 /**

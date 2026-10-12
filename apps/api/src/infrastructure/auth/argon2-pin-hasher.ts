@@ -11,7 +11,7 @@ import type { PinHasher } from "../../core/authorization/ports.js";
  * costs tens of milliseconds per check on a server: invisible to a person, and an online attacker is
  * limited by the lockout, not by this cost. Verification is constant-time inside the library.
  *
- * A PIN has only 10,000 values, so an offline attacker with a leaked database could try them all
+ * A PIN has only 1,000,000 values, so an offline attacker with a leaked database could try them all
  * whatever the cost. The optional `pepper` (a server-side secret, never stored in the database) is
  * mixed in as the Argon2 secret input, which makes a database leak alone useless. It must stay
  * constant: changing it makes existing PIN hashes unverifiable (those users re-create their PIN).

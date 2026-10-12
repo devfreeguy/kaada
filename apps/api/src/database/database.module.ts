@@ -30,6 +30,7 @@ class DatabaseLifecycle implements OnApplicationShutdown {
           url: config.database.url,
           poolMax: config.database.poolMax,
           poolTimeoutMs: config.database.poolTimeoutMs,
+          transactionTimeoutMs: config.database.transactionTimeoutMs,
           onError: (error) => logger.error(`Connection pool error: ${error.name}`),
         });
       },

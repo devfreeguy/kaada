@@ -3,6 +3,12 @@
 import { browserSupportsWebAuthn, startRegistration } from "@simplewebauthn/browser";
 import { useCallback, useEffect, useState } from "react";
 
+import {
+  deviceKeySupported,
+  generateDeviceKey,
+  saveDeviceKey,
+  signDevicePayload,
+} from "../../lib/device-key";
 import { PinSetup } from "./pin-setup";
 
 interface WalletInfo {
@@ -18,11 +24,11 @@ interface BalanceLine {
 type View =
   | { name: "loading" }
   | { name: "invalid" }
-  | { name: "ready" }
+  | { name: "ready"; deviceKeysEnabled: boolean }
   | { name: "finish" }
   | { name: "creating" }
   | { name: "done"; address: string }
-  | { name: "error"; message: string; retry: "create" | "finish" };
+  | { name: "error"; message: string; retry: "create" | "device" | "finish" };
 
 /** Sends the setup token as a bearer header: it is never put in a body, a query string or a log. */
 async function call(token: string, path: string, init: RequestInit = {}): Promise<Response> {
@@ -42,6 +48,7 @@ function shorten(address: string): string {
 
 export function SetupFlow({ token }: { token: string }) {
   const [view, setView] = useState<View>({ name: "loading" });
+  const [deviceKeysEnabled, setDeviceKeysEnabled] = useState(false);
   const [copied, setCopied] = useState(false);
   const [balances, setBalances] = useState<BalanceLine[]>([]);
 
@@ -57,15 +64,17 @@ export function SetupFlow({ token }: { token: string }) {
           throw new Error("unavailable");
         } else {
           const body = (await response.json()) as {
-            passkeyRegistered: boolean;
+            rootRegistered: boolean;
+            deviceKeysEnabled: boolean;
             wallet: WalletInfo | null;
           };
+          if (!cancelled) setDeviceKeysEnabled(body.deviceKeysEnabled);
           next =
             body.wallet?.status === "ACTIVE" && body.wallet.address
               ? { name: "done", address: body.wallet.address }
-              : body.passkeyRegistered
+              : body.rootRegistered
                 ? { name: "finish" }
-                : { name: "ready" };
+                : { name: "ready", deviceKeysEnabled: body.deviceKeysEnabled };
         }
       } catch {
         next = {
@@ -115,8 +124,71 @@ export function SetupFlow({ token }: { token: string }) {
     }
   }, [token]);
 
+  /**
+   * The alternative for a browser or phone without passkeys: a P-256 key made by this device. Its private half is
+   * non-extractable and never leaves the browser; Kaada gets the public key and a signature proving the key is held.
+   */
+  const createWithDevice = useCallback(async () => {
+    if (!deviceKeySupported()) {
+      return setView({
+        name: "error",
+        message: "This browser can't keep a device key. Please open the link in Safari or Chrome.",
+        retry: "device",
+      });
+    }
+    setView({ name: "creating" });
+    try {
+      const key = await generateDeviceKey();
+      const optionsResponse = await call(token, "/device-keys/options", {
+        method: "POST",
+        body: JSON.stringify({ publicKeyX: key.publicKeyX, publicKeyY: key.publicKeyY }),
+      });
+      if (optionsResponse.status === 401) return setView({ name: "invalid" });
+      if (!optionsResponse.ok) throw new Error("options");
+      const challenge = (await optionsResponse.json()) as {
+        keyId: string;
+        payload: string;
+        challenge: string;
+      };
+      const { r, s } = await signDevicePayload(key.privateKey, challenge.payload);
+      // Kept BEFORE the server records it: a key lost after the server accepted it would lock the wallet.
+      await saveDeviceKey(challenge.keyId, key.privateKey);
+      const registerResponse = await call(token, "/device-keys/register", {
+        method: "POST",
+        body: JSON.stringify({
+          publicKeyX: key.publicKeyX,
+          publicKeyY: key.publicKeyY,
+          challenge: challenge.challenge,
+          r,
+          s,
+        }),
+      });
+      if (registerResponse.status === 401) return setView({ name: "invalid" });
+      if (registerResponse.status === 502) {
+        return setView({
+          name: "error",
+          message:
+            "Your device key is saved, but the wallet could not be created yet. Please try again.",
+          retry: "finish",
+        });
+      }
+      if (!registerResponse.ok) throw new Error("register");
+      const body = (await registerResponse.json()) as { wallet: WalletInfo | null };
+      if (!body.wallet?.address) throw new Error("no wallet");
+      setView({ name: "done", address: body.wallet.address });
+    } catch {
+      setView({
+        name: "error",
+        message: "We couldn't set up your device key. Please try again.",
+        retry: "device",
+      });
+    }
+  }, [token]);
+
   const create = useCallback(async () => {
     if (!browserSupportsWebAuthn()) {
+      // Passkeys are preferred but not required: without them, a device key is the way in (when it is enabled).
+      if (deviceKeysEnabled) return createWithDevice();
       return setView({
         name: "error",
         message: "This browser doesn't support passkeys. Please open the link in Safari or Chrome.",
@@ -163,7 +235,7 @@ export function SetupFlow({ token }: { token: string }) {
         retry: "create",
       });
     }
-  }, [token]);
+  }, [token, deviceKeysEnabled, createWithDevice]);
 
   const copy = useCallback(async (value: string) => {
     try {
@@ -195,7 +267,8 @@ export function SetupFlow({ token }: { token: string }) {
         <section className="flex flex-col gap-4">
           <h1 className="text-2xl font-semibold">Secure your wallet</h1>
           <p className="text-neutral-600">
-            Your passkey protects your Kaada wallet. No seed phrase is required for normal use.
+            A passkey protects your Kaada wallet. If your device has no passkeys, a key kept by this
+            device does the same job. No seed phrase is required for normal use.
           </p>
           {view.name === "error" && (
             <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -206,18 +279,33 @@ export function SetupFlow({ token }: { token: string }) {
             type="button"
             disabled={view.name === "creating"}
             onClick={() =>
-              void (view.name === "error" && view.retry === "finish" ? finish() : create())
+              void (view.name === "error" && view.retry === "finish"
+                ? finish()
+                : view.name === "error" && view.retry === "device"
+                  ? createWithDevice()
+                  : create())
             }
             className="rounded-xl bg-neutral-900 px-5 py-4 text-base font-medium text-white disabled:opacity-50"
           >
             {view.name === "creating"
-              ? "Waiting for your passkey..."
+              ? "Waiting for your device..."
               : view.name === "error" && view.retry === "finish"
                 ? "Finish setup"
-                : "Create Passkey"}
+                : view.name === "error" && view.retry === "device"
+                  ? "Try with this device"
+                  : "Create Passkey"}
           </button>
+          {deviceKeysEnabled && view.name !== "creating" && (
+            <button
+              type="button"
+              onClick={() => void createWithDevice()}
+              className="rounded-xl border border-neutral-300 px-5 py-4 text-base font-medium"
+            >
+              No passkey? Use this device
+            </button>
+          )}
           <p className="text-xs text-neutral-500">
-            Your device keeps the passkey. Kaada never sees or stores it.
+            Your device keeps the passkey or key. Kaada never sees or stores it.
           </p>
         </section>
       )}
@@ -226,7 +314,7 @@ export function SetupFlow({ token }: { token: string }) {
         <section className="flex flex-col gap-4">
           <h1 className="text-2xl font-semibold">Almost done</h1>
           <p className="text-neutral-600">
-            Your passkey is saved. One more step creates your wallet.
+            Your credential is saved. One more step creates your wallet.
           </p>
           <button
             type="button"

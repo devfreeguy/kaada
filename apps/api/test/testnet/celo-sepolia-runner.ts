@@ -47,6 +47,8 @@ import { ExecutionPreparationService } from "../../src/core/execution/preparatio
 import type { ChainState } from "../../src/core/execution/ports.js";
 import type { ExecutionUnitOfWork } from "../../src/core/execution/ports.js";
 import { RootActionService } from "../../src/core/execution/root-action-service.js";
+import { DeviceKeyRootAdapter, PasskeyRootAdapter } from "../../src/core/roots/adapters.js";
+import { RootAdapters, RootCredentialService } from "../../src/core/roots/root-credentials.js";
 import { ExecutionRunner } from "../../src/core/execution/runner.js";
 import { ValidatedExecutionSigner } from "../../src/core/execution/validated-signer.js";
 import { AesGcmSecretCipher } from "../../src/infrastructure/security/aes-gcm-cipher.js";
@@ -62,7 +64,7 @@ try {
 const SEPOLIA_RPC = "https://forno.celo-sepolia.celo-testnet.org";
 const RP_ID = "harness.kaada.test";
 const ORIGIN = "https://harness.kaada.test";
-const PIN = "7351";
+const PIN = "735142";
 const KEY = randomBytes(32).toString("base64");
 const BUY_AMOUNT = 100n * 10n ** 18n; // 100 tBRL, exact output
 const TAKER_PAYS = 20_000_000n; // 20 tUSDT
@@ -489,8 +491,17 @@ async function main(): Promise<void> {
             expiresAt: request.expiresAt,
           }),
       },
-      verifier: new SimpleWebAuthnVerifier(),
-      rpId: RP_ID,
+      roots: new RootCredentialService({ repositories: uow.read, rpId: RP_ID }),
+      adapters: new RootAdapters(
+        new PasskeyRootAdapter({
+          verifier: new SimpleWebAuthnVerifier(),
+          passkeys: uow.read.passkeys,
+          rpId: RP_ID,
+          origin: ORIGIN,
+        }),
+        new DeviceKeyRootAdapter(),
+      ),
+      onChainId: 11142220,
       origin: ORIGIN,
     });
     const runner = new ExecutionRunner({
@@ -557,10 +568,10 @@ async function main(): Promise<void> {
       const pending = await repositories.rootActions.findPendingByExecution(executionId);
       if (!pending) throw new Error("no pending root action");
       const link = await p.rootActions.issueLink({ sessionId: pending.id, userId: user.id });
-      await p.rootActions.complete(
-        link.url.split("/").at(-1) ?? "",
-        assertionFor(pending.challenge),
-      );
+      await p.rootActions.complete(link.url.split("/").at(-1) ?? "", {
+        type: "PASSKEY",
+        assertion: assertionFor(pending.challenge),
+      });
       // The run that EXECUTES the payment is the next one; its outcome is what the caller observes.
       return p.runner.run(executionId);
     }
@@ -591,9 +602,12 @@ async function main(): Promise<void> {
         const options = await p.rootActions.options(token);
         log(
           "root-action page options: challenge is the UserOperation hash:",
-          options.challenge.length > 0,
+          options.type === "PASSKEY" && options.options.challenge.length > 0,
         );
-        const accepted = await p.rootActions.complete(token, assertionFor(pending.challenge));
+        const accepted = await p.rootActions.complete(token, {
+          type: "PASSKEY",
+          assertion: assertionFor(pending.challenge),
+        });
         log(
           "root action sent through Alto; userOpHash == signed challenge:",
           accepted.userOpHash.toLowerCase() === pending.challenge.toLowerCase(),

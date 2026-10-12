@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start -p 3000",
     "typecheck": "next typegen && tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "node --import tsx --test \"app/**/*.test.ts\""
   },
   "dependencies": {
     "@simplewebauthn/browser": "^14.0.0",
@@ -25,6 +26,7 @@
     "@types/react-dom": "^19.2.0",
     "eslint": "catalog:",
     "tailwindcss": "^4.3.3",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "tsx": "^4.23.15"
   }
 }

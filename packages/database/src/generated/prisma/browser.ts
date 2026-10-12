@@ -55,7 +55,7 @@ export type PasskeyCredential = Prisma.PasskeyCredentialModel
 export type WalletSetupSession = Prisma.WalletSetupSessionModel
 /**
  * Model TransactionPinSecurity
- * The 4-digit transaction PIN state of one user. Only an Argon2id hash is stored. Attempts are counted
+ * The 6-digit transaction PIN state of one user. Only an Argon2id hash is stored. Attempts are counted
  * in a single atomic UPDATE, so guessing is bounded no matter how many requests arrive at once.
  */
 export type TransactionPinSecurity = Prisma.TransactionPinSecurityModel
@@ -201,6 +201,13 @@ export type AuditEvent = Prisma.AuditEventModel
  * Constraints in the manual migration: one ACTIVE root per wallet, validator instance unique per wallet.
  */
 export type WalletCredential = Prisma.WalletCredentialModel
+/**
+ * Model RootChange
+ * A root-signed change of a wallet's credentials that is NOT part of a payment: rotating the root to a fresh credential, or
+ * enrolling a backup. The server fixes the operation and its challenge (the UserOperation hash); the root signs exactly that.
+ * Holds only public data. At most one live (PREPARED or SUBMITTED) change per wallet (manual migration).
+ */
+export type RootChange = Prisma.RootChangeModel
 /**
  * Model RecoveryConfiguration
  * The on-chain recovery arrangement of one wallet. Holds only the PUBLIC verifier address derived from the Recovery

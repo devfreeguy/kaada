@@ -158,7 +158,7 @@ export function AuthorizeFlow({ token }: { token: string }) {
           </h1>
           <p className="text-neutral-600">
             {state.reason === "no-pin"
-              ? "You need a 4-digit PIN to authorize payments. Ask Kaada for a wallet security link to create it."
+              ? "You need a 6-digit PIN to authorize payments. Ask Kaada for a wallet security link to create it."
               : "Your PIN can only be replaced through account recovery. Nothing was sent."}
           </p>
         </section>

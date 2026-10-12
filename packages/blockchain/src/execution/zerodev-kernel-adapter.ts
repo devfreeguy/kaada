@@ -1,6 +1,5 @@
 import { KERNEL_V3_3, VALIDATOR_TYPE, getEntryPoint } from "@zerodev/sdk/constants";
 import { createKernelAccount, createKernelAccountClient, KernelV3_3AccountAbi } from "@zerodev/sdk";
-import { PasskeyValidatorContractVersion, toPasskeyValidator } from "@zerodev/passkey-validator";
 import {
   deserializePermissionAccount,
   serializePermissionAccount,
@@ -8,6 +7,7 @@ import {
 } from "@zerodev/permissions";
 import { CallPolicyVersion, toCallPolicy, toTimestampPolicy } from "@zerodev/permissions/policies";
 import { toECDSASigner, toEmptyECDSASigner } from "@zerodev/permissions/signers";
+import { deviceKeySignature } from "@kaada/contracts";
 import {
   b64ToBytes,
   findQuoteIndices,
@@ -20,7 +20,6 @@ import {
   encodeAbiParameters,
   encodeFunctionData,
   http,
-  keccak256,
   pad,
   parseAbiItem,
   toFunctionSelector,
@@ -42,7 +41,10 @@ import type {
   PermissionScope,
   PreparedRootOperation,
   RootCredential,
+  RootProof,
 } from "@kaada/domain";
+
+import { deviceKeyStubSignature, toRootValidator } from "../wallet/root-validator.js";
 
 /*
  * THE Kernel/bundler adapter. It is the only file that builds, signs or sends a UserOperation.
@@ -52,9 +54,10 @@ import type {
  * docs/execution.md ("What was and was not verified") before enabling it with any value.
  *
  * Authorities:
- *  - ROOT operations (deploy the account, install the restricted permission) are signed by the user's
- *    passkey. The server prepares the UserOperation and its hash; the browser returns an assertion over
- *    exactly that hash; this file encodes it. No private key exists for the root.
+ *  - ROOT operations (deploy the account, install the restricted permission, rotate the root) are signed by
+ *    the user's root credential: a passkey or a P-256 device key. The server prepares the UserOperation and
+ *    its hash; the client returns a passkey assertion or a device-key signature over exactly that hash; this
+ *    file encodes it for the validator of that type. No private key exists for the root on the server.
  *  - DELEGATED calls are signed by a per-permission session key that the permission restricts on chain
  *    (call policy: contracts, selectors, argument rules, native value 0; timestamp policy: window).
  */
@@ -229,6 +232,23 @@ export function encodePasskeyAssertion(assertion: unknown, usePrecompiled = true
   );
 }
 
+/** A device key's proof as `userOp.signature`: keyId || r || s, low-s only (the validator refuses a high-s signature). */
+export function encodeDeviceProof(proof: { keyId: string; r: string; s: string }): Hex {
+  if (![proof.r, proof.s].every((part) => /^[0-9a-f]{64}$/.test(part))) {
+    throw new KaadaError("CREDENTIAL_REJECTED", "the device signature is malformed");
+  }
+  const r = BigInt(`0x${proof.r}`);
+  const s = BigInt(`0x${proof.s}`);
+  if (r === 0n || s === 0n) {
+    throw new KaadaError("CREDENTIAL_REJECTED", "the device signature is malformed");
+  }
+  try {
+    return deviceKeySignature(proof.keyId as Hex, r, s);
+  } catch {
+    throw new KaadaError("CREDENTIAL_REJECTED", "the device signature is not low-s");
+  }
+}
+
 /** The SDK's stub assertion, with an explicit choice of P-256 verification path. */
 export function stubPasskeySignature(usePrecompiled: boolean): Hex {
   return encodeAbiParameters(
@@ -310,38 +330,42 @@ export function createZeroDevKernelAdapter(
   };
   const bundler = createBundlerClient({ client, transport: http(config.bundlerUrl) });
 
-  /** The Kernel account whose root validator is the user's passkey, optionally with a permission. */
+  /** The Kernel account whose root validator is the user's root credential, optionally with a permission. */
   async function rootAccount(
     credential: RootCredential,
     signature: { value: Hex },
     permission?: { scope: PermissionScope; sessionKeyAddress: Address },
+    /**
+     * The address of a DEPLOYED account. A wallet whose root was rotated or recovered no longer has the root it was created
+     * with, so its address cannot be derived from its root: it is taken as given (the chain is the authority on a deployed
+     * account), and the SDK only needs the current root to sign for it.
+     */
+    existing?: Address,
   ) {
-    const validator = await toPasskeyValidator(client, {
-      webAuthnKey: {
-        pubX: BigInt(`0x${credential.publicKeyX}`),
-        pubY: BigInt(`0x${credential.publicKeyY}`),
-        authenticatorId: credential.credentialId,
-        authenticatorIdHash: keccak256(toHex(Buffer.from(credential.credentialId, "base64url"))),
-        rpID: credential.rpId,
-      },
-      entryPoint: ENTRY_POINT,
-      kernelVersion: KERNEL_V3_3,
-      validatorContractVersion: PasskeyValidatorContractVersion.V0_0_3_PATCHED,
-      ...(network.passkeyValidatorAddress && { validatorAddress: network.passkeyValidatorAddress }),
+    const validator = await toRootValidator(client, credential, {
+      ...(network.passkeyValidatorAddress && {
+        passkeyValidatorAddress: network.passkeyValidatorAddress,
+      }),
     });
-    // The signature is supplied from outside (the browser's assertion); the SDK never opens a prompt.
+    // The signature is supplied from outside (the client's proof); the SDK never opens a prompt or signs.
     const sudo = {
       ...validator,
       signUserOperation: () => Promise.resolve(signature.value),
-      // Gas is estimated with a stub signature. The SDK's stub selects the on-chain fallback P-256
-      // verifier, which does not exist on every chain (e.g. Celo Sepolia): validation then reverts
-      // (AA23) before any estimate. The stub must take the same verification path as the real one.
-      getStubSignature: () => Promise.resolve(stubPasskeySignature(network.p256Precompile)),
+      // Gas is estimated with a stub signature of the same SHAPE as the real one. For a passkey the SDK's stub
+      // selects the on-chain fallback P-256 verifier, which does not exist on every chain (e.g. Celo Sepolia):
+      // validation then reverts (AA23) before any estimate. The stub must take the same verification path.
+      getStubSignature: () =>
+        Promise.resolve(
+          credential.type === "PASSKEY"
+            ? stubPasskeySignature(network.p256Precompile)
+            : deviceKeyStubSignature(credential.keyId as Hex),
+        ),
     };
     const account = await createKernelAccount(client, {
-      plugins: { sudo },
+      plugins: { sudo: sudo as never },
       entryPoint: ENTRY_POINT,
       kernelVersion: KERNEL_V3_3,
+      ...(existing && { address: existing }),
     });
     const permissionPlugin = permission
       ? await toPermissionValidator(client, {
@@ -355,16 +379,57 @@ export function createZeroDevKernelAdapter(
   }
 
   const toCredential = (value: unknown): RootCredential => {
-    const c = value as Partial<RootCredential> | null;
-    if (!c?.credentialId || !c.publicKeyX || !c.publicKeyY || !c.rpId) {
-      throw new Error("the prepared operation has no credential");
-    }
-    return {
-      credentialId: c.credentialId,
-      publicKeyX: c.publicKeyX,
-      publicKeyY: c.publicKeyY,
-      rpId: c.rpId,
+    const c = value as Partial<Record<string, unknown>> | null;
+    const text = (key: string): string | undefined => {
+      const field = c?.[key];
+      return typeof field === "string" && field.length > 0 ? field : undefined;
     };
+    const x = text("publicKeyX");
+    const y = text("publicKeyY");
+    if (!x || !y) throw new Error("the prepared operation has no credential");
+    if (c?.["type"] === "DEVICE_KEY") {
+      const keyId = text("keyId");
+      const validatorAddress = text("validatorAddress");
+      if (!keyId || !validatorAddress) throw new Error("the prepared operation has no credential");
+      return {
+        type: "DEVICE_KEY",
+        keyId,
+        publicKeyX: x,
+        publicKeyY: y,
+        validatorAddress,
+        purpose: typeof c["purpose"] === "number" ? c["purpose"] : 0,
+        deploymentSalt: text("deploymentSalt") ?? `0x${"00".repeat(32)}`,
+      };
+    }
+    const credentialId = text("credentialId");
+    const rpId = text("rpId");
+    if (!credentialId || !rpId) throw new Error("the prepared operation has no credential");
+    const validatorAddress = text("validatorAddress");
+    return {
+      type: "PASSKEY",
+      credentialId,
+      publicKeyX: x,
+      publicKeyY: y,
+      rpId,
+      ...(validatorAddress && { validatorAddress }),
+    };
+  };
+
+  /** Encodes a root's proof for the validator of its type. A proof of the other type is refused. */
+  const encodeProof = (credential: RootCredential, proof: RootProof): Hex => {
+    if (credential.type !== proof.type) {
+      throw new KaadaError("CREDENTIAL_REJECTED", "the proof is not for this wallet's root type");
+    }
+    if (proof.type === "PASSKEY") {
+      return encodePasskeyAssertion(proof.assertion, network.p256Precompile);
+    }
+    if (
+      credential.type !== "DEVICE_KEY" ||
+      proof.keyId.toLowerCase() !== credential.keyId.toLowerCase()
+    ) {
+      throw new KaadaError("CREDENTIAL_REJECTED", "the proof is not for this device key");
+    }
+    return encodeDeviceProof(proof);
   };
 
   return {
@@ -377,33 +442,43 @@ export function createZeroDevKernelAdapter(
 
     async prepareRootOperation(input): Promise<PreparedRootOperation> {
       try {
-        if (!input.permission) throw new Error("a root operation needs a permission to install");
-        // A fresh key for THIS permission. Its private half leaves this function once, wrapped.
-        const key = generatePrivateKey();
-        const sessionKeyAddress = privateKeyToAccount(key).address;
+        // A fresh key for THIS permission, when one is installed. Its private half leaves this function once, wrapped.
+        const key = input.permission ? generatePrivateKey() : undefined;
+        const sessionKeyAddress = key ? privateKeyToAccount(key).address : undefined;
         const stub = { value: "0x" as Hex };
-        const { account, permissionPlugin } = await rootAccount(input.credential, stub, {
-          scope: input.permission.scope,
-          sessionKeyAddress,
-        });
+        const walletAddress = input.walletAddress as Address;
+        const code = await client.getCode({ address: walletAddress });
+        const deployed = code !== undefined && code !== "0x";
+        const { account, permissionPlugin } = await rootAccount(
+          input.credential,
+          stub,
+          input.permission && sessionKeyAddress
+            ? { scope: input.permission.scope, sessionKeyAddress }
+            : undefined,
+          // A deployed account is taken as it is on chain; an undeployed one MUST derive from its root.
+          deployed ? walletAddress : undefined,
+        );
         if (account.address.toLowerCase() !== input.walletAddress.toLowerCase()) {
           throw new Error("the rebuilt account does not match the wallet address");
         }
-        if (!permissionPlugin) throw new Error("no permission plugin");
-        stub.value = stubPasskeySignature(network.p256Precompile);
+        if (input.permission && !permissionPlugin) throw new Error("no permission plugin");
+        stub.value =
+          input.credential.type === "PASSKEY"
+            ? stubPasskeySignature(network.p256Precompile)
+            : deviceKeyStubSignature(input.credential.keyId as Hex);
         // A fresh account's validator nonce is 1; a deployed one is read from the chain.
-        const code = await client.getCode({ address: account.address });
-        const nonce =
-          code && code !== "0x"
-            ? Number(
-                await client.readContract({
-                  address: account.address,
-                  abi: KernelV3_3AccountAbi,
-                  functionName: "currentNonce",
-                }),
-              )
-            : 1;
-        const installCalls = await permissionInstallCalls(account.address, permissionPlugin, nonce);
+        const nonce = deployed
+          ? Number(
+              await client.readContract({
+                address: account.address,
+                abi: KernelV3_3AccountAbi,
+                functionName: "currentNonce",
+              }),
+            )
+          : 1;
+        const installCalls = permissionPlugin
+          ? await permissionInstallCalls(account.address, permissionPlugin, nonce)
+          : [];
         const calls = [
           ...installCalls,
           ...input.calls.map((call) => ({
@@ -432,11 +507,16 @@ export function createZeroDevKernelAdapter(
           challenge: hash,
           prepared: {
             credential: { ...input.credential },
-            scope: JSON.parse(JSON.stringify(input.permission.scope)) as JsonObject,
-            sessionKeyAddress,
+            ...(input.permission && {
+              scope: JSON.parse(JSON.stringify(input.permission.scope)) as JsonObject,
+            }),
+            ...(sessionKeyAddress && { sessionKeyAddress }),
             userOperation: toJsonSafe({ ...userOperation, signature: "0x" }) as JsonObject,
           },
-          sessionKey: { address: sessionKeyAddress, privateKey: new SecretValue(key) },
+          ...(key &&
+            sessionKeyAddress && {
+              sessionKey: { address: sessionKeyAddress, privateKey: new SecretValue(key) },
+            }),
         };
       } catch (error) {
         throw classify(error);
@@ -446,28 +526,27 @@ export function createZeroDevKernelAdapter(
     async sendRootOperation(input) {
       try {
         const credential = toCredential(input.prepared["credential"]);
-        const rawScope = input.prepared["scope"] as unknown as PermissionScope & {
-          validFrom: string;
-          expiresAt: string;
-        };
-        const scope: PermissionScope = {
+        const rawScope = input.prepared["scope"] as
+          (PermissionScope & { validFrom: string; expiresAt: string }) | undefined;
+        const scope: PermissionScope | undefined = rawScope && {
           ...rawScope,
           validFrom: new Date(rawScope.validFrom),
           expiresAt: new Date(rawScope.expiresAt),
         };
-        const sessionKeyAddress = input.prepared["sessionKeyAddress"] as Address;
-        const signature = {
-          value: encodePasskeyAssertion(input.assertion, network.p256Precompile),
-        };
-        const { account, permissionPlugin } = await rootAccount(credential, signature, {
-          scope,
-          sessionKeyAddress,
-        });
-        if (!permissionPlugin) throw new Error("no permission plugin");
+        const sessionKeyAddress = input.prepared["sessionKeyAddress"] as Address | undefined;
+        const signature = { value: encodeProof(credential, input.proof) };
         const userOperation = fromJsonSafe(input.prepared["userOperation"]) as Record<
           string,
           unknown
         >;
+        const sender = userOperation["sender"] as Address;
+        const senderCode = await client.getCode({ address: sender });
+        const { account, permissionPlugin } = await rootAccount(
+          credential,
+          signature,
+          scope && sessionKeyAddress ? { scope, sessionKeyAddress } : undefined,
+          senderCode && senderCode !== "0x" ? sender : undefined,
+        );
         // The operation hash was fixed when the challenge was issued; the signature covers exactly it.
         const signed = { ...userOperation, signature: signature.value };
         const userOpHash = config.submitUserOperation
@@ -476,6 +555,7 @@ export function createZeroDevKernelAdapter(
               ...signed,
               entryPointAddress: ENTRY_POINT.address,
             } as never);
+        if (!permissionPlugin) return { userOpHash };
         // The enable data for the later, session-key-signed UserOperations. The permission is
         // already installed by the operation above, so the serialization is marked pre-installed.
         const approval = await serializePermissionAccount(

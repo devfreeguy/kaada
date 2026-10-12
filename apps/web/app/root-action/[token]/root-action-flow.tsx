@@ -1,16 +1,19 @@
 "use client";
 
-import { browserSupportsWebAuthn, startAuthentication } from "@simplewebauthn/browser";
-import type { PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
 import { useEffect, useState } from "react";
+
+import { DeviceKeyMissingError, proveRoot } from "../../lib/root-proof";
+import type { RootChallenge } from "../../lib/root-proof";
+
+type RootAction = "ROOT_PASSKEY_REQUIRED" | "ROOT_DEVICE_KEY_REQUIRED";
 
 type View =
   | { name: "loading" }
   | { name: "invalid" }
-  | { name: "ready"; title: string; message: string }
-  | { name: "confirming" }
+  | { name: "ready"; title: string; message: string; action: RootAction }
+  | { name: "confirming"; action: RootAction }
   | { name: "done" }
-  | { name: "error"; message: string };
+  | { name: "error"; message: string; action: RootAction };
 
 /** The link token travels in a header only: never in a body, a query string or a log. */
 async function call(token: string, path: string, init: RequestInit = {}): Promise<Response> {
@@ -24,10 +27,13 @@ async function call(token: string, path: string, init: RequestInit = {}): Promis
   });
 }
 
+const confirmLabel = (action: RootAction) =>
+  action === "ROOT_PASSKEY_REQUIRED" ? "Confirm with passkey" : "Confirm with this device";
+
 /**
- * Wallet setup that needs the person's passkey (creating the account and installing the restricted
- * permission for one payment). The server decides exactly what is signed and shows only a sentence
- * here; the page sends back the passkey's assertion and nothing else. It never asks for the PIN.
+ * Wallet setup that needs the person's ROOT (creating the account and installing the restricted permission for one
+ * payment). The server decides exactly what is signed and which signer the wallet has: the page shows a sentence and the
+ * matching prompt (a passkey, or this device's key), sends back the root's proof and nothing else, and never asks for the PIN.
  */
 export function RootActionFlow({ token }: { token: string }) {
   const [view, setView] = useState<View>({ name: "loading" });
@@ -41,11 +47,19 @@ export function RootActionFlow({ token }: { token: string }) {
         if (response.status === 401) next = { name: "invalid" };
         else if (!response.ok) throw new Error("unavailable");
         else {
-          const body = (await response.json()) as { title: string; message: string };
-          next = { name: "ready", title: body.title, message: body.message };
+          const body = (await response.json()) as {
+            title: string;
+            message: string;
+            action: RootAction;
+          };
+          next = { name: "ready", title: body.title, message: body.message, action: body.action };
         }
       } catch {
-        next = { name: "error", message: "We couldn't reach Kaada. Please try again." };
+        next = {
+          name: "error",
+          message: "We couldn't reach Kaada. Please try again.",
+          action: "ROOT_PASSKEY_REQUIRED",
+        };
       }
       if (!cancelled) setView(next);
     })();
@@ -54,34 +68,32 @@ export function RootActionFlow({ token }: { token: string }) {
     };
   }, [token]);
 
-  async function confirm() {
-    setView({ name: "confirming" });
+  async function confirm(action: RootAction) {
+    setView({ name: "confirming", action });
     try {
-      if (!browserSupportsWebAuthn()) {
-        setView({ name: "error", message: "This browser can't use passkeys." });
-        return;
-      }
       const options = await call(token, "/options");
       if (options.status === 401) return setView({ name: "invalid" });
       if (!options.ok) throw new Error("options");
-      const assertion = await startAuthentication({
-        optionsJSON: (await options.json()) as PublicKeyCredentialRequestOptionsJSON,
-      });
+      const proof = await proveRoot((await options.json()) as RootChallenge);
       const response = await call(token, "/complete", {
         method: "POST",
-        body: JSON.stringify({ assertion }),
+        body: JSON.stringify({ proof }),
       });
       if (response.status === 401) return setView({ name: "invalid" });
       if (!response.ok) throw new Error("complete");
       setView({ name: "done" });
     } catch (error) {
-      // Cancelling the passkey prompt is the person's choice, not a fault.
+      // Cancelling the prompt is the person's choice, not a fault.
       const cancelled = error instanceof Error && error.name === "NotAllowedError";
       setView({
         name: "error",
-        message: cancelled
-          ? "Passkey confirmation was cancelled. Nothing was changed; you can try again."
-          : "That didn't work. Nothing was changed; you can try again.",
+        action,
+        message:
+          error instanceof DeviceKeyMissingError
+            ? "This browser doesn't hold your wallet's device key. Open the link on the device you set up."
+            : cancelled
+              ? "Confirmation was cancelled. Nothing was changed; you can try again."
+              : "That didn't work. Nothing was changed; you can try again.",
       });
     }
   }
@@ -103,15 +115,19 @@ export function RootActionFlow({ token }: { token: string }) {
           <p className="text-neutral-600">{view.message}</p>
           <button
             type="button"
-            onClick={() => void confirm()}
+            onClick={() => void confirm(view.action)}
             className="rounded-lg bg-neutral-900 px-4 py-3 font-medium text-white"
           >
-            Confirm with passkey
+            {confirmLabel(view.action)}
           </button>
         </section>
       )}
       {view.name === "confirming" && (
-        <p className="text-neutral-600">Waiting for your passkey...</p>
+        <p className="text-neutral-600">
+          {view.action === "ROOT_PASSKEY_REQUIRED"
+            ? "Waiting for your passkey..."
+            : "Confirming with this device..."}
+        </p>
       )}
       {view.name === "done" && (
         <section className="flex flex-col gap-3">
@@ -126,7 +142,7 @@ export function RootActionFlow({ token }: { token: string }) {
           <p className="text-neutral-800">{view.message}</p>
           <button
             type="button"
-            onClick={() => void confirm()}
+            onClick={() => void confirm(view.action)}
             className="rounded-lg bg-neutral-900 px-4 py-3 font-medium text-white"
           >
             Try again

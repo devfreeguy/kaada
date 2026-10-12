@@ -593,7 +593,7 @@ describe("account, permission and allowance requirements", () => {
     accountRequirements: {
       deploymentRequired: boolean;
       rootSignatureRequired: boolean;
-      passkeyRootAvailable: boolean;
+      rootAvailable: boolean;
     };
     permissionRequirement: {
       state: string;
@@ -641,9 +641,9 @@ describe("account, permission and allowance requirements", () => {
     const plan = planOf(f);
     assert.equal(plan["accountRequirements"].deploymentRequired, true);
     assert.equal(plan["accountRequirements"].rootSignatureRequired, true);
-    assert.equal(plan["accountRequirements"].passkeyRootAvailable, true);
+    assert.equal(plan["accountRequirements"].rootAvailable, true);
     assert.equal(plan["permissionRequirement"].state, "INSTALLATION_REQUIRED");
-    assert.equal(plan["permissionRequirement"].installSigner, "ROOT_PASSKEY");
+    assert.equal(plan["permissionRequirement"].installSigner, "ROOT");
     assert.equal(plan["swapRequirement"].signer, "DELEGATED_SIGNER");
     assert.equal(plan["approvalRequirements"][0]?.signer, "DELEGATED_SIGNER");
     assert.deepEqual(plan["signingPrerequisites"], ["BUNDLER_NOT_CONFIGURED"]);
@@ -805,9 +805,7 @@ describe("account, permission and allowance requirements", () => {
     const f = await exactOutput();
     f.credentials.length = 0;
     const outcome = await f.service.prepare(f.authorization.id);
-    assert.ok(
-      outcome.status === "EXECUTION_BLOCKED" && outcome.blockers.includes("NO_PASSKEY_ROOT"),
-    );
+    assert.ok(outcome.status === "EXECUTION_BLOCKED" && outcome.blockers.includes("NO_ROOT"));
   });
 
   it("assembles the plan from the live intent, with no signature and no secret", async () => {

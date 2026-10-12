@@ -1,66 +1,48 @@
 import { KaadaError, isValidPinFormat, isWalletActive } from "@kaada/domain";
+import type { RootChallenge, RootProof } from "@kaada/domain";
 
-import type { PasskeyService } from "../wallets/passkey-service.js";
+import type { RootProofService } from "../roots/root-proof-service.js";
 import type { WalletService } from "../wallets/wallet-service.js";
 import type { TransactionPinService } from "./pin-service.js";
 
-/** Browser-ready WebAuthn request options (the JSON form `navigator.credentials.get` takes). */
-export interface PinAuthenticationOptions {
-  challenge: string;
-  rpId: string;
-  /**
-   * Deliberately NO `allowCredentials`. Naming the credential makes some authenticators sign WITHOUT
-   * verifying the person (UV=0) even when verification is required; found with a real Windows passkey
-   * provider: the same credential signed with UV=1 only when the browser chose it. The server still binds
-   * the assertion to THIS user's own stored credential and requires UV.
-   */
-  userVerification: "required";
-  timeout: number;
-}
-
 /**
- * Setting or changing the PIN is security-sensitive, so it needs a STRONG credential: a fresh
- * passkey assertion (user verification required) for this user, on top of the secure link that
- * identified them. The old PIN alone can never change the PIN, and neither can an email.
+ * Setting or changing the PIN is security-sensitive, so it needs a STRONG credential: a fresh proof by the wallet's ROOT (a
+ * passkey assertion with user verification, or a device-key signature over a single-use challenge), on top of the secure
+ * link that identified the person. The old PIN alone can never change the PIN, and neither can an email. The PIN is never
+ * a wallet key and never an input to the root: the root only vouches that the person asked.
  *
- * A forgotten PIN is not handled here: that is account recovery, a later build.
+ * A forgotten PIN is not handled here: that is account recovery.
  */
 export class PinEnrollmentService {
   constructor(
     private readonly deps: {
-      passkeys: Pick<PasskeyService, "beginAuthentication" | "completeAuthentication">;
+      proofs: Pick<RootProofService, "begin" | "complete">;
       pins: Pick<TransactionPinService, "setPin" | "status">;
       wallets: Pick<WalletService, "getWallet">;
     },
   ) {}
 
-  /** The challenge the person's passkey must sign before a PIN is set or changed. */
-  async begin(userId: string): Promise<PinAuthenticationOptions> {
+  /** What the person's root must sign before a PIN is set or changed. */
+  async begin(userId: string): Promise<RootChallenge> {
     await this.requireActiveWallet(userId);
-    const challenge = await this.deps.passkeys.beginAuthentication(userId);
-    return {
-      challenge: challenge.challenge,
-      rpId: challenge.rpId,
-      userVerification: "required",
-      timeout: 5 * 60 * 1000,
-    };
+    return this.deps.proofs.begin(userId, "PIN_ENROLLMENT");
   }
 
-  /** Verifies the passkey assertion, then stores the PIN. */
-  async complete(userId: string, input: { pin: string; assertion: unknown }) {
+  /** Verifies the root's proof, then stores the PIN. */
+  async complete(userId: string, input: { pin: string; proof: RootProof }) {
     // Refuse a malformed PIN before the single-use challenge is spent on it.
     if (!isValidPinFormat(input.pin)) {
-      throw new KaadaError("PIN_REJECTED", "a PIN is exactly four digits");
+      throw new KaadaError("PIN_REJECTED", "a PIN is exactly six digits");
     }
     await this.requireActiveWallet(userId);
-    // A PIN flagged for recovery is replaced only through account recovery (a later build), not here.
+    // A PIN flagged for recovery is replaced only through account recovery, not here.
     if ((await this.deps.pins.status(userId)).resetRequired) {
       throw new KaadaError(
         "PIN_RESET_REQUIRED",
         "this PIN can only be reset through account recovery",
       );
     }
-    await this.deps.passkeys.completeAuthentication(userId, input.assertion);
+    await this.deps.proofs.complete(userId, "PIN_ENROLLMENT", input.proof);
     return this.deps.pins.setPin(userId, input.pin);
   }
 

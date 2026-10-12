@@ -78,6 +78,8 @@ const [
   { FirmQuoteService },
   { AccountReadinessService },
   { RootActionService },
+  rootCredentials,
+  rootAdapters,
   { ExecutionRunner },
   { ValidatedExecutionSigner },
   { AesGcmSecretCipher },
@@ -101,6 +103,8 @@ const [
   import("../../src/core/execution/firm-quote-service.js"),
   import("../../src/core/execution/account-readiness.js"),
   import("../../src/core/execution/root-action-service.js"),
+  import("../../src/core/roots/root-credentials.js"),
+  import("../../src/core/roots/adapters.js"),
   import("../../src/core/execution/runner.js"),
   import("../../src/core/execution/validated-signer.js"),
   import("../../src/infrastructure/security/aes-gcm-cipher.js"),
@@ -323,16 +327,29 @@ const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       },
       wallets: InstanceType<typeof WalletService>,
       kernel: never,
-    ) =>
-      new RootActionService({
-        unitOfWork: unitOfWork(db),
+    ) => {
+      const rpId = config.wallet.passkey?.rpId ?? "localhost";
+      const origin = config.wallet.passkey?.origin ?? "http://localhost:3000";
+      const work = unitOfWork(db);
+      return new RootActionService({
+        unitOfWork: work,
         kernel,
         cipher: new AesGcmSecretCipher(config.execution.cipherKeys),
         wallets,
-        verifier: new SimpleWebAuthnVerifier(),
-        rpId: config.wallet.passkey?.rpId ?? "localhost",
-        origin: config.wallet.passkey?.origin ?? "http://localhost:3000",
-      }),
+        roots: new rootCredentials.RootCredentialService({ repositories: work.read, rpId }),
+        adapters: new rootCredentials.RootAdapters(
+          new rootAdapters.PasskeyRootAdapter({
+            verifier: new SimpleWebAuthnVerifier(),
+            passkeys: work.read.passkeys,
+            rpId,
+            origin,
+          }),
+          new rootAdapters.DeviceKeyRootAdapter(),
+        ),
+        onChainId: 11142220,
+        origin,
+      });
+    },
   })
   .overrideProvider(executionTokens.EXECUTION_PREPARATION_SERVICE)
   .useFactory({

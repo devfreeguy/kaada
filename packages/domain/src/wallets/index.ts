@@ -43,7 +43,8 @@ export type {
   ExecutionSigner,
   FirmQuoteContext,
   PermissionPlan,
-  RootCredential,
+  RootValidatorDeployer,
+  RootValidatorInstance,
   SignedExecution,
   WalletBalanceReader,
   WalletBalances,
@@ -59,3 +60,21 @@ export type {
   WalletStatus,
   WalletType,
 } from "./wallet.js";
+export { CLIENT_ACTIONS, ROOT_TYPES, rootActionFor } from "./root.js";
+export type {
+  ClientAction,
+  DeviceKeyRoot,
+  PasskeyRoot,
+  RootChallenge,
+  RootCredential,
+  RootProof,
+  RootType,
+} from "./root.js";
+export { ROOT_CHANGE_KINDS, ROOT_CHANGE_STATUSES } from "./root-change.js";
+export type {
+  NewRootChange,
+  RootChange,
+  RootChangeKind,
+  RootChangeRepository,
+  RootChangeStatus,
+} from "./root-change.js";

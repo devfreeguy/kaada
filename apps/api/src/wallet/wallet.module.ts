@@ -3,11 +3,14 @@ import {
   ChainBalanceReader,
   KernelPolicyAdapter,
   KernelProvisioningAdapter,
+  ViemValidatorDeployer,
   createKernelAddressDeriver,
   createViemChainReader,
+  readKeyFileOutsideRepo,
 } from "@kaada/blockchain";
 import { createCachedAssetRepository, createAssetRegistry } from "@kaada/domain";
-import type { WalletBalanceReader } from "@kaada/domain";
+import type { RootValidatorDeployer, WalletBalanceReader } from "@kaada/domain";
+import { celo, celoSepolia } from "viem/chains";
 import { createRepositories, withTransaction } from "@kaada/database";
 import type { Database } from "@kaada/database";
 import type { AppConfig } from "@kaada/config";
@@ -20,6 +23,8 @@ import { WalletService } from "../core/wallets/wallet-service.js";
 import { SimpleWebAuthnVerifier } from "../infrastructure/wallet/simplewebauthn-verifier.js";
 import { WalletBalanceService } from "../core/wallets/balance-service.js";
 import { WalletSetupService } from "../core/wallets/setup-service.js";
+import { repositoryRoot } from "../recovery/recovery.runtime.js";
+import { ROOT_VALIDATOR_DEPLOYER } from "../roots/roots.tokens.js";
 import { WalletController } from "./wallet.controller.js";
 import {
   BALANCE_READER,
@@ -56,6 +61,7 @@ function unitOfWork(database: Database): WalletUnitOfWork {
             createKernelAddressDeriver({ rpcUrl: config.wallet.rpcUrl }),
           ),
           policy: new KernelPolicyAdapter(),
+          ...(config.wallet.passkey && { rpId: config.wallet.passkey.rpId }),
         });
       },
     },
@@ -79,13 +85,44 @@ function unitOfWork(database: Database): WalletUnitOfWork {
       useFactory: (database: Database) => createRepositories(database),
     },
     {
+      // Puts a device key's validator clone on chain (paid by the relayer, which holds no authority). Off unless device-key
+      // wallets are enabled. It lives here, not in the roots module, because wallet setup needs it.
+      provide: ROOT_VALIDATOR_DEPLOYER,
+      inject: [APP_CONFIG],
+      useFactory: (config: AppConfig): RootValidatorDeployer | null => {
+        const deviceKeyRoots = config.wallet.deviceKeyRoots;
+        if (!deviceKeyRoots) return null;
+        const chain = config.wallet.onChainId === celoSepolia.id ? celoSepolia : celo;
+        if (chain.id !== config.wallet.onChainId) {
+          throw new Error(`unsupported chain ${String(config.wallet.onChainId)}`);
+        }
+        const { contracts } = deviceKeyRoots;
+        return new ViemValidatorDeployer({
+          chain,
+          rpcUrl: config.wallet.rpcUrl,
+          deployments: {
+            passkey: {
+              factory: contracts.passkeyFactory as `0x${string}`,
+              implementation: contracts.passkeyImplementation as `0x${string}`,
+            },
+            device: {
+              factory: contracts.deviceFactory as `0x${string}`,
+              implementation: contracts.deviceImplementation as `0x${string}`,
+            },
+          },
+          relayerKey: readKeyFileOutsideRepo(deviceKeyRoots.relayerKeyFile, repositoryRoot()),
+        });
+      },
+    },
+    {
       provide: WALLET_SETUP_SERVICE,
-      inject: [DATABASE, APP_CONFIG, WALLET_SERVICE, PASSKEY_SERVICE],
+      inject: [DATABASE, APP_CONFIG, WALLET_SERVICE, PASSKEY_SERVICE, ROOT_VALIDATOR_DEPLOYER],
       useFactory: (
         database: Database,
         config: AppConfig,
         wallets: WalletService | null,
         passkeys: PasskeyService | null,
+        validators: RootValidatorDeployer | null,
       ): WalletSetupService | null => {
         const passkey = config.wallet.passkey;
         if (!wallets || !passkeys || !passkey) return null;
@@ -97,6 +134,24 @@ function unitOfWork(database: Database): WalletUnitOfWork {
           origin: passkey.origin,
           rpId: passkey.rpId,
           rpName: passkey.rpName,
+          ...(config.wallet.deviceKeyRoots && {
+            deviceKeys: {
+              onChainId: config.wallet.onChainId,
+              ...(validators && { validators }),
+              deployments: {
+                passkey: {
+                  factory: config.wallet.deviceKeyRoots.contracts.passkeyFactory as `0x${string}`,
+                  implementation: config.wallet.deviceKeyRoots.contracts
+                    .passkeyImplementation as `0x${string}`,
+                },
+                device: {
+                  factory: config.wallet.deviceKeyRoots.contracts.deviceFactory as `0x${string}`,
+                  implementation: config.wallet.deviceKeyRoots.contracts
+                    .deviceImplementation as `0x${string}`,
+                },
+              },
+            },
+          }),
         });
       },
     },
@@ -138,6 +193,7 @@ function unitOfWork(database: Database): WalletUnitOfWork {
     BALANCE_READER,
     WALLET_SETUP_SERVICE,
     WALLET_BALANCE_SERVICE,
+    ROOT_VALIDATOR_DEPLOYER,
   ],
 })
 export class WalletModule {}

@@ -12,11 +12,13 @@ import { TransactionPinService } from "../core/authorization/pin-service.js";
 import { AuthorizationPolicyService } from "../core/authorization/policy-service.js";
 import type { AuthorizationUnitOfWork } from "../core/authorization/ports.js";
 import { AuthorizationSessionService } from "../core/authorization/session-service.js";
-import type { PasskeyService } from "../core/wallets/passkey-service.js";
+import type { RootProofService } from "../core/roots/root-proof-service.js";
 import type { WalletService } from "../core/wallets/wallet-service.js";
 import { Argon2PinHasher } from "../infrastructure/auth/argon2-pin-hasher.js";
+import { RootsModule } from "../roots/roots.module.js";
+import { ROOT_PROOF_SERVICE } from "../roots/roots.tokens.js";
 import { WalletModule } from "../wallet/wallet.module.js";
-import { PASSKEY_SERVICE, WALLET_SERVICE } from "../wallet/wallet.tokens.js";
+import { WALLET_SERVICE } from "../wallet/wallet.tokens.js";
 import { AuthorizationController } from "./authorization.controller.js";
 import {
   AUTHORIZATION_POLICY_SERVICE,
@@ -43,7 +45,7 @@ const enabled = (config: AppConfig) => config.wallet.provider === "kernel";
  * execution would fit inside it.
  */
 @Module({
-  imports: [WalletModule],
+  imports: [WalletModule, RootsModule],
   controllers: [AuthorizationController, PinController],
   providers: [
     {
@@ -106,13 +108,13 @@ const enabled = (config: AppConfig) => config.wallet.provider === "kernel";
     },
     {
       provide: PIN_ENROLLMENT_SERVICE,
-      inject: [PASSKEY_SERVICE, TRANSACTION_PIN_SERVICE, WALLET_SERVICE],
+      inject: [ROOT_PROOF_SERVICE, TRANSACTION_PIN_SERVICE, WALLET_SERVICE],
       useFactory: (
-        passkeys: PasskeyService | null,
+        proofs: RootProofService | null,
         pins: TransactionPinService | null,
         wallets: WalletService | null,
       ): PinEnrollmentService | null =>
-        passkeys && pins && wallets ? new PinEnrollmentService({ passkeys, pins, wallets }) : null,
+        proofs && pins && wallets ? new PinEnrollmentService({ proofs, pins, wallets }) : null,
     },
   ],
   exports: [

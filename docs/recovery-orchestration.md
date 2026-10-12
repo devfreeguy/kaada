@@ -157,7 +157,7 @@ Final live results (final committed code): A and B passed in run 3; C and D pass
 - The attestor key is a file; production needs a KMS/HSM signer behind `RecoveryAttestor`.
 - Gas for recovery and cancel needs a sponsor policy (`RECOVERY_GAS_TOPUP_MAX_WEI`).
 - A batch that reverts after validation burns the Recovery Code; mitigated by bundler simulation, not eliminated.
-- Device-key roots lack the payment and PIN-enrollment flows that need passkeys.
-- The existing PIN is 4 digits; the locked model says 6.
+- (Closed in the root-agnostic milestone: onboarding, PIN enrolment, root actions and payments all work for a device-key root; see `docs/root-agnostic-flow.md`.)
+- (Closed in the root-agnostic milestone: the PIN is six digits everywhere; see `docs/root-agnostic-flow.md`.)
 - Rate limits are in-process; the sweeper needs a deployment; the email-challenge pepper needs managed rotation.
 - No frontend UI for the flow yet.

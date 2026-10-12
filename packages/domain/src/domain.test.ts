@@ -35,8 +35,8 @@ describe("KaadaError", () => {
   });
 
   it("defines the agreed set of codes", () => {
-    assert.equal(KAADA_ERROR_CODES.length, 39);
-    assert.equal(new Set(KAADA_ERROR_CODES).size, 39);
+    assert.equal(KAADA_ERROR_CODES.length, 41);
+    assert.equal(new Set(KAADA_ERROR_CODES).size, 41);
   });
 });
 

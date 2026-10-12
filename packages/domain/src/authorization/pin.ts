@@ -1,12 +1,12 @@
 /**
- * The 4-digit transaction PIN: a CONVENIENCE authorization that a person approved one payment.
+ * The 6-digit transaction PIN: a CONVENIENCE authorization that a person approved one payment.
  * It is not a wallet key, not an encryption key, not a recovery credential, and it can never change
- * security-sensitive account settings. Because only 10,000 values exist, every control below is
+ * security-sensitive account settings. Because only 1,000,000 values exist, every control below is
  * enforced by the database, not by hoping callers are polite.
  */
-export const PIN_LENGTH = 4;
-/** Exactly four digits. 0000 and 1234 are syntactically valid: no "weak PIN" rejection by design. */
-export const PIN_PATTERN = /^[0-9]{4}$/;
+export const PIN_LENGTH = 6;
+/** Exactly six digits. 000000 and 123456 are syntactically valid: no "weak PIN" rejection by design. */
+export const PIN_PATTERN = /^[0-9]{6}$/;
 
 export function isValidPinFormat(pin: unknown): pin is string {
   return typeof pin === "string" && PIN_PATTERN.test(pin);

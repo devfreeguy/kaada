@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { canTransitionRecovery, isRecoveryAttemptActive } from "@kaada/domain";
+import { createMemoryWalletCredentials } from "./credential-memory.js";
 import type {
   EmailChallengeReservation,
   Identity,
@@ -79,87 +80,7 @@ export function createRecoveryStores(now: () => Date): RecoveryStores {
     },
   };
 
-  const walletCredentials: WalletCredentialRepository = {
-    create: (input) => {
-      if (
-        credentials.some(
-          (c) => c.walletId === input.walletId && c.validatorAddress === input.validatorAddress,
-        )
-      ) {
-        return Promise.reject(DUPLICATE("validator instance per wallet"));
-      }
-      if (
-        input.isRoot &&
-        credentials.some((c) => c.walletId === input.walletId && c.isRoot && c.status === "ACTIVE")
-      ) {
-        return Promise.reject(DUPLICATE("one root per wallet"));
-      }
-      const credential: WalletCredential = {
-        ...input,
-        createdAt: now(),
-        ...(input.status === "ACTIVE" && { activatedAt: now() }),
-      };
-      credentials.push(credential);
-      return Promise.resolve(copy(credential));
-    },
-    findById: (id) => Promise.resolve(copyOrNull(credentials.find((c) => c.id === id))),
-    validatorEverUsed: (walletId, validatorAddress) =>
-      Promise.resolve(
-        credentials.some(
-          (c) => c.walletId === walletId && c.validatorAddress === validatorAddress.toLowerCase(),
-        ),
-      ),
-    findRoot: (walletId) =>
-      Promise.resolve(
-        copyOrNull(
-          credentials.find((c) => c.walletId === walletId && c.isRoot && c.status === "ACTIVE"),
-        ),
-      ),
-    listForWallet: (walletId) =>
-      Promise.resolve(
-        credentials
-          .filter((c) => c.walletId === walletId)
-          .map(copy)
-          .reverse(),
-      ),
-    promoteToRoot: ({ walletId, newId, at }) => {
-      const candidate = credentials.find(
-        (c) => c.id === newId && c.walletId === walletId && c.status === "PENDING",
-      );
-      if (!candidate) return Promise.resolve(null);
-      const current = credentials.find(
-        (c) => c.walletId === walletId && c.isRoot && c.status === "ACTIVE",
-      );
-      if (current) {
-        current.isRoot = false;
-        current.status = "REPLACED";
-        current.replacedAt = at;
-        current.replacedByCredentialId = newId;
-      }
-      candidate.isRoot = true;
-      candidate.status = "ACTIVE";
-      candidate.activatedAt = at;
-      return Promise.resolve({
-        promoted: copy(candidate),
-        replaced: current ? copy(current) : null,
-      });
-    },
-    linkPasskey: (id, passkeyCredentialId) => {
-      const found = credentials.find((c) => c.id === id);
-      if (found) found.passkeyCredentialId = passkeyCredentialId;
-      return Promise.resolve();
-    },
-    revoke: (id, at) => {
-      const found = credentials.find(
-        (c) => c.id === id && (c.status === "PENDING" || c.status === "ACTIVE"),
-      );
-      if (!found) return Promise.resolve(null);
-      found.status = "REVOKED";
-      found.isRoot = false;
-      found.revokedAt = at;
-      return Promise.resolve(copy(found));
-    },
-  };
+  const walletCredentials = createMemoryWalletCredentials(now, credentials);
 
   const recoveryConfigurations: RecoveryConfigurationRepository = {
     create: (input) => {

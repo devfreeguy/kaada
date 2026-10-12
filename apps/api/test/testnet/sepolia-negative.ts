@@ -95,9 +95,16 @@ try {
 
   // ── the PIN step (a fresh assertion is required) ──
   const ask = async () =>
-    (await call(token, "/pin/options", { method: "POST" })).body as { challenge: string };
+    (
+      (await call(token, "/pin/options", { method: "POST" })).body as {
+        options: { challenge: string };
+      }
+    ).options;
   const pin = (assertion: unknown) =>
-    call(token, "/pin", { method: "POST", body: JSON.stringify({ pin: "2468", assertion }) });
+    call(token, "/pin", {
+      method: "POST",
+      body: JSON.stringify({ pin: "246813", proof: { type: "PASSKEY", assertion } }),
+    });
   let counter = 5;
   const sign = (
     challenge: string,

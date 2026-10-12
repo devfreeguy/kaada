@@ -329,6 +329,26 @@ export const RampStatus = {
 export type RampStatus = (typeof RampStatus)[keyof typeof RampStatus]
 
 
+export const RootChangeKind = {
+  ROTATE_ROOT: 'ROTATE_ROOT',
+  ENROLL_BACKUP: 'ENROLL_BACKUP'
+} as const
+
+export type RootChangeKind = (typeof RootChangeKind)[keyof typeof RootChangeKind]
+
+
+export const RootChangeStatus = {
+  PREPARED: 'PREPARED',
+  SUBMITTED: 'SUBMITTED',
+  CONFIRMED: 'CONFIRMED',
+  FAILED: 'FAILED',
+  EXPIRED: 'EXPIRED',
+  CANCELLED: 'CANCELLED'
+} as const
+
+export type RootChangeStatus = (typeof RootChangeStatus)[keyof typeof RootChangeStatus]
+
+
 export const WalletCredentialKind = {
   PASSKEY: 'PASSKEY',
   DEVICE_KEY: 'DEVICE_KEY'

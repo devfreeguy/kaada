@@ -5,6 +5,7 @@ import type {
   PasskeyCredential,
   PaymentAuthorization,
   Wallet,
+  WalletCredential,
 } from "@kaada/domain";
 import { SENDER } from "./harness.js";
 
@@ -35,7 +36,7 @@ import type { PaymentWorld } from "./payment-world.js";
  * network, a chain or a signer. Token and wallet addresses are test values.
  */
 
-export const PIN = "7351";
+export const PIN = "735142";
 export const USDT_ADDRESS = `0x${"11".repeat(20)}`;
 export const WBRL_ADDRESS = `0x${"22".repeat(20)}`;
 export const REACTOR = `0x${"33".repeat(20)}`;
@@ -146,6 +147,8 @@ export interface FirmWorld {
   chain: { allowance: bigint; deployed: boolean };
   permissions: DelegatedPermission[];
   credentials: { length: number };
+  /** The wallet's RECORDED root credential (a device key, say), served to every root lookup; null for a legacy passkey wallet. */
+  recordedRoot: { value: WalletCredential | null };
   bundler: { configured: boolean };
   calls(): RecordedCall[];
   now(): Date;
@@ -201,6 +204,7 @@ export async function firmWorld(
   const chain = { allowance: 0n, deployed: false };
   const permissions: DelegatedPermission[] = [];
   const credentials = { length: 1 };
+  const recordedRoot: { value: WalletCredential | null } = { value: null };
   const bundler = { configured: false };
   const now = () => w.r.clock.now;
 
@@ -208,6 +212,8 @@ export async function firmWorld(
     ({
       ...repositories,
       wallets: w.auth.uow.read.wallets,
+      // These worlds' wallets are passkey wallets that predate credential tracking: no recorded root.
+      walletCredentials: { findRoot: () => Promise.resolve(recordedRoot.value) },
       passkeys: {
         listActiveForUser: () =>
           Promise.resolve(Array.from({ length: credentials.length }, (_, i) => passkey(i))),
@@ -311,6 +317,7 @@ export async function firmWorld(
     chain,
     permissions,
     credentials,
+    recordedRoot,
     bundler,
     calls: () => transport.calls,
     now,

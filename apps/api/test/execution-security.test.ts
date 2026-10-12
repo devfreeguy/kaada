@@ -59,6 +59,11 @@ describe("execution security review (source scan)", () => {
       "ports.ts",
       "root-action-service.ts",
       "zerodev-kernel-adapter.ts",
+      // The browser half of a device-key root: it generates a NON-EXTRACTABLE key and only ever asks it to sign. It is held to
+      // its own scan in recovery-security.test.ts ("the web device key").
+      "device-key.ts",
+      // The setup page hands that opaque key to the two functions above and to nothing else (checked there too).
+      "setup-flow.tsx",
     ]);
     for (const path of production.filter((p) => !isRecoverySigner(p))) {
       const text = code(path);

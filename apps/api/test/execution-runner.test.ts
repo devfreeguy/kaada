@@ -40,13 +40,17 @@ describe("root action before payment", () => {
     const link = await w.rootActions.issueLink({ sessionId: session.id, userId: session.userId });
     const view = await w.rootActions.view(link.token);
     assert.equal(view.title, "Confirm wallet setup to continue payment");
-    const options = await w.rootActions.options(link.token);
-    assert.equal(options.userVerification, "required");
+    const challenge = await w.rootActions.options(link.token);
+    assert.equal(challenge.type, "PASSKEY");
+    assert.equal(challenge.action, "ROOT_PASSKEY_REQUIRED");
+    assert.equal(view.action, "ROOT_PASSKEY_REQUIRED");
+    assert.equal(view.rootType, "PASSKEY");
+    assert.equal(challenge.type === "PASSKEY" && challenge.options.userVerification, "required");
     assert.equal(
-      options.challenge,
+      challenge.type === "PASSKEY" && challenge.options.challenge,
       Buffer.from(session.challenge.slice(2), "hex").toString("base64url"),
     );
-    // The completion takes an assertion and nothing else: its parameters carry no operation.
+    // The completion takes a root proof and nothing else: its parameters carry no operation.
     assert.equal(w.rootActions.complete.length, 2);
   });
 
@@ -61,7 +65,10 @@ describe("root action before payment", () => {
     assert.equal(session?.status, "COMPLETED");
     assert.ok(session?.usedAt);
     await assert.rejects(
-      w.rootActions.complete(String(session?.tokenHash), { id: "x", good: true }),
+      w.rootActions.complete(String(session?.tokenHash), {
+        type: "PASSKEY",
+        assertion: { id: "x", good: true },
+      }),
     );
   });
 
@@ -535,7 +542,10 @@ describe("the HTTP edge for payments", () => {
     const link = await controller.rootActionLink(auth);
     assert.match(link.url, /^https:\/\/app\.kaada\.test\/root-action\/[A-Za-z0-9_-]{43}$/);
     const token = link.url.split("/").at(-1) ?? "";
-    await w.rootActions.complete(token, { id: "credential-0", good: true });
+    await w.rootActions.complete(token, {
+      type: "PASSKEY",
+      assertion: { id: "credential-0", good: true },
+    });
 
     await controller.run(auth);
     await runs.idle();
@@ -826,7 +836,10 @@ describe("the root-action sign-in request (found with a real Windows passkey)", 
       sessionId: session.id,
       userId: session.userId,
     });
-    const options = await w.rootActions.options(token);
+    const challenge = await w.rootActions.options(token);
+    assert.equal(challenge.type, "PASSKEY");
+    const options = challenge.type === "PASSKEY" ? challenge.options : undefined;
+    assert.ok(options);
     assert.equal("allowCredentials" in options, false);
     assert.equal(options.userVerification, "required");
     assert.equal(

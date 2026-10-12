@@ -61,6 +61,7 @@ const modelNames = [
   "FirmQuoteAttempt",
   "RootActionSession",
   "WalletCredential",
+  "RootChange",
   "RecoveryConfiguration",
   "RecoveryAttempt",
   "RecoveryEmailChallenge",
@@ -131,6 +132,8 @@ const enumValues: Record<string, string[]> = {
   AuthorizationSessionStatus: ["PENDING", "AUTHORIZED", "EXPIRED", "CANCELLED"],
   PaymentAuthorizationStatus: ["ACTIVE", "CONSUMED", "REVOKED", "EXPIRED"],
   RootActionStatus: ["PENDING", "COMPLETED", "EXPIRED", "CANCELLED"],
+  RootChangeKind: ["ROTATE_ROOT", "ENROLL_BACKUP"],
+  RootChangeStatus: ["PREPARED", "SUBMITTED", "CONFIRMED", "FAILED", "EXPIRED", "CANCELLED"],
   WalletCredentialKind: ["PASSKEY", "DEVICE_KEY"],
   WalletCredentialRole: ["PRIMARY", "BACKUP", "RECOVERY"],
   WalletCredentialStatus: ["PENDING", "ACTIVE", "REPLACED", "REVOKED"],
@@ -300,6 +303,26 @@ describe("prisma schema", () => {
     assert.ok(sql.includes('ON "Wallet" ("userId", "chainId")'));
     assert.ok(sql.includes(`"type" = 'EMBEDDED' AND "status" <> 'REVOKED'`));
     assert.ok(sql.includes("Wallet_active_has_address"));
+  });
+
+  it("retires every four-digit PIN hash in the six-digit migration and keeps no length marker", () => {
+    const sql = readFileSync(
+      new URL("../prisma/migrations/20261020000000_pin_six_digits/migration.sql", import.meta.url),
+      "utf8",
+    ).replace(/^--.*$/gm, "");
+    assert.equal(sql.trim(), 'DELETE FROM "TransactionPinSecurity";');
+  });
+
+  it("allows one live root change per wallet and well-formed hashes", () => {
+    const sql = readFileSync(
+      new URL("../prisma/migrations/20261020000001_root_changes/migration.sql", import.meta.url),
+      "utf8",
+    );
+    assert.ok(
+      sql.includes(`ON "RootChange" ("walletId") WHERE "status" IN ('PREPARED', 'SUBMITTED')`),
+    );
+    assert.ok(sql.includes(`"challenge" ~ '^0x[0-9a-f]{64}$'`));
+    assert.ok(sql.includes(`("status" <> 'SUBMITTED' OR "userOpHash" IS NOT NULL)`));
   });
 
   it("keeps setup tokens hashed and bounded in the setup-session migration", () => {

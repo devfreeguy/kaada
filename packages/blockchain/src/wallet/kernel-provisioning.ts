@@ -18,7 +18,7 @@ export interface AccountAddressDeriver {
 const HEX_32_BYTES = /^[0-9a-f]{64}$/;
 
 /**
- * Provisions a Kernel v3.3 smart account whose ONLY root authority is the user's passkey. This stage
+ * Provisions a Kernel v3.3 smart account whose ONLY root authority is the user's root credential (a passkey or a device key). This stage
  * derives the stable counterfactual address; it deploys nothing, spends nothing and holds no secret:
  * the inputs are public coordinates and the output is an address.
  */
@@ -35,16 +35,17 @@ export class KernelProvisioningAdapter implements WalletProvisioningAdapter {
       );
     }
     const { root } = input;
-    if (
-      !HEX_32_BYTES.test(root.publicKeyX) ||
-      !HEX_32_BYTES.test(root.publicKeyY) ||
-      root.credentialId.length === 0 ||
-      root.rpId.length === 0
+    const invalid = () =>
+      new KaadaError("CREDENTIAL_REJECTED", "the root credential is not a valid P-256 key");
+    if (!HEX_32_BYTES.test(root.publicKeyX) || !HEX_32_BYTES.test(root.publicKeyY)) throw invalid();
+    if (root.type === "PASSKEY") {
+      if (root.credentialId.length === 0 || root.rpId.length === 0) throw invalid();
+    } else if (
+      !/^0x[0-9a-f]{64}$/.test(root.keyId) ||
+      !/^0x[0-9a-fA-F]{40}$/.test(root.validatorAddress)
     ) {
-      throw new KaadaError(
-        "CREDENTIAL_REJECTED",
-        "the root credential is not a valid P-256 passkey",
-      );
+      // A device key lives in a fresh clone: its address is part of the account, so it must be there.
+      throw invalid();
     }
 
     const address = evmAddressCodec.normalize(await this.deriver.deriveAddress(root));

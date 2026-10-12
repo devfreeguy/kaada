@@ -25,4 +25,7 @@ export const WALLET_AUDIT_EVENTS = {
   passkeyRegistrationStarted: "wallet.passkey_registration_started",
   setupSessionConsumed: "wallet.setup_session_consumed",
   setupFailed: "wallet.setup_failed",
+  rootChangePrepared: "wallet.root_change_prepared",
+  rootChangeConfirmed: "wallet.root_change_confirmed",
+  rootChangeFailed: "wallet.root_change_failed",
 } as const;

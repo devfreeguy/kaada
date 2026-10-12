@@ -18,8 +18,8 @@ import { WALLET_ID, setup } from "./support/payment-world.js";
  * called, nothing is signed and nothing executes.
  */
 
-const PIN = "7351";
-const WRONG = "2468";
+const PIN = "735142";
+const WRONG = "246813";
 const USDT_UNITS = 10n ** 6n;
 
 function authorizationRequired(response: AgentResponse): AuthorizationRequiredResponse {

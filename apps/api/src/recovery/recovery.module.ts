@@ -1,4 +1,6 @@
 import { Module } from "@nestjs/common";
+import { createRepositories, withTransaction } from "@kaada/database";
+import type { KernelExecutionPort, RootValidatorDeployer } from "@kaada/domain";
 import type { AppConfig } from "@kaada/config";
 import type { Database } from "@kaada/database";
 import { celo, celoSepolia } from "viem/chains";
@@ -10,6 +12,18 @@ import { TRANSACTION_PIN_SERVICE } from "../authorization/authorization.tokens.j
 import type { TransactionPinService } from "../core/authorization/pin-service.js";
 import { FileOutboxEmailSender } from "../infrastructure/recovery/email.js";
 import { SimpleWebAuthnVerifier } from "../infrastructure/wallet/simplewebauthn-verifier.js";
+import type { RootAdapters, RootCredentialService } from "../core/roots/root-credentials.js";
+import { RootChangeService } from "../core/roots/root-change-service.js";
+import { ExecutionModule } from "../execution/execution.module.js";
+import { KERNEL_EXECUTION_PORT } from "../execution/execution.tokens.js";
+import { RootChangeController } from "../roots/root-change.controller.js";
+import { RootsModule } from "../roots/roots.module.js";
+import {
+  ROOT_ADAPTERS,
+  ROOT_CHANGE_SERVICE,
+  ROOT_CREDENTIAL_SERVICE,
+  ROOT_VALIDATOR_DEPLOYER,
+} from "../roots/roots.tokens.js";
 import { WalletModule } from "../wallet/wallet.module.js";
 import { RecoveryController } from "./recovery.controller.js";
 import { createRecoveryChainAndAttestor, createRecoveryRuntime } from "./recovery.runtime.js";
@@ -22,8 +36,8 @@ import { RECOVERY_RUNTIME } from "./recovery.tokens.js";
  * relayer and attestor keys are read from files outside the repository at startup; nothing here can move funds.
  */
 @Module({
-  imports: [WalletModule, AuthorizationModule],
-  controllers: [RecoveryController],
+  imports: [WalletModule, AuthorizationModule, RootsModule, ExecutionModule],
+  controllers: [RecoveryController, RootChangeController],
   providers: [
     {
       provide: RECOVERY_RUNTIME,
@@ -81,8 +95,71 @@ import { RECOVERY_RUNTIME } from "./recovery.tokens.js";
         });
       },
     },
+    {
+      // Rotating the root and enrolling a backup need the chain reads recovery already has, a kernel port to send the
+      // root-signed operation, and the clone deployer (device-key infrastructure). Off unless all of them exist.
+      provide: ROOT_CHANGE_SERVICE,
+      inject: [
+        DATABASE,
+        APP_CONFIG,
+        RECOVERY_RUNTIME,
+        KERNEL_EXECUTION_PORT,
+        ROOT_CREDENTIAL_SERVICE,
+        ROOT_ADAPTERS,
+        ROOT_VALIDATOR_DEPLOYER,
+      ],
+      useFactory: (
+        database: Database,
+        config: AppConfig,
+        runtime: RecoveryRuntime | null,
+        kernel: KernelExecutionPort | null,
+        roots: RootCredentialService | null,
+        adapters: RootAdapters | null,
+        validators: RootValidatorDeployer | null,
+      ): RootChangeService | null => {
+        const passkey = config.wallet.passkey;
+        const deviceKeyRoots = config.wallet.deviceKeyRoots;
+        if (
+          !runtime ||
+          !kernel ||
+          !roots ||
+          !adapters ||
+          !validators ||
+          !passkey ||
+          !deviceKeyRoots
+        ) {
+          return null;
+        }
+        const { contracts } = deviceKeyRoots;
+        return new RootChangeService({
+          unitOfWork: {
+            read: createRepositories(database),
+            transaction: (work) => withTransaction(database, work),
+          },
+          kernel,
+          chain: runtime.context.chain,
+          roots,
+          adapters,
+          validators,
+          deployments: {
+            passkey: {
+              factory: contracts.passkeyFactory as `0x${string}`,
+              implementation: contracts.passkeyImplementation as `0x${string}`,
+            },
+            device: {
+              factory: contracts.deviceFactory as `0x${string}`,
+              implementation: contracts.deviceImplementation as `0x${string}`,
+            },
+          },
+          onChainId: config.wallet.onChainId,
+          passkeyVerifier: new SimpleWebAuthnVerifier(),
+          rpId: passkey.rpId,
+          origin: passkey.origin,
+        });
+      },
+    },
     RecoverySweeper,
   ],
-  exports: [RECOVERY_RUNTIME],
+  exports: [RECOVERY_RUNTIME, ROOT_CHANGE_SERVICE],
 })
 export class RecoveryModule {}

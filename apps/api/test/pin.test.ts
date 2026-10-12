@@ -3,11 +3,15 @@ import { randomUUID } from "node:crypto";
 import { describe, it } from "node:test";
 
 import { PIN_ATTEMPT_POLICY, isKaadaError } from "@kaada/domain";
+import type { RootChallenge } from "@kaada/domain";
 
 import { PinEnrollmentService } from "../src/core/authorization/pin-enrollment.js";
 import { TransactionPinService } from "../src/core/authorization/pin-service.js";
 import type { AuthorizationUnitOfWork } from "../src/core/authorization/ports.js";
 import { RateLimiter } from "../src/core/authorization/rate-limiter.js";
+import { DeviceKeyRootAdapter } from "../src/core/roots/adapters.js";
+import { RootCredentialService } from "../src/core/roots/root-credentials.js";
+import { RootProofService } from "../src/core/roots/root-proof-service.js";
 import { PasskeyService } from "../src/core/wallets/passkey-service.js";
 import {
   Argon2PinHasher,
@@ -22,8 +26,8 @@ import { createWalletService, createWalletWorld } from "./support/wallet-memory.
 const RP_ID = "kaada.test";
 const ORIGIN = "https://app.kaada.test";
 // Not 1234 or 0000: easy to spot if it ever leaks into a log, an audit row or a stored message.
-const PIN = "7351";
-const WRONG = "2468";
+const PIN = "735142";
+const WRONG = "246813";
 
 function build() {
   const clock = { now: new Date("2026-10-10T12:00:00.000Z") };
@@ -55,13 +59,25 @@ describe("PIN storage", () => {
     assert.equal((await b.pins.verify(b.userId, PIN)).status, "INVALID");
   });
 
-  it("accepts exactly four digits, including weak-looking ones, and nothing else", async () => {
+  it("accepts exactly six digits, including weak-looking ones, and nothing else", async () => {
     const b = build();
-    for (const weak of ["0000", "1111", "1234", "9999"]) {
+    for (const weak of ["000000", "111111", "123456", "999999"]) {
       await b.pins.setPin(b.userId, weak);
       assert.equal((await b.pins.verify(b.userId, weak)).status, "VERIFIED");
     }
-    for (const bad of ["123", "12345", "12a4", "", " 123", "1 23", "١٢٣٤", "-123", "12.4"]) {
+    for (const bad of [
+      "123",
+      "1234", // the retired four-digit PIN
+      "12345", // five digits
+      "1234567", // seven digits
+      "12345a",
+      "",
+      " 12345",
+      "123 45",
+      "١٢٣٤٥٦",
+      "-12345",
+      "1234.5",
+    ]) {
       await assert.rejects(b.pins.setPin(b.userId, bad), (e) => isKaadaError(e, "PIN_REJECTED"));
     }
   });
@@ -261,6 +277,30 @@ describe("PIN verification and lockout", () => {
   });
 });
 
+/** The options of a passkey challenge (the only kind these wallets have). */
+function passkeyOptions(challenge: RootChallenge) {
+  assert.equal(challenge.type, "PASSKEY");
+  if (challenge.type !== "PASSKEY") throw new Error("not a passkey challenge");
+  return challenge.options;
+}
+
+function proofsFor(
+  passkeys: PasskeyService,
+  wallet: ReturnType<typeof createWalletWorld>,
+  wallets: ReturnType<typeof createWalletService>["service"],
+  now: () => Date,
+) {
+  return new RootProofService({
+    roots: new RootCredentialService({ repositories: wallet.unitOfWork.read, rpId: RP_ID }),
+    passkeys,
+    challenges: wallet.unitOfWork.read.passkeys,
+    device: new DeviceKeyRootAdapter(),
+    wallets,
+    onChainId: 42220,
+    now,
+  });
+}
+
 describe("changing the PIN needs a strong credential", () => {
   async function enrolled() {
     const b = build();
@@ -280,13 +320,17 @@ describe("changing the PIN needs a strong credential", () => {
       authenticator.register({ challenge: registration.challenge, origin: ORIGIN, rpId: RP_ID }),
     );
     await wallets.ensureEmbeddedWallet(b.userId);
-    const enrollment = new PinEnrollmentService({ passkeys, pins: b.pins, wallets });
+    const enrollment = new PinEnrollmentService({
+      proofs: proofsFor(passkeys, wallet, wallets, () => b.clock.now),
+      pins: b.pins,
+      wallets,
+    });
     let counter = 0;
     const assertion = async () => {
       const options = await enrollment.begin(b.userId);
       counter += 1;
       return authenticator.authenticate({
-        challenge: options.challenge,
+        challenge: passkeyOptions(options).challenge,
         origin: ORIGIN,
         rpId: RP_ID,
         counter,
@@ -297,7 +341,9 @@ describe("changing the PIN needs a strong credential", () => {
 
   it("asks for a passkey assertion with user verification", async () => {
     const { b, enrollment } = await enrolled();
-    const options = await enrollment.begin(b.userId);
+    const challenge = await enrollment.begin(b.userId);
+    assert.equal(challenge.action, "ROOT_PASSKEY_REQUIRED");
+    const options = passkeyOptions(challenge);
     assert.equal(options.userVerification, "required");
     assert.equal(options.rpId, RP_ID);
     // The credential is NOT named: a real Windows passkey provider signs with UV=0 when it is, and with
@@ -308,12 +354,18 @@ describe("changing the PIN needs a strong credential", () => {
   it("creates and then changes the PIN only with a valid fresh assertion", async () => {
     const { b, enrollment, assertion } = await enrolled();
     assert.equal(
-      await enrollment.complete(b.userId, { pin: PIN, assertion: await assertion() }),
+      await enrollment.complete(b.userId, {
+        pin: PIN,
+        proof: { type: "PASSKEY", assertion: await assertion() },
+      }),
       "CREATED",
     );
     assert.equal((await b.pins.verify(b.userId, PIN)).status, "VERIFIED");
     assert.equal(
-      await enrollment.complete(b.userId, { pin: WRONG, assertion: await assertion() }),
+      await enrollment.complete(b.userId, {
+        pin: WRONG,
+        proof: { type: "PASSKEY", assertion: await assertion() },
+      }),
       "CHANGED",
     );
     assert.equal((await b.pins.verify(b.userId, WRONG)).status, "VERIFIED");
@@ -322,8 +374,9 @@ describe("changing the PIN needs a strong credential", () => {
   it("the old PIN alone cannot change the PIN, and neither can a missing or foreign assertion", async () => {
     const { b, enrollment } = await enrolled();
     await b.pins.setPin(b.userId, PIN);
-    await assert.rejects(enrollment.complete(b.userId, { pin: WRONG, assertion: {} }), (e) =>
-      isKaadaError(e, "CREDENTIAL_REJECTED"),
+    await assert.rejects(
+      enrollment.complete(b.userId, { pin: WRONG, proof: { type: "PASSKEY", assertion: {} } }),
+      (e) => isKaadaError(e, "CREDENTIAL_REJECTED"),
     );
     // An assertion from another authenticator does not belong to this user.
     const stranger = createSoftwareAuthenticator();
@@ -331,12 +384,15 @@ describe("changing the PIN needs a strong credential", () => {
     await assert.rejects(
       enrollment.complete(b.userId, {
         pin: WRONG,
-        assertion: stranger.authenticate({
-          challenge: options.challenge,
-          origin: ORIGIN,
-          rpId: RP_ID,
-          counter: 1,
-        }),
+        proof: {
+          type: "PASSKEY",
+          assertion: stranger.authenticate({
+            challenge: passkeyOptions(options).challenge,
+            origin: ORIGIN,
+            rpId: RP_ID,
+            counter: 1,
+          }),
+        },
       }),
       (e) => isKaadaError(e, "CREDENTIAL_REJECTED"),
     );
@@ -347,18 +403,23 @@ describe("changing the PIN needs a strong credential", () => {
     const { b, enrollment, authenticator } = await enrolled();
     const options = await enrollment.begin(b.userId);
     const signed = authenticator.authenticate({
-      challenge: options.challenge,
+      challenge: passkeyOptions(options).challenge,
       origin: ORIGIN,
       rpId: RP_ID,
       counter: 1,
     });
-    await assert.rejects(enrollment.complete(b.userId, { pin: "12", assertion: signed }), (e) =>
-      isKaadaError(e, "PIN_REJECTED"),
+    await assert.rejects(
+      enrollment.complete(b.userId, { pin: "12", proof: { type: "PASSKEY", assertion: signed } }),
+      (e) => isKaadaError(e, "PIN_REJECTED"),
     );
     // The challenge survived the malformed PIN, so the same assertion still works once.
-    await enrollment.complete(b.userId, { pin: PIN, assertion: signed });
-    await assert.rejects(enrollment.complete(b.userId, { pin: WRONG, assertion: signed }), (e) =>
-      isKaadaError(e, "CREDENTIAL_REJECTED"),
+    await enrollment.complete(b.userId, {
+      pin: PIN,
+      proof: { type: "PASSKEY", assertion: signed },
+    });
+    await assert.rejects(
+      enrollment.complete(b.userId, { pin: WRONG, proof: { type: "PASSKEY", assertion: signed } }),
+      (e) => isKaadaError(e, "CREDENTIAL_REJECTED"),
     );
   });
 
@@ -367,7 +428,10 @@ describe("changing the PIN needs a strong credential", () => {
     await b.pins.setPin(b.userId, PIN);
     await b.pins.requireReset(b.userId, "TEST");
     await assert.rejects(
-      enrollment.complete(b.userId, { pin: WRONG, assertion: await assertion() }),
+      enrollment.complete(b.userId, {
+        pin: WRONG,
+        proof: { type: "PASSKEY", assertion: await assertion() },
+      }),
       (e) => isKaadaError(e, "PIN_RESET_REQUIRED"),
     );
   });
@@ -382,7 +446,11 @@ describe("changing the PIN needs a strong credential", () => {
       rpId: RP_ID,
       origin: ORIGIN,
     });
-    const enrollment = new PinEnrollmentService({ passkeys, pins: b.pins, wallets });
+    const enrollment = new PinEnrollmentService({
+      proofs: proofsFor(passkeys, wallet, wallets, () => new Date()),
+      pins: b.pins,
+      wallets,
+    });
     await assert.rejects(enrollment.begin(b.userId), (e) => isKaadaError(e, "WALLET_NOT_ACTIVE"));
   });
 });

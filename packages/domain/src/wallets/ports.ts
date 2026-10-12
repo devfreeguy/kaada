@@ -1,6 +1,9 @@
 import type { Money } from "../money/index.js";
 import type { PaymentRoute } from "../routing/index.js";
+import type { RootCredential, RootType } from "./root.js";
 import type { WalletDeployment } from "./wallet.js";
+
+export type { RootCredential };
 import type { Enforcement, PermissionConstraint, PermissionRequest } from "./permission.js";
 
 /*
@@ -8,12 +11,28 @@ import type { Enforcement, PermissionConstraint, PermissionRequest } from "./per
  * @kaada/blockchain; domain and application code never import a provider SDK type.
  */
 
-/** The user's root authority as Kaada knows it: a PUBLIC passkey. Never a secret. */
-export interface RootCredential {
-  credentialId: string;
+/** A validator instance (a clone of a validator implementation) that holds ONE root credential. Public data only. */
+export interface RootValidatorInstance {
+  type: RootType;
+  /** The Kernel account the instance is scoped to; null for the creation-time (PRIMARY) root, whose account does not exist yet. */
+  account: string | null;
+  /** The factory purpose (0 PRIMARY, 1 RECOVERY, 2 BACKUP, 3 ROTATION) and deployment salt it was derived with. */
+  purpose: number;
+  deploymentSalt: string;
+  /** Where it must live: the factory refuses to deploy anywhere else. */
+  validatorAddress: string;
   publicKeyX: string;
   publicKeyY: string;
-  rpId: string;
+  /** PASSKEY: the WebAuthn credential id (base64url). DEVICE_KEY: the keyId (0x + 64 hex). */
+  credentialRef: string;
+}
+
+/**
+ * Puts a validator instance on chain so a root can name it. Anyone may deploy one and it holds no authority: the address is
+ * fixed by the credential, so this can only create exactly the instance the root is already committed to.
+ */
+export interface RootValidatorDeployer {
+  ensureDeployed(instance: RootValidatorInstance): Promise<{ created: boolean; txHash?: string }>;
 }
 
 export interface DerivedAccount {

@@ -33,7 +33,7 @@ export interface TransactionPinServiceDeps {
 }
 
 /**
- * Creates and verifies the 4-digit transaction PIN. Only an Argon2id hash is stored; the PIN is never
+ * Creates and verifies the 6-digit transaction PIN. Only an Argon2id hash is stored; the PIN is never
  * logged, audited, returned or kept anywhere but in the memory of the call that received it.
  *
  * This class does NOT decide who may SET a PIN: setting or changing one is security-sensitive and
@@ -73,7 +73,7 @@ export class TransactionPinService {
    */
   async setPin(userId: string, pin: string): Promise<"CREATED" | "CHANGED"> {
     if (!isValidPinFormat(pin)) {
-      throw new KaadaError("PIN_REJECTED", "a PIN is exactly four digits");
+      throw new KaadaError("PIN_REJECTED", "a PIN is exactly six digits");
     }
     // Hashing is slow on purpose: it happens before, and outside, any transaction.
     const pinHash = await this.hasher.hash(pin);

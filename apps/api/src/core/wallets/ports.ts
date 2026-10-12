@@ -3,6 +3,7 @@ import type {
   AuditRepository,
   DelegatedPermissionRepository,
   PasskeyRepository,
+  WalletCredentialRepository,
   WalletRepository,
   WalletSetupSessionRepository,
 } from "@kaada/domain";
@@ -11,6 +12,7 @@ import type {
 export interface WalletRepositories {
   wallets: WalletRepository;
   passkeys: PasskeyRepository;
+  walletCredentials: WalletCredentialRepository;
   delegatedPermissions: DelegatedPermissionRepository;
   audit: AuditRepository;
   walletSetupSessions: WalletSetupSessionRepository;

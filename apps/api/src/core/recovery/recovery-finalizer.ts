@@ -436,8 +436,7 @@ export class RecoveryFinalizer {
   async resetPin(token: unknown, pin: unknown): Promise<RecoveryStatusView> {
     const attempt = await resolveAttempt(this.ctx, token, { allow: ["COMPLETED"] });
     if (attempt.pinResetAt) throw new KaadaError("RECOVERY_REJECTED", "the PIN was already reset");
-    if (!isValidPinFormat(pin))
-      throw new KaadaError("PIN_REJECTED", "a PIN is exactly four digits");
+    if (!isValidPinFormat(pin)) throw new KaadaError("PIN_REJECTED", "a PIN is exactly six digits");
     await this.deps.pins.setPin(attempt.userId, pin);
     const now = this.ctx.now();
     const done = await this.ctx.uow.read.recoveryAttempts.patch(

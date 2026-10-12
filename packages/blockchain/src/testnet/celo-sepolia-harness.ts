@@ -200,6 +200,7 @@ async function kernel(): Promise<void> {
   const adapter = createZeroDevKernelAdapter({ bundlerUrl, rpcUrl: SEPOLIA_RPC, network: net });
   const passkey = softPasskey(state);
   const credential = {
+    type: "PASSKEY" as const,
     credentialId: passkey.credentialId,
     publicKeyX: passkey.x,
     publicKeyY: passkey.y,
@@ -353,7 +354,10 @@ async function kernel(): Promise<void> {
     save(state);
     const sent = await rootAdapter.sendRootOperation({
       prepared: prepared.prepared,
-      assertion: assertionFor(state, prepared.challenge as Hex),
+      proof: {
+        type: "PASSKEY" as const,
+        assertion: assertionFor(state, prepared.challenge as Hex),
+      },
     });
     const userOpHash = sent.userOpHash as Hex;
     log("root userOpHash:", userOpHash);
@@ -694,6 +698,7 @@ async function bundlerValidate(): Promise<void> {
   const adapter = createZeroDevKernelAdapter({ bundlerUrl, rpcUrl: SEPOLIA_RPC, network: net });
   const passkey = softPasskey(state);
   const credential = {
+    type: "PASSKEY" as const,
     credentialId: passkey.credentialId,
     publicKeyX: passkey.x,
     publicKeyY: passkey.y,
@@ -742,7 +747,7 @@ async function bundlerValidate(): Promise<void> {
   save(state);
   const root = await adapter.sendRootOperation({
     prepared: prepared.prepared,
-    assertion: assertionFor(state, prepared.challenge as Hex),
+    proof: { type: "PASSKEY" as const, assertion: assertionFor(state, prepared.challenge as Hex) },
   });
   state.alto.session.approval = root.approval?.reveal() ?? "";
   log(

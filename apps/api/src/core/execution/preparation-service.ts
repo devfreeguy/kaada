@@ -381,7 +381,7 @@ export class ExecutionPreparationService {
       tokenPolicy: this.deps.tokenPolicy ?? defaultTokenPolicy,
       currentAllowance,
       deployed: snapshot.deployed,
-      passkeyRootAvailable: snapshot.passkeyRootAvailable,
+      rootAvailable: snapshot.rootAvailable,
       infrastructure: snapshot.infrastructure,
       permissions: snapshot.permissions,
       now: this.now(),

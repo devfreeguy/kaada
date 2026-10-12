@@ -87,6 +87,8 @@ export interface WalletCredentialRepository {
     newId: string;
     at: Date;
   }): Promise<{ promoted: WalletCredential; replaced: WalletCredential | null } | null>;
+  /** A PENDING credential becomes an ACTIVE non-root credential (an enrolled backup). Null unless it is PENDING. */
+  activate(id: string, at: Date): Promise<WalletCredential | null>;
   /** Records the PasskeyCredential row that mirrors this credential once the recovery made it the root. */
   linkPasskey(id: string, passkeyCredentialId: string): Promise<void>;
   /** PENDING or ACTIVE -> REVOKED. Null if it was already REPLACED or REVOKED. */

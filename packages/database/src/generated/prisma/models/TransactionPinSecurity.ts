@@ -14,7 +14,7 @@ import type * as Prisma from "../internal/prismaNamespace.js"
 
 /**
  * Model TransactionPinSecurity
- * The 4-digit transaction PIN state of one user. Only an Argon2id hash is stored. Attempts are counted
+ * The 6-digit transaction PIN state of one user. Only an Argon2id hash is stored. Attempts are counted
  * in a single atomic UPDATE, so guessing is bounded no matter how many requests arrive at once.
  */
 export type TransactionPinSecurityModel = runtime.Types.Result.DefaultSelection<Prisma.$TransactionPinSecurityPayload>

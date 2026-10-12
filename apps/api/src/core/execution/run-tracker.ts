@@ -9,7 +9,11 @@ export class RunTracker {
   private readonly running = new Map<string, Promise<void>>();
   private readonly latest = new Map<string, { outcome: RunOutcome; at: number }>();
 
-  constructor(private readonly now: () => number = Date.now) {}
+  constructor(
+    private readonly now: () => number = Date.now,
+    /** Told about a run that ended in an unexpected error (it is reported to the person only as "pending"). */
+    private readonly onError: (error: unknown) => void = () => undefined,
+  ) {}
 
   start(executionId: string, run: () => Promise<RunOutcome>): "STARTED" | "RUNNING" {
     if (this.running.has(executionId)) return "RUNNING";
@@ -17,7 +21,8 @@ export class RunTracker {
       .then((outcome) => {
         this.latest.set(executionId, { outcome, at: this.now() });
       })
-      .catch(() => {
+      .catch((error: unknown) => {
+        this.onError(error);
         // An unexpected failure is never reported as success or as a clean failure: it is pending.
         this.latest.set(executionId, { outcome: { status: "PAYMENT_PENDING" }, at: this.now() });
       })

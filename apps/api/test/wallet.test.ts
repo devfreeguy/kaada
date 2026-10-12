@@ -413,6 +413,7 @@ describe("delegated permissions", () => {
 
 describe("Kernel adapters (stack behind Kaada interfaces)", () => {
   const root: RootCredential = {
+    type: "PASSKEY",
     credentialId: "AQIDBA",
     publicKeyX: "ab".repeat(32),
     publicKeyY: "cd".repeat(32),

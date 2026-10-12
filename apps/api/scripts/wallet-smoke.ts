@@ -36,6 +36,7 @@ const rpcUrl = process.env["CELO_RPC_URL"] || undefined;
 const { publicKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
 const jwk = publicKey.export({ format: "jwk" });
 const root = {
+  type: "PASSKEY" as const,
   credentialId: Buffer.from("kaada-smoke-credential").toString("base64url"),
   publicKeyX: Buffer.from(jwk.x ?? "", "base64url").toString("hex"),
   publicKeyY: Buffer.from(jwk.y ?? "", "base64url").toString("hex"),

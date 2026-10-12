@@ -14,6 +14,7 @@ import type {
   ProviderRepository,
   RecipientRepository,
   RouteRepository,
+  WalletCredentialRepository,
   WalletRepository,
 } from "@kaada/domain";
 
@@ -34,6 +35,7 @@ export interface ExecutionRepositories {
   recipients: RecipientRepository;
   wallets: WalletRepository;
   passkeys: PasskeyRepository;
+  walletCredentials: WalletCredentialRepository;
   delegatedPermissions: DelegatedPermissionRepository;
   assets: AssetRepository;
   providers: ProviderRepository;

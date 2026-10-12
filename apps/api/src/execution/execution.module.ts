@@ -1,10 +1,11 @@
-import { Module } from "@nestjs/common";
+import { Logger, Module } from "@nestjs/common";
 import {
   createViemAllowanceReader,
   createViemDeploymentChecker,
   createZeroDevKernelAdapter,
 } from "@kaada/blockchain";
-import type { KernelExecutionPort } from "@kaada/domain";
+import { isKaadaError } from "@kaada/domain";
+import type { KernelExecutionPort, RootValidatorDeployer } from "@kaada/domain";
 import { createRepositories, withTransaction } from "@kaada/database";
 import type { Database, Repositories } from "@kaada/database";
 import type { AppConfig } from "@kaada/config";
@@ -32,7 +33,13 @@ import {
   createFetchTransport,
 } from "../infrastructure/fx/textile/index.js";
 import { AesGcmSecretCipher } from "../infrastructure/security/aes-gcm-cipher.js";
-import { SimpleWebAuthnVerifier } from "../infrastructure/wallet/simplewebauthn-verifier.js";
+import type { RootAdapters, RootCredentialService } from "../core/roots/root-credentials.js";
+import { RootsModule } from "../roots/roots.module.js";
+import {
+  ROOT_ADAPTERS,
+  ROOT_CREDENTIAL_SERVICE,
+  ROOT_VALIDATOR_DEPLOYER,
+} from "../roots/roots.tokens.js";
 import { WalletModule } from "../wallet/wallet.module.js";
 import { WALLET_BALANCE_SERVICE, WALLET_SERVICE } from "../wallet/wallet.tokens.js";
 import { ExecutionController } from "./execution.controller.js";
@@ -61,7 +68,7 @@ function unitOfWork(database: Database): ExecutionUnitOfWork {
  * service is null and no firm quote can be requested. It plans only: nothing here signs or sends.
  */
 @Module({
-  imports: [WalletModule, AuthorizationModule],
+  imports: [WalletModule, AuthorizationModule, RootsModule],
   controllers: [ExecutionController, RootActionController],
   providers: [
     {
@@ -138,7 +145,20 @@ function unitOfWork(database: Database): ExecutionUnitOfWork {
         });
       },
     },
-    { provide: RUN_TRACKER, useFactory: () => new RunTracker() },
+    {
+      provide: RUN_TRACKER,
+      useFactory: () => {
+        const logger = new Logger("ExecutionRun");
+        // The reason is logged for operators (a code or a name, never a payload); the person only ever sees "pending".
+        return new RunTracker(Date.now, (error) =>
+          logger.warn(
+            `a payment run ended unexpectedly: ${error instanceof Error ? error.name : "unknown"}${
+              isKaadaError(error) ? ` (${error.code})` : ""
+            }`,
+          ),
+        );
+      },
+    },
     {
       provide: KERNEL_EXECUTION_PORT,
       inject: [APP_CONFIG],
@@ -153,15 +173,33 @@ function unitOfWork(database: Database): ExecutionUnitOfWork {
     },
     {
       provide: ROOT_ACTION_SERVICE,
-      inject: [DATABASE, APP_CONFIG, WALLET_SERVICE, KERNEL_EXECUTION_PORT],
+      inject: [
+        DATABASE,
+        APP_CONFIG,
+        WALLET_SERVICE,
+        KERNEL_EXECUTION_PORT,
+        ROOT_CREDENTIAL_SERVICE,
+        ROOT_ADAPTERS,
+        ROOT_VALIDATOR_DEPLOYER,
+      ],
       useFactory: (
         database: Database,
         config: AppConfig,
         wallets: WalletService | null,
         kernel: KernelExecutionPort | null,
+        roots: RootCredentialService | null,
+        adapters: RootAdapters | null,
+        validators: RootValidatorDeployer | null,
       ): RootActionService | null => {
         const passkey = config.wallet.passkey;
-        if (!kernel || !wallets || !passkey || config.execution.cipherKeys.length === 0) {
+        if (
+          !kernel ||
+          !wallets ||
+          !passkey ||
+          !roots ||
+          !adapters ||
+          config.execution.cipherKeys.length === 0
+        ) {
           return null;
         }
         return new RootActionService({
@@ -169,8 +207,10 @@ function unitOfWork(database: Database): ExecutionUnitOfWork {
           kernel,
           cipher: new AesGcmSecretCipher(config.execution.cipherKeys),
           wallets,
-          verifier: new SimpleWebAuthnVerifier(),
-          rpId: passkey.rpId,
+          roots,
+          adapters,
+          onChainId: config.wallet.onChainId,
+          ...(validators && { validators }),
           origin: passkey.origin,
         });
       },
@@ -251,6 +291,6 @@ function unitOfWork(database: Database): ExecutionUnitOfWork {
     },
     ExecutionReconciler,
   ],
-  exports: [EXECUTION_PREPARATION_SERVICE, EXECUTION_RUNNER],
+  exports: [EXECUTION_PREPARATION_SERVICE, EXECUTION_RUNNER, KERNEL_EXECUTION_PORT],
 })
 export class ExecutionModule {}

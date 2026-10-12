@@ -427,6 +427,7 @@ export const ModelName = {
   RampSession: 'RampSession',
   AuditEvent: 'AuditEvent',
   WalletCredential: 'WalletCredential',
+  RootChange: 'RootChange',
   RecoveryConfiguration: 'RecoveryConfiguration',
   RecoveryAttempt: 'RecoveryAttempt',
   RecoveryEmailChallenge: 'RecoveryEmailChallenge'
@@ -445,7 +446,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "transactionPinSecurity" | "authorizationSession" | "paymentAuthorization" | "executionSecret" | "firmQuoteAttempt" | "rootActionSession" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent" | "walletCredential" | "recoveryConfiguration" | "recoveryAttempt" | "recoveryEmailChallenge"
+    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "transactionPinSecurity" | "authorizationSession" | "paymentAuthorization" | "executionSecret" | "firmQuoteAttempt" | "rootActionSession" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent" | "walletCredential" | "rootChange" | "recoveryConfiguration" | "recoveryAttempt" | "recoveryEmailChallenge"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2669,6 +2670,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    RootChange: {
+      payload: Prisma.$RootChangePayload<ExtArgs>
+      fields: Prisma.RootChangeFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.RootChangeFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RootChangePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.RootChangeFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RootChangePayload>
+        }
+        findFirst: {
+          args: Prisma.RootChangeFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RootChangePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.RootChangeFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RootChangePayload>
+        }
+        findMany: {
+          args: Prisma.RootChangeFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RootChangePayload>[]
+        }
+        create: {
+          args: Prisma.RootChangeCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RootChangePayload>
+        }
+        createMany: {
+          args: Prisma.RootChangeCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.RootChangeCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RootChangePayload>[]
+        }
+        delete: {
+          args: Prisma.RootChangeDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RootChangePayload>
+        }
+        update: {
+          args: Prisma.RootChangeUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RootChangePayload>
+        }
+        deleteMany: {
+          args: Prisma.RootChangeDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.RootChangeUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.RootChangeUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RootChangePayload>[]
+        }
+        upsert: {
+          args: Prisma.RootChangeUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RootChangePayload>
+        }
+        aggregate: {
+          args: Prisma.RootChangeAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateRootChange>
+        }
+        groupBy: {
+          args: Prisma.RootChangeGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RootChangeGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.RootChangeCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RootChangeCountAggregateOutputType> | number
+        }
+      }
+    }
     RecoveryConfiguration: {
       payload: Prisma.$RecoveryConfigurationPayload<ExtArgs>
       fields: Prisma.RecoveryConfigurationFieldRefs
@@ -3511,6 +3586,27 @@ export const WalletCredentialScalarFieldEnum = {
 export type WalletCredentialScalarFieldEnum = (typeof WalletCredentialScalarFieldEnum)[keyof typeof WalletCredentialScalarFieldEnum]
 
 
+export const RootChangeScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  walletId: 'walletId',
+  kind: 'kind',
+  status: 'status',
+  newCredentialId: 'newCredentialId',
+  signerCredentialId: 'signerCredentialId',
+  challenge: 'challenge',
+  prepared: 'prepared',
+  userOpHash: 'userOpHash',
+  expiresAt: 'expiresAt',
+  failureCode: 'failureCode',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  completedAt: 'completedAt'
+} as const
+
+export type RootChangeScalarFieldEnum = (typeof RootChangeScalarFieldEnum)[keyof typeof RootChangeScalarFieldEnum]
+
+
 export const RecoveryConfigurationScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -4167,6 +4263,34 @@ export type ListEnumDeviceSecurityTierFieldRefInput<$PrismaModel> = FieldRefInpu
 
 
 /**
+ * Reference to a field of type 'RootChangeKind'
+ */
+export type EnumRootChangeKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RootChangeKind'>
+    
+
+
+/**
+ * Reference to a field of type 'RootChangeKind[]'
+ */
+export type ListEnumRootChangeKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RootChangeKind[]'>
+    
+
+
+/**
+ * Reference to a field of type 'RootChangeStatus'
+ */
+export type EnumRootChangeStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RootChangeStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'RootChangeStatus[]'
+ */
+export type ListEnumRootChangeStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RootChangeStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'RecoveryConfigurationStatus'
  */
 export type EnumRecoveryConfigurationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RecoveryConfigurationStatus'>
@@ -4402,6 +4526,7 @@ export type GlobalOmitConfig = {
   rampSession?: Prisma.RampSessionOmit
   auditEvent?: Prisma.AuditEventOmit
   walletCredential?: Prisma.WalletCredentialOmit
+  rootChange?: Prisma.RootChangeOmit
   recoveryConfiguration?: Prisma.RecoveryConfigurationOmit
   recoveryAttempt?: Prisma.RecoveryAttemptOmit
   recoveryEmailChallenge?: Prisma.RecoveryEmailChallengeOmit

@@ -5,11 +5,16 @@ defines what Kaada can technically execute. All three must agree before funds mo
 
 ## The PIN
 
-- Exactly four digits (0000-9999, weak-looking ones allowed). A convenience approval: not a wallet key, not an
+- Exactly six digits (000000-999999, weak-looking ones allowed). The PIN was four digits in earlier development builds;
+  migration `20261020000000_pin_six_digits` deleted every four-digit hash (non-production wallets only), so a person creates a
+  six-digit PIN again and a four-digit value is rejected by format before any hash is read. No hash records its length and
+  nothing accepts both lengths. A convenience approval: not a wallet key, not an
   encryption key, not a recovery credential, and it cannot change account security settings.
 - Stored only as an Argon2id hash (`@node-rs/argon2`: 64 MiB, 3 passes, 1 lane), mixed with an optional server-side
   `PIN_PEPPER` (required in production) so a leaked database alone cannot be brute-forced offline.
-- Setting or changing it needs a fresh **passkey assertion** (`/api/v1/wallet/pin/*`) on top of the setup link.
+- Setting or changing it needs a fresh proof by the wallet's **root** (`/api/v1/wallet/pin/*`) on top of the setup link: a passkey
+  assertion with user verification, or, for a device-key wallet, a signature by the device key over a single-use challenge
+  (see `docs/root-agnostic-flow.md`). The PIN is never a wallet key and never an input to the root.
   The old PIN alone never changes the PIN. Forgot PIN: `PIN_RESET_REQUIRED`, unsupported until account recovery.
 
 ## Lockout (per user, in the database)

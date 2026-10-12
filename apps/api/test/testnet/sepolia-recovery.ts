@@ -897,7 +897,7 @@ try {
       goodProof.status === 200 && goodProof.body["status"] === "COMPLETED",
       JSON.stringify(goodProof.body),
     );
-    const pinA = await api("POST", "/pin", { token: startA, body: { pin: "2468" } });
+    const pinA = await api("POST", "/pin", { token: startA, body: { pin: "246813" } });
     record(
       "PIN reset through the verified recovery session",
       pinA.status === 200 && pinA.body["nextStep"] === "CREATE_RECOVERY_CODE",

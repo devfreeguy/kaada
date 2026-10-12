@@ -38,6 +38,8 @@ export const KAADA_ERROR_CODES = [
   "RECOVERY_NOT_READY",
   "RECOVERY_BLOCKED",
   "RECOVERY_CHAIN_UNAVAILABLE",
+  "ROOT_CHANGE_REJECTED",
+  "ROOT_CHANGE_CONFLICT",
 ] as const;
 
 export type KaadaErrorCode = (typeof KAADA_ERROR_CODES)[number];

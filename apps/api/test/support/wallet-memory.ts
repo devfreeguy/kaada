@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { createMemoryWalletCredentials } from "./credential-memory.js";
 import type {
   Asset,
   AssetRepository,
@@ -61,6 +62,7 @@ export function createWalletWorld(): WalletWorld {
 
   const repositories: WalletRepositories = {
     assets: assetRepository,
+    walletCredentials: createMemoryWalletCredentials(stamp),
 
     walletSetupSessions: {
       create: (input) => {
@@ -357,7 +359,8 @@ export class FakeProvisioningAdapter implements WalletProvisioningAdapter {
       throw new Error("provider exploded: secret-looking text that must never reach a user");
     }
     if (this.override) return this.override(input.root);
-    const hex = (input.root.publicKeyX + input.root.credentialId).replace(/[^0-9a-f]/g, "0");
+    const ref = input.root.type === "PASSKEY" ? input.root.credentialId : input.root.keyId;
+    const hex = (input.root.publicKeyX + ref).replace(/[^0-9a-f]/g, "0");
     return {
       address: `0x${hex.padEnd(40, "0").slice(0, 40)}`,
       provider: this.provider,

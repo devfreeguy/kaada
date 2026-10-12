@@ -389,7 +389,7 @@ describe("account recovery on the real database", { skip }, () => {
   it("runs a whole recovery over Postgres: proposal, proof, initiation, finalization, confirmation, cleanup, completion", async () => {
     const w = world();
     const u = await user(w, { telegram: true });
-    await w.pins.setPin(u.userId, "7351");
+    await w.pins.setPin(u.userId, "735142");
     const permission = await w.addPermission(u);
     const newRoot = await newDeviceRoot();
     const { attempt, token } = await w.startRecovery(u, newRoot);
@@ -417,9 +417,9 @@ describe("account recovery on the real database", { skip }, () => {
     await w
       .finalizer()
       .completeSigningProof(token, w.rootSigns(newRoot.credentialRef, proof.challenge));
-    const pinDone = await w.finalizer().resetPin(token, "2468");
+    const pinDone = await w.finalizer().resetPin(token, "246813");
     assert.equal(pinDone.nextStep, "CREATE_RECOVERY_CODE");
-    assert.equal((await w.pins.verify(u.userId, "2468")).status, "VERIFIED");
+    assert.equal((await w.pins.verify(u.userId, "246813")).status, "VERIFIED");
 
     const types = new Set(
       (await w.repositories.audit.listForUser(u.userId, 500)).map((e) => e.type),

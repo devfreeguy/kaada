@@ -1,9 +1,10 @@
 "use client";
 
-import { browserSupportsWebAuthn, startAuthentication } from "@simplewebauthn/browser";
 import { useCallback, useEffect, useState } from "react";
 
 import { PinKeypad } from "../../components/pin-keypad";
+import { DeviceKeyMissingError, proveRoot } from "../../lib/root-proof";
+import type { RootChallenge } from "../../lib/root-proof";
 
 type Step =
   | { name: "loading" }
@@ -26,8 +27,8 @@ async function call(token: string, path: string, init: RequestInit = {}): Promis
 }
 
 /**
- * Create the 4-digit PIN. Setting a PIN is security-sensitive, so after the two entries the person
- * touches their passkey once more: that fresh assertion, not the PIN, is the strong credential.
+ * Create the 6-digit PIN. Setting a PIN is security-sensitive, so after the two entries the person
+ * confirms with their root once more (their passkey, or this device's key): that fresh proof, not the PIN, is the strong credential.
  * The digits exist only in this component's memory and are cleared as soon as they are used.
  */
 export function PinSetup({ token }: { token: string }) {
@@ -58,16 +59,13 @@ export function PinSetup({ token }: { token: string }) {
     async (pin: string) => {
       setStep({ name: "working" });
       try {
-        if (!browserSupportsWebAuthn()) throw new Error("unsupported");
         const optionsResponse = await call(token, "/options", { method: "POST" });
         if (!optionsResponse.ok) throw new Error("options");
-        const optionsJSON = (await optionsResponse.json()) as Parameters<
-          typeof startAuthentication
-        >[0]["optionsJSON"];
-        const assertion = await startAuthentication({ optionsJSON });
+        // The wallet's root decides the prompt: a passkey, or this device's key. The PIN is only ever sent with that proof.
+        const proof = await proveRoot((await optionsResponse.json()) as RootChallenge);
         const response = await call(token, "", {
           method: "POST",
-          body: JSON.stringify({ pin, assertion }),
+          body: JSON.stringify({ pin, proof }),
         });
         if (!response.ok) throw new Error("save");
         setStep({ name: "saved" });
@@ -75,9 +73,12 @@ export function PinSetup({ token }: { token: string }) {
         const cancelled = error instanceof Error && error.name === "NotAllowedError";
         setStep({
           name: "error",
-          message: cancelled
-            ? "Passkey confirmation was cancelled. Your PIN was not saved."
-            : "We couldn't save your PIN. Please try again.",
+          message:
+            error instanceof DeviceKeyMissingError
+              ? "This browser doesn't hold your wallet's device key. Open the link on the device you set up."
+              : cancelled
+                ? "Confirmation was cancelled. Your PIN was not saved."
+                : "We couldn't save your PIN. Please try again.",
         });
       }
     },
@@ -108,7 +109,7 @@ export function PinSetup({ token }: { token: string }) {
       {step.name === "set" && <p className="text-sm text-neutral-600">Your payment PIN is set.</p>}
       {step.name === "saved" && <p className="text-sm text-neutral-800">PIN saved.</p>}
       {step.name === "working" && (
-        <p className="text-sm text-neutral-600">Confirm with your passkey...</p>
+        <p className="text-sm text-neutral-600">Confirming it is you...</p>
       )}
       {step.name === "error" && (
         <>
@@ -127,7 +128,7 @@ export function PinSetup({ token }: { token: string }) {
       {(step.name === "enter" || step.name === "confirm") && (
         <>
           <h2 className="text-lg font-semibold">
-            {step.name === "enter" ? "Create your 4-digit PIN" : "Enter it again"}
+            {step.name === "enter" ? "Create your 6-digit PIN" : "Enter it again"}
           </h2>
           <p className="text-sm text-neutral-600">
             You will use this PIN to approve each payment. It is not a recovery code and does not

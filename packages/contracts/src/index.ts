@@ -9,3 +9,4 @@ export {
 export * from "./device-key.js";
 export * from "./recovery-code.js";
 export * from "./recovery-root.js";
+export * from "./root-credential.js";

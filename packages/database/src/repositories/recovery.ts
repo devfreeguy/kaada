@@ -117,6 +117,16 @@ export function createWalletCredentialRepository(db: Db): WalletCredentialReposi
       };
     },
 
+    async activate(id, at) {
+      const { count } = await db.walletCredential.updateMany({
+        where: { id, status: "PENDING" },
+        data: { status: "ACTIVE", activatedAt: at },
+      });
+      if (count !== 1) return null;
+      const row = await db.walletCredential.findUnique({ where: { id } });
+      return row ? toWalletCredential(row) : null;
+    },
+
     async linkPasskey(id, passkeyCredentialId) {
       await db.walletCredential.updateMany({ where: { id }, data: { passkeyCredentialId } });
     },
