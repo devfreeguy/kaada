@@ -74,10 +74,14 @@ export function RootActionFlow({ token }: { token: string }) {
       if (response.status === 401) return setView({ name: "invalid" });
       if (!response.ok) throw new Error("complete");
       setView({ name: "done" });
-    } catch {
+    } catch (error) {
+      // Cancelling the passkey prompt is the person's choice, not a fault.
+      const cancelled = error instanceof Error && error.name === "NotAllowedError";
       setView({
         name: "error",
-        message: "That didn't work. Nothing was changed; you can try again.",
+        message: cancelled
+          ? "Passkey confirmation was cancelled. Nothing was changed; you can try again."
+          : "That didn't work. Nothing was changed; you can try again.",
       });
     }
   }

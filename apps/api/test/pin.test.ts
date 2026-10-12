@@ -300,7 +300,9 @@ describe("changing the PIN needs a strong credential", () => {
     const options = await enrollment.begin(b.userId);
     assert.equal(options.userVerification, "required");
     assert.equal(options.rpId, RP_ID);
-    assert.equal(options.allowCredentials.length, 1);
+    // The credential is NOT named: a real Windows passkey provider signs with UV=0 when it is, and with
+    // UV=1 only when the browser picks it. The assertion is still bound to this user's own credential.
+    assert.equal("allowCredentials" in options, false);
   });
 
   it("creates and then changes the PIN only with a valid fresh assertion", async () => {

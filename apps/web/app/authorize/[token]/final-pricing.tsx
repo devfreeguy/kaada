@@ -18,6 +18,8 @@ const PAYMENT_DONE = new Set([
   "EXECUTION_ROUTE_UNSUPPORTED",
 ]);
 const PAYMENT_GIVE_UP_MS = 10 * 60_000;
+/** A root-action link lives 10 minutes; ask for a new one a little before that. */
+const LINK_REFRESH_MS = 8 * 60_000;
 const POLL_MS = 2000;
 const GIVE_UP_MS = 100_000;
 
@@ -50,6 +52,7 @@ export function FinalPricing({ token }: { token: string }) {
       if (run.status === 503) return;
       if (!run.ok) throw new Error("run");
       const paymentStarted = Date.now();
+      let linkIssuedAt = 0;
       for (;;) {
         const response = await execution(token, "/status", "GET");
         if (!response.ok) throw new Error("status");
@@ -57,12 +60,19 @@ export function FinalPricing({ token }: { token: string }) {
         if (cancelled) return;
         setOutcome(body);
         if (body.state === "ROOT_ACTION_REQUIRED") {
-          const link = await execution(token, "/root-action-link", "POST");
-          if (link.ok) {
-            const { url } = (await link.json()) as { url: string };
-            if (!cancelled) setSetupUrl(url);
+          // Ask for the secure link ONCE and keep it: every request replaces the previous link's token,
+          // so re-requesting on each poll would invalidate the link the person is about to click.
+          // (Found in the real-browser run.) Ask again only when it is close to expiring.
+          if (Date.now() - linkIssuedAt > LINK_REFRESH_MS) {
+            const link = await execution(token, "/root-action-link", "POST");
+            if (link.ok) {
+              const { url } = (await link.json()) as { url: string };
+              linkIssuedAt = Date.now();
+              if (!cancelled) setSetupUrl(url);
+            }
           }
         } else if (!cancelled) {
+          linkIssuedAt = 0;
           setSetupUrl(null);
         }
         if (PAYMENT_DONE.has(body.state)) return;

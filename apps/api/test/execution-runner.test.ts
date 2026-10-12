@@ -815,3 +815,106 @@ describe("the order status as Textile really answers it (found on the TEST envir
     assert.equal(status.txHash, undefined);
   });
 });
+
+describe("the root-action sign-in request (found with a real Windows passkey)", () => {
+  it("does not name a credential, still requires user verification, and uses the server's challenge", async () => {
+    const w = await runWorld();
+    await w.runner.run(w.executionId);
+    const session = await w.uow.read.rootActions.findPendingByExecution(w.executionId);
+    assert.ok(session);
+    const { token } = await w.rootActions.issueLink({
+      sessionId: session.id,
+      userId: session.userId,
+    });
+    const options = await w.rootActions.options(token);
+    assert.equal("allowCredentials" in options, false);
+    assert.equal(options.userVerification, "required");
+    assert.equal(
+      options.challenge,
+      Buffer.from(session.challenge.slice(2), "hex").toString("base64url"),
+    );
+  });
+});
+
+describe("two attempts on one execution (found live: the UI's run and the reconciler's run overlapped)", () => {
+  /** Puts the execution where a runner would be about to sign: permission ACTIVE, rights acquired. */
+  async function signing(w: RunWorld) {
+    await ready(w);
+    const permission = [...w.run.permissions.values()][0];
+    assert.ok(permission?.sessionKeyAddress);
+    await w.uow.read.delegatedPermissions.activate(permission.id, permission.sessionKeyAddress);
+    await w.uow.read.executionPlans.transition(w.executionId, ["REQUIRES_USER_ACTION"], "READY");
+    const acquired = await w.uow.read.executionPlans.acquire(w.executionId, w.now());
+    assert.equal(acquired.status, "ACQUIRED");
+  }
+
+  it("only the caller that CREATED a step row may send it: two signers, one send", async () => {
+    const w = await runWorld();
+    w.chain.allowance = 10n ** 12n; // the swap is the first step
+    await signing(w);
+    const results = await Promise.allSettled([
+      w.signer.signValidatedExecution(w.executionId),
+      w.signer.signValidatedExecution(w.executionId),
+    ]);
+    assert.equal(w.kernel.delegated.length, 1, "one UserOperation, not two");
+    assert.equal(results.filter((r) => r.status === "fulfilled").length, 1);
+    const refused = results.find((r) => r.status === "rejected") as PromiseRejectedResult;
+    assert.equal(
+      (refused.reason as { details?: { reason?: string } }).details?.reason,
+      "STEP_IN_FLIGHT",
+    );
+    assert.equal(w.run.transactions.filter((t) => t.type === "SWAP").length, 1);
+  });
+
+  it("two run() calls on one runner are one drive, not two", async () => {
+    const w = await runWorld();
+    await ready(w);
+    const first = w.runner.run(w.executionId);
+    const second = w.runner.run(w.executionId);
+    assert.equal(first, second);
+    assert.equal((await first).status, "PAYMENT_SENT");
+    assert.equal(w.kernel.delegated.length, 2, "approval + swap, once each");
+  });
+
+  it("a refusal of THIS attempt does not fail an execution whose payment is moving under another attempt", async () => {
+    const w = await runWorld();
+    await ready(w);
+    w.kernel.sendMode = "reject";
+    // Meanwhile another process has already sent the swap for this execution.
+    w.kernel.onSend = () => {
+      w.kernel.onSend = undefined;
+      void (async () => {
+        const { transaction } = await w.uow.read.executionTransactions.begin({
+          idempotencyKey: `exec:${w.executionId}:SWAP`,
+          executionId: w.executionId,
+          type: "SWAP",
+          chainId: 42220,
+          fromAddress: "0x00000000000000000000000000000000000000aa",
+        });
+        await w.uow.read.executionTransactions.markSubmitted(transaction.id, {
+          userOpHash: `0x${"cd".repeat(32)}`,
+          now: w.now(),
+        });
+      })();
+    };
+    const outcome = await w.runner.run(w.executionId);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(
+      outcome.status,
+      "PAYMENT_PENDING",
+      "not FAILED while a swap is in flight elsewhere",
+    );
+    assert.notEqual((await record(w))?.status, "FAILED");
+  });
+});
+
+describe("the wallet record after wallet setup", () => {
+  it("is marked DEPLOYED once the chain confirms the account exists", async () => {
+    const w = await runWorld();
+    const before = [...w.w.auth.wallets.values()][0];
+    assert.equal(before?.deployment, "COUNTERFACTUAL");
+    await ready(w);
+    await w.runner.run(w.executionId);
+    assert.equal([...w.w.auth.wallets.values()][0]?.deployment, "DEPLOYED");
+  });
+});

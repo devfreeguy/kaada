@@ -169,14 +169,11 @@ export class RootActionService {
   /** The WebAuthn request options for the page: the server's challenge, nothing else. */
   async options(token: string) {
     const session = await this.resolve(token);
-    const credentials = await this.uow.read.passkeys.listActiveForUser(session.userId);
+    // No `allowCredentials` (see PinAuthenticationOptions): naming the credential can make an authenticator
+    // sign without verifying the person. `complete` still requires UV and this user's own credential.
     return {
       challenge: hexToBase64Url(session.challenge),
       rpId: this.deps.rpId,
-      allowCredentials: credentials.map((c) => ({
-        type: "public-key" as const,
-        id: c.credentialId,
-      })),
       userVerification: "required" as const,
       timeout: 5 * 60 * 1000,
     };

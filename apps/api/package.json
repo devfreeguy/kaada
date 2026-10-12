@@ -41,6 +41,7 @@
     "@kaada/eslint-config": "workspace:*",
     "@kaada/tsconfig": "workspace:*",
     "@nestjs/cli": "^12.0.8",
+    "@nestjs/testing": "^12.1.2",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "tsx": "catalog:",

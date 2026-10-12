@@ -133,7 +133,20 @@ export class ExecutionRunner {
     this.log = deps.log ?? noopLog;
   }
 
-  async run(executionId: string): Promise<RunOutcome> {
+  /** One drive per execution at a time in this process (the UI's run and the reconciler share this runner). */
+  private readonly inflight = new Map<string, Promise<RunOutcome>>();
+
+  run(executionId: string): Promise<RunOutcome> {
+    const running = this.inflight.get(executionId);
+    if (running) return running;
+    const started = this.drive(executionId).finally(() => {
+      this.inflight.delete(executionId);
+    });
+    this.inflight.set(executionId, started);
+    return started;
+  }
+
+  private async drive(executionId: string): Promise<RunOutcome> {
     let refreshed = false;
     // A bounded number of state hops per call: each hop is one persisted transition.
     for (let hop = 0; hop < 12; hop += 1) {
@@ -405,6 +418,11 @@ export class ExecutionRunner {
     }
     // ACTIVE only now that the chain confirmed it.
     await repositories.delegatedPermissions.activate(permission.id, permission.sessionKeyAddress!);
+    // The account exists on chain (verified above): record it. (Found live: the row kept saying
+    // COUNTERFACTUAL after the passkey-signed deployment.)
+    if (live.wallet.deployment !== "DEPLOYED") {
+      await repositories.wallets.setDeployment(live.wallet.id, "DEPLOYED");
+    }
     await repositories.executionPlans.transition(record.id, ["REQUIRES_USER_ACTION"], "READY", {
       userActionKind: null,
     });
@@ -518,6 +536,20 @@ export class ExecutionRunner {
     return "CONTINUE";
   }
 
+  /**
+   * Is some payment step moving under ANOTHER attempt: in flight, possibly sent, or the swap confirmed? An
+   * earlier approval that finished is not "progress" of the step that was just refused.
+   */
+  private async hasPaymentProgress(executionId: string): Promise<boolean> {
+    const rows = await this.uow.read.executionTransactions.listByExecution(executionId);
+    return rows.some(
+      (row) =>
+        row.type !== "PERMISSION_INSTALL" &&
+        (["CREATED", "SUBMITTED", "CONFIRMING", "UNKNOWN"].includes(row.status) ||
+          (row.type === "SWAP" && row.status === "CONFIRMED")),
+    );
+  }
+
   private async afterSignerError(record: ExecutionPlanRecord, error: unknown): Promise<RunOutcome> {
     if (error instanceof KaadaError) {
       if (error.code === "BUNDLER_UNAVAILABLE") return { status: "PAYMENT_PENDING" };
@@ -538,6 +570,9 @@ export class ExecutionRunner {
           }
           return { status: "PAYMENT_FAILED", code: "BUNDLER_REJECTED" };
         }
+        // A refusal of THIS attempt must not fail an execution whose payment is progressing under another
+        // attempt (another process, a reconciler): that payment may have gone through.
+        if (await this.hasPaymentProgress(record.id)) return { status: "PAYMENT_PENDING" };
         await this.fail(record, "BUNDLER_REJECTED");
         return { status: "PAYMENT_FAILED", code: "BUNDLER_REJECTED" };
       }

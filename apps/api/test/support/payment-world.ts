@@ -103,7 +103,13 @@ function walletRepository(wallets: Map<string, Wallet>): WalletRepository {
     activate: unsupported,
     recordFailure: unsupported,
     setStatus: unsupported,
-    setDeployment: unsupported,
+    setDeployment: (id, deployment) => {
+      const current = wallets.get(id);
+      if (!current) return Promise.reject(new Error("no such wallet"));
+      const updated = { ...current, deployment };
+      wallets.set(id, updated);
+      return Promise.resolve(updated);
+    },
     listByUser: unsupported,
   };
 }

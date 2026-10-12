@@ -155,7 +155,7 @@ export class ValidatedExecutionSigner implements ExecutionSigner {
     this.assertCallsAllowed(next, plan);
 
     // 5. Persist the attempt FIRST, then send once.
-    const { transaction } = await repositories.executionTransactions.begin({
+    const { transaction, created } = await repositories.executionTransactions.begin({
       idempotencyKey: next.key,
       executionId,
       type: next.type,
@@ -166,7 +166,10 @@ export class ValidatedExecutionSigner implements ExecutionSigner {
       amount: next.amount,
       metadata: { step: next.kind },
     });
-    if (transaction.status !== "CREATED") {
+    // Only the caller that CREATED the step row may send it. A second caller that merely finds the row
+    // (still CREATED, because the first has not marked it sent yet) must not send too: found live, where the
+    // UI's run and the reconciler's run both reached the swap together.
+    if (!created || transaction.status !== "CREATED") {
       throw refuse("STEP_IN_FLIGHT", { step: next.kind });
     }
 

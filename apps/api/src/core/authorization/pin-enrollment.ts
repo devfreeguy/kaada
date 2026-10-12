@@ -8,7 +8,12 @@ import type { TransactionPinService } from "./pin-service.js";
 export interface PinAuthenticationOptions {
   challenge: string;
   rpId: string;
-  allowCredentials: { type: "public-key"; id: string }[];
+  /**
+   * Deliberately NO `allowCredentials`. Naming the credential makes some authenticators sign WITHOUT
+   * verifying the person (UV=0) even when verification is required; found with a real Windows passkey
+   * provider: the same credential signed with UV=1 only when the browser chose it. The server still binds
+   * the assertion to THIS user's own stored credential and requires UV.
+   */
   userVerification: "required";
   timeout: number;
 }
@@ -36,10 +41,6 @@ export class PinEnrollmentService {
     return {
       challenge: challenge.challenge,
       rpId: challenge.rpId,
-      allowCredentials: challenge.existingCredentialIds.map((id) => ({
-        type: "public-key" as const,
-        id,
-      })),
       userVerification: "required",
       timeout: 5 * 60 * 1000,
     };
