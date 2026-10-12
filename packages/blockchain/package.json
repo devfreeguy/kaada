@@ -29,6 +29,7 @@
     "typescript": "catalog:"
   },
   "dependencies": {
+    "@kaada/contracts": "workspace:*",
     "@kaada/domain": "workspace:*",
     "@zerodev/passkey-validator": "^5.6.0",
     "@zerodev/permissions": "^5.6.3",

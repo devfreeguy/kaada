@@ -54,7 +54,10 @@ const walletSourcesAll = [
  * It is excluded from the strict scans below and held to its own ("the harness is isolated").
  */
 const harnessPath = join(dir("packages/blockchain/src/testnet"), "celo-sepolia-harness.ts");
-const walletSources = walletSourcesAll.filter((path) => path !== harnessPath);
+/** Every file of the testnet harness and probes (all of packages/blockchain/src/testnet). */
+const isTestnetTool = (path: string): boolean =>
+  path.replaceAll("\\", "/").includes("packages/blockchain/src/testnet/");
+const walletSources = walletSourcesAll.filter((path) => !isTestnetTool(path));
 
 describe("wallet security review (source scan)", () => {
   it("scans a meaningful amount of code", () => {
@@ -76,9 +79,19 @@ describe("wallet security review (source scan)", () => {
       ...files(dir("packages/blockchain/src")),
       ...files(dir("packages/database/src")),
       ...files(dir("packages/config/src")),
-    ].filter((path) => path !== harnessPath);
+    ].filter((path) => !isTestnetTool(path));
     for (const path of everything) {
       assert.equal(/celo-sepolia-harness|testnet\//.test(code(path)), false, path);
+    }
+    // Every testnet tool talks to Sepolia only (itself, or through the shared probe library).
+    const tools = files(dir("packages/blockchain/src/testnet")).filter((path) =>
+      path.endsWith(".ts"),
+    );
+    assert.ok(tools.length >= 4);
+    for (const path of tools) {
+      const text = code(path);
+      assert.equal(/chain:\s*celo[,\s]/.test(text.replace(/mainnetClient[^;]*;/, "")), false, path);
+      assert.ok(/celoSepolia|11142220|kernel-probe-lib|celo-sepolia-harness/.test(text), path);
     }
     // It talks to Sepolia only and reads its secrets from outside the repository.
     const harness = code(harnessPath);

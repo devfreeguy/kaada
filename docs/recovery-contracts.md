@@ -1,0 +1,99 @@
+# Recovery contracts
+
+On-chain half of account recovery (`packages/contracts`). Locked model: recovery needs the **Recovery Code** (a key the
+user derives locally), the **Kaada attestor**, and a **timelock** (default 72 h, hard minimum 24 h). Email alone, the code
+alone and the attestor alone can do nothing. Recovery rotates the wallet's root and invalidates every older validator and
+permission, atomically. It never moves funds.
+
+Build order: `KaadaRecoveryValidator` (done), `TimelockedAttestorRegistry`, passkey validator clone factory,
+`KaadaDeviceKeyValidator`, backend orchestration, UI, Celo Sepolia end-to-end.
+
+## KaadaRecoveryValidator
+
+An ERC-7579 / Kernel v3.3 **validator** installed at wallet creation, granted Kernel's `execute` selector (a batch needs
+it). It is not upgradeable, has no owner and no admin, no `receive`/`fallback`, and no function that transfers, approves or
+calls out.
+
+**What it accepts.** `validateUserOp` accepts exactly one `userOp.callData`, rebuilt byte for byte from the committed
+parameters and compared by hash:
+
+```
+execute(MODE_BATCH, abi.encode([
+  Execution(account, 0, changeRootValidator(committed rootId, hook, validatorData, hookData)),
+  Execution(account, 0, invalidateNonce(account.currentNonce() + 1))
+]))
+```
+
+No third call, no value, no other target or selector, no other mode, no non-canonical encoding. Only for a pending, matured,
+uncancelled recovery. The recovery is consumed during validation (one shot). It returns `validAfter = executeAfter`, so the
+EntryPoint enforces maturity (no `TIMESTAMP` read in validation).
+
+**How a recovery starts.** `initiate(account, RootCommitment, deadline, sigRecovery, sigAttestor)` is open to any
+submitter. Both signatures are EIP-712 over one digest binding: chainId and this contract (domain), account, recovery
+nonce, new validator id, hook, hash of the validator data, hash of the hook data, and deadline. The recovery signer is the
+key stored for the account; the attestor is whatever the shared registry names **now**. Low-s only. The new root must be a
+validator-type id (`0x01 ‖ address`) naming a contract that is not the module.
+
+**Cancel / veto.** `cancel()` (the account itself, i.e. a root-signed operation) and `attestorCancel(account)` (the
+registry's current attestor). Both bump the recovery nonce, so the cancelled signatures can never be reused. The attestor
+has no function that starts, advances or completes a recovery.
+
+**One shot and re-arming.** On success the account's configuration is deleted and its recovery key is burnt
+(`usedRecoveryKeys`): the old key can never be installed again. `recoveryNonce` never resets. Kernel's own
+`invalidateNonce` voids the old installation. The new root must install the validator again with a **new** Recovery Code
+(`onInstall`); on Celo Sepolia a plain `installValidations` of the same validator address works after a recovery (no
+uninstall needed).
+
+**Storage.** Everything is keyed by account (ERC-4337 associated storage). The registry is an immutable reference.
+
+### Parameters
+
+| Parameter                         | Value                                                                                       |
+| --------------------------------- | ------------------------------------------------------------------------------------------- |
+| Minimum delay (contract constant) | 24 h (`RECOVERY_MIN_DELAY_SECONDS`)                                                         |
+| Default delay Kaada configures    | 72 h (`RECOVERY_DEFAULT_DELAY_SECONDS`), configurable above the floor via `setDelay`        |
+| Recovery key                      | secp256k1 address derived from the Recovery Code; rotated via `setRecoveryKey` or reinstall |
+
+`ShortDelayRecoveryValidator` (`contracts/testnet`) is identical except the floor is 10 s so a Sepolia run need not wait a
+day. It is test-only and must never be deployed on a production chain.
+
+### Guarantees and where each is tested
+
+The 49 guarantees proven on Celo Sepolia by `recovery-atomic-probe.ts` split into validator logic (unit tested in
+`packages/contracts/src/recovery-validator.test.ts`, in-process EVM) and Kernel behaviour (re-proved against the
+production source by `packages/blockchain/src/testnet/recovery-validator-sepolia.ts`):
+
+| Guarantee                                                                                                 | Unit test                                   | Sepolia (Kernel)                         |
+| --------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ---------------------------------------- |
+| Hard minimum delay                                                                                        | install: delay floor; short-delay variant   |                                          |
+| Recovery key alone / attestor alone cannot start                                                          | initiate: key alone; attestor alone         | yes                                      |
+| Signatures bind chain, contract, account, nonce, new validator/data/hook                                  | binding test; digest parity with viem       |                                          |
+| High-s, wrong length, bad `v`                                                                             | malformed or malleable signatures           |                                          |
+| Exact batch accepted                                                                                      | exact batch validates                       | exact batch succeeds                     |
+| 20+ variants refused (extra call, transfer, approve, target, value, order, arg, mode, selector, encoding) | 39 named variants + 300 random mutations    | different batch refused                  |
+| Variants leave the recovery pending                                                                       | every variant refused and leaves pending    |                                          |
+| Before `executeAfter`                                                                                     | `validAfter` returned equals `executeAfter` | refused by EntryPoint (AA22)             |
+| No recovery pending                                                                                       | refused                                     |                                          |
+| Replay                                                                                                    | replay fails; nonce strictly increases      | replay fails                             |
+| Old root, old validators, sessions rejected                                                               |                                             | yes                                      |
+| Cancel by root; signatures not reusable; attestor veto; stranger refused                                  | cancel and veto tests                       | root cancel and veto proved in the probe |
+| Re-arm needs a NEW recovery key; old key refused                                                          | after success: replay, burnt key, new key   | yes                                      |
+
+Not covered by unit tests, by design: anything that needs the real Kernel or EntryPoint (selector grants, `InvalidNonce`
+voiding, `validAfter` enforcement). Those run on Celo Sepolia.
+
+### Notes for the audit
+
+- Kernel runs the module's `validateUserOp` **before** its own nonce check, so a replay on a voided module shows the
+  module's error first; both paths fail.
+- The recovery is consumed during validation. If the batch later reverts at execution, the recovery is lost and must be
+  re-initiated (fail-safe, never a bypass).
+- `currentNonce()` is read from the account during validation (the account's own storage).
+- The account must hold gas, or a paymaster restricted to this selector must sponsor the operation.
+
+## Tooling
+
+- `pnpm --filter @kaada/contracts generate` compiles every `.sol` with solc-js into `src/generated/artifacts.ts` (EVM
+  version `paris`); `build`, `typecheck`, `lint` depend on it through Turborepo.
+- Tests run in-process on `@ethereumjs/evm`; no node, no network.
+- `src/recovery.ts` is the shared client/backend definition of the typed data, commitment and install data.

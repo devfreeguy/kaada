@@ -36,7 +36,7 @@ const production = [
   ...files(dir("packages/domain/src")),
   ...files(dir("packages/blockchain/src")),
   ...files(dir("apps/web/app")),
-].filter((path) => !path.includes("celo-sepolia-harness"));
+].filter((path) => !path.replaceAll("\\", "/").includes("packages/blockchain/src/testnet/"));
 
 describe("execution security review (source scan)", () => {
   it("scans a meaningful amount of code", () => {
