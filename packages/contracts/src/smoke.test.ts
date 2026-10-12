@@ -13,5 +13,6 @@ test("smoke: the in-process EVM deploys and calls a contract", async () => {
     artifacts.MockAccount.bytecode,
   );
   const result = await chain.call(owner, account, artifacts.MockAccount.abi, "currentNonce");
-  assert.deepEqual(result, { ok: true, value: 1 });
+  assert.equal(result.ok, true);
+  assert.equal(result.ok && result.value, 1);
 });

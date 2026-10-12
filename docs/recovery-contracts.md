@@ -5,7 +5,7 @@ user derives locally), the **Kaada attestor**, and a **timelock** (default 72 h,
 alone and the attestor alone can do nothing. Recovery rotates the wallet's root and invalidates every older validator and
 permission, atomically. It never moves funds.
 
-Build order: `KaadaRecoveryValidator` (done), `TimelockedAttestorRegistry`, passkey validator clone factory,
+Build order: `KaadaRecoveryValidator` (done), `TimelockedAttestorRegistry` (done), passkey validator clone factory,
 `KaadaDeviceKeyValidator`, backend orchestration, UI, Celo Sepolia end-to-end.
 
 ## KaadaRecoveryValidator
@@ -90,6 +90,43 @@ voiding, `validAfter` enforcement). Those run on Celo Sepolia.
   re-initiated (fail-safe, never a bypass).
 - `currentNonce()` is read from the account during validation (the account's own storage).
 - The account must hold gas, or a paymaster restricted to this selector must sponsor the operation.
+
+## TimelockedAttestorRegistry
+
+The shared record of which key is Kaada recovery attestor. Recovery validators depend on ONE function only,
+`IAttestorRegistry.currentAttestor() returns (address)`, never on registry internals. Wallets reference the validator,
+the validator references the registry (immutable), so rotating the attestor never touches a wallet.
+
+| Role               | Can                                                                                                                                                                                    | Cannot                                                                                                                                                                                                                                                                     |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Admin**          | `proposeAttestor`, `cancelAttestorRotation`, `finalizeAttestorRotation` (after the delay), `setRotationDelay` (future proposals, none pending), `proposeAdmin` / `cancelAdminTransfer` | Touch any wallet, validator or recovery (the contract makes no external call: its runtime contains no CALL, STATICCALL, DELEGATECALL, CREATE or SELFDESTRUCT, checked in a test); sign or veto a recovery (it is not the attestor); renounce (the admin can never be zero) |
+| **Attestor**       | Be the key `currentAttestor()` returns                                                                                                                                                 | Anything in the registry: it has no function there, so it cannot rotate itself, instantly or otherwise                                                                                                                                                                     |
+| **Proposed admin** | `acceptAdmin`                                                                                                                                                                          | Anything else until it accepts                                                                                                                                                                                                                                             |
+
+Rotation: `proposeAttestor(new)` records `pendingAttestor` and `executeAfter = now + rotationDelay`; nothing else changes.
+`finalizeAttestorRotation()` works only at or after `executeAfter`, clears the proposal (so it cannot finalize twice) and sets
+`currentAttestor`. `cancelAttestorRotation()` clears it; a cancelled proposal can never finalize. Zero address and the
+current attestor are rejected; only one proposal is pending at a time (a second is refused, even once the first has
+matured, until it is finalized or cancelled). The delay is 72 h by default, 24 h hard minimum, 30 days maximum (a typo
+cannot lock rotation for years). Admin transfer is two-step; it never changes the attestor or a pending rotation, and a
+rotation never changes a pending admin transfer. Not upgradeable; no payable function, no receive/fallback.
+
+Events for audit: `AttestorRotationProposed/Cancelled/Finalized` (with a rotation id), `RotationDelayChanged`,
+`AdminTransferProposed/Cancelled/Accepted`; the constructor emits the initial admin, delay and attestor.
+
+**Security assumptions**
+
+- The admin key is a high-value key: it can, after at least 24 h, name a new attestor. A new attestor alone still cannot
+  recover a wallet (the Recovery Code signature and the timelock are also required), so admin compromise is a
+  delayed, monitored event rather than an instant loss.
+- Shortening the rotation delay to the 24 h floor is an admin action; the floor is the assumption, not the default.
+- There is no emergency instant rotation by design: a compromised attestor key is replaced after the delay, and until
+  then it can only veto or co-sign (never recover alone). Use a multisig (or hardware-backed key) for the admin.
+- If admin and attestor are deliberately the same key, role separation is lost; deployment must use different keys.
+- A lost admin key means the attestor cannot be rotated (nothing breaks; recovery continues with the current attestor).
+
+`ShortDelayAttestorRegistry` (`contracts/testnet`) lowers the floor to 10 s for Sepolia runs and must never be deployed on a
+production chain.
 
 ## Tooling
 

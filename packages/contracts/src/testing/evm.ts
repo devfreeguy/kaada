@@ -12,8 +12,15 @@ import {
 } from "viem";
 import type { Abi, Address, Hex } from "viem";
 
+export interface LogEntry {
+  address: Address;
+  topics: Hex[];
+  data: Hex;
+}
+
 export interface CallResult {
   ok: boolean;
+  logs: LogEntry[];
   /** Raw return (or revert) data. */
   data: Hex;
   gasUsed: bigint;
@@ -81,6 +88,11 @@ export class TestChain {
       ok: result.execResult.exceptionError === undefined,
       data: bytesToHex(result.execResult.returnValue),
       gasUsed: result.execResult.executionGasUsed,
+      logs: (result.execResult.logs ?? []).map(([address, topics, data]) => ({
+        address: bytesToHex(address),
+        topics: topics.map((t) => bytesToHex(t)),
+        data: bytesToHex(data),
+      })),
       ...(created ? { created } : {}),
     };
   }
@@ -101,7 +113,10 @@ export class TestChain {
     functionName: string,
     args: unknown[] = [],
     value = 0n,
-  ): Promise<{ ok: true; value: unknown } | { ok: false; error: string; data: Hex }> {
+  ): Promise<
+    | { ok: true; value: unknown; logs: LogEntry[]; gasUsed: bigint }
+    | { ok: false; error: string; data: Hex }
+  > {
     const data = encodeFunctionData({ abi, functionName, args });
     const result = await this.raw({ from, to, data, value });
     if (!result.ok)
@@ -110,7 +125,7 @@ export class TestChain {
       result.data === "0x"
         ? undefined
         : decodeFunctionResult({ abi, functionName, data: result.data });
-    return { ok: true, value: decoded };
+    return { ok: true, value: decoded, logs: result.logs, gasUsed: result.gasUsed };
   }
 }
 

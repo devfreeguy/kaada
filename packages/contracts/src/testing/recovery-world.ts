@@ -102,30 +102,45 @@ export interface Outcome {
 export class World {
   readonly deployer: Address = "0x1000000000000000000000000000000000000001";
   readonly stranger: Address = "0x1000000000000000000000000000000000000002";
-  readonly recoveryKey = generatePrivateKey();
-  readonly attestorKey = generatePrivateKey();
-  readonly recoveryAddress = privateKeyToAccount(this.recoveryKey).address;
-  readonly attestorAddress = privateKeyToAccount(this.attestorKey).address;
+  /** The registry admin (real-registry worlds only). Distinct from the attestor and the recovery key. */
+  readonly registryAdmin: Address = "0x0000000000000000000000000000000000000a0a";
+  readonly recoveryAddress: Address;
+  readonly attestorAddress: Address;
 
   private constructor(
+    readonly recoveryKey: Hex,
+    readonly attestorKey: Hex,
     readonly chain: TestChain,
     readonly registry: Address,
     readonly validator: Address,
     readonly account: Address,
     /** Any deployed contract: stands in for the new root validator instance. */
     readonly newValidator: Address,
-  ) {}
+  ) {
+    this.recoveryAddress = privateKeyToAccount(recoveryKey).address;
+    this.attestorAddress = privateKeyToAccount(attestorKey).address;
+  }
 
   static async create(
-    options: { contract?: "KaadaRecoveryValidator" | "ShortDelayRecoveryValidator" } = {},
+    options: {
+      contract?: "KaadaRecoveryValidator" | "ShortDelayRecoveryValidator";
+      registry?: "mock" | "real";
+    } = {},
   ): Promise<World> {
     const chain = await TestChain.create();
     const deployer: Address = "0x1000000000000000000000000000000000000001";
-    const registry = await chain.deploy(
-      deployer,
-      registryAbi,
-      artifacts.MockAttestorRegistry.bytecode,
-    );
+    const recoveryKey = generatePrivateKey();
+    const attestorKey = generatePrivateKey();
+    const attestorAddress = privateKeyToAccount(attestorKey).address;
+    const registry =
+      options.registry === "real"
+        ? await chain.deploy(
+            deployer,
+            artifacts.TimelockedAttestorRegistry.abi,
+            artifacts.TimelockedAttestorRegistry.bytecode,
+            ["0x0000000000000000000000000000000000000a0a", attestorAddress, 72 * 3600],
+          )
+        : await chain.deploy(deployer, registryAbi, artifacts.MockAttestorRegistry.bytecode);
     const contract = options.contract ?? "KaadaRecoveryValidator";
     const validator = await chain.deploy(
       deployer,
@@ -135,8 +150,18 @@ export class World {
     );
     const account = await chain.deploy(deployer, accountAbi, artifacts.MockAccount.bytecode);
     const newValidator = await chain.deploy(deployer, accountAbi, artifacts.MockAccount.bytecode);
-    const world = new World(chain, registry, validator, account, newValidator);
-    await chain.call(deployer, registry, registryAbi, "setAttestor", [world.attestorAddress]);
+    const world = new World(
+      recoveryKey,
+      attestorKey,
+      chain,
+      registry,
+      validator,
+      account,
+      newValidator,
+    );
+    if (options.registry !== "real") {
+      await chain.call(deployer, registry, registryAbi, "setAttestor", [world.attestorAddress]);
+    }
     return world;
   }
 

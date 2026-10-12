@@ -5,9 +5,9 @@ import {IAttestorRegistry} from "../Interfaces.sol";
 
 /// TEST ONLY. A registry whose attestor anyone can set.
 contract MockAttestorRegistry is IAttestorRegistry {
-    address public attestor;
+    address public currentAttestor;
 
     function setAttestor(address value) external {
-        attestor = value;
+        currentAttestor = value;
     }
 }

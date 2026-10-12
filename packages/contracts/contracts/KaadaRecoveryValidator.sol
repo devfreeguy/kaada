@@ -233,7 +233,7 @@ contract KaadaRecoveryValidator {
         returns (address attestor)
     {
         if (_recover(digest, sigRecovery) != recoveryKey) revert BadSignature();
-        attestor = REGISTRY.attestor();
+        attestor = REGISTRY.currentAttestor();
         if (attestor == address(0) || _recover(digest, sigAttestor) != attestor) revert BadSignature();
     }
 
@@ -256,7 +256,7 @@ contract KaadaRecoveryValidator {
 
     /// The registry's CURRENT attestor may veto a pending recovery. It can never approve or complete one.
     function attestorCancel(address account) external {
-        if (msg.sender != REGISTRY.attestor()) revert NotAttestor();
+        if (msg.sender != REGISTRY.currentAttestor()) revert NotAttestor();
         _cancel(account, msg.sender);
     }
 

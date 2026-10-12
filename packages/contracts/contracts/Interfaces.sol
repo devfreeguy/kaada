@@ -36,5 +36,5 @@ interface IKernelCalls {
 
 /// The shared, timelocked attestor registry. Recovery validators only READ it.
 interface IAttestorRegistry {
-    function attestor() external view returns (address);
+    function currentAttestor() external view returns (address);
 }
