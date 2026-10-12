@@ -1201,3 +1201,16 @@ test("gas and size notes", async () => {
   assert.ok(size < 8192);
   assert.ok(validate.gasUsed < 120_000n);
 });
+
+test("isOnP256Curve agrees with the validator on valid and invalid points", async () => {
+  const { isOnP256Curve } = await import("./device-key.js");
+  for (let i = 0; i < 20; i++) {
+    const key = new SoftDeviceKey();
+    assert.equal(isOnP256Curve(key.point), true);
+    assert.equal(isOnP256Curve({ x: key.point.x, y: key.point.y + 1n }), false);
+    assert.equal(isOnP256Curve({ x: key.point.x + 1n, y: key.point.y }), false);
+  }
+  assert.equal(isOnP256Curve({ x: 0n, y: 1n }), false);
+  assert.equal(isOnP256Curve({ x: 1n, y: 0n }), false);
+  assert.equal(isOnP256Curve({ x: 2n ** 256n - 1n, y: 5n }), false);
+});

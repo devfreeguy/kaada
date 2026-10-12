@@ -209,6 +209,9 @@ export type UserWhereInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationListRelationFilter
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptListRelationFilter
   rootActionSessions?: Prisma.RootActionSessionListRelationFilter
+  walletCredentials?: Prisma.WalletCredentialListRelationFilter
+  recoveryConfigurations?: Prisma.RecoveryConfigurationListRelationFilter
+  recoveryAttempts?: Prisma.RecoveryAttemptListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -237,6 +240,9 @@ export type UserOrderByWithRelationInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationOrderByRelationAggregateInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptOrderByRelationAggregateInput
   rootActionSessions?: Prisma.RootActionSessionOrderByRelationAggregateInput
+  walletCredentials?: Prisma.WalletCredentialOrderByRelationAggregateInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationOrderByRelationAggregateInput
+  recoveryAttempts?: Prisma.RecoveryAttemptOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -268,6 +274,9 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   paymentAuthorizations?: Prisma.PaymentAuthorizationListRelationFilter
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptListRelationFilter
   rootActionSessions?: Prisma.RootActionSessionListRelationFilter
+  walletCredentials?: Prisma.WalletCredentialListRelationFilter
+  recoveryConfigurations?: Prisma.RecoveryConfigurationListRelationFilter
+  recoveryAttempts?: Prisma.RecoveryAttemptListRelationFilter
 }, "id" | "username">
 
 export type UserOrderByWithAggregationInput = {
@@ -320,6 +329,9 @@ export type UserCreateInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -348,6 +360,9 @@ export type UserUncheckedCreateInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -376,6 +391,9 @@ export type UserUpdateInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -404,6 +422,9 @@ export type UserUncheckedUpdateInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -754,6 +775,48 @@ export type UserUpdateOneWithoutAuditEventsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutAuditEventsInput, Prisma.UserUpdateWithoutAuditEventsInput>, Prisma.UserUncheckedUpdateWithoutAuditEventsInput>
 }
 
+export type UserCreateNestedOneWithoutWalletCredentialsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutWalletCredentialsInput, Prisma.UserUncheckedCreateWithoutWalletCredentialsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutWalletCredentialsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutWalletCredentialsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutWalletCredentialsInput, Prisma.UserUncheckedCreateWithoutWalletCredentialsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutWalletCredentialsInput
+  upsert?: Prisma.UserUpsertWithoutWalletCredentialsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutWalletCredentialsInput, Prisma.UserUpdateWithoutWalletCredentialsInput>, Prisma.UserUncheckedUpdateWithoutWalletCredentialsInput>
+}
+
+export type UserCreateNestedOneWithoutRecoveryConfigurationsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutRecoveryConfigurationsInput, Prisma.UserUncheckedCreateWithoutRecoveryConfigurationsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutRecoveryConfigurationsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutRecoveryConfigurationsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutRecoveryConfigurationsInput, Prisma.UserUncheckedCreateWithoutRecoveryConfigurationsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutRecoveryConfigurationsInput
+  upsert?: Prisma.UserUpsertWithoutRecoveryConfigurationsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutRecoveryConfigurationsInput, Prisma.UserUpdateWithoutRecoveryConfigurationsInput>, Prisma.UserUncheckedUpdateWithoutRecoveryConfigurationsInput>
+}
+
+export type UserCreateNestedOneWithoutRecoveryAttemptsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutRecoveryAttemptsInput, Prisma.UserUncheckedCreateWithoutRecoveryAttemptsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutRecoveryAttemptsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutRecoveryAttemptsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutRecoveryAttemptsInput, Prisma.UserUncheckedCreateWithoutRecoveryAttemptsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutRecoveryAttemptsInput
+  upsert?: Prisma.UserUpsertWithoutRecoveryAttemptsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutRecoveryAttemptsInput, Prisma.UserUpdateWithoutRecoveryAttemptsInput>, Prisma.UserUncheckedUpdateWithoutRecoveryAttemptsInput>
+}
+
 export type UserCreateWithoutIdentitiesInput = {
   id: string
   username?: string | null
@@ -779,6 +842,9 @@ export type UserCreateWithoutIdentitiesInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutIdentitiesInput = {
@@ -806,6 +872,9 @@ export type UserUncheckedCreateWithoutIdentitiesInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutIdentitiesInput = {
@@ -849,6 +918,9 @@ export type UserUpdateWithoutIdentitiesInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutIdentitiesInput = {
@@ -876,6 +948,9 @@ export type UserUncheckedUpdateWithoutIdentitiesInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutSessionsInput = {
@@ -903,6 +978,9 @@ export type UserCreateWithoutSessionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutSessionsInput = {
@@ -930,6 +1008,9 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutSessionsInput = {
@@ -973,6 +1054,9 @@ export type UserUpdateWithoutSessionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSessionsInput = {
@@ -1000,6 +1084,9 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutWalletsInput = {
@@ -1027,6 +1114,9 @@ export type UserCreateWithoutWalletsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutWalletsInput = {
@@ -1054,6 +1144,9 @@ export type UserUncheckedCreateWithoutWalletsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutWalletsInput = {
@@ -1097,6 +1190,9 @@ export type UserUpdateWithoutWalletsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutWalletsInput = {
@@ -1124,6 +1220,9 @@ export type UserUncheckedUpdateWithoutWalletsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutPasskeyCredentialsInput = {
@@ -1151,6 +1250,9 @@ export type UserCreateWithoutPasskeyCredentialsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutPasskeyCredentialsInput = {
@@ -1178,6 +1280,9 @@ export type UserUncheckedCreateWithoutPasskeyCredentialsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutPasskeyCredentialsInput = {
@@ -1221,6 +1326,9 @@ export type UserUpdateWithoutPasskeyCredentialsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPasskeyCredentialsInput = {
@@ -1248,6 +1356,9 @@ export type UserUncheckedUpdateWithoutPasskeyCredentialsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutWalletSetupSessionsInput = {
@@ -1275,6 +1386,9 @@ export type UserCreateWithoutWalletSetupSessionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutWalletSetupSessionsInput = {
@@ -1302,6 +1416,9 @@ export type UserUncheckedCreateWithoutWalletSetupSessionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutWalletSetupSessionsInput = {
@@ -1345,6 +1462,9 @@ export type UserUpdateWithoutWalletSetupSessionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutWalletSetupSessionsInput = {
@@ -1372,6 +1492,9 @@ export type UserUncheckedUpdateWithoutWalletSetupSessionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutTransactionPinInput = {
@@ -1399,6 +1522,9 @@ export type UserCreateWithoutTransactionPinInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutTransactionPinInput = {
@@ -1426,6 +1552,9 @@ export type UserUncheckedCreateWithoutTransactionPinInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutTransactionPinInput = {
@@ -1469,6 +1598,9 @@ export type UserUpdateWithoutTransactionPinInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutTransactionPinInput = {
@@ -1496,6 +1628,9 @@ export type UserUncheckedUpdateWithoutTransactionPinInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutAuthorizationSessionsInput = {
@@ -1523,6 +1658,9 @@ export type UserCreateWithoutAuthorizationSessionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutAuthorizationSessionsInput = {
@@ -1550,6 +1688,9 @@ export type UserUncheckedCreateWithoutAuthorizationSessionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutAuthorizationSessionsInput = {
@@ -1593,6 +1734,9 @@ export type UserUpdateWithoutAuthorizationSessionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAuthorizationSessionsInput = {
@@ -1620,6 +1764,9 @@ export type UserUncheckedUpdateWithoutAuthorizationSessionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutPaymentAuthorizationsInput = {
@@ -1647,6 +1794,9 @@ export type UserCreateWithoutPaymentAuthorizationsInput = {
   authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutPaymentAuthorizationsInput = {
@@ -1674,6 +1824,9 @@ export type UserUncheckedCreateWithoutPaymentAuthorizationsInput = {
   authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutPaymentAuthorizationsInput = {
@@ -1717,6 +1870,9 @@ export type UserUpdateWithoutPaymentAuthorizationsInput = {
   authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPaymentAuthorizationsInput = {
@@ -1744,6 +1900,9 @@ export type UserUncheckedUpdateWithoutPaymentAuthorizationsInput = {
   authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutFirmQuoteAttemptsInput = {
@@ -1771,6 +1930,9 @@ export type UserCreateWithoutFirmQuoteAttemptsInput = {
   authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutUserInput
   paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutFirmQuoteAttemptsInput = {
@@ -1798,6 +1960,9 @@ export type UserUncheckedCreateWithoutFirmQuoteAttemptsInput = {
   authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutUserInput
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutFirmQuoteAttemptsInput = {
@@ -1841,6 +2006,9 @@ export type UserUpdateWithoutFirmQuoteAttemptsInput = {
   authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutUserNestedInput
   paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutFirmQuoteAttemptsInput = {
@@ -1868,6 +2036,9 @@ export type UserUncheckedUpdateWithoutFirmQuoteAttemptsInput = {
   authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutUserNestedInput
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutRootActionSessionsInput = {
@@ -1895,6 +2066,9 @@ export type UserCreateWithoutRootActionSessionsInput = {
   authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutUserInput
   paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutRootActionSessionsInput = {
@@ -1922,6 +2096,9 @@ export type UserUncheckedCreateWithoutRootActionSessionsInput = {
   authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutUserInput
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutRootActionSessionsInput = {
@@ -1965,6 +2142,9 @@ export type UserUpdateWithoutRootActionSessionsInput = {
   authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutUserNestedInput
   paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRootActionSessionsInput = {
@@ -1992,6 +2172,9 @@ export type UserUncheckedUpdateWithoutRootActionSessionsInput = {
   authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutUserNestedInput
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutPasskeyChallengesInput = {
@@ -2019,6 +2202,9 @@ export type UserCreateWithoutPasskeyChallengesInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutPasskeyChallengesInput = {
@@ -2046,6 +2232,9 @@ export type UserUncheckedCreateWithoutPasskeyChallengesInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutPasskeyChallengesInput = {
@@ -2089,6 +2278,9 @@ export type UserUpdateWithoutPasskeyChallengesInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPasskeyChallengesInput = {
@@ -2116,6 +2308,9 @@ export type UserUncheckedUpdateWithoutPasskeyChallengesInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutDelegatedPermissionsInput = {
@@ -2143,6 +2338,9 @@ export type UserCreateWithoutDelegatedPermissionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutDelegatedPermissionsInput = {
@@ -2170,6 +2368,9 @@ export type UserUncheckedCreateWithoutDelegatedPermissionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutDelegatedPermissionsInput = {
@@ -2213,6 +2414,9 @@ export type UserUpdateWithoutDelegatedPermissionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutDelegatedPermissionsInput = {
@@ -2240,6 +2444,9 @@ export type UserUncheckedUpdateWithoutDelegatedPermissionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutConversationsInput = {
@@ -2267,6 +2474,9 @@ export type UserCreateWithoutConversationsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutConversationsInput = {
@@ -2294,6 +2504,9 @@ export type UserUncheckedCreateWithoutConversationsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutConversationsInput = {
@@ -2337,6 +2550,9 @@ export type UserUpdateWithoutConversationsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutConversationsInput = {
@@ -2364,6 +2580,9 @@ export type UserUncheckedUpdateWithoutConversationsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutIntentsInput = {
@@ -2391,6 +2610,9 @@ export type UserCreateWithoutIntentsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutIntentsInput = {
@@ -2418,6 +2640,9 @@ export type UserUncheckedCreateWithoutIntentsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutIntentsInput = {
@@ -2461,6 +2686,9 @@ export type UserUpdateWithoutIntentsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutIntentsInput = {
@@ -2488,6 +2716,9 @@ export type UserUncheckedUpdateWithoutIntentsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutOwnedRecipientsInput = {
@@ -2515,6 +2746,9 @@ export type UserCreateWithoutOwnedRecipientsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutOwnedRecipientsInput = {
@@ -2542,6 +2776,9 @@ export type UserUncheckedCreateWithoutOwnedRecipientsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutOwnedRecipientsInput = {
@@ -2574,6 +2811,9 @@ export type UserCreateWithoutLinkedRecipientsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutLinkedRecipientsInput = {
@@ -2601,6 +2841,9 @@ export type UserUncheckedCreateWithoutLinkedRecipientsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutLinkedRecipientsInput = {
@@ -2644,6 +2887,9 @@ export type UserUpdateWithoutOwnedRecipientsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutOwnedRecipientsInput = {
@@ -2671,6 +2917,9 @@ export type UserUncheckedUpdateWithoutOwnedRecipientsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUpsertWithoutLinkedRecipientsInput = {
@@ -2709,6 +2958,9 @@ export type UserUpdateWithoutLinkedRecipientsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutLinkedRecipientsInput = {
@@ -2736,6 +2988,9 @@ export type UserUncheckedUpdateWithoutLinkedRecipientsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutExecutionsInput = {
@@ -2763,6 +3018,9 @@ export type UserCreateWithoutExecutionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutExecutionsInput = {
@@ -2790,6 +3048,9 @@ export type UserUncheckedCreateWithoutExecutionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutExecutionsInput = {
@@ -2833,6 +3094,9 @@ export type UserUpdateWithoutExecutionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutExecutionsInput = {
@@ -2860,6 +3124,9 @@ export type UserUncheckedUpdateWithoutExecutionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutRampSessionsInput = {
@@ -2887,6 +3154,9 @@ export type UserCreateWithoutRampSessionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutRampSessionsInput = {
@@ -2914,6 +3184,9 @@ export type UserUncheckedCreateWithoutRampSessionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutRampSessionsInput = {
@@ -2957,6 +3230,9 @@ export type UserUpdateWithoutRampSessionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRampSessionsInput = {
@@ -2984,6 +3260,9 @@ export type UserUncheckedUpdateWithoutRampSessionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutAuditEventsInput = {
@@ -3011,6 +3290,9 @@ export type UserCreateWithoutAuditEventsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutAuditEventsInput = {
@@ -3038,6 +3320,9 @@ export type UserUncheckedCreateWithoutAuditEventsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutAuditEventsInput = {
@@ -3081,6 +3366,9 @@ export type UserUpdateWithoutAuditEventsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAuditEventsInput = {
@@ -3108,6 +3396,417 @@ export type UserUncheckedUpdateWithoutAuditEventsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutWalletCredentialsInput = {
+  id: string
+  username?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
+  conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
+  ownedRecipients?: Prisma.RecipientCreateNestedManyWithoutOwnerInput
+  linkedRecipients?: Prisma.RecipientCreateNestedManyWithoutLinkedUserInput
+  intents?: Prisma.IntentCreateNestedManyWithoutUserInput
+  executions?: Prisma.ExecutionCreateNestedManyWithoutUserInput
+  rampSessions?: Prisma.RampSessionCreateNestedManyWithoutUserInput
+  auditEvents?: Prisma.AuditEventCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutUserInput
+  walletSetupSessions?: Prisma.WalletSetupSessionCreateNestedManyWithoutUserInput
+  transactionPin?: Prisma.TransactionPinSecurityCreateNestedOneWithoutUserInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutUserInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
+  rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutWalletCredentialsInput = {
+  id: string
+  username?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
+  conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
+  ownedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutOwnerInput
+  linkedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutLinkedUserInput
+  intents?: Prisma.IntentUncheckedCreateNestedManyWithoutUserInput
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutUserInput
+  rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutUserInput
+  auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutUserInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUncheckedCreateNestedManyWithoutUserInput
+  transactionPin?: Prisma.TransactionPinSecurityUncheckedCreateNestedOneWithoutUserInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutUserInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutWalletCredentialsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutWalletCredentialsInput, Prisma.UserUncheckedCreateWithoutWalletCredentialsInput>
+}
+
+export type UserUpsertWithoutWalletCredentialsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutWalletCredentialsInput, Prisma.UserUncheckedUpdateWithoutWalletCredentialsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutWalletCredentialsInput, Prisma.UserUncheckedCreateWithoutWalletCredentialsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutWalletCredentialsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutWalletCredentialsInput, Prisma.UserUncheckedUpdateWithoutWalletCredentialsInput>
+}
+
+export type UserUpdateWithoutWalletCredentialsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
+  conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
+  ownedRecipients?: Prisma.RecipientUpdateManyWithoutOwnerNestedInput
+  linkedRecipients?: Prisma.RecipientUpdateManyWithoutLinkedUserNestedInput
+  intents?: Prisma.IntentUpdateManyWithoutUserNestedInput
+  executions?: Prisma.ExecutionUpdateManyWithoutUserNestedInput
+  rampSessions?: Prisma.RampSessionUpdateManyWithoutUserNestedInput
+  auditEvents?: Prisma.AuditEventUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutUserNestedInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUpdateManyWithoutUserNestedInput
+  transactionPin?: Prisma.TransactionPinSecurityUpdateOneWithoutUserNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutUserNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutWalletCredentialsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
+  conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
+  ownedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutOwnerNestedInput
+  linkedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutLinkedUserNestedInput
+  intents?: Prisma.IntentUncheckedUpdateManyWithoutUserNestedInput
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutUserNestedInput
+  rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutUserNestedInput
+  auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutUserNestedInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUncheckedUpdateManyWithoutUserNestedInput
+  transactionPin?: Prisma.TransactionPinSecurityUncheckedUpdateOneWithoutUserNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutUserNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutRecoveryConfigurationsInput = {
+  id: string
+  username?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
+  conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
+  ownedRecipients?: Prisma.RecipientCreateNestedManyWithoutOwnerInput
+  linkedRecipients?: Prisma.RecipientCreateNestedManyWithoutLinkedUserInput
+  intents?: Prisma.IntentCreateNestedManyWithoutUserInput
+  executions?: Prisma.ExecutionCreateNestedManyWithoutUserInput
+  rampSessions?: Prisma.RampSessionCreateNestedManyWithoutUserInput
+  auditEvents?: Prisma.AuditEventCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutUserInput
+  walletSetupSessions?: Prisma.WalletSetupSessionCreateNestedManyWithoutUserInput
+  transactionPin?: Prisma.TransactionPinSecurityCreateNestedOneWithoutUserInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutUserInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
+  rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutRecoveryConfigurationsInput = {
+  id: string
+  username?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
+  conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
+  ownedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutOwnerInput
+  linkedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutLinkedUserInput
+  intents?: Prisma.IntentUncheckedCreateNestedManyWithoutUserInput
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutUserInput
+  rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutUserInput
+  auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutUserInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUncheckedCreateNestedManyWithoutUserInput
+  transactionPin?: Prisma.TransactionPinSecurityUncheckedCreateNestedOneWithoutUserInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutUserInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutRecoveryConfigurationsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutRecoveryConfigurationsInput, Prisma.UserUncheckedCreateWithoutRecoveryConfigurationsInput>
+}
+
+export type UserUpsertWithoutRecoveryConfigurationsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutRecoveryConfigurationsInput, Prisma.UserUncheckedUpdateWithoutRecoveryConfigurationsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutRecoveryConfigurationsInput, Prisma.UserUncheckedCreateWithoutRecoveryConfigurationsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutRecoveryConfigurationsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutRecoveryConfigurationsInput, Prisma.UserUncheckedUpdateWithoutRecoveryConfigurationsInput>
+}
+
+export type UserUpdateWithoutRecoveryConfigurationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
+  conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
+  ownedRecipients?: Prisma.RecipientUpdateManyWithoutOwnerNestedInput
+  linkedRecipients?: Prisma.RecipientUpdateManyWithoutLinkedUserNestedInput
+  intents?: Prisma.IntentUpdateManyWithoutUserNestedInput
+  executions?: Prisma.ExecutionUpdateManyWithoutUserNestedInput
+  rampSessions?: Prisma.RampSessionUpdateManyWithoutUserNestedInput
+  auditEvents?: Prisma.AuditEventUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutUserNestedInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUpdateManyWithoutUserNestedInput
+  transactionPin?: Prisma.TransactionPinSecurityUpdateOneWithoutUserNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutUserNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutRecoveryConfigurationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
+  conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
+  ownedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutOwnerNestedInput
+  linkedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutLinkedUserNestedInput
+  intents?: Prisma.IntentUncheckedUpdateManyWithoutUserNestedInput
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutUserNestedInput
+  rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutUserNestedInput
+  auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutUserNestedInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUncheckedUpdateManyWithoutUserNestedInput
+  transactionPin?: Prisma.TransactionPinSecurityUncheckedUpdateOneWithoutUserNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutUserNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutRecoveryAttemptsInput = {
+  id: string
+  username?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
+  conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
+  ownedRecipients?: Prisma.RecipientCreateNestedManyWithoutOwnerInput
+  linkedRecipients?: Prisma.RecipientCreateNestedManyWithoutLinkedUserInput
+  intents?: Prisma.IntentCreateNestedManyWithoutUserInput
+  executions?: Prisma.ExecutionCreateNestedManyWithoutUserInput
+  rampSessions?: Prisma.RampSessionCreateNestedManyWithoutUserInput
+  auditEvents?: Prisma.AuditEventCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutUserInput
+  walletSetupSessions?: Prisma.WalletSetupSessionCreateNestedManyWithoutUserInput
+  transactionPin?: Prisma.TransactionPinSecurityCreateNestedOneWithoutUserInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutUserInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
+  rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutRecoveryAttemptsInput = {
+  id: string
+  username?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
+  conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
+  ownedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutOwnerInput
+  linkedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutLinkedUserInput
+  intents?: Prisma.IntentUncheckedCreateNestedManyWithoutUserInput
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutUserInput
+  rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutUserInput
+  auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutUserInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUncheckedCreateNestedManyWithoutUserInput
+  transactionPin?: Prisma.TransactionPinSecurityUncheckedCreateNestedOneWithoutUserInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutUserInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutRecoveryAttemptsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutRecoveryAttemptsInput, Prisma.UserUncheckedCreateWithoutRecoveryAttemptsInput>
+}
+
+export type UserUpsertWithoutRecoveryAttemptsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutRecoveryAttemptsInput, Prisma.UserUncheckedUpdateWithoutRecoveryAttemptsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutRecoveryAttemptsInput, Prisma.UserUncheckedCreateWithoutRecoveryAttemptsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutRecoveryAttemptsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutRecoveryAttemptsInput, Prisma.UserUncheckedUpdateWithoutRecoveryAttemptsInput>
+}
+
+export type UserUpdateWithoutRecoveryAttemptsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
+  conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
+  ownedRecipients?: Prisma.RecipientUpdateManyWithoutOwnerNestedInput
+  linkedRecipients?: Prisma.RecipientUpdateManyWithoutLinkedUserNestedInput
+  intents?: Prisma.IntentUpdateManyWithoutUserNestedInput
+  executions?: Prisma.ExecutionUpdateManyWithoutUserNestedInput
+  rampSessions?: Prisma.RampSessionUpdateManyWithoutUserNestedInput
+  auditEvents?: Prisma.AuditEventUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutUserNestedInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUpdateManyWithoutUserNestedInput
+  transactionPin?: Prisma.TransactionPinSecurityUpdateOneWithoutUserNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutUserNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutRecoveryAttemptsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
+  conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
+  ownedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutOwnerNestedInput
+  linkedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutLinkedUserNestedInput
+  intents?: Prisma.IntentUncheckedUpdateManyWithoutUserNestedInput
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutUserNestedInput
+  rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutUserNestedInput
+  auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutUserNestedInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUncheckedUpdateManyWithoutUserNestedInput
+  transactionPin?: Prisma.TransactionPinSecurityUncheckedUpdateOneWithoutUserNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutUserNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 
@@ -3134,6 +3833,9 @@ export type UserCountOutputType = {
   paymentAuthorizations: number
   firmQuoteAttempts: number
   rootActionSessions: number
+  walletCredentials: number
+  recoveryConfigurations: number
+  recoveryAttempts: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -3155,6 +3857,9 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   paymentAuthorizations?: boolean | UserCountOutputTypeCountPaymentAuthorizationsArgs
   firmQuoteAttempts?: boolean | UserCountOutputTypeCountFirmQuoteAttemptsArgs
   rootActionSessions?: boolean | UserCountOutputTypeCountRootActionSessionsArgs
+  walletCredentials?: boolean | UserCountOutputTypeCountWalletCredentialsArgs
+  recoveryConfigurations?: boolean | UserCountOutputTypeCountRecoveryConfigurationsArgs
+  recoveryAttempts?: boolean | UserCountOutputTypeCountRecoveryAttemptsArgs
 }
 
 /**
@@ -3293,6 +3998,27 @@ export type UserCountOutputTypeCountRootActionSessionsArgs<ExtArgs extends runti
   where?: Prisma.RootActionSessionWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountWalletCredentialsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.WalletCredentialWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountRecoveryConfigurationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.RecoveryConfigurationWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountRecoveryAttemptsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.RecoveryAttemptWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -3320,6 +4046,9 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   paymentAuthorizations?: boolean | Prisma.User$paymentAuthorizationsArgs<ExtArgs>
   firmQuoteAttempts?: boolean | Prisma.User$firmQuoteAttemptsArgs<ExtArgs>
   rootActionSessions?: boolean | Prisma.User$rootActionSessionsArgs<ExtArgs>
+  walletCredentials?: boolean | Prisma.User$walletCredentialsArgs<ExtArgs>
+  recoveryConfigurations?: boolean | Prisma.User$recoveryConfigurationsArgs<ExtArgs>
+  recoveryAttempts?: boolean | Prisma.User$recoveryAttemptsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -3371,6 +4100,9 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   paymentAuthorizations?: boolean | Prisma.User$paymentAuthorizationsArgs<ExtArgs>
   firmQuoteAttempts?: boolean | Prisma.User$firmQuoteAttemptsArgs<ExtArgs>
   rootActionSessions?: boolean | Prisma.User$rootActionSessionsArgs<ExtArgs>
+  walletCredentials?: boolean | Prisma.User$walletCredentialsArgs<ExtArgs>
+  recoveryConfigurations?: boolean | Prisma.User$recoveryConfigurationsArgs<ExtArgs>
+  recoveryAttempts?: boolean | Prisma.User$recoveryAttemptsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -3398,6 +4130,9 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     paymentAuthorizations: Prisma.$PaymentAuthorizationPayload<ExtArgs>[]
     firmQuoteAttempts: Prisma.$FirmQuoteAttemptPayload<ExtArgs>[]
     rootActionSessions: Prisma.$RootActionSessionPayload<ExtArgs>[]
+    walletCredentials: Prisma.$WalletCredentialPayload<ExtArgs>[]
+    recoveryConfigurations: Prisma.$RecoveryConfigurationPayload<ExtArgs>[]
+    recoveryAttempts: Prisma.$RecoveryAttemptPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -3819,6 +4554,9 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   paymentAuthorizations<T extends Prisma.User$paymentAuthorizationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$paymentAuthorizationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PaymentAuthorizationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   firmQuoteAttempts<T extends Prisma.User$firmQuoteAttemptsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$firmQuoteAttemptsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FirmQuoteAttemptPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   rootActionSessions<T extends Prisma.User$rootActionSessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$rootActionSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RootActionSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  walletCredentials<T extends Prisma.User$walletCredentialsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$walletCredentialsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WalletCredentialPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  recoveryConfigurations<T extends Prisma.User$recoveryConfigurationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$recoveryConfigurationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RecoveryConfigurationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  recoveryAttempts<T extends Prisma.User$recoveryAttemptsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$recoveryAttemptsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RecoveryAttemptPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -4695,6 +5433,78 @@ export type User$rootActionSessionsArgs<ExtArgs extends runtime.Types.Extensions
   take?: number
   skip?: number
   distinct?: Prisma.RootActionSessionScalarFieldEnum | Prisma.RootActionSessionScalarFieldEnum[]
+}
+
+/**
+ * User.walletCredentials
+ */
+export type User$walletCredentialsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the WalletCredential
+   */
+  select?: Prisma.WalletCredentialSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the WalletCredential
+   */
+  omit?: Prisma.WalletCredentialOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.WalletCredentialInclude<ExtArgs> | null
+  where?: Prisma.WalletCredentialWhereInput
+  orderBy?: Prisma.WalletCredentialOrderByWithRelationInput | Prisma.WalletCredentialOrderByWithRelationInput[]
+  cursor?: Prisma.WalletCredentialWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.WalletCredentialScalarFieldEnum | Prisma.WalletCredentialScalarFieldEnum[]
+}
+
+/**
+ * User.recoveryConfigurations
+ */
+export type User$recoveryConfigurationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the RecoveryConfiguration
+   */
+  select?: Prisma.RecoveryConfigurationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the RecoveryConfiguration
+   */
+  omit?: Prisma.RecoveryConfigurationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.RecoveryConfigurationInclude<ExtArgs> | null
+  where?: Prisma.RecoveryConfigurationWhereInput
+  orderBy?: Prisma.RecoveryConfigurationOrderByWithRelationInput | Prisma.RecoveryConfigurationOrderByWithRelationInput[]
+  cursor?: Prisma.RecoveryConfigurationWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.RecoveryConfigurationScalarFieldEnum | Prisma.RecoveryConfigurationScalarFieldEnum[]
+}
+
+/**
+ * User.recoveryAttempts
+ */
+export type User$recoveryAttemptsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the RecoveryAttempt
+   */
+  select?: Prisma.RecoveryAttemptSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the RecoveryAttempt
+   */
+  omit?: Prisma.RecoveryAttemptOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.RecoveryAttemptInclude<ExtArgs> | null
+  where?: Prisma.RecoveryAttemptWhereInput
+  orderBy?: Prisma.RecoveryAttemptOrderByWithRelationInput | Prisma.RecoveryAttemptOrderByWithRelationInput[]
+  cursor?: Prisma.RecoveryAttemptWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.RecoveryAttemptScalarFieldEnum | Prisma.RecoveryAttemptScalarFieldEnum[]
 }
 
 /**

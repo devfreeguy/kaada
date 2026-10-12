@@ -262,6 +262,59 @@ enum RampStatus {
   EXPIRED
 }
 
+enum WalletCredentialKind {
+  PASSKEY
+  DEVICE_KEY
+}
+
+enum WalletCredentialRole {
+  PRIMARY
+  BACKUP
+  RECOVERY
+}
+
+enum WalletCredentialStatus {
+  PENDING
+  ACTIVE
+  REPLACED
+  REVOKED
+}
+
+enum DeviceSecurityTier {
+  UNKNOWN
+  WEB_NON_EXTRACTABLE
+  TRUSTED_DEVICE
+}
+
+enum RecoveryConfigurationStatus {
+  PENDING_INSTALL
+  ACTIVE
+  CONSUMED
+  SUPERSEDED
+  DISABLED
+}
+
+enum RecoveryAttemptStatus {
+  EMAIL_PENDING
+  EMAIL_VERIFIED
+  ROOT_PROPOSED
+  INITIATING
+  PENDING
+  FINALIZING
+  ROOT_CHANGED
+  COMPLETED
+  CANCELLED
+  VETOED
+  EXPIRED
+  FAILED
+}
+
+enum RecoveryTerminator {
+  ROOT
+  ATTESTOR
+  SYSTEM
+}
+
 // ─────────────────────── Users & identity ───────────────────────
 
 model User {
@@ -293,6 +346,10 @@ model User {
   paymentAuthorizations PaymentAuthorization[]
   firmQuoteAttempts     FirmQuoteAttempt[]
   rootActionSessions    RootActionSession[]
+
+  walletCredentials      WalletCredential[]
+  recoveryConfigurations RecoveryConfiguration[]
+  recoveryAttempts       RecoveryAttempt[]
 }
 
 /// An external identity (Telegram account, phone, email, ...) attached to one Kaada user.
@@ -353,13 +410,16 @@ model Wallet {
   createdAt         DateTime         @default(now()) @db.Timestamptz(3)
   updatedAt         DateTime         @updatedAt @db.Timestamptz(3)
 
-  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  delegatedPermissions  DelegatedPermission[]
-  authorizationSessions AuthorizationSession[]
-  paymentAuthorizations PaymentAuthorization[]
-  firmQuoteAttempts     FirmQuoteAttempt[]
-  executions            Execution[]
-  rootActionSessions    RootActionSession[]
+  user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  delegatedPermissions   DelegatedPermission[]
+  authorizationSessions  AuthorizationSession[]
+  paymentAuthorizations  PaymentAuthorization[]
+  firmQuoteAttempts      FirmQuoteAttempt[]
+  executions             Execution[]
+  rootActionSessions     RootActionSession[]
+  walletCredentials      WalletCredential[]
+  recoveryConfigurations RecoveryConfiguration[]
+  recoveryAttempts       RecoveryAttempt[]
 
   @@unique([chainId, address])
   @@index([userId])
@@ -1094,4 +1154,154 @@ model AuditEvent {
   @@index([executionId, createdAt])
   @@index([userId, createdAt])
   @@index([entityType, entityId])
+}
+
+// ─────────────────────── Account recovery ───────────────────────
+
+/// A root credential a wallet has had: PUBLIC data only. The private key lives in the authenticator or the device
+/// keystore. Each row names the validator INSTANCE that holds it, and an instance is never used for a second credential.
+/// Constraints in the manual migration: one ACTIVE root per wallet, validator instance unique per wallet.
+model WalletCredential {
+  id                     String                 @id @db.Uuid
+  userId                 String                 @db.Uuid
+  walletId               String                 @db.Uuid
+  kind                   WalletCredentialKind
+  role                   WalletCredentialRole
+  status                 WalletCredentialStatus @default(PENDING)
+  isRoot                 Boolean                @default(false)
+  validatorAddress       String
+  validatorPurpose       Int
+  deploymentSalt         String
+  /// PASSKEY: the WebAuthn credential id. DEVICE_KEY: the validator keyId (0x + 64 hex).
+  credentialRef          String
+  publicKeyX             String                 @db.Char(64)
+  publicKeyY             String                 @db.Char(64)
+  rpId                   String?
+  passkeyCredentialId    String?                @db.Uuid
+  securityTier           DeviceSecurityTier     @default(UNKNOWN)
+  label                  String?
+  replacedByCredentialId String?                @db.Uuid
+  createdAt              DateTime               @default(now()) @db.Timestamptz(3)
+  activatedAt            DateTime?              @db.Timestamptz(3)
+  replacedAt             DateTime?              @db.Timestamptz(3)
+  revokedAt              DateTime?              @db.Timestamptz(3)
+
+  user                User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet              Wallet                  @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  recoveryAttempts    RecoveryAttempt[]       @relation("RecoveryNewCredential")
+  armedConfigurations RecoveryConfiguration[]
+
+  @@index([walletId, status])
+  @@index([userId])
+}
+
+/// The on-chain recovery arrangement of one wallet. Holds only the PUBLIC verifier address derived from the Recovery
+/// Code, never the code or its key. At most one ACTIVE configuration per wallet (manual migration).
+model RecoveryConfiguration {
+  id                  String                      @id @db.Uuid
+  userId              String                      @db.Uuid
+  walletId            String                      @db.Uuid
+  chainId             Int
+  validatorAddress    String
+  recoveryAddress     String
+  delaySeconds        Int
+  status              RecoveryConfigurationStatus @default(PENDING_INSTALL)
+  armedByCredentialId String?                     @db.Uuid
+  recoveryNonce       String                      @default("0")
+  installUserOpHash   String?
+  preparedOperation   Json?
+  configuredAt        DateTime?                   @db.Timestamptz(3)
+  createdAt           DateTime                    @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime                    @updatedAt @db.Timestamptz(3)
+
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet         Wallet            @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  armedBy        WalletCredential? @relation(fields: [armedByCredentialId], references: [id], onDelete: Restrict)
+  attempts       RecoveryAttempt[] @relation("AttemptConfiguration")
+  newForAttempts RecoveryAttempt[] @relation("AttemptNewConfiguration")
+
+  @@index([walletId, status])
+}
+
+/// One attempt to recover a wallet: an explicit state machine (see the domain). Only hashes of tokens are stored; the
+/// new root is public data. At most one non-terminal attempt per wallet (manual migration).
+model RecoveryAttempt {
+  id                    String                @id @db.Uuid
+  userId                String                @db.Uuid
+  walletId              String                @db.Uuid
+  configurationId       String?               @db.Uuid
+  status                RecoveryAttemptStatus @default(EMAIL_PENDING)
+  tokenHash             String                @unique @db.Char(64)
+  tokenExpiresAt        DateTime              @db.Timestamptz(3)
+  cancelTokenHash       String?               @unique @db.Char(64)
+  emailVerifiedAt       DateTime?             @db.Timestamptz(3)
+  newCredentialId       String?               @db.Uuid
+  newRootKind           WalletCredentialKind?
+  newValidator          String?
+  newValidatorData      String?
+  newValidatorDataHash  String?
+  newHook               String?
+  newHookData           String?
+  newHookDataHash       String?
+  commitmentHash        String?
+  recoveryNonce         String?
+  proofDeadline         DateTime?             @db.Timestamptz(3)
+  proposedAt            DateTime?             @db.Timestamptz(3)
+  previousRootValidator String?
+  initiatedAt           DateTime?             @db.Timestamptz(3)
+  executeAfter          DateTime?             @db.Timestamptz(3)
+  initiateTxHash        String?
+  nonceBefore           Int?
+  finalizeUserOpHash    String?
+  finalizeTxHash        String?
+  blockedReason         String?
+  lockedBy              String?
+  lockedUntil           DateTime?             @db.Timestamptz(3)
+  rootConfirmedAt       DateTime?             @db.Timestamptz(3)
+  proofChallenge        String?
+  proofFailures         Int                   @default(0)
+  cancelChallenge       String?
+  cancelPrepared        Json?
+  cancelUserOpHash      String?
+  proofVerifiedAt       DateTime?             @db.Timestamptz(3)
+  completedAt           DateTime?             @db.Timestamptz(3)
+  terminatedBy          RecoveryTerminator?
+  terminatedAt          DateTime?             @db.Timestamptz(3)
+  terminationTxHash     String?
+  failureCode           String?
+  cleanupCompletedAt    DateTime?             @db.Timestamptz(3)
+  pinResetAt            DateTime?             @db.Timestamptz(3)
+  newConfigurationId    String?               @db.Uuid
+  createdAt             DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime              @updatedAt @db.Timestamptz(3)
+
+  user             User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet           Wallet                   @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  configuration    RecoveryConfiguration?   @relation("AttemptConfiguration", fields: [configurationId], references: [id], onDelete: Restrict)
+  newCredential    WalletCredential?        @relation("RecoveryNewCredential", fields: [newCredentialId], references: [id], onDelete: Restrict)
+  newConfiguration RecoveryConfiguration?   @relation("AttemptNewConfiguration", fields: [newConfigurationId], references: [id], onDelete: Restrict)
+  emailChallenges  RecoveryEmailChallenge[]
+
+  @@index([walletId, status])
+  @@index([userId, createdAt])
+  @@index([status, executeAfter])
+}
+
+/// A short-lived email challenge for one recovery attempt. Only a keyed hash of the code is stored.
+model RecoveryEmailChallenge {
+  id               String    @id @db.Uuid
+  attemptId        String    @db.Uuid
+  /// SHA-256 of the session token this challenge unlocks (becomes the attempt token once the code is verified).
+  sessionTokenHash String    @db.Char(64)
+  codeHash         String    @db.Char(64)
+  expiresAt        DateTime  @db.Timestamptz(3)
+  attempts         Int       @default(0)
+  maxAttempts      Int
+  usedAt           DateTime? @db.Timestamptz(3)
+  createdAt        DateTime  @default(now()) @db.Timestamptz(3)
+
+  attempt RecoveryAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId, createdAt])
+  @@index([sessionTokenHash, createdAt])
 }

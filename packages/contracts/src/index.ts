@@ -7,3 +7,5 @@ export {
   ZERODEV_PASSKEY_VALIDATOR_RUNTIME,
 } from "./generated/passkey-validator.js";
 export * from "./device-key.js";
+export * from "./recovery-code.js";
+export * from "./recovery-root.js";

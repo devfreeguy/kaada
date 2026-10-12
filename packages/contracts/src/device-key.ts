@@ -186,3 +186,15 @@ export async function classifyDeviceKey(input: {
   }
   return fallback;
 }
+
+const P256_P = 0xffffffff00000001000000000000000000000000ffffffffffffffffffffffffn;
+const P256_B = 0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604bn;
+
+/** The same on-curve check the validator runs at enrolment (0 < x, y < p and y² = x³ - 3x + b), so a bad key is refused early. */
+export function isOnP256Curve(point: DeviceKeyPoint): boolean {
+  const { x, y } = point;
+  if (x <= 0n || y <= 0n || x >= P256_P || y >= P256_P) return false;
+  const left = (y * y) % P256_P;
+  const right = (((x * x * x - 3n * x + P256_B) % P256_P) + P256_P) % P256_P;
+  return left === right;
+}

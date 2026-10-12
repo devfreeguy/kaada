@@ -425,7 +425,11 @@ export const ModelName = {
   Execution: 'Execution',
   Transaction: 'Transaction',
   RampSession: 'RampSession',
-  AuditEvent: 'AuditEvent'
+  AuditEvent: 'AuditEvent',
+  WalletCredential: 'WalletCredential',
+  RecoveryConfiguration: 'RecoveryConfiguration',
+  RecoveryAttempt: 'RecoveryAttempt',
+  RecoveryEmailChallenge: 'RecoveryEmailChallenge'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -441,7 +445,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "transactionPinSecurity" | "authorizationSession" | "paymentAuthorization" | "executionSecret" | "firmQuoteAttempt" | "rootActionSession" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent"
+    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "transactionPinSecurity" | "authorizationSession" | "paymentAuthorization" | "executionSecret" | "firmQuoteAttempt" | "rootActionSession" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent" | "walletCredential" | "recoveryConfiguration" | "recoveryAttempt" | "recoveryEmailChallenge"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2591,6 +2595,302 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    WalletCredential: {
+      payload: Prisma.$WalletCredentialPayload<ExtArgs>
+      fields: Prisma.WalletCredentialFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.WalletCredentialFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletCredentialPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.WalletCredentialFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletCredentialPayload>
+        }
+        findFirst: {
+          args: Prisma.WalletCredentialFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletCredentialPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.WalletCredentialFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletCredentialPayload>
+        }
+        findMany: {
+          args: Prisma.WalletCredentialFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletCredentialPayload>[]
+        }
+        create: {
+          args: Prisma.WalletCredentialCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletCredentialPayload>
+        }
+        createMany: {
+          args: Prisma.WalletCredentialCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.WalletCredentialCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletCredentialPayload>[]
+        }
+        delete: {
+          args: Prisma.WalletCredentialDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletCredentialPayload>
+        }
+        update: {
+          args: Prisma.WalletCredentialUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletCredentialPayload>
+        }
+        deleteMany: {
+          args: Prisma.WalletCredentialDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.WalletCredentialUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.WalletCredentialUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletCredentialPayload>[]
+        }
+        upsert: {
+          args: Prisma.WalletCredentialUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletCredentialPayload>
+        }
+        aggregate: {
+          args: Prisma.WalletCredentialAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateWalletCredential>
+        }
+        groupBy: {
+          args: Prisma.WalletCredentialGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.WalletCredentialGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.WalletCredentialCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.WalletCredentialCountAggregateOutputType> | number
+        }
+      }
+    }
+    RecoveryConfiguration: {
+      payload: Prisma.$RecoveryConfigurationPayload<ExtArgs>
+      fields: Prisma.RecoveryConfigurationFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.RecoveryConfigurationFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryConfigurationPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.RecoveryConfigurationFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryConfigurationPayload>
+        }
+        findFirst: {
+          args: Prisma.RecoveryConfigurationFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryConfigurationPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.RecoveryConfigurationFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryConfigurationPayload>
+        }
+        findMany: {
+          args: Prisma.RecoveryConfigurationFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryConfigurationPayload>[]
+        }
+        create: {
+          args: Prisma.RecoveryConfigurationCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryConfigurationPayload>
+        }
+        createMany: {
+          args: Prisma.RecoveryConfigurationCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.RecoveryConfigurationCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryConfigurationPayload>[]
+        }
+        delete: {
+          args: Prisma.RecoveryConfigurationDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryConfigurationPayload>
+        }
+        update: {
+          args: Prisma.RecoveryConfigurationUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryConfigurationPayload>
+        }
+        deleteMany: {
+          args: Prisma.RecoveryConfigurationDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.RecoveryConfigurationUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.RecoveryConfigurationUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryConfigurationPayload>[]
+        }
+        upsert: {
+          args: Prisma.RecoveryConfigurationUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryConfigurationPayload>
+        }
+        aggregate: {
+          args: Prisma.RecoveryConfigurationAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateRecoveryConfiguration>
+        }
+        groupBy: {
+          args: Prisma.RecoveryConfigurationGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RecoveryConfigurationGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.RecoveryConfigurationCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RecoveryConfigurationCountAggregateOutputType> | number
+        }
+      }
+    }
+    RecoveryAttempt: {
+      payload: Prisma.$RecoveryAttemptPayload<ExtArgs>
+      fields: Prisma.RecoveryAttemptFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.RecoveryAttemptFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryAttemptPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.RecoveryAttemptFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryAttemptPayload>
+        }
+        findFirst: {
+          args: Prisma.RecoveryAttemptFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryAttemptPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.RecoveryAttemptFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryAttemptPayload>
+        }
+        findMany: {
+          args: Prisma.RecoveryAttemptFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryAttemptPayload>[]
+        }
+        create: {
+          args: Prisma.RecoveryAttemptCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryAttemptPayload>
+        }
+        createMany: {
+          args: Prisma.RecoveryAttemptCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.RecoveryAttemptCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryAttemptPayload>[]
+        }
+        delete: {
+          args: Prisma.RecoveryAttemptDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryAttemptPayload>
+        }
+        update: {
+          args: Prisma.RecoveryAttemptUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryAttemptPayload>
+        }
+        deleteMany: {
+          args: Prisma.RecoveryAttemptDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.RecoveryAttemptUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.RecoveryAttemptUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryAttemptPayload>[]
+        }
+        upsert: {
+          args: Prisma.RecoveryAttemptUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryAttemptPayload>
+        }
+        aggregate: {
+          args: Prisma.RecoveryAttemptAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateRecoveryAttempt>
+        }
+        groupBy: {
+          args: Prisma.RecoveryAttemptGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RecoveryAttemptGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.RecoveryAttemptCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RecoveryAttemptCountAggregateOutputType> | number
+        }
+      }
+    }
+    RecoveryEmailChallenge: {
+      payload: Prisma.$RecoveryEmailChallengePayload<ExtArgs>
+      fields: Prisma.RecoveryEmailChallengeFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.RecoveryEmailChallengeFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryEmailChallengePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.RecoveryEmailChallengeFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryEmailChallengePayload>
+        }
+        findFirst: {
+          args: Prisma.RecoveryEmailChallengeFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryEmailChallengePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.RecoveryEmailChallengeFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryEmailChallengePayload>
+        }
+        findMany: {
+          args: Prisma.RecoveryEmailChallengeFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryEmailChallengePayload>[]
+        }
+        create: {
+          args: Prisma.RecoveryEmailChallengeCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryEmailChallengePayload>
+        }
+        createMany: {
+          args: Prisma.RecoveryEmailChallengeCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.RecoveryEmailChallengeCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryEmailChallengePayload>[]
+        }
+        delete: {
+          args: Prisma.RecoveryEmailChallengeDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryEmailChallengePayload>
+        }
+        update: {
+          args: Prisma.RecoveryEmailChallengeUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryEmailChallengePayload>
+        }
+        deleteMany: {
+          args: Prisma.RecoveryEmailChallengeDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.RecoveryEmailChallengeUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.RecoveryEmailChallengeUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryEmailChallengePayload>[]
+        }
+        upsert: {
+          args: Prisma.RecoveryEmailChallengeUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryEmailChallengePayload>
+        }
+        aggregate: {
+          args: Prisma.RecoveryEmailChallengeAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateRecoveryEmailChallenge>
+        }
+        groupBy: {
+          args: Prisma.RecoveryEmailChallengeGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RecoveryEmailChallengeGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.RecoveryEmailChallengeCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RecoveryEmailChallengeCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -3183,6 +3483,124 @@ export const AuditEventScalarFieldEnum = {
 export type AuditEventScalarFieldEnum = (typeof AuditEventScalarFieldEnum)[keyof typeof AuditEventScalarFieldEnum]
 
 
+export const WalletCredentialScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  walletId: 'walletId',
+  kind: 'kind',
+  role: 'role',
+  status: 'status',
+  isRoot: 'isRoot',
+  validatorAddress: 'validatorAddress',
+  validatorPurpose: 'validatorPurpose',
+  deploymentSalt: 'deploymentSalt',
+  credentialRef: 'credentialRef',
+  publicKeyX: 'publicKeyX',
+  publicKeyY: 'publicKeyY',
+  rpId: 'rpId',
+  passkeyCredentialId: 'passkeyCredentialId',
+  securityTier: 'securityTier',
+  label: 'label',
+  replacedByCredentialId: 'replacedByCredentialId',
+  createdAt: 'createdAt',
+  activatedAt: 'activatedAt',
+  replacedAt: 'replacedAt',
+  revokedAt: 'revokedAt'
+} as const
+
+export type WalletCredentialScalarFieldEnum = (typeof WalletCredentialScalarFieldEnum)[keyof typeof WalletCredentialScalarFieldEnum]
+
+
+export const RecoveryConfigurationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  walletId: 'walletId',
+  chainId: 'chainId',
+  validatorAddress: 'validatorAddress',
+  recoveryAddress: 'recoveryAddress',
+  delaySeconds: 'delaySeconds',
+  status: 'status',
+  armedByCredentialId: 'armedByCredentialId',
+  recoveryNonce: 'recoveryNonce',
+  installUserOpHash: 'installUserOpHash',
+  preparedOperation: 'preparedOperation',
+  configuredAt: 'configuredAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RecoveryConfigurationScalarFieldEnum = (typeof RecoveryConfigurationScalarFieldEnum)[keyof typeof RecoveryConfigurationScalarFieldEnum]
+
+
+export const RecoveryAttemptScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  walletId: 'walletId',
+  configurationId: 'configurationId',
+  status: 'status',
+  tokenHash: 'tokenHash',
+  tokenExpiresAt: 'tokenExpiresAt',
+  cancelTokenHash: 'cancelTokenHash',
+  emailVerifiedAt: 'emailVerifiedAt',
+  newCredentialId: 'newCredentialId',
+  newRootKind: 'newRootKind',
+  newValidator: 'newValidator',
+  newValidatorData: 'newValidatorData',
+  newValidatorDataHash: 'newValidatorDataHash',
+  newHook: 'newHook',
+  newHookData: 'newHookData',
+  newHookDataHash: 'newHookDataHash',
+  commitmentHash: 'commitmentHash',
+  recoveryNonce: 'recoveryNonce',
+  proofDeadline: 'proofDeadline',
+  proposedAt: 'proposedAt',
+  previousRootValidator: 'previousRootValidator',
+  initiatedAt: 'initiatedAt',
+  executeAfter: 'executeAfter',
+  initiateTxHash: 'initiateTxHash',
+  nonceBefore: 'nonceBefore',
+  finalizeUserOpHash: 'finalizeUserOpHash',
+  finalizeTxHash: 'finalizeTxHash',
+  blockedReason: 'blockedReason',
+  lockedBy: 'lockedBy',
+  lockedUntil: 'lockedUntil',
+  rootConfirmedAt: 'rootConfirmedAt',
+  proofChallenge: 'proofChallenge',
+  proofFailures: 'proofFailures',
+  cancelChallenge: 'cancelChallenge',
+  cancelPrepared: 'cancelPrepared',
+  cancelUserOpHash: 'cancelUserOpHash',
+  proofVerifiedAt: 'proofVerifiedAt',
+  completedAt: 'completedAt',
+  terminatedBy: 'terminatedBy',
+  terminatedAt: 'terminatedAt',
+  terminationTxHash: 'terminationTxHash',
+  failureCode: 'failureCode',
+  cleanupCompletedAt: 'cleanupCompletedAt',
+  pinResetAt: 'pinResetAt',
+  newConfigurationId: 'newConfigurationId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RecoveryAttemptScalarFieldEnum = (typeof RecoveryAttemptScalarFieldEnum)[keyof typeof RecoveryAttemptScalarFieldEnum]
+
+
+export const RecoveryEmailChallengeScalarFieldEnum = {
+  id: 'id',
+  attemptId: 'attemptId',
+  sessionTokenHash: 'sessionTokenHash',
+  codeHash: 'codeHash',
+  expiresAt: 'expiresAt',
+  attempts: 'attempts',
+  maxAttempts: 'maxAttempts',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type RecoveryEmailChallengeScalarFieldEnum = (typeof RecoveryEmailChallengeScalarFieldEnum)[keyof typeof RecoveryEmailChallengeScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -3693,6 +4111,104 @@ export type ListEnumRampStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$P
 
 
 /**
+ * Reference to a field of type 'WalletCredentialKind'
+ */
+export type EnumWalletCredentialKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'WalletCredentialKind'>
+    
+
+
+/**
+ * Reference to a field of type 'WalletCredentialKind[]'
+ */
+export type ListEnumWalletCredentialKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'WalletCredentialKind[]'>
+    
+
+
+/**
+ * Reference to a field of type 'WalletCredentialRole'
+ */
+export type EnumWalletCredentialRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'WalletCredentialRole'>
+    
+
+
+/**
+ * Reference to a field of type 'WalletCredentialRole[]'
+ */
+export type ListEnumWalletCredentialRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'WalletCredentialRole[]'>
+    
+
+
+/**
+ * Reference to a field of type 'WalletCredentialStatus'
+ */
+export type EnumWalletCredentialStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'WalletCredentialStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'WalletCredentialStatus[]'
+ */
+export type ListEnumWalletCredentialStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'WalletCredentialStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'DeviceSecurityTier'
+ */
+export type EnumDeviceSecurityTierFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DeviceSecurityTier'>
+    
+
+
+/**
+ * Reference to a field of type 'DeviceSecurityTier[]'
+ */
+export type ListEnumDeviceSecurityTierFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DeviceSecurityTier[]'>
+    
+
+
+/**
+ * Reference to a field of type 'RecoveryConfigurationStatus'
+ */
+export type EnumRecoveryConfigurationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RecoveryConfigurationStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'RecoveryConfigurationStatus[]'
+ */
+export type ListEnumRecoveryConfigurationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RecoveryConfigurationStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'RecoveryAttemptStatus'
+ */
+export type EnumRecoveryAttemptStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RecoveryAttemptStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'RecoveryAttemptStatus[]'
+ */
+export type ListEnumRecoveryAttemptStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RecoveryAttemptStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'RecoveryTerminator'
+ */
+export type EnumRecoveryTerminatorFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RecoveryTerminator'>
+    
+
+
+/**
+ * Reference to a field of type 'RecoveryTerminator[]'
+ */
+export type ListEnumRecoveryTerminatorFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RecoveryTerminator[]'>
+    
+
+
+/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -3885,6 +4401,10 @@ export type GlobalOmitConfig = {
   transaction?: Prisma.TransactionOmit
   rampSession?: Prisma.RampSessionOmit
   auditEvent?: Prisma.AuditEventOmit
+  walletCredential?: Prisma.WalletCredentialOmit
+  recoveryConfiguration?: Prisma.RecoveryConfigurationOmit
+  recoveryAttempt?: Prisma.RecoveryAttemptOmit
+  recoveryEmailChallenge?: Prisma.RecoveryEmailChallengeOmit
 }
 
 /* Types for Logging */

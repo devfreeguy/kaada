@@ -851,6 +851,142 @@ export type EnumRampStatusWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumRampStatusFilter<$PrismaModel>
 }
 
+export type EnumWalletCredentialKindFilter<$PrismaModel = never> = {
+  equals?: $Enums.WalletCredentialKind | Prisma.EnumWalletCredentialKindFieldRefInput<$PrismaModel>
+  in?: $Enums.WalletCredentialKind[] | Prisma.ListEnumWalletCredentialKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WalletCredentialKind[] | Prisma.ListEnumWalletCredentialKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWalletCredentialKindFilter<$PrismaModel> | $Enums.WalletCredentialKind
+}
+
+export type EnumWalletCredentialRoleFilter<$PrismaModel = never> = {
+  equals?: $Enums.WalletCredentialRole | Prisma.EnumWalletCredentialRoleFieldRefInput<$PrismaModel>
+  in?: $Enums.WalletCredentialRole[] | Prisma.ListEnumWalletCredentialRoleFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WalletCredentialRole[] | Prisma.ListEnumWalletCredentialRoleFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWalletCredentialRoleFilter<$PrismaModel> | $Enums.WalletCredentialRole
+}
+
+export type EnumWalletCredentialStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.WalletCredentialStatus | Prisma.EnumWalletCredentialStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.WalletCredentialStatus[] | Prisma.ListEnumWalletCredentialStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WalletCredentialStatus[] | Prisma.ListEnumWalletCredentialStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWalletCredentialStatusFilter<$PrismaModel> | $Enums.WalletCredentialStatus
+}
+
+export type EnumDeviceSecurityTierFilter<$PrismaModel = never> = {
+  equals?: $Enums.DeviceSecurityTier | Prisma.EnumDeviceSecurityTierFieldRefInput<$PrismaModel>
+  in?: $Enums.DeviceSecurityTier[] | Prisma.ListEnumDeviceSecurityTierFieldRefInput<$PrismaModel>
+  notIn?: $Enums.DeviceSecurityTier[] | Prisma.ListEnumDeviceSecurityTierFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumDeviceSecurityTierFilter<$PrismaModel> | $Enums.DeviceSecurityTier
+}
+
+export type EnumWalletCredentialKindWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.WalletCredentialKind | Prisma.EnumWalletCredentialKindFieldRefInput<$PrismaModel>
+  in?: $Enums.WalletCredentialKind[] | Prisma.ListEnumWalletCredentialKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WalletCredentialKind[] | Prisma.ListEnumWalletCredentialKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWalletCredentialKindWithAggregatesFilter<$PrismaModel> | $Enums.WalletCredentialKind
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumWalletCredentialKindFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumWalletCredentialKindFilter<$PrismaModel>
+}
+
+export type EnumWalletCredentialRoleWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.WalletCredentialRole | Prisma.EnumWalletCredentialRoleFieldRefInput<$PrismaModel>
+  in?: $Enums.WalletCredentialRole[] | Prisma.ListEnumWalletCredentialRoleFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WalletCredentialRole[] | Prisma.ListEnumWalletCredentialRoleFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWalletCredentialRoleWithAggregatesFilter<$PrismaModel> | $Enums.WalletCredentialRole
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumWalletCredentialRoleFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumWalletCredentialRoleFilter<$PrismaModel>
+}
+
+export type EnumWalletCredentialStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.WalletCredentialStatus | Prisma.EnumWalletCredentialStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.WalletCredentialStatus[] | Prisma.ListEnumWalletCredentialStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WalletCredentialStatus[] | Prisma.ListEnumWalletCredentialStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWalletCredentialStatusWithAggregatesFilter<$PrismaModel> | $Enums.WalletCredentialStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumWalletCredentialStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumWalletCredentialStatusFilter<$PrismaModel>
+}
+
+export type EnumDeviceSecurityTierWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.DeviceSecurityTier | Prisma.EnumDeviceSecurityTierFieldRefInput<$PrismaModel>
+  in?: $Enums.DeviceSecurityTier[] | Prisma.ListEnumDeviceSecurityTierFieldRefInput<$PrismaModel>
+  notIn?: $Enums.DeviceSecurityTier[] | Prisma.ListEnumDeviceSecurityTierFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumDeviceSecurityTierWithAggregatesFilter<$PrismaModel> | $Enums.DeviceSecurityTier
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumDeviceSecurityTierFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumDeviceSecurityTierFilter<$PrismaModel>
+}
+
+export type EnumRecoveryConfigurationStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.RecoveryConfigurationStatus | Prisma.EnumRecoveryConfigurationStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.RecoveryConfigurationStatus[] | Prisma.ListEnumRecoveryConfigurationStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RecoveryConfigurationStatus[] | Prisma.ListEnumRecoveryConfigurationStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRecoveryConfigurationStatusFilter<$PrismaModel> | $Enums.RecoveryConfigurationStatus
+}
+
+export type EnumRecoveryConfigurationStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RecoveryConfigurationStatus | Prisma.EnumRecoveryConfigurationStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.RecoveryConfigurationStatus[] | Prisma.ListEnumRecoveryConfigurationStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RecoveryConfigurationStatus[] | Prisma.ListEnumRecoveryConfigurationStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRecoveryConfigurationStatusWithAggregatesFilter<$PrismaModel> | $Enums.RecoveryConfigurationStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumRecoveryConfigurationStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumRecoveryConfigurationStatusFilter<$PrismaModel>
+}
+
+export type EnumRecoveryAttemptStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.RecoveryAttemptStatus | Prisma.EnumRecoveryAttemptStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.RecoveryAttemptStatus[] | Prisma.ListEnumRecoveryAttemptStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RecoveryAttemptStatus[] | Prisma.ListEnumRecoveryAttemptStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRecoveryAttemptStatusFilter<$PrismaModel> | $Enums.RecoveryAttemptStatus
+}
+
+export type EnumWalletCredentialKindNullableFilter<$PrismaModel = never> = {
+  equals?: $Enums.WalletCredentialKind | Prisma.EnumWalletCredentialKindFieldRefInput<$PrismaModel> | null
+  in?: $Enums.WalletCredentialKind[] | Prisma.ListEnumWalletCredentialKindFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.WalletCredentialKind[] | Prisma.ListEnumWalletCredentialKindFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumWalletCredentialKindNullableFilter<$PrismaModel> | $Enums.WalletCredentialKind | null
+}
+
+export type EnumRecoveryTerminatorNullableFilter<$PrismaModel = never> = {
+  equals?: $Enums.RecoveryTerminator | Prisma.EnumRecoveryTerminatorFieldRefInput<$PrismaModel> | null
+  in?: $Enums.RecoveryTerminator[] | Prisma.ListEnumRecoveryTerminatorFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.RecoveryTerminator[] | Prisma.ListEnumRecoveryTerminatorFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumRecoveryTerminatorNullableFilter<$PrismaModel> | $Enums.RecoveryTerminator | null
+}
+
+export type EnumRecoveryAttemptStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RecoveryAttemptStatus | Prisma.EnumRecoveryAttemptStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.RecoveryAttemptStatus[] | Prisma.ListEnumRecoveryAttemptStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RecoveryAttemptStatus[] | Prisma.ListEnumRecoveryAttemptStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRecoveryAttemptStatusWithAggregatesFilter<$PrismaModel> | $Enums.RecoveryAttemptStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumRecoveryAttemptStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumRecoveryAttemptStatusFilter<$PrismaModel>
+}
+
+export type EnumWalletCredentialKindNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.WalletCredentialKind | Prisma.EnumWalletCredentialKindFieldRefInput<$PrismaModel> | null
+  in?: $Enums.WalletCredentialKind[] | Prisma.ListEnumWalletCredentialKindFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.WalletCredentialKind[] | Prisma.ListEnumWalletCredentialKindFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumWalletCredentialKindNullableWithAggregatesFilter<$PrismaModel> | $Enums.WalletCredentialKind | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumWalletCredentialKindNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumWalletCredentialKindNullableFilter<$PrismaModel>
+}
+
+export type EnumRecoveryTerminatorNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RecoveryTerminator | Prisma.EnumRecoveryTerminatorFieldRefInput<$PrismaModel> | null
+  in?: $Enums.RecoveryTerminator[] | Prisma.ListEnumRecoveryTerminatorFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.RecoveryTerminator[] | Prisma.ListEnumRecoveryTerminatorFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumRecoveryTerminatorNullableWithAggregatesFilter<$PrismaModel> | $Enums.RecoveryTerminator | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumRecoveryTerminatorNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumRecoveryTerminatorNullableFilter<$PrismaModel>
+}
+
 export type NestedUuidFilter<$PrismaModel = never> = {
   equals?: string | Prisma.StringFieldRefInput<$PrismaModel>
   in?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
@@ -1641,6 +1777,142 @@ export type NestedEnumRampStatusWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumRampStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumRampStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumWalletCredentialKindFilter<$PrismaModel = never> = {
+  equals?: $Enums.WalletCredentialKind | Prisma.EnumWalletCredentialKindFieldRefInput<$PrismaModel>
+  in?: $Enums.WalletCredentialKind[] | Prisma.ListEnumWalletCredentialKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WalletCredentialKind[] | Prisma.ListEnumWalletCredentialKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWalletCredentialKindFilter<$PrismaModel> | $Enums.WalletCredentialKind
+}
+
+export type NestedEnumWalletCredentialRoleFilter<$PrismaModel = never> = {
+  equals?: $Enums.WalletCredentialRole | Prisma.EnumWalletCredentialRoleFieldRefInput<$PrismaModel>
+  in?: $Enums.WalletCredentialRole[] | Prisma.ListEnumWalletCredentialRoleFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WalletCredentialRole[] | Prisma.ListEnumWalletCredentialRoleFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWalletCredentialRoleFilter<$PrismaModel> | $Enums.WalletCredentialRole
+}
+
+export type NestedEnumWalletCredentialStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.WalletCredentialStatus | Prisma.EnumWalletCredentialStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.WalletCredentialStatus[] | Prisma.ListEnumWalletCredentialStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WalletCredentialStatus[] | Prisma.ListEnumWalletCredentialStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWalletCredentialStatusFilter<$PrismaModel> | $Enums.WalletCredentialStatus
+}
+
+export type NestedEnumDeviceSecurityTierFilter<$PrismaModel = never> = {
+  equals?: $Enums.DeviceSecurityTier | Prisma.EnumDeviceSecurityTierFieldRefInput<$PrismaModel>
+  in?: $Enums.DeviceSecurityTier[] | Prisma.ListEnumDeviceSecurityTierFieldRefInput<$PrismaModel>
+  notIn?: $Enums.DeviceSecurityTier[] | Prisma.ListEnumDeviceSecurityTierFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumDeviceSecurityTierFilter<$PrismaModel> | $Enums.DeviceSecurityTier
+}
+
+export type NestedEnumWalletCredentialKindWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.WalletCredentialKind | Prisma.EnumWalletCredentialKindFieldRefInput<$PrismaModel>
+  in?: $Enums.WalletCredentialKind[] | Prisma.ListEnumWalletCredentialKindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WalletCredentialKind[] | Prisma.ListEnumWalletCredentialKindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWalletCredentialKindWithAggregatesFilter<$PrismaModel> | $Enums.WalletCredentialKind
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumWalletCredentialKindFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumWalletCredentialKindFilter<$PrismaModel>
+}
+
+export type NestedEnumWalletCredentialRoleWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.WalletCredentialRole | Prisma.EnumWalletCredentialRoleFieldRefInput<$PrismaModel>
+  in?: $Enums.WalletCredentialRole[] | Prisma.ListEnumWalletCredentialRoleFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WalletCredentialRole[] | Prisma.ListEnumWalletCredentialRoleFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWalletCredentialRoleWithAggregatesFilter<$PrismaModel> | $Enums.WalletCredentialRole
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumWalletCredentialRoleFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumWalletCredentialRoleFilter<$PrismaModel>
+}
+
+export type NestedEnumWalletCredentialStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.WalletCredentialStatus | Prisma.EnumWalletCredentialStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.WalletCredentialStatus[] | Prisma.ListEnumWalletCredentialStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.WalletCredentialStatus[] | Prisma.ListEnumWalletCredentialStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumWalletCredentialStatusWithAggregatesFilter<$PrismaModel> | $Enums.WalletCredentialStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumWalletCredentialStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumWalletCredentialStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumDeviceSecurityTierWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.DeviceSecurityTier | Prisma.EnumDeviceSecurityTierFieldRefInput<$PrismaModel>
+  in?: $Enums.DeviceSecurityTier[] | Prisma.ListEnumDeviceSecurityTierFieldRefInput<$PrismaModel>
+  notIn?: $Enums.DeviceSecurityTier[] | Prisma.ListEnumDeviceSecurityTierFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumDeviceSecurityTierWithAggregatesFilter<$PrismaModel> | $Enums.DeviceSecurityTier
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumDeviceSecurityTierFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumDeviceSecurityTierFilter<$PrismaModel>
+}
+
+export type NestedEnumRecoveryConfigurationStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.RecoveryConfigurationStatus | Prisma.EnumRecoveryConfigurationStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.RecoveryConfigurationStatus[] | Prisma.ListEnumRecoveryConfigurationStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RecoveryConfigurationStatus[] | Prisma.ListEnumRecoveryConfigurationStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRecoveryConfigurationStatusFilter<$PrismaModel> | $Enums.RecoveryConfigurationStatus
+}
+
+export type NestedEnumRecoveryConfigurationStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RecoveryConfigurationStatus | Prisma.EnumRecoveryConfigurationStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.RecoveryConfigurationStatus[] | Prisma.ListEnumRecoveryConfigurationStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RecoveryConfigurationStatus[] | Prisma.ListEnumRecoveryConfigurationStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRecoveryConfigurationStatusWithAggregatesFilter<$PrismaModel> | $Enums.RecoveryConfigurationStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumRecoveryConfigurationStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumRecoveryConfigurationStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumRecoveryAttemptStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.RecoveryAttemptStatus | Prisma.EnumRecoveryAttemptStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.RecoveryAttemptStatus[] | Prisma.ListEnumRecoveryAttemptStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RecoveryAttemptStatus[] | Prisma.ListEnumRecoveryAttemptStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRecoveryAttemptStatusFilter<$PrismaModel> | $Enums.RecoveryAttemptStatus
+}
+
+export type NestedEnumWalletCredentialKindNullableFilter<$PrismaModel = never> = {
+  equals?: $Enums.WalletCredentialKind | Prisma.EnumWalletCredentialKindFieldRefInput<$PrismaModel> | null
+  in?: $Enums.WalletCredentialKind[] | Prisma.ListEnumWalletCredentialKindFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.WalletCredentialKind[] | Prisma.ListEnumWalletCredentialKindFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumWalletCredentialKindNullableFilter<$PrismaModel> | $Enums.WalletCredentialKind | null
+}
+
+export type NestedEnumRecoveryTerminatorNullableFilter<$PrismaModel = never> = {
+  equals?: $Enums.RecoveryTerminator | Prisma.EnumRecoveryTerminatorFieldRefInput<$PrismaModel> | null
+  in?: $Enums.RecoveryTerminator[] | Prisma.ListEnumRecoveryTerminatorFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.RecoveryTerminator[] | Prisma.ListEnumRecoveryTerminatorFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumRecoveryTerminatorNullableFilter<$PrismaModel> | $Enums.RecoveryTerminator | null
+}
+
+export type NestedEnumRecoveryAttemptStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RecoveryAttemptStatus | Prisma.EnumRecoveryAttemptStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.RecoveryAttemptStatus[] | Prisma.ListEnumRecoveryAttemptStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RecoveryAttemptStatus[] | Prisma.ListEnumRecoveryAttemptStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRecoveryAttemptStatusWithAggregatesFilter<$PrismaModel> | $Enums.RecoveryAttemptStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumRecoveryAttemptStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumRecoveryAttemptStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumWalletCredentialKindNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.WalletCredentialKind | Prisma.EnumWalletCredentialKindFieldRefInput<$PrismaModel> | null
+  in?: $Enums.WalletCredentialKind[] | Prisma.ListEnumWalletCredentialKindFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.WalletCredentialKind[] | Prisma.ListEnumWalletCredentialKindFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumWalletCredentialKindNullableWithAggregatesFilter<$PrismaModel> | $Enums.WalletCredentialKind | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumWalletCredentialKindNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumWalletCredentialKindNullableFilter<$PrismaModel>
+}
+
+export type NestedEnumRecoveryTerminatorNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RecoveryTerminator | Prisma.EnumRecoveryTerminatorFieldRefInput<$PrismaModel> | null
+  in?: $Enums.RecoveryTerminator[] | Prisma.ListEnumRecoveryTerminatorFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.RecoveryTerminator[] | Prisma.ListEnumRecoveryTerminatorFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumRecoveryTerminatorNullableWithAggregatesFilter<$PrismaModel> | $Enums.RecoveryTerminator | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumRecoveryTerminatorNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumRecoveryTerminatorNullableFilter<$PrismaModel>
 }
 
 

@@ -20,6 +20,7 @@
   "dependencies": {
     "@kaada/blockchain": "workspace:*",
     "@kaada/config": "workspace:*",
+    "@kaada/contracts": "workspace:*",
     "@kaada/database": "workspace:*",
     "@kaada/domain": "workspace:*",
     "@kaada/logger": "workspace:*",

@@ -38,6 +38,13 @@ const production = [
   ...files(dir("apps/web/app")),
 ].filter((path) => !path.replaceAll("\\", "/").includes("packages/blockchain/src/testnet/"));
 
+// The recovery attestor and relayer are the one other sanctioned signer location; they are held to
+// their own narrow scan in recovery-security.test.ts, and nothing else is exempted.
+const isRecoverySigner = (path: string): boolean =>
+  /packages\/blockchain\/src\/recovery\/|apps\/api\/src\/recovery\/recovery\.runtime\.ts/.test(
+    path.replaceAll("\\", "/"),
+  );
+
 describe("execution security review (source scan)", () => {
   it("scans a meaningful amount of code", () => {
     assert.ok(production.length >= 150, String(production.length));
@@ -53,7 +60,7 @@ describe("execution security review (source scan)", () => {
       "root-action-service.ts",
       "zerodev-kernel-adapter.ts",
     ]);
-    for (const path of production) {
+    for (const path of production.filter((p) => !isRecoverySigner(p))) {
       const text = code(path);
       if (path.endsWith("logger.ts")) continue; // the redaction list names key material to hide it
       // The adapter is the only file that sends or signs UserOperations (it is held to its own scan
@@ -88,7 +95,11 @@ describe("execution security review (source scan)", () => {
     const submitters = production
       .filter((path) => /\.submit\(/.test(code(path)))
       .map((path) => path.split(/[\\/]/).slice(-1)[0]);
-    assert.deepEqual(submitters.sort(), ["runner.ts", "textile-order-provider.ts"]);
+    assert.deepEqual(submitters.sort(), [
+      "recovery.controller.ts", // recovery configuration .submit(): arms a Recovery Code, no order
+      "runner.ts",
+      "textile-order-provider.ts",
+    ]);
     // A firm request is never retried.
     assert.ok(/firmResponseSchema,\s*timeoutMs,\s*0,/.test(client));
   });

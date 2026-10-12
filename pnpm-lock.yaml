@@ -47,6 +47,9 @@ importers:
       '@kaada/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@kaada/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@kaada/database':
         specifier: workspace:*
         version: link:../../packages/database
@@ -237,6 +240,9 @@ importers:
 
   packages/contracts:
     dependencies:
+      '@noble/hashes':
+        specifier: 1.8.0
+        version: 1.8.0
       solc:
         specifier: ^0.8.37
         version: 0.8.37(debug@4.4.3(supports-color@7.2.0))

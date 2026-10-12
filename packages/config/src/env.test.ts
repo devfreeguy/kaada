@@ -483,3 +483,100 @@ describe("firm quote configuration", () => {
     );
   });
 });
+
+describe("account recovery configuration", () => {
+  const secret = Buffer.alloc(32, 9).toString("base64");
+  const address = (n: number) => `0x${n.toString(16).padStart(40, "0")}`;
+  const ready = {
+    DATABASE_URL: databaseUrl,
+    WALLET_PROVIDER: "kernel",
+    PASSKEY_RP_ID: "kaada.app",
+    PASSKEY_ORIGIN: "https://app.kaada.app",
+    BUNDLER_URL: "https://bundler.example/rpc",
+    RECOVERY_ENABLED: "true",
+    RECOVERY_VALIDATOR_ADDRESS: address(1),
+    RECOVERY_PASSKEY_FACTORY_ADDRESS: address(2),
+    RECOVERY_PASSKEY_IMPLEMENTATION_ADDRESS: address(3),
+    RECOVERY_DEVICE_FACTORY_ADDRESS: address(4),
+    RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS: address(5),
+    RECOVERY_RELAYER_KEY_FILE: "/secrets/relayer.key",
+    RECOVERY_ATTESTOR_KEY_FILE: "/secrets/attestor.key",
+    RECOVERY_CHALLENGE_SECRET: secret,
+    RECOVERY_EMAIL_PROVIDER: "outbox",
+    RECOVERY_EMAIL_OUTBOX_FILE: "/tmp/outbox.jsonl",
+  };
+
+  it("is off by default and carries the 72 hour delay and the 24 hour floor", () => {
+    const off = loadConfig({ DATABASE_URL: databaseUrl });
+    assert.equal(off.recovery.enabled, false);
+    assert.equal(off.recovery.delaySeconds, 72 * 3600);
+    assert.equal(off.recovery.minDelaySeconds, 24 * 3600);
+    assert.equal(off.recovery.gasTopUpMaxWei, 0n);
+    assert.equal("setup" in off.recovery, false);
+  });
+
+  it("is on only when exactly true, and then needs every piece", () => {
+    assert.throws(() => loadConfig({ ...ready, RECOVERY_ENABLED: "yes" }), ConfigError);
+    const config = loadConfig(ready);
+    assert.equal(config.recovery.enabled, true);
+    assert.equal(config.recovery.setup?.contracts.validator, address(1));
+    assert.equal(config.recovery.chainId, 42220);
+    for (const key of Object.keys(ready).filter(
+      (k) => k !== "RECOVERY_ENABLED" && k !== "DATABASE_URL",
+    )) {
+      const { [key]: _removed, ...without } = ready as Record<string, string>;
+      assert.throws(() => loadConfig(without), ConfigError, key);
+    }
+  });
+
+  it("rejects malformed addresses and a challenge secret that is not 32 bytes", () => {
+    assert.throws(
+      () => loadConfig({ ...ready, RECOVERY_VALIDATOR_ADDRESS: "0x1234" }),
+      ConfigError,
+    );
+    assert.throws(
+      () => loadConfig({ ...ready, RECOVERY_CHALLENGE_SECRET: "c2hvcnQ=" }),
+      ConfigError,
+    );
+  });
+
+  it("production never starts with a delay floor below 24 hours (a test chain may)", () => {
+    const production = {
+      ...ready,
+      NODE_ENV: "production",
+      PIN_PEPPER: "p".repeat(32),
+      CELO_RPC_URL: "https://rpc.example",
+    };
+    // The file outbox is a development tool: until a real email provider exists, production cannot enable recovery.
+    assert.throws(() => loadConfig(production), /outbox/);
+    assert.throws(
+      () =>
+        loadConfig({
+          ...production,
+          RECOVERY_MIN_DELAY_SECONDS: "10",
+          RECOVERY_DELAY_SECONDS: "10",
+        }),
+      /24 hours/,
+    );
+    // With the floor intact, the floor is not what stops it.
+    assert.doesNotThrow(() => {
+      try {
+        loadConfig(production);
+      } catch (error) {
+        if (/24 hours/.test(String(error))) throw error;
+      }
+    });
+    const test = loadConfig({
+      ...ready,
+      RECOVERY_MIN_DELAY_SECONDS: "10",
+      RECOVERY_DELAY_SECONDS: "25",
+      RECOVERY_CHAIN_ID: "11142220",
+    });
+    assert.equal(test.recovery.minDelaySeconds, 10);
+    assert.equal(test.recovery.chainId, 11142220);
+  });
+
+  it("the default delay may not be below the floor", () => {
+    assert.throws(() => loadConfig({ ...ready, RECOVERY_DELAY_SECONDS: "3600" }), ConfigError);
+  });
+});

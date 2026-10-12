@@ -79,7 +79,11 @@ export const ModelName = {
   Execution: 'Execution',
   Transaction: 'Transaction',
   RampSession: 'RampSession',
-  AuditEvent: 'AuditEvent'
+  AuditEvent: 'AuditEvent',
+  WalletCredential: 'WalletCredential',
+  RecoveryConfiguration: 'RecoveryConfiguration',
+  RecoveryAttempt: 'RecoveryAttempt',
+  RecoveryEmailChallenge: 'RecoveryEmailChallenge'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -649,6 +653,124 @@ export const AuditEventScalarFieldEnum = {
 } as const
 
 export type AuditEventScalarFieldEnum = (typeof AuditEventScalarFieldEnum)[keyof typeof AuditEventScalarFieldEnum]
+
+
+export const WalletCredentialScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  walletId: 'walletId',
+  kind: 'kind',
+  role: 'role',
+  status: 'status',
+  isRoot: 'isRoot',
+  validatorAddress: 'validatorAddress',
+  validatorPurpose: 'validatorPurpose',
+  deploymentSalt: 'deploymentSalt',
+  credentialRef: 'credentialRef',
+  publicKeyX: 'publicKeyX',
+  publicKeyY: 'publicKeyY',
+  rpId: 'rpId',
+  passkeyCredentialId: 'passkeyCredentialId',
+  securityTier: 'securityTier',
+  label: 'label',
+  replacedByCredentialId: 'replacedByCredentialId',
+  createdAt: 'createdAt',
+  activatedAt: 'activatedAt',
+  replacedAt: 'replacedAt',
+  revokedAt: 'revokedAt'
+} as const
+
+export type WalletCredentialScalarFieldEnum = (typeof WalletCredentialScalarFieldEnum)[keyof typeof WalletCredentialScalarFieldEnum]
+
+
+export const RecoveryConfigurationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  walletId: 'walletId',
+  chainId: 'chainId',
+  validatorAddress: 'validatorAddress',
+  recoveryAddress: 'recoveryAddress',
+  delaySeconds: 'delaySeconds',
+  status: 'status',
+  armedByCredentialId: 'armedByCredentialId',
+  recoveryNonce: 'recoveryNonce',
+  installUserOpHash: 'installUserOpHash',
+  preparedOperation: 'preparedOperation',
+  configuredAt: 'configuredAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RecoveryConfigurationScalarFieldEnum = (typeof RecoveryConfigurationScalarFieldEnum)[keyof typeof RecoveryConfigurationScalarFieldEnum]
+
+
+export const RecoveryAttemptScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  walletId: 'walletId',
+  configurationId: 'configurationId',
+  status: 'status',
+  tokenHash: 'tokenHash',
+  tokenExpiresAt: 'tokenExpiresAt',
+  cancelTokenHash: 'cancelTokenHash',
+  emailVerifiedAt: 'emailVerifiedAt',
+  newCredentialId: 'newCredentialId',
+  newRootKind: 'newRootKind',
+  newValidator: 'newValidator',
+  newValidatorData: 'newValidatorData',
+  newValidatorDataHash: 'newValidatorDataHash',
+  newHook: 'newHook',
+  newHookData: 'newHookData',
+  newHookDataHash: 'newHookDataHash',
+  commitmentHash: 'commitmentHash',
+  recoveryNonce: 'recoveryNonce',
+  proofDeadline: 'proofDeadline',
+  proposedAt: 'proposedAt',
+  previousRootValidator: 'previousRootValidator',
+  initiatedAt: 'initiatedAt',
+  executeAfter: 'executeAfter',
+  initiateTxHash: 'initiateTxHash',
+  nonceBefore: 'nonceBefore',
+  finalizeUserOpHash: 'finalizeUserOpHash',
+  finalizeTxHash: 'finalizeTxHash',
+  blockedReason: 'blockedReason',
+  lockedBy: 'lockedBy',
+  lockedUntil: 'lockedUntil',
+  rootConfirmedAt: 'rootConfirmedAt',
+  proofChallenge: 'proofChallenge',
+  proofFailures: 'proofFailures',
+  cancelChallenge: 'cancelChallenge',
+  cancelPrepared: 'cancelPrepared',
+  cancelUserOpHash: 'cancelUserOpHash',
+  proofVerifiedAt: 'proofVerifiedAt',
+  completedAt: 'completedAt',
+  terminatedBy: 'terminatedBy',
+  terminatedAt: 'terminatedAt',
+  terminationTxHash: 'terminationTxHash',
+  failureCode: 'failureCode',
+  cleanupCompletedAt: 'cleanupCompletedAt',
+  pinResetAt: 'pinResetAt',
+  newConfigurationId: 'newConfigurationId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RecoveryAttemptScalarFieldEnum = (typeof RecoveryAttemptScalarFieldEnum)[keyof typeof RecoveryAttemptScalarFieldEnum]
+
+
+export const RecoveryEmailChallengeScalarFieldEnum = {
+  id: 'id',
+  attemptId: 'attemptId',
+  sessionTokenHash: 'sessionTokenHash',
+  codeHash: 'codeHash',
+  expiresAt: 'expiresAt',
+  attempts: 'attempts',
+  maxAttempts: 'maxAttempts',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type RecoveryEmailChallengeScalarFieldEnum = (typeof RecoveryEmailChallengeScalarFieldEnum)[keyof typeof RecoveryEmailChallengeScalarFieldEnum]
 
 
 export const SortOrder = {

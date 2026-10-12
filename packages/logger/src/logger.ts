@@ -27,6 +27,16 @@ const sensitiveKeys = [
   "tokenHash",
   "newPin",
   "challenge",
+  // Account recovery: the emailed code, a Recovery Code proof, a root signature or assertion, the one-use link tokens.
+  "code",
+  "recoveryCode",
+  "signature",
+  "recoverySignature",
+  "attestorSignature",
+  "material",
+  "assertion",
+  "cancelToken",
+  "sessionToken",
 ];
 
 /** Request/response header paths plus sensitive keys at the top level and one level deep. */

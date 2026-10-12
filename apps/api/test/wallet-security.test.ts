@@ -57,7 +57,15 @@ const harnessPath = join(dir("packages/blockchain/src/testnet"), "celo-sepolia-h
 /** Every file of the testnet harness and probes (all of packages/blockchain/src/testnet). */
 const isTestnetTool = (path: string): boolean =>
   path.replaceAll("\\", "/").includes("packages/blockchain/src/testnet/");
-const walletSources = walletSourcesAll.filter((path) => !isTestnetTool(path));
+/**
+ * The recovery attestor and relayer: the one other sanctioned signer location, held to its own narrow
+ * scan in recovery-security.test.ts. Nothing else is exempted.
+ */
+const isRecoverySigner = (path: string): boolean =>
+  path.replaceAll("\\", "/").includes("packages/blockchain/src/recovery/");
+const walletSources = walletSourcesAll.filter(
+  (path) => !isTestnetTool(path) && !isRecoverySigner(path),
+);
 
 describe("wallet security review (source scan)", () => {
   it("scans a meaningful amount of code", () => {

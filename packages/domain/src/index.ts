@@ -9,6 +9,7 @@ export type * from "./json.js";
 export * from "./money/index.js";
 export * from "./policies/index.js";
 export * from "./providers/index.js";
+export * from "./recovery/index.js";
 export * from "./quotes/index.js";
 export * from "./recipients/index.js";
 export * from "./routing/index.js";

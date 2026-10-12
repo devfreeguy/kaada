@@ -194,3 +194,27 @@ export type RampSession = Prisma.RampSessionModel
  * Append-only by application convention (no updatedAt, no deletes).
  */
 export type AuditEvent = Prisma.AuditEventModel
+/**
+ * Model WalletCredential
+ * A root credential a wallet has had: PUBLIC data only. The private key lives in the authenticator or the device
+ * keystore. Each row names the validator INSTANCE that holds it, and an instance is never used for a second credential.
+ * Constraints in the manual migration: one ACTIVE root per wallet, validator instance unique per wallet.
+ */
+export type WalletCredential = Prisma.WalletCredentialModel
+/**
+ * Model RecoveryConfiguration
+ * The on-chain recovery arrangement of one wallet. Holds only the PUBLIC verifier address derived from the Recovery
+ * Code, never the code or its key. At most one ACTIVE configuration per wallet (manual migration).
+ */
+export type RecoveryConfiguration = Prisma.RecoveryConfigurationModel
+/**
+ * Model RecoveryAttempt
+ * One attempt to recover a wallet: an explicit state machine (see the domain). Only hashes of tokens are stored; the
+ * new root is public data. At most one non-terminal attempt per wallet (manual migration).
+ */
+export type RecoveryAttempt = Prisma.RecoveryAttemptModel
+/**
+ * Model RecoveryEmailChallenge
+ * A short-lived email challenge for one recovery attempt. Only a keyed hash of the code is stored.
+ */
+export type RecoveryEmailChallenge = Prisma.RecoveryEmailChallengeModel

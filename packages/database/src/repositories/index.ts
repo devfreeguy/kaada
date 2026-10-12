@@ -9,6 +9,11 @@ import type {
   ExecutionTransactionRepository,
   RootActionSessionRepository,
   ExecutionSecretRepository,
+  RecoveryAttemptRepository,
+  RecoveryCleanupRepository,
+  RecoveryConfigurationRepository,
+  RecoveryEmailChallengeRepository,
+  WalletCredentialRepository,
   FirmQuoteAttemptRepository,
   PaymentAuthorizationRepository,
   TransactionPinRepository,
@@ -43,6 +48,13 @@ import {
   createExecutionSecretRepository,
   createFirmQuoteAttemptRepository,
 } from "./firm.js";
+import {
+  createRecoveryAttemptRepository,
+  createRecoveryCleanupRepository,
+  createRecoveryConfigurationRepository,
+  createRecoveryEmailChallengeRepository,
+  createWalletCredentialRepository,
+} from "./recovery.js";
 import { createExecutionTransactionRepository, createRootActionSessionRepository } from "./run.js";
 import { createIdentityRepository, createUserRepository } from "./identity.js";
 import { createIntentRepository } from "./intents.js";
@@ -87,6 +99,11 @@ export interface Repositories {
   executionPlans: ExecutionPlanRepository;
   executionTransactions: ExecutionTransactionRepository;
   rootActions: RootActionSessionRepository;
+  walletCredentials: WalletCredentialRepository;
+  recoveryConfigurations: RecoveryConfigurationRepository;
+  recoveryAttempts: RecoveryAttemptRepository;
+  recoveryEmailChallenges: RecoveryEmailChallengeRepository;
+  recoveryCleanup: RecoveryCleanupRepository;
 }
 
 function buildRepositories(db: Db): Repositories {
@@ -116,6 +133,11 @@ function buildRepositories(db: Db): Repositories {
     executionPlans: createExecutionPlanRepository(db),
     executionTransactions: createExecutionTransactionRepository(db),
     rootActions: createRootActionSessionRepository(db),
+    walletCredentials: createWalletCredentialRepository(db),
+    recoveryConfigurations: createRecoveryConfigurationRepository(db),
+    recoveryAttempts: createRecoveryAttemptRepository(db),
+    recoveryEmailChallenges: createRecoveryEmailChallengeRepository(db),
+    recoveryCleanup: createRecoveryCleanupRepository(db),
   };
 }
 

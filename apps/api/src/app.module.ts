@@ -9,6 +9,7 @@ import { ExecutionModule } from "./execution/execution.module.js";
 import { AppConfigModule, APP_CONFIG } from "./config/config.module.js";
 import { DatabaseModule } from "./database/database.module.js";
 import { HealthModule } from "./health/health.module.js";
+import { RecoveryModule } from "./recovery/recovery.module.js";
 import { WalletModule } from "./wallet/wallet.module.js";
 
 @Module({
@@ -29,6 +30,7 @@ import { WalletModule } from "./wallet/wallet.module.js";
     WalletModule,
     AuthorizationModule,
     ExecutionModule,
+    RecoveryModule,
   ],
 })
 export class AppModule {}

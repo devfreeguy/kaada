@@ -313,6 +313,9 @@ export type WalletWhereInput = {
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptListRelationFilter
   executions?: Prisma.ExecutionListRelationFilter
   rootActionSessions?: Prisma.RootActionSessionListRelationFilter
+  walletCredentials?: Prisma.WalletCredentialListRelationFilter
+  recoveryConfigurations?: Prisma.RecoveryConfigurationListRelationFilter
+  recoveryAttempts?: Prisma.RecoveryAttemptListRelationFilter
 }
 
 export type WalletOrderByWithRelationInput = {
@@ -339,6 +342,9 @@ export type WalletOrderByWithRelationInput = {
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptOrderByRelationAggregateInput
   executions?: Prisma.ExecutionOrderByRelationAggregateInput
   rootActionSessions?: Prisma.RootActionSessionOrderByRelationAggregateInput
+  walletCredentials?: Prisma.WalletCredentialOrderByRelationAggregateInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationOrderByRelationAggregateInput
+  recoveryAttempts?: Prisma.RecoveryAttemptOrderByRelationAggregateInput
 }
 
 export type WalletWhereUniqueInput = Prisma.AtLeast<{
@@ -369,6 +375,9 @@ export type WalletWhereUniqueInput = Prisma.AtLeast<{
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptListRelationFilter
   executions?: Prisma.ExecutionListRelationFilter
   rootActionSessions?: Prisma.RootActionSessionListRelationFilter
+  walletCredentials?: Prisma.WalletCredentialListRelationFilter
+  recoveryConfigurations?: Prisma.RecoveryConfigurationListRelationFilter
+  recoveryAttempts?: Prisma.RecoveryAttemptListRelationFilter
 }, "id" | "chainId_address">
 
 export type WalletOrderByWithAggregationInput = {
@@ -440,6 +449,9 @@ export type WalletCreateInput = {
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutWalletInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutWalletInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutWalletInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
 }
 
 export type WalletUncheckedCreateInput = {
@@ -465,6 +477,9 @@ export type WalletUncheckedCreateInput = {
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutWalletInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutWalletInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutWalletInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
 }
 
 export type WalletUpdateInput = {
@@ -490,6 +505,9 @@ export type WalletUpdateInput = {
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutWalletNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutWalletNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutWalletNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
 }
 
 export type WalletUncheckedUpdateInput = {
@@ -515,6 +533,9 @@ export type WalletUncheckedUpdateInput = {
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutWalletNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutWalletNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutWalletNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
 }
 
 export type WalletCreateManyInput = {
@@ -813,6 +834,48 @@ export type WalletUpdateOneWithoutExecutionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.WalletUpdateToOneWithWhereWithoutExecutionsInput, Prisma.WalletUpdateWithoutExecutionsInput>, Prisma.WalletUncheckedUpdateWithoutExecutionsInput>
 }
 
+export type WalletCreateNestedOneWithoutWalletCredentialsInput = {
+  create?: Prisma.XOR<Prisma.WalletCreateWithoutWalletCredentialsInput, Prisma.WalletUncheckedCreateWithoutWalletCredentialsInput>
+  connectOrCreate?: Prisma.WalletCreateOrConnectWithoutWalletCredentialsInput
+  connect?: Prisma.WalletWhereUniqueInput
+}
+
+export type WalletUpdateOneRequiredWithoutWalletCredentialsNestedInput = {
+  create?: Prisma.XOR<Prisma.WalletCreateWithoutWalletCredentialsInput, Prisma.WalletUncheckedCreateWithoutWalletCredentialsInput>
+  connectOrCreate?: Prisma.WalletCreateOrConnectWithoutWalletCredentialsInput
+  upsert?: Prisma.WalletUpsertWithoutWalletCredentialsInput
+  connect?: Prisma.WalletWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.WalletUpdateToOneWithWhereWithoutWalletCredentialsInput, Prisma.WalletUpdateWithoutWalletCredentialsInput>, Prisma.WalletUncheckedUpdateWithoutWalletCredentialsInput>
+}
+
+export type WalletCreateNestedOneWithoutRecoveryConfigurationsInput = {
+  create?: Prisma.XOR<Prisma.WalletCreateWithoutRecoveryConfigurationsInput, Prisma.WalletUncheckedCreateWithoutRecoveryConfigurationsInput>
+  connectOrCreate?: Prisma.WalletCreateOrConnectWithoutRecoveryConfigurationsInput
+  connect?: Prisma.WalletWhereUniqueInput
+}
+
+export type WalletUpdateOneRequiredWithoutRecoveryConfigurationsNestedInput = {
+  create?: Prisma.XOR<Prisma.WalletCreateWithoutRecoveryConfigurationsInput, Prisma.WalletUncheckedCreateWithoutRecoveryConfigurationsInput>
+  connectOrCreate?: Prisma.WalletCreateOrConnectWithoutRecoveryConfigurationsInput
+  upsert?: Prisma.WalletUpsertWithoutRecoveryConfigurationsInput
+  connect?: Prisma.WalletWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.WalletUpdateToOneWithWhereWithoutRecoveryConfigurationsInput, Prisma.WalletUpdateWithoutRecoveryConfigurationsInput>, Prisma.WalletUncheckedUpdateWithoutRecoveryConfigurationsInput>
+}
+
+export type WalletCreateNestedOneWithoutRecoveryAttemptsInput = {
+  create?: Prisma.XOR<Prisma.WalletCreateWithoutRecoveryAttemptsInput, Prisma.WalletUncheckedCreateWithoutRecoveryAttemptsInput>
+  connectOrCreate?: Prisma.WalletCreateOrConnectWithoutRecoveryAttemptsInput
+  connect?: Prisma.WalletWhereUniqueInput
+}
+
+export type WalletUpdateOneRequiredWithoutRecoveryAttemptsNestedInput = {
+  create?: Prisma.XOR<Prisma.WalletCreateWithoutRecoveryAttemptsInput, Prisma.WalletUncheckedCreateWithoutRecoveryAttemptsInput>
+  connectOrCreate?: Prisma.WalletCreateOrConnectWithoutRecoveryAttemptsInput
+  upsert?: Prisma.WalletUpsertWithoutRecoveryAttemptsInput
+  connect?: Prisma.WalletWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.WalletUpdateToOneWithWhereWithoutRecoveryAttemptsInput, Prisma.WalletUpdateWithoutRecoveryAttemptsInput>, Prisma.WalletUncheckedUpdateWithoutRecoveryAttemptsInput>
+}
+
 export type WalletCreateWithoutUserInput = {
   id: string
   chainId: number
@@ -835,6 +898,9 @@ export type WalletCreateWithoutUserInput = {
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutWalletInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutWalletInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutWalletInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
 }
 
 export type WalletUncheckedCreateWithoutUserInput = {
@@ -859,6 +925,9 @@ export type WalletUncheckedCreateWithoutUserInput = {
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutWalletInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutWalletInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutWalletInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
 }
 
 export type WalletCreateOrConnectWithoutUserInput = {
@@ -931,6 +1000,9 @@ export type WalletCreateWithoutAuthorizationSessionsInput = {
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutWalletInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutWalletInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutWalletInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
 }
 
 export type WalletUncheckedCreateWithoutAuthorizationSessionsInput = {
@@ -955,6 +1027,9 @@ export type WalletUncheckedCreateWithoutAuthorizationSessionsInput = {
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutWalletInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutWalletInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutWalletInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
 }
 
 export type WalletCreateOrConnectWithoutAuthorizationSessionsInput = {
@@ -995,6 +1070,9 @@ export type WalletUpdateWithoutAuthorizationSessionsInput = {
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutWalletNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutWalletNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutWalletNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
 }
 
 export type WalletUncheckedUpdateWithoutAuthorizationSessionsInput = {
@@ -1019,6 +1097,9 @@ export type WalletUncheckedUpdateWithoutAuthorizationSessionsInput = {
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutWalletNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutWalletNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutWalletNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
 }
 
 export type WalletCreateWithoutPaymentAuthorizationsInput = {
@@ -1043,6 +1124,9 @@ export type WalletCreateWithoutPaymentAuthorizationsInput = {
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutWalletInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutWalletInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutWalletInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
 }
 
 export type WalletUncheckedCreateWithoutPaymentAuthorizationsInput = {
@@ -1067,6 +1151,9 @@ export type WalletUncheckedCreateWithoutPaymentAuthorizationsInput = {
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutWalletInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutWalletInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutWalletInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
 }
 
 export type WalletCreateOrConnectWithoutPaymentAuthorizationsInput = {
@@ -1107,6 +1194,9 @@ export type WalletUpdateWithoutPaymentAuthorizationsInput = {
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutWalletNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutWalletNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutWalletNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
 }
 
 export type WalletUncheckedUpdateWithoutPaymentAuthorizationsInput = {
@@ -1131,6 +1221,9 @@ export type WalletUncheckedUpdateWithoutPaymentAuthorizationsInput = {
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutWalletNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutWalletNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutWalletNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
 }
 
 export type WalletCreateWithoutFirmQuoteAttemptsInput = {
@@ -1155,6 +1248,9 @@ export type WalletCreateWithoutFirmQuoteAttemptsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutWalletInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutWalletInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutWalletInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
 }
 
 export type WalletUncheckedCreateWithoutFirmQuoteAttemptsInput = {
@@ -1179,6 +1275,9 @@ export type WalletUncheckedCreateWithoutFirmQuoteAttemptsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutWalletInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutWalletInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutWalletInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
 }
 
 export type WalletCreateOrConnectWithoutFirmQuoteAttemptsInput = {
@@ -1219,6 +1318,9 @@ export type WalletUpdateWithoutFirmQuoteAttemptsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutWalletNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutWalletNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutWalletNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
 }
 
 export type WalletUncheckedUpdateWithoutFirmQuoteAttemptsInput = {
@@ -1243,6 +1345,9 @@ export type WalletUncheckedUpdateWithoutFirmQuoteAttemptsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutWalletNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutWalletNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutWalletNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
 }
 
 export type WalletCreateWithoutRootActionSessionsInput = {
@@ -1267,6 +1372,9 @@ export type WalletCreateWithoutRootActionSessionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutWalletInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutWalletInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutWalletInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
 }
 
 export type WalletUncheckedCreateWithoutRootActionSessionsInput = {
@@ -1291,6 +1399,9 @@ export type WalletUncheckedCreateWithoutRootActionSessionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutWalletInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutWalletInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutWalletInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
 }
 
 export type WalletCreateOrConnectWithoutRootActionSessionsInput = {
@@ -1331,6 +1442,9 @@ export type WalletUpdateWithoutRootActionSessionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutWalletNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutWalletNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutWalletNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
 }
 
 export type WalletUncheckedUpdateWithoutRootActionSessionsInput = {
@@ -1355,6 +1469,9 @@ export type WalletUncheckedUpdateWithoutRootActionSessionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutWalletNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutWalletNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutWalletNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
 }
 
 export type WalletCreateWithoutDelegatedPermissionsInput = {
@@ -1379,6 +1496,9 @@ export type WalletCreateWithoutDelegatedPermissionsInput = {
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutWalletInput
   executions?: Prisma.ExecutionCreateNestedManyWithoutWalletInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutWalletInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
 }
 
 export type WalletUncheckedCreateWithoutDelegatedPermissionsInput = {
@@ -1403,6 +1523,9 @@ export type WalletUncheckedCreateWithoutDelegatedPermissionsInput = {
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutWalletInput
   executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutWalletInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutWalletInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
 }
 
 export type WalletCreateOrConnectWithoutDelegatedPermissionsInput = {
@@ -1443,6 +1566,9 @@ export type WalletUpdateWithoutDelegatedPermissionsInput = {
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutWalletNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutWalletNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutWalletNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
 }
 
 export type WalletUncheckedUpdateWithoutDelegatedPermissionsInput = {
@@ -1467,6 +1593,9 @@ export type WalletUncheckedUpdateWithoutDelegatedPermissionsInput = {
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutWalletNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutWalletNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutWalletNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
 }
 
 export type WalletCreateWithoutExecutionsInput = {
@@ -1491,6 +1620,9 @@ export type WalletCreateWithoutExecutionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutWalletInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutWalletInput
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutWalletInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
 }
 
 export type WalletUncheckedCreateWithoutExecutionsInput = {
@@ -1515,6 +1647,9 @@ export type WalletUncheckedCreateWithoutExecutionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutWalletInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutWalletInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutWalletInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
 }
 
 export type WalletCreateOrConnectWithoutExecutionsInput = {
@@ -1555,6 +1690,9 @@ export type WalletUpdateWithoutExecutionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutWalletNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutWalletNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutWalletNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
 }
 
 export type WalletUncheckedUpdateWithoutExecutionsInput = {
@@ -1579,6 +1717,381 @@ export type WalletUncheckedUpdateWithoutExecutionsInput = {
   paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutWalletNestedInput
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutWalletNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutWalletNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
+}
+
+export type WalletCreateWithoutWalletCredentialsInput = {
+  id: string
+  chainId: number
+  address?: string | null
+  label?: string | null
+  isPrimary?: boolean
+  type?: $Enums.WalletType
+  status?: $Enums.WalletStatus
+  deployment?: $Enums.WalletDeployment
+  provider?: string | null
+  providerAccountId?: string | null
+  statusReason?: string | null
+  provisionedAt?: Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutWalletsInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutWalletInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutWalletInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutWalletInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutWalletInput
+  executions?: Prisma.ExecutionCreateNestedManyWithoutWalletInput
+  rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutWalletInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
+}
+
+export type WalletUncheckedCreateWithoutWalletCredentialsInput = {
+  id: string
+  userId: string
+  chainId: number
+  address?: string | null
+  label?: string | null
+  isPrimary?: boolean
+  type?: $Enums.WalletType
+  status?: $Enums.WalletStatus
+  deployment?: $Enums.WalletDeployment
+  provider?: string | null
+  providerAccountId?: string | null
+  statusReason?: string | null
+  provisionedAt?: Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutWalletInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutWalletInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutWalletInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutWalletInput
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutWalletInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutWalletInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
+}
+
+export type WalletCreateOrConnectWithoutWalletCredentialsInput = {
+  where: Prisma.WalletWhereUniqueInput
+  create: Prisma.XOR<Prisma.WalletCreateWithoutWalletCredentialsInput, Prisma.WalletUncheckedCreateWithoutWalletCredentialsInput>
+}
+
+export type WalletUpsertWithoutWalletCredentialsInput = {
+  update: Prisma.XOR<Prisma.WalletUpdateWithoutWalletCredentialsInput, Prisma.WalletUncheckedUpdateWithoutWalletCredentialsInput>
+  create: Prisma.XOR<Prisma.WalletCreateWithoutWalletCredentialsInput, Prisma.WalletUncheckedCreateWithoutWalletCredentialsInput>
+  where?: Prisma.WalletWhereInput
+}
+
+export type WalletUpdateToOneWithWhereWithoutWalletCredentialsInput = {
+  where?: Prisma.WalletWhereInput
+  data: Prisma.XOR<Prisma.WalletUpdateWithoutWalletCredentialsInput, Prisma.WalletUncheckedUpdateWithoutWalletCredentialsInput>
+}
+
+export type WalletUpdateWithoutWalletCredentialsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  chainId?: Prisma.IntFieldUpdateOperationsInput | number
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  type?: Prisma.EnumWalletTypeFieldUpdateOperationsInput | $Enums.WalletType
+  status?: Prisma.EnumWalletStatusFieldUpdateOperationsInput | $Enums.WalletStatus
+  deployment?: Prisma.EnumWalletDeploymentFieldUpdateOperationsInput | $Enums.WalletDeployment
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provisionedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutWalletsNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutWalletNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutWalletNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutWalletNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutWalletNestedInput
+  executions?: Prisma.ExecutionUpdateManyWithoutWalletNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutWalletNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
+}
+
+export type WalletUncheckedUpdateWithoutWalletCredentialsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  chainId?: Prisma.IntFieldUpdateOperationsInput | number
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  type?: Prisma.EnumWalletTypeFieldUpdateOperationsInput | $Enums.WalletType
+  status?: Prisma.EnumWalletStatusFieldUpdateOperationsInput | $Enums.WalletStatus
+  deployment?: Prisma.EnumWalletDeploymentFieldUpdateOperationsInput | $Enums.WalletDeployment
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provisionedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutWalletNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutWalletNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutWalletNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutWalletNestedInput
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutWalletNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
+}
+
+export type WalletCreateWithoutRecoveryConfigurationsInput = {
+  id: string
+  chainId: number
+  address?: string | null
+  label?: string | null
+  isPrimary?: boolean
+  type?: $Enums.WalletType
+  status?: $Enums.WalletStatus
+  deployment?: $Enums.WalletDeployment
+  provider?: string | null
+  providerAccountId?: string | null
+  statusReason?: string | null
+  provisionedAt?: Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutWalletsInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutWalletInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutWalletInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutWalletInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutWalletInput
+  executions?: Prisma.ExecutionCreateNestedManyWithoutWalletInput
+  rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutWalletInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
+}
+
+export type WalletUncheckedCreateWithoutRecoveryConfigurationsInput = {
+  id: string
+  userId: string
+  chainId: number
+  address?: string | null
+  label?: string | null
+  isPrimary?: boolean
+  type?: $Enums.WalletType
+  status?: $Enums.WalletStatus
+  deployment?: $Enums.WalletDeployment
+  provider?: string | null
+  providerAccountId?: string | null
+  statusReason?: string | null
+  provisionedAt?: Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutWalletInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutWalletInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutWalletInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutWalletInput
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutWalletInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutWalletInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
+}
+
+export type WalletCreateOrConnectWithoutRecoveryConfigurationsInput = {
+  where: Prisma.WalletWhereUniqueInput
+  create: Prisma.XOR<Prisma.WalletCreateWithoutRecoveryConfigurationsInput, Prisma.WalletUncheckedCreateWithoutRecoveryConfigurationsInput>
+}
+
+export type WalletUpsertWithoutRecoveryConfigurationsInput = {
+  update: Prisma.XOR<Prisma.WalletUpdateWithoutRecoveryConfigurationsInput, Prisma.WalletUncheckedUpdateWithoutRecoveryConfigurationsInput>
+  create: Prisma.XOR<Prisma.WalletCreateWithoutRecoveryConfigurationsInput, Prisma.WalletUncheckedCreateWithoutRecoveryConfigurationsInput>
+  where?: Prisma.WalletWhereInput
+}
+
+export type WalletUpdateToOneWithWhereWithoutRecoveryConfigurationsInput = {
+  where?: Prisma.WalletWhereInput
+  data: Prisma.XOR<Prisma.WalletUpdateWithoutRecoveryConfigurationsInput, Prisma.WalletUncheckedUpdateWithoutRecoveryConfigurationsInput>
+}
+
+export type WalletUpdateWithoutRecoveryConfigurationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  chainId?: Prisma.IntFieldUpdateOperationsInput | number
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  type?: Prisma.EnumWalletTypeFieldUpdateOperationsInput | $Enums.WalletType
+  status?: Prisma.EnumWalletStatusFieldUpdateOperationsInput | $Enums.WalletStatus
+  deployment?: Prisma.EnumWalletDeploymentFieldUpdateOperationsInput | $Enums.WalletDeployment
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provisionedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutWalletsNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutWalletNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutWalletNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutWalletNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutWalletNestedInput
+  executions?: Prisma.ExecutionUpdateManyWithoutWalletNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutWalletNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
+}
+
+export type WalletUncheckedUpdateWithoutRecoveryConfigurationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  chainId?: Prisma.IntFieldUpdateOperationsInput | number
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  type?: Prisma.EnumWalletTypeFieldUpdateOperationsInput | $Enums.WalletType
+  status?: Prisma.EnumWalletStatusFieldUpdateOperationsInput | $Enums.WalletStatus
+  deployment?: Prisma.EnumWalletDeploymentFieldUpdateOperationsInput | $Enums.WalletDeployment
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provisionedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutWalletNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutWalletNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutWalletNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutWalletNestedInput
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutWalletNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutWalletNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
+}
+
+export type WalletCreateWithoutRecoveryAttemptsInput = {
+  id: string
+  chainId: number
+  address?: string | null
+  label?: string | null
+  isPrimary?: boolean
+  type?: $Enums.WalletType
+  status?: $Enums.WalletStatus
+  deployment?: $Enums.WalletDeployment
+  provider?: string | null
+  providerAccountId?: string | null
+  statusReason?: string | null
+  provisionedAt?: Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutWalletsInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutWalletInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutWalletInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutWalletInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutWalletInput
+  executions?: Prisma.ExecutionCreateNestedManyWithoutWalletInput
+  rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutWalletInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
+}
+
+export type WalletUncheckedCreateWithoutRecoveryAttemptsInput = {
+  id: string
+  userId: string
+  chainId: number
+  address?: string | null
+  label?: string | null
+  isPrimary?: boolean
+  type?: $Enums.WalletType
+  status?: $Enums.WalletStatus
+  deployment?: $Enums.WalletDeployment
+  provider?: string | null
+  providerAccountId?: string | null
+  statusReason?: string | null
+  provisionedAt?: Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutWalletInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutWalletInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutWalletInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutWalletInput
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutWalletInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutWalletInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
+}
+
+export type WalletCreateOrConnectWithoutRecoveryAttemptsInput = {
+  where: Prisma.WalletWhereUniqueInput
+  create: Prisma.XOR<Prisma.WalletCreateWithoutRecoveryAttemptsInput, Prisma.WalletUncheckedCreateWithoutRecoveryAttemptsInput>
+}
+
+export type WalletUpsertWithoutRecoveryAttemptsInput = {
+  update: Prisma.XOR<Prisma.WalletUpdateWithoutRecoveryAttemptsInput, Prisma.WalletUncheckedUpdateWithoutRecoveryAttemptsInput>
+  create: Prisma.XOR<Prisma.WalletCreateWithoutRecoveryAttemptsInput, Prisma.WalletUncheckedCreateWithoutRecoveryAttemptsInput>
+  where?: Prisma.WalletWhereInput
+}
+
+export type WalletUpdateToOneWithWhereWithoutRecoveryAttemptsInput = {
+  where?: Prisma.WalletWhereInput
+  data: Prisma.XOR<Prisma.WalletUpdateWithoutRecoveryAttemptsInput, Prisma.WalletUncheckedUpdateWithoutRecoveryAttemptsInput>
+}
+
+export type WalletUpdateWithoutRecoveryAttemptsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  chainId?: Prisma.IntFieldUpdateOperationsInput | number
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  type?: Prisma.EnumWalletTypeFieldUpdateOperationsInput | $Enums.WalletType
+  status?: Prisma.EnumWalletStatusFieldUpdateOperationsInput | $Enums.WalletStatus
+  deployment?: Prisma.EnumWalletDeploymentFieldUpdateOperationsInput | $Enums.WalletDeployment
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provisionedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutWalletsNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutWalletNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutWalletNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutWalletNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutWalletNestedInput
+  executions?: Prisma.ExecutionUpdateManyWithoutWalletNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutWalletNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
+}
+
+export type WalletUncheckedUpdateWithoutRecoveryAttemptsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  chainId?: Prisma.IntFieldUpdateOperationsInput | number
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  type?: Prisma.EnumWalletTypeFieldUpdateOperationsInput | $Enums.WalletType
+  status?: Prisma.EnumWalletStatusFieldUpdateOperationsInput | $Enums.WalletStatus
+  deployment?: Prisma.EnumWalletDeploymentFieldUpdateOperationsInput | $Enums.WalletDeployment
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provisionedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutWalletNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutWalletNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutWalletNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutWalletNestedInput
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutWalletNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutWalletNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
 }
 
 export type WalletCreateManyUserInput = {
@@ -1621,6 +2134,9 @@ export type WalletUpdateWithoutUserInput = {
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutWalletNestedInput
   executions?: Prisma.ExecutionUpdateManyWithoutWalletNestedInput
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutWalletNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
 }
 
 export type WalletUncheckedUpdateWithoutUserInput = {
@@ -1645,6 +2161,9 @@ export type WalletUncheckedUpdateWithoutUserInput = {
   firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutWalletNestedInput
   executions?: Prisma.ExecutionUncheckedUpdateManyWithoutWalletNestedInput
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutWalletNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
 }
 
 export type WalletUncheckedUpdateManyWithoutUserInput = {
@@ -1677,6 +2196,9 @@ export type WalletCountOutputType = {
   firmQuoteAttempts: number
   executions: number
   rootActionSessions: number
+  walletCredentials: number
+  recoveryConfigurations: number
+  recoveryAttempts: number
 }
 
 export type WalletCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1686,6 +2208,9 @@ export type WalletCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions
   firmQuoteAttempts?: boolean | WalletCountOutputTypeCountFirmQuoteAttemptsArgs
   executions?: boolean | WalletCountOutputTypeCountExecutionsArgs
   rootActionSessions?: boolean | WalletCountOutputTypeCountRootActionSessionsArgs
+  walletCredentials?: boolean | WalletCountOutputTypeCountWalletCredentialsArgs
+  recoveryConfigurations?: boolean | WalletCountOutputTypeCountRecoveryConfigurationsArgs
+  recoveryAttempts?: boolean | WalletCountOutputTypeCountRecoveryAttemptsArgs
 }
 
 /**
@@ -1740,6 +2265,27 @@ export type WalletCountOutputTypeCountRootActionSessionsArgs<ExtArgs extends run
   where?: Prisma.RootActionSessionWhereInput
 }
 
+/**
+ * WalletCountOutputType without action
+ */
+export type WalletCountOutputTypeCountWalletCredentialsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.WalletCredentialWhereInput
+}
+
+/**
+ * WalletCountOutputType without action
+ */
+export type WalletCountOutputTypeCountRecoveryConfigurationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.RecoveryConfigurationWhereInput
+}
+
+/**
+ * WalletCountOutputType without action
+ */
+export type WalletCountOutputTypeCountRecoveryAttemptsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.RecoveryAttemptWhereInput
+}
+
 
 export type WalletSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1765,6 +2311,9 @@ export type WalletSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   firmQuoteAttempts?: boolean | Prisma.Wallet$firmQuoteAttemptsArgs<ExtArgs>
   executions?: boolean | Prisma.Wallet$executionsArgs<ExtArgs>
   rootActionSessions?: boolean | Prisma.Wallet$rootActionSessionsArgs<ExtArgs>
+  walletCredentials?: boolean | Prisma.Wallet$walletCredentialsArgs<ExtArgs>
+  recoveryConfigurations?: boolean | Prisma.Wallet$recoveryConfigurationsArgs<ExtArgs>
+  recoveryAttempts?: boolean | Prisma.Wallet$recoveryAttemptsArgs<ExtArgs>
   _count?: boolean | Prisma.WalletCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["wallet"]>
 
@@ -1836,6 +2385,9 @@ export type WalletInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   firmQuoteAttempts?: boolean | Prisma.Wallet$firmQuoteAttemptsArgs<ExtArgs>
   executions?: boolean | Prisma.Wallet$executionsArgs<ExtArgs>
   rootActionSessions?: boolean | Prisma.Wallet$rootActionSessionsArgs<ExtArgs>
+  walletCredentials?: boolean | Prisma.Wallet$walletCredentialsArgs<ExtArgs>
+  recoveryConfigurations?: boolean | Prisma.Wallet$recoveryConfigurationsArgs<ExtArgs>
+  recoveryAttempts?: boolean | Prisma.Wallet$recoveryAttemptsArgs<ExtArgs>
   _count?: boolean | Prisma.WalletCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type WalletIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1855,6 +2407,9 @@ export type $WalletPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     firmQuoteAttempts: Prisma.$FirmQuoteAttemptPayload<ExtArgs>[]
     executions: Prisma.$ExecutionPayload<ExtArgs>[]
     rootActionSessions: Prisma.$RootActionSessionPayload<ExtArgs>[]
+    walletCredentials: Prisma.$WalletCredentialPayload<ExtArgs>[]
+    recoveryConfigurations: Prisma.$RecoveryConfigurationPayload<ExtArgs>[]
+    recoveryAttempts: Prisma.$RecoveryAttemptPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2274,6 +2829,9 @@ export interface Prisma__WalletClient<T, Null = never, ExtArgs extends runtime.T
   firmQuoteAttempts<T extends Prisma.Wallet$firmQuoteAttemptsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Wallet$firmQuoteAttemptsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FirmQuoteAttemptPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   executions<T extends Prisma.Wallet$executionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Wallet$executionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ExecutionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   rootActionSessions<T extends Prisma.Wallet$rootActionSessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Wallet$rootActionSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RootActionSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  walletCredentials<T extends Prisma.Wallet$walletCredentialsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Wallet$walletCredentialsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WalletCredentialPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  recoveryConfigurations<T extends Prisma.Wallet$recoveryConfigurationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Wallet$recoveryConfigurationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RecoveryConfigurationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  recoveryAttempts<T extends Prisma.Wallet$recoveryAttemptsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Wallet$recoveryAttemptsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RecoveryAttemptPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2861,6 +3419,78 @@ export type Wallet$rootActionSessionsArgs<ExtArgs extends runtime.Types.Extensio
   take?: number
   skip?: number
   distinct?: Prisma.RootActionSessionScalarFieldEnum | Prisma.RootActionSessionScalarFieldEnum[]
+}
+
+/**
+ * Wallet.walletCredentials
+ */
+export type Wallet$walletCredentialsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the WalletCredential
+   */
+  select?: Prisma.WalletCredentialSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the WalletCredential
+   */
+  omit?: Prisma.WalletCredentialOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.WalletCredentialInclude<ExtArgs> | null
+  where?: Prisma.WalletCredentialWhereInput
+  orderBy?: Prisma.WalletCredentialOrderByWithRelationInput | Prisma.WalletCredentialOrderByWithRelationInput[]
+  cursor?: Prisma.WalletCredentialWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.WalletCredentialScalarFieldEnum | Prisma.WalletCredentialScalarFieldEnum[]
+}
+
+/**
+ * Wallet.recoveryConfigurations
+ */
+export type Wallet$recoveryConfigurationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the RecoveryConfiguration
+   */
+  select?: Prisma.RecoveryConfigurationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the RecoveryConfiguration
+   */
+  omit?: Prisma.RecoveryConfigurationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.RecoveryConfigurationInclude<ExtArgs> | null
+  where?: Prisma.RecoveryConfigurationWhereInput
+  orderBy?: Prisma.RecoveryConfigurationOrderByWithRelationInput | Prisma.RecoveryConfigurationOrderByWithRelationInput[]
+  cursor?: Prisma.RecoveryConfigurationWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.RecoveryConfigurationScalarFieldEnum | Prisma.RecoveryConfigurationScalarFieldEnum[]
+}
+
+/**
+ * Wallet.recoveryAttempts
+ */
+export type Wallet$recoveryAttemptsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the RecoveryAttempt
+   */
+  select?: Prisma.RecoveryAttemptSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the RecoveryAttempt
+   */
+  omit?: Prisma.RecoveryAttemptOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.RecoveryAttemptInclude<ExtArgs> | null
+  where?: Prisma.RecoveryAttemptWhereInput
+  orderBy?: Prisma.RecoveryAttemptOrderByWithRelationInput | Prisma.RecoveryAttemptOrderByWithRelationInput[]
+  cursor?: Prisma.RecoveryAttemptWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.RecoveryAttemptScalarFieldEnum | Prisma.RecoveryAttemptScalarFieldEnum[]
 }
 
 /**

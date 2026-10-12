@@ -25,6 +25,9 @@ function isAesKey(value: string | undefined): boolean {
   );
 }
 
+/** A 0x-prefixed 20-byte address. */
+const evmAddress = z.string().regex(/^0x[0-9a-fA-F]{40}$/, "must be a 0x-prefixed 20-byte address");
+
 const envSchemaShape = {
   TEXTILE_API_URL: z
     .url()
@@ -94,6 +97,41 @@ const envSchema = z
     FIRM_QUOTE_TIMEOUT_MS: z.coerce.number().int().min(10_000).max(80_000).default(75_000),
     // Textile allows 4 outstanding firm RFQs per key; Kaada counts its own to avoid avoidable 429s.
     TEXTILE_MAX_OUTSTANDING_RFQS: z.coerce.number().int().min(1).max(4).default(4),
+    // Account recovery (docs/recovery-contracts.md). OFF unless exactly "true"; with it on, the recovery contracts, the
+    // dedicated relayer and attestor keys (files OUTSIDE the repository), the email-challenge secret and a bundler must
+    // all be configured or startup fails.
+    RECOVERY_ENABLED: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((value) => value === "true"),
+    // The chain the recovery contracts live on (11142220 for Celo Sepolia tests). Defaults to CELO_CHAIN_ID.
+    RECOVERY_CHAIN_ID: z.coerce.number().int().min(1).optional(),
+    RECOVERY_VALIDATOR_ADDRESS: evmAddress.optional(),
+    RECOVERY_PASSKEY_FACTORY_ADDRESS: evmAddress.optional(),
+    RECOVERY_PASSKEY_IMPLEMENTATION_ADDRESS: evmAddress.optional(),
+    RECOVERY_DEVICE_FACTORY_ADDRESS: evmAddress.optional(),
+    RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS: evmAddress.optional(),
+    // Files holding one 0x-prefixed 32-byte key each. They must not live inside the repository.
+    RECOVERY_RELAYER_KEY_FILE: optionalSecret,
+    RECOVERY_ATTESTOR_KEY_FILE: optionalSecret,
+    // Keys the email-code hash: 32 random bytes as base64.
+    RECOVERY_CHALLENGE_SECRET: optionalSecret,
+    // The delay a new recovery configuration uses, and the floor below which none may go. The contract enforces 24 h;
+    // production refuses to start with a floor lower than that.
+    RECOVERY_DELAY_SECONDS: z.coerce.number().int().min(1).default(259_200),
+    RECOVERY_MIN_DELAY_SECONDS: z.coerce.number().int().min(1).default(86_400),
+    // How recovery emails leave the system. "none" cannot send anything (recovery then refuses to start); "outbox" appends
+    // each email to RECOVERY_EMAIL_OUTBOX_FILE for local runs and tests and is REFUSED in production.
+    RECOVERY_EMAIL_PROVIDER: z.enum(["none", "outbox"]).default("none"),
+    RECOVERY_EMAIL_OUTBOX_FILE: optionalSecret,
+    // How often the recovery sweeper runs (finalize matured recoveries, reconcile, clean up). 0 disables the timer.
+    RECOVERY_SWEEP_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(3600).default(30),
+    // The most native CELO (wei) the platform may send an account so a recovery or a cancel is not stopped by an empty
+    // wallet. 0 turns the sponsor off.
+    RECOVERY_GAS_TOPUP_MAX_WEI: z
+      .string()
+      .regex(/^[0-9]{1,30}$/)
+      .default("0"),
     // Which IntentInterpreter the agent uses. "none" disables the agent.
     AGENT_INTERPRETER: z.enum(["none", "mock", "groq"]).default("none"),
     // Which price source routing uses. "none" disables pricing (the agent stops at ROUTING_REQUIRED);
@@ -241,6 +279,52 @@ const envSchema = z
       path: ["EXECUTION_ENABLED"],
     },
   )
+  .refine(
+    (env) =>
+      !env.RECOVERY_ENABLED ||
+      (env.WALLET_PROVIDER === "kernel" &&
+        env.BUNDLER_URL !== undefined &&
+        env.RECOVERY_VALIDATOR_ADDRESS !== undefined &&
+        env.RECOVERY_PASSKEY_FACTORY_ADDRESS !== undefined &&
+        env.RECOVERY_PASSKEY_IMPLEMENTATION_ADDRESS !== undefined &&
+        env.RECOVERY_DEVICE_FACTORY_ADDRESS !== undefined &&
+        env.RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS !== undefined &&
+        env.RECOVERY_RELAYER_KEY_FILE !== undefined &&
+        env.RECOVERY_ATTESTOR_KEY_FILE !== undefined &&
+        env.RECOVERY_CHALLENGE_SECRET !== undefined &&
+        env.RECOVERY_EMAIL_PROVIDER !== "none" &&
+        (env.RECOVERY_EMAIL_PROVIDER !== "outbox" ||
+          env.RECOVERY_EMAIL_OUTBOX_FILE !== undefined) &&
+        env.PASSKEY_RP_ID !== undefined &&
+        env.PASSKEY_ORIGIN !== undefined),
+    {
+      message:
+        "RECOVERY_ENABLED=true needs WALLET_PROVIDER=kernel, BUNDLER_URL, the recovery contract addresses, the relayer and attestor key files, RECOVERY_CHALLENGE_SECRET, an email provider and the passkey settings",
+      path: ["RECOVERY_ENABLED"],
+    },
+  )
+  .refine((env) => env.NODE_ENV !== "production" || env.RECOVERY_EMAIL_PROVIDER !== "outbox", {
+    message: "the file outbox is for development; production needs a real email provider",
+    path: ["RECOVERY_EMAIL_PROVIDER"],
+  })
+  .refine((env) => isAesKey(env.RECOVERY_CHALLENGE_SECRET), {
+    message: "RECOVERY_CHALLENGE_SECRET must be 32 random bytes encoded as base64",
+    path: ["RECOVERY_CHALLENGE_SECRET"],
+  })
+  .refine(
+    (env) =>
+      env.NODE_ENV !== "production" ||
+      !env.RECOVERY_ENABLED ||
+      env.RECOVERY_MIN_DELAY_SECONDS >= 86_400,
+    {
+      message: "production recovery must keep a delay floor of at least 24 hours",
+      path: ["RECOVERY_MIN_DELAY_SECONDS"],
+    },
+  )
+  .refine((env) => env.RECOVERY_DELAY_SECONDS >= env.RECOVERY_MIN_DELAY_SECONDS, {
+    message: "RECOVERY_DELAY_SECONDS may not be below RECOVERY_MIN_DELAY_SECONDS",
+    path: ["RECOVERY_DELAY_SECONDS"],
+  })
   .refine((env) => env.AGENT_INTERPRETER !== "groq" || env.GROQ_API_KEY !== undefined, {
     message: "GROQ_API_KEY is required when AGENT_INTERPRETER=groq",
     path: ["GROQ_API_KEY"],
@@ -318,6 +402,40 @@ const envSchema = z
             apiKey: env.TEXTILE_LIVE_API_KEY,
             apiUrl: env.TEXTILE_API_URL,
             timeoutMs: env.TEXTILE_TIMEOUT_MS,
+          },
+        }),
+    },
+    recovery: {
+      enabled: env.RECOVERY_ENABLED,
+      chainId: env.RECOVERY_CHAIN_ID ?? env.CELO_CHAIN_ID,
+      delaySeconds: env.RECOVERY_DELAY_SECONDS,
+      minDelaySeconds: env.RECOVERY_MIN_DELAY_SECONDS,
+      gasTopUpMaxWei: BigInt(env.RECOVERY_GAS_TOPUP_MAX_WEI),
+      sweepIntervalMs: env.RECOVERY_SWEEP_INTERVAL_SECONDS * 1000,
+      emailProvider: env.RECOVERY_EMAIL_PROVIDER,
+      ...(env.RECOVERY_EMAIL_OUTBOX_FILE !== undefined && {
+        emailOutboxFile: env.RECOVERY_EMAIL_OUTBOX_FILE,
+      }),
+      ...(env.RECOVERY_ENABLED &&
+        env.RECOVERY_VALIDATOR_ADDRESS !== undefined &&
+        env.RECOVERY_PASSKEY_FACTORY_ADDRESS !== undefined &&
+        env.RECOVERY_PASSKEY_IMPLEMENTATION_ADDRESS !== undefined &&
+        env.RECOVERY_DEVICE_FACTORY_ADDRESS !== undefined &&
+        env.RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS !== undefined &&
+        env.RECOVERY_RELAYER_KEY_FILE !== undefined &&
+        env.RECOVERY_ATTESTOR_KEY_FILE !== undefined &&
+        env.RECOVERY_CHALLENGE_SECRET !== undefined && {
+          setup: {
+            contracts: {
+              validator: env.RECOVERY_VALIDATOR_ADDRESS,
+              passkeyFactory: env.RECOVERY_PASSKEY_FACTORY_ADDRESS,
+              passkeyImplementation: env.RECOVERY_PASSKEY_IMPLEMENTATION_ADDRESS,
+              deviceFactory: env.RECOVERY_DEVICE_FACTORY_ADDRESS,
+              deviceImplementation: env.RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS,
+            },
+            relayerKeyFile: env.RECOVERY_RELAYER_KEY_FILE,
+            attestorKeyFile: env.RECOVERY_ATTESTOR_KEY_FILE,
+            challengeSecret: env.RECOVERY_CHALLENGE_SECRET,
           },
         }),
     },

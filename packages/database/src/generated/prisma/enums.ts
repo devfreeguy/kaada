@@ -327,3 +327,77 @@ export const RampStatus = {
 } as const
 
 export type RampStatus = (typeof RampStatus)[keyof typeof RampStatus]
+
+
+export const WalletCredentialKind = {
+  PASSKEY: 'PASSKEY',
+  DEVICE_KEY: 'DEVICE_KEY'
+} as const
+
+export type WalletCredentialKind = (typeof WalletCredentialKind)[keyof typeof WalletCredentialKind]
+
+
+export const WalletCredentialRole = {
+  PRIMARY: 'PRIMARY',
+  BACKUP: 'BACKUP',
+  RECOVERY: 'RECOVERY'
+} as const
+
+export type WalletCredentialRole = (typeof WalletCredentialRole)[keyof typeof WalletCredentialRole]
+
+
+export const WalletCredentialStatus = {
+  PENDING: 'PENDING',
+  ACTIVE: 'ACTIVE',
+  REPLACED: 'REPLACED',
+  REVOKED: 'REVOKED'
+} as const
+
+export type WalletCredentialStatus = (typeof WalletCredentialStatus)[keyof typeof WalletCredentialStatus]
+
+
+export const DeviceSecurityTier = {
+  UNKNOWN: 'UNKNOWN',
+  WEB_NON_EXTRACTABLE: 'WEB_NON_EXTRACTABLE',
+  TRUSTED_DEVICE: 'TRUSTED_DEVICE'
+} as const
+
+export type DeviceSecurityTier = (typeof DeviceSecurityTier)[keyof typeof DeviceSecurityTier]
+
+
+export const RecoveryConfigurationStatus = {
+  PENDING_INSTALL: 'PENDING_INSTALL',
+  ACTIVE: 'ACTIVE',
+  CONSUMED: 'CONSUMED',
+  SUPERSEDED: 'SUPERSEDED',
+  DISABLED: 'DISABLED'
+} as const
+
+export type RecoveryConfigurationStatus = (typeof RecoveryConfigurationStatus)[keyof typeof RecoveryConfigurationStatus]
+
+
+export const RecoveryAttemptStatus = {
+  EMAIL_PENDING: 'EMAIL_PENDING',
+  EMAIL_VERIFIED: 'EMAIL_VERIFIED',
+  ROOT_PROPOSED: 'ROOT_PROPOSED',
+  INITIATING: 'INITIATING',
+  PENDING: 'PENDING',
+  FINALIZING: 'FINALIZING',
+  ROOT_CHANGED: 'ROOT_CHANGED',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+  VETOED: 'VETOED',
+  EXPIRED: 'EXPIRED',
+  FAILED: 'FAILED'
+} as const
+
+export type RecoveryAttemptStatus = (typeof RecoveryAttemptStatus)[keyof typeof RecoveryAttemptStatus]
+
+
+export const RecoveryTerminator = {
+  ROOT: 'ROOT',
+  ATTESTOR: 'ATTESTOR',
+  SYSTEM: 'SYSTEM'
+} as const
+
+export type RecoveryTerminator = (typeof RecoveryTerminator)[keyof typeof RecoveryTerminator]
