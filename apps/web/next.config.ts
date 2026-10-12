@@ -12,9 +12,19 @@ const nextConfig: NextConfig = {
   headers() {
     return [
       {
+        // The recovery start page (no token in its path) is covered too: it holds a session token in memory.
+        source: "/recovery",
+        headers: [
+          { key: "Cache-Control", value: "no-store" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
+      {
         // A setup link carries a bearer token in its path: never cache it, never send it as a referrer,
         // never let another site frame it.
-        source: "/:area(setup|authorize|root-action)/:path*",
+        source: "/:area(setup|authorize|root-action|security|recovery)/:path*",
         headers: [
           { key: "Cache-Control", value: "no-store" },
           { key: "Referrer-Policy", value: "no-referrer" },

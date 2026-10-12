@@ -212,3 +212,100 @@ test("a key file inside the repository is refused", () => {
     /outside the repository/,
   );
 });
+
+// ── the attestor signer boundary: file key for dev/test, an external (KMS/HSM-style) signer for production ──
+
+test("an external digest signer is a drop-in attestor signer: same signatures, never a key in our hands", async () => {
+  const { privateKeyToAccount, sign } = await import("viem/accounts");
+  const { createExternalSigner } = await import("./attestor-signer.js");
+  const c = chain();
+  const key = generatePrivateKey();
+  const file = privateKeyToAccount(key);
+  // The "KMS": holds the key, signs digests, returns r and s only (like a cloud KMS after DER decoding), sometimes high-s.
+  let calls = 0;
+  const kms = {
+    address: file.address,
+    async signDigest(digest: Hex) {
+      calls += 1;
+      const signature = await sign({ hash: digest, privateKey: key, to: "object" });
+      const n = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n;
+      const s = calls % 2 === 0 ? n - BigInt(signature.s) : BigInt(signature.s);
+      const sOut: Hex = `0x${s.toString(16).padStart(64, "0")}`;
+      return { r: signature.r, s: sOut };
+    },
+  };
+  const attestor = new KeyAttestor({
+    signer: createExternalSigner(kms),
+    chainId: celoSepolia.id,
+    recoveryValidator: validator,
+    sendVeto: () => Promise.resolve(vetoHash),
+  });
+  assert.equal(await attestor.address(), file.address.toLowerCase());
+  const root = c.proposeRoot({ account, credential: device, attemptId: "attempt-ext" });
+  const message = c.typedMessage({ account, root, nonce: "0", deadline: "1900000000" });
+  for (let i = 0; i < 4; i += 1) {
+    const signature = await attestor.signInitiate(message);
+    assert.equal(await c.recoverInitiateSigner(message, signature), await attestor.address());
+  }
+  await assert.rejects(() => attestor.signInitiate({ ...message, chainId: 1 }));
+});
+
+test("an external signer signs a transaction (the veto) and a message that recover to its address", async () => {
+  const { privateKeyToAccount, sign } = await import("viem/accounts");
+  const { createExternalSigner } = await import("./attestor-signer.js");
+  const { recoverTransactionAddress, recoverMessageAddress } = await import("viem");
+  const key = generatePrivateKey();
+  const file = privateKeyToAccount(key);
+  const signer = createExternalSigner({
+    address: file.address,
+    signDigest: async (digest) => {
+      const s = await sign({ hash: digest, privateKey: key, to: "object" });
+      return { r: s.r, s: s.s };
+    },
+  });
+  const transaction = {
+    chainId: celoSepolia.id,
+    nonce: 7,
+    to: validator,
+    value: 0n,
+    gas: 200_000n,
+    maxFeePerGas: 2_000_000_000n,
+    maxPriorityFeePerGas: 1_000_000_000n,
+    data: "0x1234" as Hex,
+    type: "eip1559" as const,
+  };
+  const serialized = await signer.signTransaction(transaction);
+  assert.equal(
+    (
+      await recoverTransactionAddress({ serializedTransaction: serialized as `0x02${string}` })
+    ).toLowerCase(),
+    file.address.toLowerCase(),
+  );
+  const signature = await signer.signMessage({ message: "hello" });
+  assert.equal(
+    (await recoverMessageAddress({ message: "hello", signature })).toLowerCase(),
+    file.address.toLowerCase(),
+  );
+});
+
+test("a signer that answers with another key's signature is refused, and the attestor demands exactly one key source", async () => {
+  const { privateKeyToAccount, sign } = await import("viem/accounts");
+  const { createExternalSigner } = await import("./attestor-signer.js");
+  const key = generatePrivateKey();
+  const other = generatePrivateKey();
+  const signer = createExternalSigner({
+    address: privateKeyToAccount(key).address,
+    signDigest: async (digest) => {
+      const s = await sign({ hash: digest, privateKey: other, to: "object" });
+      return { r: s.r, s: s.s };
+    },
+  });
+  await assert.rejects(() => signer.signMessage({ message: "x" }), /does not belong/);
+  const base = {
+    chainId: celoSepolia.id,
+    recoveryValidator: validator,
+    sendVeto: () => Promise.resolve(vetoHash),
+  };
+  assert.throws(() => new KeyAttestor({ ...base }), /exactly one/);
+  assert.throws(() => new KeyAttestor({ ...base, privateKey: key, signer }), /exactly one/);
+});

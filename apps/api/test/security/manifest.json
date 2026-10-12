@@ -1,0 +1,83 @@
+{
+  "_comment": "The security regression suite: every area of the wallet/security architecture and the tests that hold it. `pnpm --filter @kaada/api test:security` runs the unit set; add --integration to include the real-database and real-Redis tests. test/security-manifest.test.ts fails if a listed file is missing or an area is empty.",
+  "areas": {
+    "passkey root": [
+      "root-change.test.ts",
+      "recovery-flow.test.ts",
+      "wallet-security.test.ts",
+      "wallet-setup.test.ts"
+    ],
+    "device-key root": ["root-agnostic.test.ts", "root-change.test.ts", "root-http.test.ts"],
+    "6-digit PIN": ["pin.test.ts", "root-agnostic.test.ts", "authorization-security.test.ts"],
+    "delegated permission": [
+      "wallet-security.test.ts",
+      "root-actions.test.ts",
+      "recovery-finalize.test.ts"
+    ],
+    "recovery": [
+      "recovery-start.test.ts",
+      "recovery-flow.test.ts",
+      "recovery-finalize.test.ts",
+      "recovery-controller.test.ts",
+      "recovery-security.test.ts"
+    ],
+    "cancellation": ["recovery-finalize.test.ts", "recovery-flow.test.ts"],
+    "attestor veto": [
+      "recovery-flow.test.ts",
+      "recovery-finalize.test.ts",
+      "recovery-channels.test.ts"
+    ],
+    "root rotation": [
+      "root-change.test.ts",
+      "root-http.test.ts",
+      "device-attestation-roots.test.ts"
+    ],
+    "backup credential": [
+      "root-change.test.ts",
+      "root-http.test.ts",
+      "device-attestation-roots.test.ts"
+    ],
+    "replay protection": [
+      "recovery-flow.test.ts",
+      "recovery-finalize.test.ts",
+      "root-agnostic.test.ts",
+      "root-change.test.ts",
+      "pin.test.ts",
+      "device-tier-service.test.ts"
+    ],
+    "restart and reconciliation": [
+      "recovery-finalize.test.ts",
+      "root-change.test.ts",
+      "execution-runner.test.ts"
+    ],
+    "race conditions": [
+      "recovery-start.test.ts",
+      "recovery-finalize.test.ts",
+      "pin.test.ts",
+      "root-change.test.ts",
+      "device-tier-service.test.ts"
+    ],
+    "rate limits": [
+      "recovery-limits.test.ts",
+      "redis-rate-limiter.test.ts",
+      "authorization-controller.test.ts"
+    ],
+    "notifications": ["recovery-channels.test.ts", "recovery-flow.test.ts"],
+    "attestor signer": ["recovery-security.test.ts"],
+    "device attestation": [
+      "device-tier-service.test.ts",
+      "device-attestation-enrolment.test.ts",
+      "device-attestation-roots.test.ts",
+      "device-attestation-recovery.test.ts",
+      "google-revocation-list.test.ts"
+    ]
+  },
+  "integration": [
+    "integration/root-agnostic.integration.test.ts",
+    "integration/recovery.integration.test.ts",
+    "integration/device-attestation.integration.test.ts",
+    "integration/redis.integration.test.ts",
+    "integration/wallet-setup.integration.test.ts",
+    "integration/authorization.integration.test.ts"
+  ]
+}

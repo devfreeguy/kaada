@@ -15,6 +15,7 @@ import {
   Post,
   ServiceUnavailableException,
   UnauthorizedException,
+  Optional,
 } from "@nestjs/common";
 import type { AppConfig } from "@kaada/config";
 import { isKaadaError } from "@kaada/domain";
@@ -23,6 +24,9 @@ import { z } from "zod";
 import { APP_CONFIG } from "../config/config.module.js";
 import type { PaymentAuthorizationService } from "../core/authorization/payment-authorization-service.js";
 import { RateLimiter } from "../core/authorization/rate-limiter.js";
+import type { RateLimit } from "../core/authorization/rate-limiter.js";
+import { RATE_LIMIT_FACTORY } from "../rate-limit/rate-limit.tokens.js";
+import type { RateLimitFactory } from "../rate-limit/rate-limit.module.js";
 import type { AuthorizationSessionService } from "../core/authorization/session-service.js";
 import { hashOpaqueToken } from "../core/authorization/token.js";
 import {
@@ -55,8 +59,8 @@ function httpError(error: unknown): never {
 @Controller({ path: "authorization", version: "1" })
 export class AuthorizationController {
   // Per link and per address: a second line of defence; the PIN lockout in the database is authoritative.
-  private readonly perToken = new RateLimiter(12, 60_000);
-  private readonly perAddress = new RateLimiter(30, 60_000);
+  private readonly perToken: RateLimit;
+  private readonly perAddress: RateLimit;
 
   constructor(
     @Inject(AUTHORIZATION_SESSION_SERVICE)
@@ -64,7 +68,12 @@ export class AuthorizationController {
     @Inject(PAYMENT_AUTHORIZATION_SERVICE)
     private readonly payments: PaymentAuthorizationService | null,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
-  ) {}
+    @Optional() @Inject(RATE_LIMIT_FACTORY) limits?: RateLimitFactory,
+  ) {
+    const make = limits ?? ((_name, limit, windowMs) => new RateLimiter(limit, windowMs));
+    this.perToken = make("authorization:token", 12, 60_000);
+    this.perAddress = make("authorization:address", 30, 60_000);
+  }
 
   private sessionService(): AuthorizationSessionService {
     if (!this.sessions) throw new ServiceUnavailableException("authorization is not enabled");
@@ -104,7 +113,10 @@ export class AuthorizationController {
   ) {
     if (!this.payments) throw new ServiceUnavailableException("authorization is not enabled");
     const token = bearer(authorization);
-    if (!this.perToken.allow(hashOpaqueToken(token)) || !this.perAddress.allow(ip || "unknown")) {
+    if (
+      !(await this.perToken.allow(hashOpaqueToken(token))) ||
+      !(await this.perAddress.allow(ip || "unknown"))
+    ) {
       throw new HttpException("too many attempts, wait a moment", HttpStatus.TOO_MANY_REQUESTS);
     }
     const parsed = authorizeBody.safeParse(body);

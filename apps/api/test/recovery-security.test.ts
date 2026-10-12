@@ -26,6 +26,7 @@ const deployer = code(join(dir, "validator-deployer.ts"));
 describe("recovery signer boundary (source scan)", () => {
   it("scans the recovery adapter files", () => {
     assert.deepEqual(sources.sort(), [
+      "attestor-signer.ts",
       "attestor.ts",
       "index.ts",
       "validator-deployer.ts",
@@ -33,8 +34,19 @@ describe("recovery signer boundary (source scan)", () => {
     ]);
   });
 
+  it("the KMS adapter holds no key: it only wraps a digest-signing service", () => {
+    const adapter = code(join(dir, "attestor-signer.ts"));
+    assert.equal(
+      /privateKeyToAccount|generatePrivateKey|privateKey|mnemonic|seed/i.test(adapter),
+      false,
+    );
+    assert.ok(/service\.signDigest\(/.test(adapter));
+    // The attestor class itself never signs a message or a transaction: only typed data, and the veto it sends.
+    assert.equal(/signMessage|signTransaction/.test(attestor), false);
+  });
+
   it("no recovery file handles a mnemonic, seed or raw signing", () => {
-    for (const name of sources) {
+    for (const name of sources.filter((n) => n !== "attestor-signer.ts")) {
       const text = code(join(dir, name));
       assert.equal(
         /\b(mnemonic|seedPhrase|secretKey|signMessage|signTransaction|generatePrivateKey|mnemonicToAccount)\b/.test(
@@ -117,5 +129,47 @@ describe("the web device key (source scan)", () => {
     assert.equal((web.match(/subtle\.sign\(/g) ?? []).length, 1);
     assert.ok(/name:\s*"ECDSA",\s*hash:\s*"SHA-256"/.test(web));
     assert.ok(/P256_HALF_N/.test(web));
+  });
+});
+
+describe("the browser Recovery Code (source scan)", () => {
+  const web = code(join(root, "apps/web/app/lib/recovery-code.ts"));
+  const newRoot = code(join(root, "apps/web/app/lib/new-root.ts"));
+
+  it("derives and signs on the device only: no network, storage, logging or export of the key", () => {
+    assert.equal(/fetch\(|XMLHttpRequest|sendBeacon|WebSocket/.test(web), false);
+    assert.equal(
+      /localStorage|sessionStorage|indexedDB|document\.cookie|console\./.test(web),
+      false,
+    );
+    assert.equal(/export (async )?function \w+\([^)]*\)[^{]*:\s*Promise<string>/.test(web), false);
+  });
+
+  it("signs exactly one kind of message, the typed Initiate, and checks chain and account first", () => {
+    assert.equal((web.match(/\.signTypedData\(/g) ?? []).length, 1);
+    assert.ok(/primaryType:\s*"Initiate"/.test(web));
+    assert.ok(/another chain/.test(web) && /another account/.test(web));
+    assert.equal(/signMessage|signTransaction/.test(web), false);
+  });
+
+  it("a new device key is only filed and used to sign, never sent or serialised", () => {
+    assert.equal(/JSON\.stringify|fetch\(/.test(newRoot), false);
+    assert.ok(/saveDeviceKey\(keyId, key\.privateKey\)/.test(newRoot));
+    assert.ok(/signDevicePayload\(key\.privateKey/.test(newRoot));
+  });
+
+  it("the Recovery Code never reaches a request body", () => {
+    for (const file of [
+      "apps/web/app/recovery/recovery-flow.tsx",
+      "apps/web/app/components/recovery-code-creator.tsx",
+    ]) {
+      const text = code(join(root, file));
+      // Bodies carry the derived ADDRESS or a signature; the typed code and its canonical form never do.
+      assert.equal(
+        /body:\s*\{[^}]*(recoveryCode|canonical)/.test(text.replace(/emailCode/g, "")),
+        false,
+        file,
+      );
+    }
   });
 });

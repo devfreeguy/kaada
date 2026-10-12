@@ -1,10 +1,19 @@
 /**
+ * What the endpoints depend on. In-process limiting is per instance and resets on restart, so production uses the Redis
+ * implementation (infrastructure/redis); this in-memory class stays for development and tests.
+ */
+export interface RateLimit {
+  /** Counts one request. False means the key is over its limit for the current window. */
+  allow(key: string): boolean | Promise<boolean>;
+}
+
+/**
  * A small in-process limiter for the PIN endpoints: at most `limit` requests per `windowMs` for a
  * key. It is the SECOND line of defence (it also spares the server the cost of hashing a flood);
  * the database lockout is authoritative and does not depend on it. Memory is bounded: expired keys
  * are swept as new ones arrive.
  */
-export class RateLimiter {
+export class RateLimiter implements RateLimit {
   private readonly hits = new Map<string, { count: number; resetAt: number }>();
 
   constructor(

@@ -426,8 +426,8 @@ describe("cancellation by the existing root", () => {
     assert.equal(after.terminatedBy, "ROOT");
     assert.ok(after.cancelUserOpHash && after.terminatedAt);
     assert.equal((await world.chain.validatorState(user.account)).pending, undefined);
-    assert.ok(world.email.sent.some((m) => m.subject.includes("recovery stopped")));
-    assert.ok(world.telegram.sent.some((m) => m.message.subject.includes("recovery stopped")));
+    assert.ok(world.email.sent.some((m) => m.subject.includes("recovery cancelled")));
+    assert.ok(world.telegram.sent.some((m) => m.message.subject.includes("recovery cancelled")));
     // Dead: no finalization, no second cancel, no proof replay.
     world.advance(MATURE_MS);
     assert.deepEqual(await world.finalizer().finalize(attempt.id), { outcome: "NOT_ELIGIBLE" });

@@ -117,6 +117,11 @@ const envSchema = z
     // Files holding one 0x-prefixed 32-byte key each. They must not live inside the repository.
     RECOVERY_RELAYER_KEY_FILE: optionalSecret,
     RECOVERY_ATTESTOR_KEY_FILE: optionalSecret,
+    // Who holds the attestor key. "file" is a key file (development and tests only: production refuses it). "kms" means a
+    // KMS/HSM-backed signer (RECOVERY_ATTESTOR_KMS_KEY_ID names the key for the adapter); the cloud adapter is installed
+    // by the deployment through the ATTESTOR_SIGNER_FACTORY provider, and startup fails if none is installed.
+    RECOVERY_ATTESTOR_SIGNER: z.enum(["file", "kms"]).default("file"),
+    RECOVERY_ATTESTOR_KMS_KEY_ID: optionalSecret,
     // Keys the email-code hash: 32 random bytes as base64.
     RECOVERY_CHALLENGE_SECRET: optionalSecret,
     // The delay a new recovery configuration uses, and the floor below which none may go. The contract enforces 24 h;
@@ -125,8 +130,20 @@ const envSchema = z
     RECOVERY_MIN_DELAY_SECONDS: z.coerce.number().int().min(1).default(86_400),
     // How recovery emails leave the system. "none" cannot send anything (recovery then refuses to start); "outbox" appends
     // each email to RECOVERY_EMAIL_OUTBOX_FILE for local runs and tests and is REFUSED in production.
-    RECOVERY_EMAIL_PROVIDER: z.enum(["none", "outbox"]).default("none"),
+    // "smtp" sends through RECOVERY_SMTP_URL (smtps://user:pass@host:465, or smtp:// with STARTTLS) from RECOVERY_EMAIL_FROM.
+    RECOVERY_EMAIL_PROVIDER: z.enum(["none", "outbox", "smtp"]).default("none"),
     RECOVERY_EMAIL_OUTBOX_FILE: optionalSecret,
+    RECOVERY_SMTP_URL: optionalSecret,
+    RECOVERY_EMAIL_FROM: z.string().trim().min(3).max(200).optional(),
+    // Telegram recovery alerts for people whose Telegram identity is linked. Unset: no Telegram alerts.
+    TELEGRAM_BOT_TOKEN: optionalSecret,
+    // Redis backs the rate limits (shared across instances, survives restarts). Required in production for wallets.
+    REDIS_URL: z
+      .string()
+      .trim()
+      .regex(/^rediss?:\/\/\S+$/, "must be a redis:// or rediss:// URL")
+      .optional(),
+    REDIS_KEY_PREFIX: z.string().trim().min(1).max(64).default("kaada:rl:"),
     // How often the recovery sweeper runs (finalize matured recoveries, reconcile, clean up). 0 disables the timer.
     RECOVERY_SWEEP_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(3600).default(30),
     // The most native CELO (wei) the platform may send an account so a recovery or a cancel is not stopped by an empty
@@ -324,11 +341,15 @@ const envSchema = z
         env.RECOVERY_DEVICE_FACTORY_ADDRESS !== undefined &&
         env.RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS !== undefined &&
         env.RECOVERY_RELAYER_KEY_FILE !== undefined &&
-        env.RECOVERY_ATTESTOR_KEY_FILE !== undefined &&
+        (env.RECOVERY_ATTESTOR_SIGNER === "file"
+          ? env.RECOVERY_ATTESTOR_KEY_FILE !== undefined
+          : env.RECOVERY_ATTESTOR_KMS_KEY_ID !== undefined) &&
         env.RECOVERY_CHALLENGE_SECRET !== undefined &&
         env.RECOVERY_EMAIL_PROVIDER !== "none" &&
         (env.RECOVERY_EMAIL_PROVIDER !== "outbox" ||
           env.RECOVERY_EMAIL_OUTBOX_FILE !== undefined) &&
+        (env.RECOVERY_EMAIL_PROVIDER !== "smtp" ||
+          (env.RECOVERY_SMTP_URL !== undefined && env.RECOVERY_EMAIL_FROM !== undefined)) &&
         env.PASSKEY_RP_ID !== undefined &&
         env.PASSKEY_ORIGIN !== undefined),
     {
@@ -374,6 +395,36 @@ const envSchema = z
       message:
         "DEVICE_KEY_ROOTS_ENABLED=true needs WALLET_PROVIDER=kernel, the validator factory and implementation addresses and RECOVERY_RELAYER_KEY_FILE",
       path: ["DEVICE_KEY_ROOTS_ENABLED"],
+    },
+  )
+  .refine(
+    (env) => env.RECOVERY_SMTP_URL === undefined || /^smtps?:\/\/\S+$/.test(env.RECOVERY_SMTP_URL),
+    {
+      message: "RECOVERY_SMTP_URL must be an smtp:// or smtps:// URL",
+      path: ["RECOVERY_SMTP_URL"],
+    },
+  )
+  .refine(
+    (env) =>
+      !(
+        env.NODE_ENV === "production" &&
+        env.RECOVERY_ENABLED &&
+        env.RECOVERY_ATTESTOR_SIGNER === "file"
+      ),
+    {
+      message:
+        "production does not accept a file-held attestor key: use RECOVERY_ATTESTOR_SIGNER=kms (a KMS/HSM-backed signer)",
+      path: ["RECOVERY_ATTESTOR_SIGNER"],
+    },
+  )
+  .refine(
+    (env) =>
+      env.NODE_ENV !== "production" ||
+      !(env.RECOVERY_ENABLED || env.WALLET_PROVIDER === "kernel") ||
+      env.REDIS_URL !== undefined,
+    {
+      message: "production wallets and recovery need REDIS_URL for the shared rate limits",
+      path: ["REDIS_URL"],
     },
   )
   .refine((env) => env.NODE_ENV !== "production" || env.RECOVERY_EMAIL_PROVIDER !== "outbox", {
@@ -515,6 +566,13 @@ const envSchema = z
       gasTopUpMaxWei: BigInt(env.RECOVERY_GAS_TOPUP_MAX_WEI),
       sweepIntervalMs: env.RECOVERY_SWEEP_INTERVAL_SECONDS * 1000,
       emailProvider: env.RECOVERY_EMAIL_PROVIDER,
+      ...(env.RECOVERY_SMTP_URL !== undefined &&
+        env.RECOVERY_EMAIL_FROM !== undefined && {
+          smtp: { url: env.RECOVERY_SMTP_URL, from: env.RECOVERY_EMAIL_FROM },
+        }),
+      ...(env.TELEGRAM_BOT_TOKEN !== undefined && {
+        telegramBotToken: env.TELEGRAM_BOT_TOKEN,
+      }),
       ...(env.RECOVERY_EMAIL_OUTBOX_FILE !== undefined && {
         emailOutboxFile: env.RECOVERY_EMAIL_OUTBOX_FILE,
       }),
@@ -525,7 +583,9 @@ const envSchema = z
         env.RECOVERY_DEVICE_FACTORY_ADDRESS !== undefined &&
         env.RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS !== undefined &&
         env.RECOVERY_RELAYER_KEY_FILE !== undefined &&
-        env.RECOVERY_ATTESTOR_KEY_FILE !== undefined &&
+        (env.RECOVERY_ATTESTOR_SIGNER === "file"
+          ? env.RECOVERY_ATTESTOR_KEY_FILE !== undefined
+          : env.RECOVERY_ATTESTOR_KMS_KEY_ID !== undefined) &&
         env.RECOVERY_CHALLENGE_SECRET !== undefined && {
           setup: {
             contracts: {
@@ -536,11 +596,17 @@ const envSchema = z
               deviceImplementation: env.RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS,
             },
             relayerKeyFile: env.RECOVERY_RELAYER_KEY_FILE,
-            attestorKeyFile: env.RECOVERY_ATTESTOR_KEY_FILE,
+            attestor:
+              env.RECOVERY_ATTESTOR_SIGNER === "kms"
+                ? { signer: "kms" as const, kmsKeyId: env.RECOVERY_ATTESTOR_KMS_KEY_ID ?? "" }
+                : { signer: "file" as const, keyFile: env.RECOVERY_ATTESTOR_KEY_FILE ?? "" },
             challengeSecret: env.RECOVERY_CHALLENGE_SECRET,
           },
         }),
     },
+    ...(env.REDIS_URL !== undefined && {
+      redis: { url: env.REDIS_URL, prefix: env.REDIS_KEY_PREFIX },
+    }),
     database: {
       url: env.DATABASE_URL,
       ...(env.DATABASE_DIRECT_URL && { directUrl: env.DATABASE_DIRECT_URL }),

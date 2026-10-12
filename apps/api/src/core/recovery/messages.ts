@@ -74,7 +74,10 @@ export function recoveryStartedMessage(input: {
 
 export function recoveryCancelledMessage(by: "ROOT" | "ATTESTOR"): ChannelMessage {
   return {
-    subject: "Kaada: wallet recovery stopped",
+    subject:
+      by === "ROOT"
+        ? "Kaada: wallet recovery cancelled"
+        : "Kaada: wallet recovery stopped by security",
     text:
       by === "ROOT"
         ? "The pending recovery of your Kaada wallet was cancelled from your current device. Nothing changed."

@@ -1,3 +1,4 @@
+import { deviceKeyPayload } from "@kaada/contracts";
 import { randomBytes, randomUUID } from "node:crypto";
 
 import {
@@ -29,7 +30,13 @@ export interface SigningProofRequest {
   rootKind: "PASSKEY" | "DEVICE_KEY";
   chainId: number;
   passkey?: { challenge: string; rpId: string; userVerification: "required" };
-  device?: { chainId: number; validator: string; account: string; keyId: string };
+  device?: {
+    chainId: number;
+    validator: string;
+    account: string;
+    keyId: string;
+    payload: string;
+  };
 }
 
 export interface RecoveryFinalizerDeps {
@@ -386,6 +393,13 @@ export class RecoveryFinalizer {
           validator: credential.validatorAddress,
           account: wallet.address,
           keyId: credential.credentialRef,
+          payload: deviceKeyPayload({
+            chainId: this.ctx.chain.chainId,
+            validator: credential.validatorAddress as `0x${string}`,
+            account: wallet.address as `0x${string}`,
+            keyId: credential.credentialRef as `0x${string}`,
+            userOpHash: challenge as `0x${string}`,
+          }),
         },
       }),
     };

@@ -370,6 +370,19 @@ export class RecoveryController {
 
   // ── a new Recovery Code (after a recovery, or the first time) ──
 
+  /** The account and chain a new Recovery Code is bound to (so the browser can derive its verifier before preparing). */
+  @Get("configuration/context")
+  @Header("Cache-Control", "no-store")
+  async configurationContext(@Headers("authorization") authorization?: string) {
+    try {
+      return await this.services().configuration.describe(
+        await this.identify(bearer(authorization)),
+      );
+    } catch (error) {
+      return httpError(error);
+    }
+  }
+
   @Post("configuration/prepare")
   @HttpCode(200)
   @Header("Cache-Control", "no-store")

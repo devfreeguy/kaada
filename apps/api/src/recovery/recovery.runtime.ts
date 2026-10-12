@@ -7,7 +7,7 @@ import {
   createVetoSender,
   readKeyFileOutsideRepo,
 } from "@kaada/blockchain";
-import type { ViemRecoveryChainOptions } from "@kaada/blockchain";
+import type { AttestorSigner, ViemRecoveryChainOptions } from "@kaada/blockchain";
 import { createRepositories, withTransaction } from "@kaada/database";
 import type { Database } from "@kaada/database";
 import type {
@@ -42,6 +42,7 @@ export interface RecoveryRuntime {
   configuration: RecoveryConfigurationService;
 }
 
+import type { RateLimitFactory } from "../rate-limit/rate-limit.module.js";
 import type { DeviceTierResolver } from "../core/attestation/device-tier-service.js";
 
 export interface RecoveryRuntimeParams {
@@ -58,6 +59,8 @@ export interface RecoveryRuntimeParams {
   challengeSecret: Buffer;
   policy?: Partial<RecoveryPolicy>;
   deviceTiers?: DeviceTierResolver;
+  /** Rate limits for the recovery steps. Absent: per-process limits (development and tests only). */
+  limits?: RateLimitFactory;
   messengers?: ChannelMessenger[];
   now?: () => Date;
   log?: AgentLog;
@@ -93,9 +96,17 @@ export function createRecoveryRuntime(params: RecoveryRuntimeParams): RecoveryRu
     now: params.now ?? (() => new Date()),
     log,
   };
+  const limits = params.limits;
   const flow = new RecoveryFlowService({
     context,
     ...(params.deviceTiers && { deviceTiers: params.deviceTiers }),
+    ...(limits && {
+      limiters: {
+        start: limits("recovery:start", 5, 60 * 60 * 1000),
+        ip: limits("recovery:ip", 20, 60 * 60 * 1000),
+        step: limits("recovery:step", 30, 10 * 60 * 1000),
+      },
+    }),
   });
   const cleanup = new RecoveryCleanup(context);
   return {
@@ -124,12 +135,21 @@ export function createRecoveryChainAndAttestor(input: {
   recoveryValidator: `0x${string}`;
   deployments: ViemRecoveryChainOptions["deployments"];
   relayerKeyFile: string;
-  attestorKeyFile: string;
+  /**
+   * Who holds the attestor key: a key FILE (development and tests; production configuration refuses it) or a signer backed
+   * by a KMS/HSM (see `createExternalSigner`), which this process never sees the key of.
+   */
+  attestor: { kind: "file"; keyFile: string } | { kind: "signer"; signer: AttestorSigner };
   p256Precompile: boolean;
   gasTopUpMaxWei: bigint;
 }): { chain: ViemRecoveryChain; attestor: KeyAttestor } {
   const relayerKey: Hex = readKeyFileOutsideRepo(input.relayerKeyFile, repositoryRoot());
-  const attestorKey: Hex = readKeyFileOutsideRepo(input.attestorKeyFile, repositoryRoot());
+  const keyed =
+    input.attestor.kind === "file"
+      ? {
+          privateKey: readKeyFileOutsideRepo(input.attestor.keyFile, repositoryRoot()),
+        }
+      : { signer: input.attestor.signer };
   const chain = new ViemRecoveryChain({
     chain: input.chain,
     rpcUrl: input.rpcUrl,
@@ -144,13 +164,13 @@ export function createRecoveryChainAndAttestor(input: {
         : { mode: "none" },
   });
   const attestor = new KeyAttestor({
-    privateKey: attestorKey,
+    ...keyed,
     chainId: input.chain.id,
     recoveryValidator: input.recoveryValidator,
     sendVeto: createVetoSender({
       chain: input.chain,
       rpcUrl: input.rpcUrl,
-      privateKey: attestorKey,
+      ...keyed,
       recoveryValidator: input.recoveryValidator,
     }),
   });

@@ -323,7 +323,12 @@ describe("wallet configuration", () => {
     };
     assert.equal(loadConfig(local).wallet.provider, "kernel");
     assert.throws(() => loadConfig({ ...local, NODE_ENV: "production" }), /https/);
-    const production = { ...kernel, NODE_ENV: "production", PIN_PEPPER: "p".repeat(32) };
+    const production = {
+      ...kernel,
+      NODE_ENV: "production",
+      REDIS_URL: "redis://redis.example:6379",
+      PIN_PEPPER: "p".repeat(32),
+    };
     assert.equal(loadConfig(production).wallet.provider, "kernel");
     assert.throws(() => loadConfig({ ...production, CELO_RPC_URL: "http://rpc.example" }), /https/);
   });
@@ -413,7 +418,11 @@ describe("payment authorization configuration", () => {
   });
 
   it("requires a PIN pepper of at least 32 characters in production wallets", () => {
-    const production = { ...kernel, NODE_ENV: "production" };
+    const production = {
+      ...kernel,
+      NODE_ENV: "production",
+      REDIS_URL: "redis://redis.example:6379",
+    };
     assert.throws(() => loadConfig(production), /PIN_PEPPER/);
     assert.throws(() => loadConfig({ ...production, PIN_PEPPER: "short" }), /PIN_PEPPER/);
     assert.equal(
@@ -473,6 +482,7 @@ describe("firm quote configuration", () => {
     const production = {
       ...base,
       NODE_ENV: "production",
+      REDIS_URL: "redis://redis.example:6379",
       WALLET_PROVIDER: "kernel",
       PASSKEY_RP_ID: "kaada.app",
       PASSKEY_ORIGIN: "https://app.kaada.app",
@@ -549,6 +559,7 @@ describe("account recovery configuration", () => {
     const production = {
       ...ready,
       NODE_ENV: "production",
+      REDIS_URL: "redis://redis.example:6379",
       PIN_PEPPER: "p".repeat(32),
       CELO_RPC_URL: "https://rpc.example",
     };
@@ -693,5 +704,65 @@ describe("device attestation configuration", () => {
         ?.iosAllowDevelopment,
       true,
     );
+  });
+});
+
+describe("production safety for the security MVP", () => {
+  const address = (n: number) => `0x${n.toString(16).padStart(40, "0")}`;
+  const secret = Buffer.alloc(32, 7).toString("base64");
+  const recovery = {
+    DATABASE_URL: databaseUrl,
+    WALLET_PROVIDER: "kernel",
+    PASSKEY_RP_ID: "kaada.app",
+    PASSKEY_ORIGIN: "https://app.kaada.app",
+    BUNDLER_URL: "https://bundler.example/rpc",
+    PIN_PEPPER: "p".repeat(32),
+    RECOVERY_ENABLED: "true",
+    RECOVERY_VALIDATOR_ADDRESS: address(1),
+    RECOVERY_PASSKEY_FACTORY_ADDRESS: address(2),
+    RECOVERY_PASSKEY_IMPLEMENTATION_ADDRESS: address(3),
+    RECOVERY_DEVICE_FACTORY_ADDRESS: address(4),
+    RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS: address(5),
+    RECOVERY_RELAYER_KEY_FILE: "/secrets/relayer.key",
+    RECOVERY_ATTESTOR_KEY_FILE: "/secrets/attestor.key",
+    RECOVERY_CHALLENGE_SECRET: secret,
+    RECOVERY_EMAIL_PROVIDER: "smtp",
+    RECOVERY_SMTP_URL: "smtps://user:pass@mail.example:465",
+    RECOVERY_EMAIL_FROM: "Kaada <no-reply@kaada.app>",
+  };
+  const production = {
+    ...recovery,
+    NODE_ENV: "production",
+    REDIS_URL: "rediss://redis.example:6380",
+    RECOVERY_ATTESTOR_SIGNER: "kms",
+    RECOVERY_ATTESTOR_KMS_KEY_ID: "attestor-key-1",
+  };
+
+  it("accepts a production recovery setup with Redis, a KMS attestor and SMTP", () => {
+    const config = loadConfig(production);
+    assert.equal(config.redis?.url, "rediss://redis.example:6380");
+    assert.equal(config.recovery.setup?.attestor.signer, "kms");
+    assert.equal(config.recovery.smtp?.from, "Kaada <no-reply@kaada.app>");
+  });
+
+  it("refuses production without Redis, with a file-held attestor key, or without a KMS key id", () => {
+    const { REDIS_URL: _r, ...noRedis } = production;
+    assert.throws(() => loadConfig(noRedis), /REDIS_URL/);
+    assert.throws(
+      () => loadConfig({ ...production, RECOVERY_ATTESTOR_SIGNER: "file" }),
+      /file-held/,
+    );
+    const { RECOVERY_ATTESTOR_KMS_KEY_ID: _k, ...noKey } = production;
+    assert.throws(() => loadConfig(noKey), ConfigError);
+  });
+
+  it("keeps the file signer for development, and validates SMTP and Redis URLs", () => {
+    const dev = loadConfig(recovery);
+    assert.equal(dev.recovery.setup?.attestor.signer, "file");
+    assert.equal("redis" in dev, false);
+    assert.throws(() => loadConfig({ ...recovery, RECOVERY_SMTP_URL: "http://x" }), ConfigError);
+    assert.throws(() => loadConfig({ ...recovery, REDIS_URL: "http://x" }), ConfigError);
+    const { RECOVERY_EMAIL_FROM: _f, ...noFrom } = recovery;
+    assert.throws(() => loadConfig(noFrom), ConfigError);
   });
 });

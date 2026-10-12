@@ -8,9 +8,16 @@ import { createPublicClient, createWalletClient, getAddress, http, parseAbi } fr
 import type { Address, Chain, Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
+import type { AttestorSigner } from "./attestor-signer.js";
+
 export interface KeyAttestorOptions {
-  /** The dedicated attestor key. In production this signer is KMS/HSM-backed; here it is a key held in memory. */
-  privateKey: Hex;
+  /**
+   * Who holds the attestor key. Production passes a KMS/HSM-backed `AttestorSigner` (see `createExternalSigner`); the
+   * file-key adapter (`privateKey`, development and tests) is the alternative. Exactly one of the two.
+   */
+  signer?: AttestorSigner;
+  /** DEV/TEST ONLY: a key held in memory. Production refuses it in configuration. */
+  privateKey?: Hex;
   chainId: number;
   /** The one recovery validator this attestor attests for. */
   recoveryValidator: Address;
@@ -31,10 +38,13 @@ export interface KeyAttestorOptions {
  * message shape for its own chain and validator.
  */
 export class KeyAttestor implements RecoveryAttestor {
-  private readonly account;
+  private readonly account: AttestorSigner;
 
   constructor(private readonly options: KeyAttestorOptions) {
-    this.account = privateKeyToAccount(options.privateKey);
+    if ((options.signer === undefined) === (options.privateKey === undefined)) {
+      throw new Error("the attestor needs exactly one of a signer or a development private key");
+    }
+    this.account = options.signer ?? privateKeyToAccount(options.privateKey as Hex);
   }
 
   address(): Promise<string> {
@@ -99,7 +109,9 @@ export function readKeyFileOutsideRepo(path: string, repositoryRoot: string): He
 export interface VetoSenderOptions {
   chain: Chain;
   rpcUrl: string;
-  privateKey: Hex;
+  /** The attestor's signer (KMS/HSM in production) or, for development and tests, its key. Exactly one. */
+  signer?: AttestorSigner;
+  privateKey?: Hex;
   recoveryValidator: Address;
 }
 
@@ -110,7 +122,10 @@ export interface VetoSenderOptions {
 export function createVetoSender(
   options: VetoSenderOptions,
 ): (input: { account: Address }) => Promise<Hex> {
-  const account = privateKeyToAccount(options.privateKey);
+  if ((options.signer === undefined) === (options.privateKey === undefined)) {
+    throw new Error("the veto sender needs exactly one of a signer or a development private key");
+  }
+  const account = options.signer ?? privateKeyToAccount(options.privateKey as Hex);
   const wallet = createWalletClient({
     account,
     chain: options.chain,

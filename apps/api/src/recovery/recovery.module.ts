@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import type { AttestorSigner } from "@kaada/blockchain";
 import { createRepositories, withTransaction } from "@kaada/database";
 import type { KernelExecutionPort, RootValidatorDeployer } from "@kaada/domain";
 import type { AppConfig } from "@kaada/config";
@@ -10,7 +11,12 @@ import { DATABASE } from "../database/database.module.js";
 import { AuthorizationModule } from "../authorization/authorization.module.js";
 import { TRANSACTION_PIN_SERVICE } from "../authorization/authorization.tokens.js";
 import type { TransactionPinService } from "../core/authorization/pin-service.js";
-import { FileOutboxEmailSender } from "../infrastructure/recovery/email.js";
+import { EmailChannelMessenger, FileOutboxEmailSender } from "../infrastructure/recovery/email.js";
+import { SmtpEmailSender } from "../infrastructure/recovery/smtp-email.js";
+import { TelegramChannelMessenger } from "../infrastructure/recovery/telegram.js";
+import { RATE_LIMIT_FACTORY } from "../rate-limit/rate-limit.tokens.js";
+import type { RateLimitFactory } from "../rate-limit/rate-limit.module.js";
+import type { ChannelMessenger, RecoveryEmailSender } from "@kaada/domain";
 import { SimpleWebAuthnVerifier } from "../infrastructure/wallet/simplewebauthn-verifier.js";
 import type { RootAdapters, RootCredentialService } from "../core/roots/root-credentials.js";
 import { RootChangeService } from "../core/roots/root-change-service.js";
@@ -31,7 +37,7 @@ import { RecoveryController } from "./recovery.controller.js";
 import { createRecoveryChainAndAttestor, createRecoveryRuntime } from "./recovery.runtime.js";
 import type { RecoveryRuntime } from "./recovery.runtime.js";
 import { RecoverySweeper } from "./recovery-sweeper.js";
-import { RECOVERY_RUNTIME } from "./recovery.tokens.js";
+import { ATTESTOR_SIGNER_FACTORY, RECOVERY_RUNTIME } from "./recovery.tokens.js";
 
 /**
  * Account recovery. Present only when RECOVERY_ENABLED=true (null otherwise): every route then answers "not enabled". The
@@ -43,19 +49,54 @@ import { RECOVERY_RUNTIME } from "./recovery.tokens.js";
   providers: [
     {
       provide: RECOVERY_RUNTIME,
-      inject: [DATABASE, APP_CONFIG, TRANSACTION_PIN_SERVICE, DEVICE_TIER_SERVICE],
+      inject: [
+        DATABASE,
+        APP_CONFIG,
+        TRANSACTION_PIN_SERVICE,
+        DEVICE_TIER_SERVICE,
+        RATE_LIMIT_FACTORY,
+        { token: ATTESTOR_SIGNER_FACTORY, optional: true },
+      ],
       useFactory: (
         database: Database,
         config: AppConfig,
         pins: TransactionPinService | null,
         deviceTiers: DeviceTierService | null,
+        limits: RateLimitFactory,
+        signerFactory: ((kmsKeyId: string) => AttestorSigner) | undefined,
       ): RecoveryRuntime | null => {
         const recovery = config.recovery;
         const passkey = config.wallet.passkey;
         const bundlerUrl = config.execution.bundlerUrl;
         if (!recovery.enabled || !recovery.setup || !passkey || !pins || !bundlerUrl) return null;
-        if (recovery.emailProvider !== "outbox" || !recovery.emailOutboxFile) {
+        let email: RecoveryEmailSender;
+        if (recovery.emailProvider === "smtp" && recovery.smtp) {
+          email = new SmtpEmailSender({ from: recovery.smtp.from, url: recovery.smtp.url });
+        } else if (recovery.emailProvider === "outbox" && recovery.emailOutboxFile) {
+          email = new FileOutboxEmailSender(recovery.emailOutboxFile);
+        } else {
           throw new Error("no recovery email provider is configured");
+        }
+        // Every linked channel is told: email always, Telegram when a bot is configured (and the person linked Telegram).
+        const messengers: ChannelMessenger[] = [
+          new EmailChannelMessenger(email),
+          ...(recovery.telegramBotToken
+            ? [new TelegramChannelMessenger({ botToken: recovery.telegramBotToken })]
+            : []),
+        ];
+        let attestorSource;
+        if (recovery.setup.attestor.signer === "kms") {
+          if (!signerFactory) {
+            throw new Error(
+              "RECOVERY_ATTESTOR_SIGNER=kms but no KMS signer adapter is installed (provide ATTESTOR_SIGNER_FACTORY)",
+            );
+          }
+          attestorSource = {
+            kind: "signer" as const,
+            signer: signerFactory(recovery.setup.attestor.kmsKeyId),
+          };
+        } else {
+          attestorSource = { kind: "file" as const, keyFile: recovery.setup.attestor.keyFile };
         }
         const chain = recovery.chainId === celoSepolia.id ? celoSepolia : celo;
         if (chain.id !== recovery.chainId)
@@ -76,7 +117,7 @@ import { RECOVERY_RUNTIME } from "./recovery.tokens.js";
             },
           },
           relayerKeyFile: recovery.setup.relayerKeyFile,
-          attestorKeyFile: recovery.setup.attestorKeyFile,
+          attestor: attestorSource,
           p256Precompile: true,
           gasTopUpMaxWei: recovery.gasTopUpMaxWei,
         });
@@ -84,7 +125,9 @@ import { RECOVERY_RUNTIME } from "./recovery.tokens.js";
           database,
           chain: viemChain,
           attestor,
-          email: new FileOutboxEmailSender(recovery.emailOutboxFile),
+          email,
+          messengers,
+          limits,
           passkeyVerifier: new SimpleWebAuthnVerifier(),
           pins,
           rpId: passkey.rpId,

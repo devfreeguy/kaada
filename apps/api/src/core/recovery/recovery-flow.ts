@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 
-import { deviceKeyIdFromPoint, isOnP256Curve } from "@kaada/contracts";
+import { deviceKeyIdFromPoint, deviceKeyPayload, isOnP256Curve } from "@kaada/contracts";
 import type { EnrolmentChannel } from "@kaada/contracts";
 import {
   CELO_CHAIN_ID,
@@ -22,6 +22,7 @@ import type {
 } from "@kaada/domain";
 
 import { RateLimiter } from "../authorization/rate-limiter.js";
+import type { RateLimit } from "../authorization/rate-limiter.js";
 import { hashOpaqueToken, newOpaqueToken } from "../authorization/token.js";
 import {
   audit,
@@ -80,7 +81,8 @@ export interface RootSigningRequest {
   /** PASSKEY: the WebAuthn request options (the challenge is base64url). */
   passkey?: { challenge: string; rpId: string; userVerification: "required" };
   /** DEVICE_KEY: what the device signs (see KaadaDeviceKeyValidator) . */
-  device?: { chainId: number; validator: string; account: string };
+  /** DEVICE_KEY: `payload` is the exact hex the device signs (ECDSA P-256 / SHA-256); the material sent back is keyId || r || s. */
+  device?: { chainId: number; validator: string; account: string; keyId: string; payload: string };
 }
 
 export interface DeviceRootInput {
@@ -96,7 +98,7 @@ export interface RecoveryFlowDeps {
   context: RecoveryContext;
   /** Absent unless device attestation is enabled: then a key's tier is whatever its route implies and never more. */
   deviceTiers?: DeviceTierResolver;
-  limiters?: { start?: RateLimiter; ip?: RateLimiter; step?: RateLimiter };
+  limiters?: { start?: RateLimit; ip?: RateLimit; step?: RateLimit };
 }
 
 /** The challenge a WebAuthn response was made for, read from clientDataJSON. */
@@ -120,9 +122,9 @@ function challengeOf(response: unknown): string | undefined {
  */
 export class RecoveryFlowService {
   private readonly ctx: RecoveryContext;
-  private readonly startLimiter: RateLimiter;
-  private readonly ipLimiter: RateLimiter;
-  private readonly stepLimiter: RateLimiter;
+  private readonly startLimiter: RateLimit;
+  private readonly ipLimiter: RateLimit;
+  private readonly stepLimiter: RateLimit;
 
   constructor(private readonly deps: RecoveryFlowDeps) {
     this.ctx = deps.context;
@@ -143,8 +145,8 @@ export class RecoveryFlowService {
     const email = normalizeEmail(input.email);
     if (!email) throw new KaadaError("RECOVERY_REJECTED", "enter a valid email address");
     const limited =
-      !this.startLimiter.allow(`email:${sha256Hex(email)}`) ||
-      (input.ip !== undefined && !this.ipLimiter.allow(`ip:${input.ip}`));
+      !(await this.startLimiter.allow(`email:${sha256Hex(email)}`)) ||
+      (input.ip !== undefined && !(await this.ipLimiter.allow(`ip:${input.ip}`)));
     if (limited)
       throw new KaadaError("RECOVERY_RATE_LIMITED", "too many requests, try again later");
 
@@ -228,7 +230,7 @@ export class RecoveryFlowService {
   /** Sends another code for the same session token (bounded by a count and a cooldown). Same answer for any token. */
   async resend(token: unknown): Promise<void> {
     const sessionTokenHash = hashOpaqueToken(readToken(token));
-    if (!this.stepLimiter.allow(`resend:${sessionTokenHash}`)) {
+    if (!(await this.stepLimiter.allow(`resend:${sessionTokenHash}`))) {
       throw new KaadaError("RECOVERY_RATE_LIMITED", "too many requests, try again later");
     }
     const now = this.ctx.now();
@@ -271,7 +273,7 @@ export class RecoveryFlowService {
    */
   async verifyEmail(token: unknown, code: unknown): Promise<RecoveryStatusView> {
     const sessionTokenHash = hashOpaqueToken(readToken(token));
-    if (!this.stepLimiter.allow(`verify:${sessionTokenHash}`)) {
+    if (!(await this.stepLimiter.allow(`verify:${sessionTokenHash}`))) {
       throw new KaadaError("RECOVERY_RATE_LIMITED", "too many requests, try again later");
     }
     if (typeof code !== "string" || !EMAIL_CODE_PATTERN.test(code)) throw invalidSession();
@@ -337,7 +339,7 @@ export class RecoveryFlowService {
     userName: string;
   }> {
     const attempt = await resolveAttempt(this.ctx, token, { allow: ["EMAIL_VERIFIED"] });
-    this.requireStep(attempt);
+    await this.requireStep(attempt);
     const challenge = randomBytes(32).toString("base64url");
     await this.ctx.uow.read.passkeys.issueChallenge({
       id: createId(),
@@ -352,7 +354,7 @@ export class RecoveryFlowService {
   /** The new device registered a passkey: verify it and propose the exact new root. */
   async proposePasskeyRoot(token: unknown, response: unknown): Promise<RootProposal> {
     const attempt = await resolveAttempt(this.ctx, token, { allow: ["EMAIL_VERIFIED"] });
-    this.requireStep(attempt);
+    await this.requireStep(attempt);
     const reject = (message: string) => new KaadaError("CREDENTIAL_REJECTED", message);
     const challenge = challengeOf(response);
     if (!challenge) throw reject("the registration response is malformed");
@@ -394,7 +396,7 @@ export class RecoveryFlowService {
       throw new KaadaError("CREDENTIAL_REJECTED", "device attestation is not enabled");
     }
     const attempt = await resolveAttempt(this.ctx, token, { allow: ["EMAIL_VERIFIED"] });
-    this.requireStep(attempt);
+    await this.requireStep(attempt);
     return this.deps.deviceTiers.issueChallenge({
       userId: attempt.userId,
       walletId: attempt.walletId,
@@ -406,7 +408,7 @@ export class RecoveryFlowService {
   /** The new device generated a P-256 key: validate it and propose the exact new root. */
   async proposeDeviceRoot(token: unknown, input: DeviceRootInput): Promise<RootProposal> {
     const attempt = await resolveAttempt(this.ctx, token, { allow: ["EMAIL_VERIFIED"] });
-    this.requireStep(attempt);
+    await this.requireStep(attempt);
     const reject = (message: string) => new KaadaError("CREDENTIAL_REJECTED", message);
     if (!HEX64.test(input.publicKeyX) || !HEX64.test(input.publicKeyY)) {
       throw reject("the public key is malformed");
@@ -524,7 +526,7 @@ export class RecoveryFlowService {
    */
   async submitProof(token: unknown, recoverySignature: unknown): Promise<RecoveryStatusView> {
     const attempt = await resolveAttempt(this.ctx, token, { allow: ["ROOT_PROPOSED"] });
-    if (!this.stepLimiter.allow(`proof:${attempt.id}`)) {
+    if (!(await this.stepLimiter.allow(`proof:${attempt.id}`))) {
       throw new KaadaError("RECOVERY_RATE_LIMITED", "too many requests, try again later");
     }
     if (typeof recoverySignature !== "string" || !/^0x[0-9a-fA-F]{130}$/.test(recoverySignature)) {
@@ -946,8 +948,8 @@ export class RecoveryFlowService {
     return moved;
   }
 
-  private requireStep(attempt: RecoveryAttempt): void {
-    if (!this.stepLimiter.allow(`step:${attempt.id}`)) {
+  private async requireStep(attempt: RecoveryAttempt): Promise<void> {
+    if (!(await this.stepLimiter.allow(`step:${attempt.id}`))) {
       throw new KaadaError("RECOVERY_RATE_LIMITED", "too many requests, try again later");
     }
   }
@@ -1067,7 +1069,19 @@ export class RecoveryFlowService {
         },
       }),
       ...(root.kind === "DEVICE_KEY" && {
-        device: { chainId: this.ctx.chain.chainId, validator: root.validatorAddress, account },
+        device: {
+          chainId: this.ctx.chain.chainId,
+          validator: root.validatorAddress,
+          account,
+          keyId: root.credentialRef,
+          payload: deviceKeyPayload({
+            chainId: this.ctx.chain.chainId,
+            validator: root.validatorAddress as `0x${string}`,
+            account: account as `0x${string}`,
+            keyId: root.credentialRef as `0x${string}`,
+            userOpHash: hash as `0x${string}`,
+          }),
+        },
       }),
     };
   }

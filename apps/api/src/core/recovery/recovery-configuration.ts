@@ -1,3 +1,4 @@
+import { deviceKeyPayload } from "@kaada/contracts";
 import { KaadaError, RECOVERY_AUDIT_EVENTS, createId, isWalletActive } from "@kaada/domain";
 import type { RecoveryConfiguration, Wallet } from "@kaada/domain";
 
@@ -22,6 +23,12 @@ export interface ArmRequest {
  */
 export class RecoveryConfigurationService {
   constructor(private readonly ctx: RecoveryContext) {}
+
+  /** Which account and chain a new Recovery Code must be derived for (the code is bound to both). Public data only. */
+  async describe(userId: string): Promise<{ account: string; chainId: number }> {
+    const wallet = await this.walletOf(userId);
+    return { account: wallet.address, chainId: this.ctx.chain.chainId };
+  }
 
   /** Builds and stores the install operation for the current root to sign. Sends nothing. */
   async prepare(input: {
@@ -114,6 +121,14 @@ export class RecoveryConfigurationService {
             chainId: this.ctx.chain.chainId,
             validator: root.validatorAddress,
             account: wallet.address,
+            keyId: root.credentialRef,
+            payload: deviceKeyPayload({
+              chainId: this.ctx.chain.chainId,
+              validator: root.validatorAddress as `0x${string}`,
+              account: wallet.address as `0x${string}`,
+              keyId: root.credentialRef as `0x${string}`,
+              userOpHash: hash as `0x${string}`,
+            }),
           },
         }),
       },

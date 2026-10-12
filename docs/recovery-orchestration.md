@@ -161,3 +161,11 @@ Final live results (final committed code): A and B passed in run 3; C and D pass
 - (Closed in the root-agnostic milestone: the PIN is six digits everywhere; see `docs/root-agnostic-flow.md`.)
 - Rate limits are in-process; the sweeper needs a deployment; the email-challenge pepper needs managed rotation.
 - No frontend UI for the flow yet.
+
+## Security MVP additions
+
+See [security-architecture](security-architecture.md) for the frozen architecture. Added on top of the orchestration above, without
+changing it: Redis-backed rate limits (fail closed), the `AttestorSigner` boundary (file key for development and tests, KMS/HSM
+through `createExternalSigner` in production), SMTP email and Telegram delivery of the four recovery alerts, the `/recovery`,
+`/recovery/report` and `/security/[token]` pages, and `device.keyId` / `device.payload` in every root signing request so a browser
+can sign for a device-key root without re-deriving the payload.

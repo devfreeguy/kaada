@@ -12,12 +12,15 @@
     "test": "node --import tsx --test \"app/**/*.test.ts\""
   },
   "dependencies": {
+    "@noble/hashes": "1.8.0",
     "@simplewebauthn/browser": "^14.0.0",
     "next": "^16.4.0",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "viem": "^2.57.4"
   },
   "devDependencies": {
+    "@kaada/contracts": "workspace:*",
     "@kaada/eslint-config": "workspace:*",
     "@kaada/tsconfig": "workspace:*",
     "@tailwindcss/postcss": "^4.3.3",
@@ -26,7 +29,7 @@
     "@types/react-dom": "^19.2.0",
     "eslint": "catalog:",
     "tailwindcss": "^4.3.3",
-    "typescript": "catalog:",
-    "tsx": "^4.23.15"
+    "tsx": "^4.23.15",
+    "typescript": "catalog:"
   }
 }

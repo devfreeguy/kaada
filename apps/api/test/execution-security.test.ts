@@ -45,6 +45,11 @@ const isRecoverySigner = (path: string): boolean =>
     path.replaceAll("\\", "/"),
   );
 
+// The browser half of the Recovery Code: it derives a key from the code ON THE USER'S DEVICE and signs one typed `Initiate`
+// request. It is the other sanctioned signer location and is held to its own narrow scan in recovery-security.test.ts.
+const isBrowserRecoverySigner = (path: string): boolean =>
+  /apps\/web\/app\/lib\/recovery-code\.ts$/.test(path.replaceAll("\\", "/"));
+
 describe("execution security review (source scan)", () => {
   it("scans a meaningful amount of code", () => {
     assert.ok(production.length >= 150, String(production.length));
@@ -64,8 +69,12 @@ describe("execution security review (source scan)", () => {
       "device-key.ts",
       // The setup page hands that opaque key to the two functions above and to nothing else (checked there too).
       "setup-flow.tsx",
+      // Hands the opaque new key to `saveDeviceKey` and `signDevicePayload` and nothing else (scanned in recovery-security.test.ts).
+      "new-root.ts",
     ]);
-    for (const path of production.filter((p) => !isRecoverySigner(p))) {
+    for (const path of production.filter(
+      (p) => !isRecoverySigner(p) && !isBrowserRecoverySigner(p),
+    )) {
       const text = code(path);
       if (path.endsWith("logger.ts")) continue; // the redaction list names key material to hide it
       // The adapter is the only file that sends or signs UserOperations (it is held to its own scan
