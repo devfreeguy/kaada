@@ -199,16 +199,13 @@ software P-256 device keys, against the local Alto bundler and the real EntryPoi
 Textile-bound is replaced behind the same ports (chain reads, the firm-quote and order providers, the two fixture tokens and the fixture
 swap). The database keeps the logical chain id 42220. No mainnet, no Textile.
 
-| Scenario                                 | Result                                                                                                                                                                                                                                                                                                                                                |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A. PASSKEY root                          | **19/19.** Onboard, six-digit PIN (4, 5, 7 digits and `12345a` refused; Argon2id hash only), **payment 1** (one `ROOT_PASSKEY_REQUIRED`, permission installed, +100 tBRL), **payment 2: PIN only, no root prompt**, one root-action session for two payments                                                                                          |
-| B. DEVICE-KEY root                       | **all checks pass.** Onboard (fresh PRIMARY clone deployed, account derived from it), six-digit PIN vouched for by a device-key signature, **payment 1** (one `ROOT_DEVICE_KEY_REQUIRED`, permission installed, +100 tBRL), **payment 2: PIN only, no root prompt**, one root-action session for two payments, the chain's root is the recorded clone |
-| C. ROTATION passkey -> device -> passkey | **not complete: the Sepolia deployer ran out of CELO.** Passed: onboarding, PIN and the payment before rotation (+100 tBRL). The rotation itself needs the relayer to deploy the new clone and the deployer could not pay for it. **To finish: fund the deployer (about 0.6 CELO) and run `SCENARIOS=C FUND_CELO=0.35`**                              |
+| Scenario                                 | Result                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A. PASSKEY root                          | **19/19.** Onboard, six-digit PIN (4, 5, 7 digits and `12345a` refused; Argon2id hash only), **payment 1** (one `ROOT_PASSKEY_REQUIRED`, permission installed, +100 tBRL), **payment 2: PIN only, no root prompt**, one root-action session for two payments                                                                                                                                             |
+| B. DEVICE-KEY root                       | **all checks pass.** Onboard (fresh PRIMARY clone deployed, account derived from it), six-digit PIN vouched for by a device-key signature, **payment 1** (one `ROOT_DEVICE_KEY_REQUIRED`, permission installed, +100 tBRL), **payment 2: PIN only, no root prompt**, one root-action session for two payments, the chain's root is the recorded clone                                                    |
+| C. ROTATION passkey -> device -> passkey | **30/30.** Payment (root action), then rotation to a device key (the passkey signs; confirmed by the chain; fresh clone is the on-chain root), payment (the old permission is void, so one `ROOT_DEVICE_KEY_REQUIRED`), rotation back to a passkey (the device key signs; another fresh clone), payment (`ROOT_PASSKEY_REQUIRED`). The wallet address never changed and no validator instance was reused |
 
-The rotation logic is covered offline in all four type pairs and on the real database (`root-change.test.ts`,
-`root-agnostic.integration.test.ts`); what scenario C adds, and what is still unproven live, is the **Kernel adapter's deployed-account
-path** (taking the address from the chain for a wallet whose root is no longer the one it was created with) and a **passkey clone** as the
-sudo validator.
+Scenario C also proves live the Kernel adapter's deployed-account path (a rotated wallet's address is taken from the chain) and a **passkey clone** as the sudo validator.
 
 ### Bugs found and fixed on the way
 
@@ -226,7 +223,6 @@ sudo validator.
 
 ## Remaining blockers
 
-- Scenario C live (above): needs about 0.6 CELO on the deployer.
 - No UI yet for a **voluntary rotation or backup enrolment** (the endpoints, the server and the client proof library exist; there is no page).
 - Native iOS/Android clients and **App Attest / Android Key Attestation** (next milestone): until then nothing is `TRUSTED_DEVICE`, and a
   web device key is `WEB_NON_EXTRACTABLE`, not hardware.
