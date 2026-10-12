@@ -14,25 +14,21 @@ Textile has two API **environments**, separate from the blockchain **network**:
 | `test`      | `tx_test_...` | **only** BNB testnet (97) cNGN/USDT and Base Sepolia (84532) cNGN/USDC | the sandbox smoke script only |
 
 Textile has **no Celo testnet deployment**. A test key sent with chain 42220 is a `400`, so the app refuses
-`TEXTILE_ENV=test` in every `NODE_ENV` (Kaada settles on Celo). There is no automatic fallback between
+the test environment in every `NODE_ENV` (Kaada settles on Celo; there is no `TEXTILE_ENV` setting, the app uses live only). There is no automatic fallback between
 environments, and no fallback to the mock.
 
 ## Configuration
 
 ```
 FX_PROVIDER=textile            # none | mock | textile. mock is rejected in production.
-TEXTILE_ENV=live               # required with textile; no default
-TEXTILE_LIVE_API_KEY=tx_live_...   # required for live; must start tx_live_
-TEXTILE_TEST_API_KEY=tx_test_...   # sandbox smoke script only
-TEXTILE_API_URL=https://api.textilecredit.com   # host only; the client adds /v2/rfq/...
-TEXTILE_TIMEOUT_MS=8000        # indicative quotes (firm quotes can block ~75 s; not used yet)
-CELO_NETWORK=mainnet
-CELO_CHAIN_ID=42220
+TEXTILE_LIVE_API_KEY=tx_live_...   # required with textile; must start tx_live_
+TEXTILE_TEST_API_KEY=tx_test_...   # sandbox smoke script only (read by the script, not the app)
 ```
 
-Config validation fails with a `ConfigError` (never echoing a key) when: `FX_PROVIDER=textile` without
-`TEXTILE_ENV`; `TEXTILE_ENV=live` without a `tx_live_` key; `TEXTILE_ENV=test` (cannot quote Celo); a
-chain other than 42220. `loadTextileCredentials("test" | "live")` serves tools like the smoke script and
+The Textile host (`https://api.textilecredit.com`, host only; the client adds `/v2/rfq/...`), the 8 s timeout, the live-only environment
+and the Celo chain (mainnet, 42220) are fixed in `packages/config/src/settings.ts`: they are not environment variables.
+
+Config validation fails with a `ConfigError` (never echoing a key) when `FX_PROVIDER=textile` has no key or a key that is not `tx_live_...`. `loadTextileCredentials("test" | "live")` serves tools like the smoke script and
 selects exactly the requested environment's key.
 
 ## What is implemented
@@ -273,7 +269,7 @@ for the length of one request. There is no cancel call. See `docs/execution.md`.
 Script: `apps/api/test/testnet/textile-bsc-testnet.ts` (testnet only, not part of `pnpm test`). It drives the **production**
 `TextileClient`, `TextileFirmQuoteProvider`, `TextileOrderProvider` and approval inspector with a throwaway EOA that signs the
 approval and swap itself. This is a **provider-contract** validation only: nothing here touches Celo, the Kernel, or the database
-orchestration, and the application still refuses `TEXTILE_ENV=test`. The one-time claim token is AES-256-GCM encrypted (bound to its
+orchestration, and the application only ever uses the live environment. The one-time claim token is AES-256-GCM encrypted (bound to its
 rfq id) before it reaches the persisted state and is never printed.
 
 Corridor: cNGN (`0x8a07...9dA8`, 6 decimals) <-> USDT (`0x3376...4dDd`, 18 decimals), reactor `0x65B2...a7Df`, 5 bps fee. Base Sepolia
@@ -308,5 +304,5 @@ every settlement. `quoted` status carries `txHash: null`, `submittedAt: null`, `
 ### Not covered here
 
 A firm quote on **Celo mainnet** (Textile has no Celo test deployment, so the Celo corridor, its liquidity and the wBRL/USDT tokens are
-validated only by previews and by the Celo Sepolia fixtures), the app's own HTTP path for Textile TEST (the config refuses `TEXTILE_ENV=test`),
+validated only by previews and by the Celo Sepolia fixtures), the app's own HTTP path for Textile TEST (the app has no test-environment setting),
 Permit2, webhooks, and the late-fill window (a failed or expired order can flip to filled for 24 h).

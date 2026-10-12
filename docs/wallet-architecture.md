@@ -170,7 +170,7 @@ execution builds, a bundler that supports Celo (and optionally a paymaster). Not
 - **Provisioning concurrency**: a per-user row lock serialises the decision, a partial unique index allows one
   non-revoked EMBEDDED wallet per user and chain, and the provider call runs outside any transaction. Two callers
   both derive (the address is a pure function of the passkey) and one `activate` wins.
-- **Configuration**: `WALLET_PROVIDER=none|kernel`, `CELO_RPC_URL`, `PASSKEY_RP_ID`, `PASSKEY_ORIGIN`, `PASSKEY_RP_NAME`. Kernel needs a
+- **Configuration**: `WALLET_PROVIDER=none|kernel`, `CELO_RPC_URL`, `PASSKEY_RP_ID`, `PASSKEY_ORIGIN` (the relying-party name `Kaada` is fixed in `settings.ts`). Kernel needs a
   relying party and an origin on that domain; production needs https for both the origin and the RPC.
 
 ## Verified live (read-only, `pnpm --filter @kaada/api smoke:wallet`)

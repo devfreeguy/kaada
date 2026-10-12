@@ -1,7 +1,23 @@
 import { z } from "zod";
 
+import {
+  NETWORK_CHAIN_IDS,
+  RECOVERY_DELAYS,
+  RECOVERY_DEPLOYMENTS,
+  RECOVERY_NETWORKS,
+} from "./deployments.js";
+import type { RecoveryContracts, RecoveryNetwork } from "./deployments.js";
+import { SETTINGS } from "./settings.js";
+
 export const logLevels = ["fatal", "error", "warn", "info", "debug", "trace", "silent"] as const;
 export type LogLevel = (typeof logLevels)[number];
+
+/*
+ * ENVIRONMENT VARIABLES: secrets, and facts that differ per deployment. Nothing else.
+ *   - tunables and policy (lifetimes, timeouts, intervals, models, public URLs)  -> settings.ts
+ *   - per-network contract addresses and recovery delays                         -> deployments.ts
+ * See .env.example for every variable, grouped and documented.
+ */
 
 const postgresUrl = z
   .url()
@@ -17,6 +33,12 @@ const optionalSecret = z
   .optional()
   .transform((value) => (value ? value : undefined));
 
+/** A switch: ON only when exactly "true". Anything else (including "yes") is refused. */
+const flag = z
+  .enum(["true", "false"])
+  .default("false")
+  .transform((value) => value === "true");
+
 /** A base64 string of exactly 32 bytes, or unset. */
 function isAesKey(value: string | undefined): boolean {
   return (
@@ -25,435 +47,141 @@ function isAesKey(value: string | undefined): boolean {
   );
 }
 
-/** A 0x-prefixed 20-byte address. */
-const evmAddress = z.string().regex(/^0x[0-9a-fA-F]{40}$/, "must be a 0x-prefixed 20-byte address");
+const envShape = {
+  // ── server ──
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  PORT: z.coerce.number().int().min(1).max(65535).default(4000),
+  API_HOST: z.string().min(1).default("0.0.0.0"),
+  WEB_URL: z.url().default("http://localhost:3000"),
+  CORS_ORIGINS: z.string().default(""),
+  LOG_LEVEL: z.enum(logLevels).default("info"),
 
-const envSchemaShape = {
-  TEXTILE_API_URL: z
-    .url()
-    .refine((value) => !/\/v[0-9]+\/?$/.test(value), "give the host only, without /v2")
-    .default("https://api.textilecredit.com"),
-  TEXTILE_TIMEOUT_MS: z.coerce.number().int().min(1000).max(80_000).default(8000),
+  // ── database and redis ──
+  // Pooled runtime connection (Neon: the "-pooler" host).
+  DATABASE_URL: postgresUrl,
+  // Direct connection used only by the Prisma CLI for migrations; optional.
+  DATABASE_DIRECT_URL: postgresUrl.optional(),
+  REDIS_URL: z
+    .string()
+    .trim()
+    .regex(/^rediss?:\/\/\S+$/, "must be a redis:// or rediss:// URL")
+    .optional(),
+
+  // ── agent and pricing ──
+  AGENT_INTERPRETER: z.enum(["none", "mock", "groq"]).default("none"),
+  GROQ_API_KEY: optionalSecret,
+  FX_PROVIDER: z.enum(["none", "mock", "textile"]).default("none"),
+  // Kaada uses Textile's LIVE environment only (Celo exists nowhere else). The test key is for the sandbox smoke script.
+  TEXTILE_LIVE_API_KEY: optionalSecret,
+
+  // ── wallets and payment authorization ──
+  WALLET_PROVIDER: z.enum(["none", "kernel"]).default("none"),
+  CELO_RPC_URL: z.url().default("https://forno.celo.org"),
+  PASSKEY_RP_ID: optionalSecret,
+  PASSKEY_ORIGIN: z.url().optional(),
+  // A server-side secret mixed into every PIN hash. Required in production wallets.
+  PIN_PEPPER: optionalSecret,
+
+  // ── payment execution (can move funds) ──
+  EXECUTION_ENABLED: flag,
+  BUNDLER_URL: z.url().optional(),
+  // The least native CELO (wei) the smart account must hold for network fees. No paymaster is used.
+  EXECUTION_MIN_NATIVE_WEI: z
+    .string()
+    .regex(/^[1-9][0-9]{0,30}$/, "must be a positive integer in wei")
+    .default("50000000000000000"),
+  // AES-256-GCM key for stored claim tokens and session keys (32 random bytes, base64), with rotation.
+  EXECUTION_SECRET_KEY: optionalSecret,
+  EXECUTION_SECRET_KEY_VERSION: z.coerce.number().int().min(1).max(1_000_000).default(1),
+  EXECUTION_SECRET_KEY_PREVIOUS: optionalSecret,
+
+  // ── account recovery and device keys ──
+  RECOVERY_ENABLED: flag,
+  // Which network's contracts and delays apply (see deployments.ts).
+  RECOVERY_NETWORK: z.enum(RECOVERY_NETWORKS).default("celo-mainnet"),
+  // Files holding one 0x-prefixed 32-byte key each. They must not live inside the repository.
+  RECOVERY_RELAYER_KEY_FILE: optionalSecret,
+  // Development and tests only (production uses the KMS signer, named by RECOVERY_ATTESTOR_KMS_KEY_ID).
+  RECOVERY_ATTESTOR_KEY_FILE: optionalSecret,
+  RECOVERY_ATTESTOR_KMS_KEY_ID: optionalSecret,
+  // Keys the email-code hash: 32 random bytes as base64.
+  RECOVERY_CHALLENGE_SECRET: optionalSecret,
+  // Email delivery is chosen by what is set: RECOVERY_SMTP_URL (+ FROM) = smtp, else RECOVERY_EMAIL_OUTBOX_FILE = a
+  // development file outbox (refused in production), else none (recovery cannot start).
+  RECOVERY_SMTP_URL: optionalSecret,
+  RECOVERY_EMAIL_FROM: z.string().trim().min(3).max(200).optional(),
+  RECOVERY_EMAIL_OUTBOX_FILE: optionalSecret,
+  // The most native CELO (wei) the platform may send an account so a recovery or cancel is not stopped by an empty wallet.
+  RECOVERY_GAS_TOPUP_MAX_WEI: z
+    .string()
+    .regex(/^[0-9]{1,30}$/)
+    .default("0"),
+  TELEGRAM_BOT_TOKEN: optionalSecret,
+  DEVICE_KEY_ROOTS_ENABLED: flag,
+  // Device attestation is enabled by naming the apps whose keys are trusted (and needs DEVICE_KEY_ROOTS_ENABLED).
+  // "package=sha256hex|sha256hex,package2=sha256hex" and "TEAMID.com.bundle.id,..."
+  ATTESTATION_ANDROID_APPS: z.string().trim().min(1).optional(),
+  ATTESTATION_IOS_APP_IDS: z.string().trim().min(1).optional(),
 };
 
-const envSchema = z
-  .object({
-    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-    PORT: z.coerce.number().int().min(1).max(65535).default(4000),
-    API_HOST: z.string().min(1).default("0.0.0.0"),
-    WEB_URL: z.url().default("http://localhost:3000"),
-    CORS_ORIGINS: z.string().default(""),
-    LOG_LEVEL: z.enum(logLevels).default("info"),
-    // Pooled runtime connection (Neon: the "-pooler" host).
-    DATABASE_URL: postgresUrl,
-    // Direct connection used only by the Prisma CLI for migrations; optional.
-    DATABASE_DIRECT_URL: postgresUrl.optional(),
-    DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),
-    DATABASE_POOL_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60_000).default(10_000),
-    // How long one interactive database transaction may run (Prisma's default is 5 s). Raise it only for a database that is far
-    // from the API; the services keep their transactions short and never hold one across a chain or provider call.
-    DATABASE_TRANSACTION_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120_000).default(5_000),
-    // Wallet stack. "none" disables wallets; "kernel" is ZeroDev Kernel v3.3 with a passkey root
-    // (see docs/wallet-architecture.md). No signing happens in this build either way.
-    WALLET_PROVIDER: z.enum(["none", "kernel"]).default("none"),
-    // Celo JSON-RPC for read-only calls (balances, address derivation). The public node works.
-    CELO_RPC_URL: z.url().default("https://forno.celo.org"),
-    // WebAuthn relying party: the domain passkeys are bound to, and the exact web origin allowed.
-    PASSKEY_RP_ID: optionalSecret,
-    PASSKEY_ORIGIN: z.url().optional(),
-    // The name an authenticator shows for this service.
-    PASSKEY_RP_NAME: z.string().trim().min(1).max(64).default("Kaada"),
-    // Payment authorization. The session is the time to open the link and enter the PIN; the
-    // authorization is how long an approved payment may still be executed. Both are deliberately short.
-    AUTHORIZATION_SESSION_TTL_SECONDS: z.coerce.number().int().min(30).max(900).default(300),
-    PAYMENT_AUTHORIZATION_TTL_SECONDS: z.coerce.number().int().min(30).max(600).default(600),
-    // A server-side secret mixed into every PIN hash (Argon2 "secret"). With only 10,000 possible
-    // PINs, a leaked database alone must not be enough to recover them. Required in production.
-    PIN_PEPPER: optionalSecret,
-    // A Celo-capable ERC-4337 bundler. Required when EXECUTION_ENABLED=true: every UserOperation (account
-    // deployment, permission install, approval, swap) goes through it, never through a raw transaction.
-    BUNDLER_URL: z.url().optional(),
-    // Build 13 can move funds. It is OFF unless this is exactly "true"; with it on, a bundler, the
-    // secret key, the kernel wallet stack and Textile pricing must all be configured or startup fails.
-    EXECUTION_ENABLED: z
-      .enum(["true", "false"])
-      .default("false")
-      .transform((value) => value === "true"),
-    // The least native CELO (wei) the smart account must hold for network fees. No paymaster is used.
-    EXECUTION_MIN_NATIVE_WEI: z
-      .string()
-      .regex(/^[1-9][0-9]{0,30}$/, "must be a positive integer in wei")
-      .default("50000000000000000"),
-    // Receipt polling inside one run; the reconciler continues anything still pending afterwards.
-    EXECUTION_POLL_INTERVAL_MS: z.coerce.number().int().min(250).max(30_000).default(2_000),
-    EXECUTION_POLL_MAX_WAIT_MS: z.coerce.number().int().min(1_000).max(120_000).default(45_000),
-    // How often the reconciler looks at unfinished executions. 0 disables the timer (call it by hand).
-    EXECUTION_RECONCILE_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(3600).default(30),
-    // Firm Textile quotes. The claim token Textile returns once is encrypted at rest with this key
-    // (AES-256-GCM, 32 random bytes as base64). A previous key may stay for decryption after rotation.
-    EXECUTION_SECRET_KEY: optionalSecret,
-    EXECUTION_SECRET_KEY_VERSION: z.coerce.number().int().min(1).max(1_000_000).default(1),
-    EXECUTION_SECRET_KEY_PREVIOUS: optionalSecret,
-    // The least time that must remain on a firm quote before it is treated as executable.
-    FIRM_QUOTE_MIN_WINDOW_SECONDS: z.coerce.number().int().min(5).max(45).default(12),
-    // Textile documents ~70 s for a firm request and recommends a 75 s client timeout.
-    FIRM_QUOTE_TIMEOUT_MS: z.coerce.number().int().min(10_000).max(80_000).default(75_000),
-    // Textile allows 4 outstanding firm RFQs per key; Kaada counts its own to avoid avoidable 429s.
-    TEXTILE_MAX_OUTSTANDING_RFQS: z.coerce.number().int().min(1).max(4).default(4),
-    // Account recovery (docs/recovery-contracts.md). OFF unless exactly "true"; with it on, the recovery contracts, the
-    // dedicated relayer and attestor keys (files OUTSIDE the repository), the email-challenge secret and a bundler must
-    // all be configured or startup fails.
-    RECOVERY_ENABLED: z
-      .enum(["true", "false"])
-      .default("false")
-      .transform((value) => value === "true"),
-    // The chain the recovery contracts live on (11142220 for Celo Sepolia tests). Defaults to CELO_CHAIN_ID.
-    RECOVERY_CHAIN_ID: z.coerce.number().int().min(1).optional(),
-    RECOVERY_VALIDATOR_ADDRESS: evmAddress.optional(),
-    RECOVERY_PASSKEY_FACTORY_ADDRESS: evmAddress.optional(),
-    RECOVERY_PASSKEY_IMPLEMENTATION_ADDRESS: evmAddress.optional(),
-    RECOVERY_DEVICE_FACTORY_ADDRESS: evmAddress.optional(),
-    RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS: evmAddress.optional(),
-    // Files holding one 0x-prefixed 32-byte key each. They must not live inside the repository.
-    RECOVERY_RELAYER_KEY_FILE: optionalSecret,
-    RECOVERY_ATTESTOR_KEY_FILE: optionalSecret,
-    // Who holds the attestor key. "file" is a key file (development and tests only: production refuses it). "kms" means a
-    // KMS/HSM-backed signer (RECOVERY_ATTESTOR_KMS_KEY_ID names the key for the adapter); the cloud adapter is installed
-    // by the deployment through the ATTESTOR_SIGNER_FACTORY provider, and startup fails if none is installed.
-    RECOVERY_ATTESTOR_SIGNER: z.enum(["file", "kms"]).default("file"),
-    RECOVERY_ATTESTOR_KMS_KEY_ID: optionalSecret,
-    // Keys the email-code hash: 32 random bytes as base64.
-    RECOVERY_CHALLENGE_SECRET: optionalSecret,
-    // The delay a new recovery configuration uses, and the floor below which none may go. The contract enforces 24 h;
-    // production refuses to start with a floor lower than that.
-    RECOVERY_DELAY_SECONDS: z.coerce.number().int().min(1).default(259_200),
-    RECOVERY_MIN_DELAY_SECONDS: z.coerce.number().int().min(1).default(86_400),
-    // How recovery emails leave the system. "none" cannot send anything (recovery then refuses to start); "outbox" appends
-    // each email to RECOVERY_EMAIL_OUTBOX_FILE for local runs and tests and is REFUSED in production.
-    // "smtp" sends through RECOVERY_SMTP_URL (smtps://user:pass@host:465, or smtp:// with STARTTLS) from RECOVERY_EMAIL_FROM.
-    RECOVERY_EMAIL_PROVIDER: z.enum(["none", "outbox", "smtp"]).default("none"),
-    RECOVERY_EMAIL_OUTBOX_FILE: optionalSecret,
-    RECOVERY_SMTP_URL: optionalSecret,
-    RECOVERY_EMAIL_FROM: z.string().trim().min(3).max(200).optional(),
-    // Telegram recovery alerts for people whose Telegram identity is linked. Unset: no Telegram alerts.
-    TELEGRAM_BOT_TOKEN: optionalSecret,
-    // Redis backs the rate limits (shared across instances, survives restarts). Required in production for wallets.
-    REDIS_URL: z
-      .string()
-      .trim()
-      .regex(/^rediss?:\/\/\S+$/, "must be a redis:// or rediss:// URL")
-      .optional(),
-    REDIS_KEY_PREFIX: z.string().trim().min(1).max(64).default("kaada:rl:"),
-    // How often the recovery sweeper runs (finalize matured recoveries, reconcile, clean up). 0 disables the timer.
-    RECOVERY_SWEEP_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(3600).default(30),
-    // The most native CELO (wei) the platform may send an account so a recovery or a cancel is not stopped by an empty
-    // wallet. 0 turns the sponsor off.
-    RECOVERY_GAS_TOPUP_MAX_WEI: z
-      .string()
-      .regex(/^[0-9]{1,30}$/)
-      .default("0"),
-    // Device-key roots (docs/root-agnostic-flow.md): a wallet whose root is a P-256 key held by the device, for people whose
-    // browser or phone has no passkeys. OFF unless exactly "true". It needs the validator factories (the RECOVERY_*
-    // addresses above: they ship together) and the relayer key file that pays for the clone deployment.
-    DEVICE_KEY_ROOTS_ENABLED: z
-      .enum(["true", "false"])
-      .default("false")
-      .transform((value) => value === "true"),
-    // Device attestation (docs/device-attestation.md): proves, with platform evidence the server verifies, where a native
-    // device key lives. OFF unless exactly "true". It needs DEVICE_KEY_ROOTS_ENABLED and at least one app identity: without
-    // one no key can ever be classed above UNKNOWN, so the combination is refused at start-up.
-    DEVICE_ATTESTATION_ENABLED: z
-      .enum(["true", "false"])
-      .default("false")
-      .transform((value) => value === "true"),
-    // "package=sha256hex|sha256hex,package2=sha256hex": the Android apps (and the SHA-256 of each signing certificate) whose
-    // keys Kaada trusts. An attestation of any other app, or of the same app signed by another key, never qualifies.
-    ATTESTATION_ANDROID_APPS: z.string().trim().min(1).optional(),
-    ATTESTATION_ANDROID_MIN_LEVEL: z.enum(["TEE", "STRONGBOX"]).default("TEE"),
-    // "TEAMID.com.bundle.id,...": the iOS App IDs App Attest evidence is accepted for.
-    ATTESTATION_IOS_APP_IDS: z.string().trim().min(1).optional(),
-    // Accept Apple's sandbox App Attest environment (development builds). Refused in production.
-    ATTESTATION_IOS_ALLOW_DEVELOPMENT: z
-      .enum(["true", "false"])
-      .default("false")
-      .transform((value) => value === "true"),
-    ATTESTATION_CHALLENGE_TTL_SECONDS: z.coerce.number().int().min(30).max(900).default(300),
-    // Google's certificate revocation list for Android attestation keys. Unreachable and uncached means evidence is refused.
-    ATTESTATION_REVOCATION_URL: z
-      .url()
-      .default("https://android.googleapis.com/attestation/status"),
-    ATTESTATION_REVOCATION_CACHE_SECONDS: z.coerce.number().int().min(60).max(86_400).default(3600),
-    // Which IntentInterpreter the agent uses. "none" disables the agent.
-    AGENT_INTERPRETER: z.enum(["none", "mock", "groq"]).default("none"),
-    // Which price source routing uses. "none" disables pricing (the agent stops at ROUTING_REQUIRED);
-    // "mock" is made-up fixture pricing for development and tests. No real provider yet.
-    FX_PROVIDER: z.enum(["none", "mock", "textile"]).default("none"),
-    // The blockchain Kaada settles on. Textile has no Celo testnet deployment, so only mainnet exists.
-    CELO_NETWORK: z.enum(["mainnet"]).default("mainnet"),
-    CELO_CHAIN_ID: z.coerce.number().int().default(42220),
-    // Textile has two API ENVIRONMENTS, separate from the blockchain network. Required when
-    // FX_PROVIDER=textile (no default, no fallback):
-    //   live - mainnet corridors, including Celo 42220. Needs TEXTILE_LIVE_API_KEY (tx_live_...).
-    //   test - ONLY BNB testnet (97) and Base Sepolia (84532); a Celo request is a 400. Kaada settles
-    //          on Celo, so the app refuses this; it exists for the sandbox smoke script.
-    TEXTILE_ENV: z.enum(["test", "live"]).optional(),
-    TEXTILE_TEST_API_KEY: optionalSecret,
-    TEXTILE_LIVE_API_KEY: optionalSecret,
-    // The documented API host. The v2 paths (/v2/rfq/...) are added by the client.
-    TEXTILE_API_URL: envSchemaShape.TEXTILE_API_URL,
-    // Client timeout for indicative quotes. (Firm quotes can block up to about 75 s; not used yet.)
-    TEXTILE_TIMEOUT_MS: envSchemaShape.TEXTILE_TIMEOUT_MS,
-    // Only needed when AGENT_INTERPRETER=groq. An empty value counts as unset.
-    GROQ_API_KEY: z
-      .string()
-      .trim()
-      .optional()
-      .transform((value) => (value ? value : undefined)),
-    // Must support strict structured output (json_schema).
-    GROQ_MODEL: z.string().trim().min(1).default("openai/gpt-oss-20b"),
-    GROQ_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60_000).default(8000),
-  })
-  .refine((env) => !(env.NODE_ENV === "production" && env.AGENT_INTERPRETER === "mock"), {
-    message: "the mock interpreter cannot be used in production",
-    path: ["AGENT_INTERPRETER"],
-  })
-  .refine((env) => !(env.NODE_ENV === "production" && env.FX_PROVIDER === "mock"), {
-    message: "the mock FX provider cannot be used in production",
-    path: ["FX_PROVIDER"],
-  })
-  .refine(
-    (env) =>
-      env.WALLET_PROVIDER !== "kernel" ||
-      (env.PASSKEY_RP_ID !== undefined && env.PASSKEY_ORIGIN !== undefined),
-    {
-      message: "PASSKEY_RP_ID and PASSKEY_ORIGIN are required when WALLET_PROVIDER=kernel",
-      path: ["PASSKEY_ORIGIN"],
-    },
-  )
-  .refine(
-    (env) => {
-      if (env.WALLET_PROVIDER !== "kernel" || !env.PASSKEY_RP_ID || !env.PASSKEY_ORIGIN)
-        return true;
-      const host = new URL(env.PASSKEY_ORIGIN).hostname;
-      return host === env.PASSKEY_RP_ID || host.endsWith(`.${env.PASSKEY_RP_ID}`);
-    },
-    {
-      message: "PASSKEY_ORIGIN must be on PASSKEY_RP_ID (the same domain or a subdomain)",
-      path: ["PASSKEY_ORIGIN"],
-    },
-  )
-  .refine(
-    (env) =>
-      env.WALLET_PROVIDER !== "kernel" ||
-      env.NODE_ENV !== "production" ||
-      (env.PASSKEY_ORIGIN?.startsWith("https://") === true &&
-        env.CELO_RPC_URL.startsWith("https://")),
-    {
-      message: "production wallets need an https PASSKEY_ORIGIN and an https CELO_RPC_URL",
-      path: ["PASSKEY_ORIGIN"],
-    },
-  )
-  .refine((env) => env.CELO_CHAIN_ID === 42220, {
-    message: "CELO_CHAIN_ID must be 42220 (Celo mainnet); no other chain is supported",
-    path: ["CELO_CHAIN_ID"],
-  })
-  .refine((env) => env.FX_PROVIDER !== "textile" || env.TEXTILE_ENV !== undefined, {
-    message: "TEXTILE_ENV (test or live) is required when FX_PROVIDER=textile",
-    path: ["TEXTILE_ENV"],
-  })
-  .refine((env) => env.FX_PROVIDER !== "textile" || env.TEXTILE_ENV !== "test", {
-    message:
-      "TEXTILE_ENV=test cannot quote Celo mainnet (42220): Textile's test environment only reaches chains 97 and 84532. Use TEXTILE_ENV=live",
-    path: ["TEXTILE_ENV"],
-  })
-  .refine(
-    (env) =>
-      env.FX_PROVIDER !== "textile" ||
-      env.TEXTILE_ENV !== "live" ||
-      env.TEXTILE_LIVE_API_KEY !== undefined,
-    {
-      message: "TEXTILE_LIVE_API_KEY is required when TEXTILE_ENV=live",
-      path: ["TEXTILE_LIVE_API_KEY"],
-    },
-  )
-  .refine(
-    (env) =>
-      env.FX_PROVIDER !== "textile" ||
-      env.TEXTILE_ENV !== "live" ||
-      env.TEXTILE_LIVE_API_KEY === undefined ||
-      env.TEXTILE_LIVE_API_KEY.startsWith("tx_live_"),
-    {
-      message: "TEXTILE_LIVE_API_KEY must be a live Textile key (tx_live_...)",
-      path: ["TEXTILE_LIVE_API_KEY"],
-    },
-  )
-  .refine(
-    (env) =>
-      env.NODE_ENV !== "production" ||
-      env.WALLET_PROVIDER !== "kernel" ||
-      (env.PIN_PEPPER !== undefined && env.PIN_PEPPER.length >= 32),
-    {
-      message: "production wallets need a PIN_PEPPER of at least 32 characters",
-      path: ["PIN_PEPPER"],
-    },
-  )
-  .refine(
-    (env) => isAesKey(env.EXECUTION_SECRET_KEY) && isAesKey(env.EXECUTION_SECRET_KEY_PREVIOUS),
-    {
-      message: "EXECUTION_SECRET_KEY must be 32 random bytes encoded as base64",
-      path: ["EXECUTION_SECRET_KEY"],
-    },
-  )
-  .refine(
-    (env) =>
-      env.NODE_ENV !== "production" ||
-      env.WALLET_PROVIDER !== "kernel" ||
-      env.FX_PROVIDER !== "textile" ||
-      env.EXECUTION_SECRET_KEY !== undefined,
-    {
-      message: "production firm quotes need EXECUTION_SECRET_KEY to encrypt Textile claim tokens",
-      path: ["EXECUTION_SECRET_KEY"],
-    },
-  )
-  .refine(
-    (env) =>
-      !env.EXECUTION_ENABLED ||
-      (env.BUNDLER_URL !== undefined &&
-        env.EXECUTION_SECRET_KEY !== undefined &&
-        env.WALLET_PROVIDER === "kernel" &&
-        env.FX_PROVIDER === "textile" &&
-        env.PASSKEY_RP_ID !== undefined &&
-        env.PASSKEY_ORIGIN !== undefined),
-    {
-      message:
-        "EXECUTION_ENABLED=true needs BUNDLER_URL, EXECUTION_SECRET_KEY, WALLET_PROVIDER=kernel, FX_PROVIDER=textile and the passkey settings",
-      path: ["EXECUTION_ENABLED"],
-    },
-  )
-  .refine(
-    (env) =>
-      !env.RECOVERY_ENABLED ||
-      (env.WALLET_PROVIDER === "kernel" &&
-        env.BUNDLER_URL !== undefined &&
-        env.RECOVERY_VALIDATOR_ADDRESS !== undefined &&
-        env.RECOVERY_PASSKEY_FACTORY_ADDRESS !== undefined &&
-        env.RECOVERY_PASSKEY_IMPLEMENTATION_ADDRESS !== undefined &&
-        env.RECOVERY_DEVICE_FACTORY_ADDRESS !== undefined &&
-        env.RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS !== undefined &&
-        env.RECOVERY_RELAYER_KEY_FILE !== undefined &&
-        (env.RECOVERY_ATTESTOR_SIGNER === "file"
-          ? env.RECOVERY_ATTESTOR_KEY_FILE !== undefined
-          : env.RECOVERY_ATTESTOR_KMS_KEY_ID !== undefined) &&
-        env.RECOVERY_CHALLENGE_SECRET !== undefined &&
-        env.RECOVERY_EMAIL_PROVIDER !== "none" &&
-        (env.RECOVERY_EMAIL_PROVIDER !== "outbox" ||
-          env.RECOVERY_EMAIL_OUTBOX_FILE !== undefined) &&
-        (env.RECOVERY_EMAIL_PROVIDER !== "smtp" ||
-          (env.RECOVERY_SMTP_URL !== undefined && env.RECOVERY_EMAIL_FROM !== undefined)) &&
-        env.PASSKEY_RP_ID !== undefined &&
-        env.PASSKEY_ORIGIN !== undefined),
-    {
-      message:
-        "RECOVERY_ENABLED=true needs WALLET_PROVIDER=kernel, BUNDLER_URL, the recovery contract addresses, the relayer and attestor key files, RECOVERY_CHALLENGE_SECRET, an email provider and the passkey settings",
-      path: ["RECOVERY_ENABLED"],
-    },
-  )
-  .refine((env) => parseAndroidApps(env.ATTESTATION_ANDROID_APPS) !== null, {
-    message:
-      'ATTESTATION_ANDROID_APPS must look like "app.id=<64 hex>|<64 hex>,other.app=<64 hex>"',
-    path: ["ATTESTATION_ANDROID_APPS"],
-  })
-  .refine((env) => parseIosAppIds(env.ATTESTATION_IOS_APP_IDS) !== null, {
-    message: 'ATTESTATION_IOS_APP_IDS must look like "TEAMID123.com.example.app,..."',
-    path: ["ATTESTATION_IOS_APP_IDS"],
-  })
-  .refine(
-    (env) =>
-      !env.DEVICE_ATTESTATION_ENABLED ||
-      (env.DEVICE_KEY_ROOTS_ENABLED &&
-        (env.ATTESTATION_ANDROID_APPS !== undefined || env.ATTESTATION_IOS_APP_IDS !== undefined)),
-    {
-      message:
-        "DEVICE_ATTESTATION_ENABLED=true needs DEVICE_KEY_ROOTS_ENABLED=true and ATTESTATION_ANDROID_APPS or ATTESTATION_IOS_APP_IDS",
-      path: ["DEVICE_ATTESTATION_ENABLED"],
-    },
-  )
-  .refine((env) => !(env.NODE_ENV === "production" && env.ATTESTATION_IOS_ALLOW_DEVELOPMENT), {
-    message: "ATTESTATION_IOS_ALLOW_DEVELOPMENT is not allowed in production",
-    path: ["ATTESTATION_IOS_ALLOW_DEVELOPMENT"],
-  })
-  .refine(
-    (env) =>
-      !env.DEVICE_KEY_ROOTS_ENABLED ||
-      (env.WALLET_PROVIDER === "kernel" &&
-        env.RECOVERY_PASSKEY_FACTORY_ADDRESS !== undefined &&
-        env.RECOVERY_PASSKEY_IMPLEMENTATION_ADDRESS !== undefined &&
-        env.RECOVERY_DEVICE_FACTORY_ADDRESS !== undefined &&
-        env.RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS !== undefined &&
-        env.RECOVERY_RELAYER_KEY_FILE !== undefined),
-    {
-      message:
-        "DEVICE_KEY_ROOTS_ENABLED=true needs WALLET_PROVIDER=kernel, the validator factory and implementation addresses and RECOVERY_RELAYER_KEY_FILE",
-      path: ["DEVICE_KEY_ROOTS_ENABLED"],
-    },
-  )
-  .refine(
-    (env) => env.RECOVERY_SMTP_URL === undefined || /^smtps?:\/\/\S+$/.test(env.RECOVERY_SMTP_URL),
-    {
-      message: "RECOVERY_SMTP_URL must be an smtp:// or smtps:// URL",
-      path: ["RECOVERY_SMTP_URL"],
-    },
-  )
-  .refine(
-    (env) =>
-      !(
-        env.NODE_ENV === "production" &&
-        env.RECOVERY_ENABLED &&
-        env.RECOVERY_ATTESTOR_SIGNER === "file"
-      ),
-    {
-      message:
-        "production does not accept a file-held attestor key: use RECOVERY_ATTESTOR_SIGNER=kms (a KMS/HSM-backed signer)",
-      path: ["RECOVERY_ATTESTOR_SIGNER"],
-    },
-  )
-  .refine(
-    (env) =>
-      env.NODE_ENV !== "production" ||
-      !(env.RECOVERY_ENABLED || env.WALLET_PROVIDER === "kernel") ||
-      env.REDIS_URL !== undefined,
-    {
-      message: "production wallets and recovery need REDIS_URL for the shared rate limits",
-      path: ["REDIS_URL"],
-    },
-  )
-  .refine((env) => env.NODE_ENV !== "production" || env.RECOVERY_EMAIL_PROVIDER !== "outbox", {
-    message: "the file outbox is for development; production needs a real email provider",
-    path: ["RECOVERY_EMAIL_PROVIDER"],
-  })
-  .refine((env) => isAesKey(env.RECOVERY_CHALLENGE_SECRET), {
-    message: "RECOVERY_CHALLENGE_SECRET must be 32 random bytes encoded as base64",
-    path: ["RECOVERY_CHALLENGE_SECRET"],
-  })
-  .refine(
-    (env) =>
-      env.NODE_ENV !== "production" ||
-      !env.RECOVERY_ENABLED ||
-      env.RECOVERY_MIN_DELAY_SECONDS >= 86_400,
-    {
-      message: "production recovery must keep a delay floor of at least 24 hours",
-      path: ["RECOVERY_MIN_DELAY_SECONDS"],
-    },
-  )
-  .refine((env) => env.RECOVERY_DELAY_SECONDS >= env.RECOVERY_MIN_DELAY_SECONDS, {
-    message: "RECOVERY_DELAY_SECONDS may not be below RECOVERY_MIN_DELAY_SECONDS",
-    path: ["RECOVERY_DELAY_SECONDS"],
-  })
-  .refine((env) => env.AGENT_INTERPRETER !== "groq" || env.GROQ_API_KEY !== undefined, {
-    message: "GROQ_API_KEY is required when AGENT_INTERPRETER=groq",
-    path: ["GROQ_API_KEY"],
-  })
-  .transform((env) => ({
+type Env = z.output<z.ZodObject<typeof envShape>>;
+
+export interface LoadOptions {
+  /** Tests only: the committed deployments table, replaced. Production always uses deployments.ts. */
+  deployments?: Readonly<Record<RecoveryNetwork, RecoveryContracts | null>>;
+}
+
+function buildConfig(
+  env: Env,
+  deployments: Readonly<Record<RecoveryNetwork, RecoveryContracts | null>>,
+) {
+  const production = env.NODE_ENV === "production";
+  const chainId = NETWORK_CHAIN_IDS[env.RECOVERY_NETWORK];
+  const contracts = deployments[env.RECOVERY_NETWORK];
+  const delays = RECOVERY_DELAYS[env.RECOVERY_NETWORK];
+
+  const emailProvider: "none" | "outbox" | "smtp" = env.RECOVERY_SMTP_URL
+    ? "smtp"
+    : env.RECOVERY_EMAIL_OUTBOX_FILE
+      ? "outbox"
+      : "none";
+  const androidApps = parseAndroidApps(env.ATTESTATION_ANDROID_APPS) ?? [];
+  const iosAppIds = parseIosAppIds(env.ATTESTATION_IOS_APP_IDS) ?? [];
+  const attestationOn = androidApps.length > 0 || iosAppIds.length > 0;
+  // Production never uses a file-held attestor key; everything else (development, tests) does.
+  const attestorSigner: "file" | "kms" = production ? "kms" : "file";
+
+  const deviceKeyContracts =
+    env.DEVICE_KEY_ROOTS_ENABLED && contracts && env.RECOVERY_RELAYER_KEY_FILE !== undefined
+      ? { contracts, relayerKeyFile: env.RECOVERY_RELAYER_KEY_FILE }
+      : undefined;
+
+  const recoverySetup =
+    env.RECOVERY_ENABLED &&
+    contracts &&
+    env.RECOVERY_RELAYER_KEY_FILE !== undefined &&
+    env.RECOVERY_CHALLENGE_SECRET !== undefined &&
+    (attestorSigner === "file"
+      ? env.RECOVERY_ATTESTOR_KEY_FILE !== undefined
+      : env.RECOVERY_ATTESTOR_KMS_KEY_ID !== undefined)
+      ? {
+          contracts: {
+            validator: contracts.validator,
+            passkeyFactory: contracts.passkeyFactory,
+            passkeyImplementation: contracts.passkeyImplementation,
+            deviceFactory: contracts.deviceFactory,
+            deviceImplementation: contracts.deviceImplementation,
+          },
+          relayerKeyFile: env.RECOVERY_RELAYER_KEY_FILE,
+          attestor:
+            attestorSigner === "kms"
+              ? { signer: "kms" as const, kmsKeyId: env.RECOVERY_ATTESTOR_KMS_KEY_ID ?? "" }
+              : { signer: "file" as const, keyFile: env.RECOVERY_ATTESTOR_KEY_FILE ?? "" },
+          challengeSecret: env.RECOVERY_CHALLENGE_SECRET,
+        }
+      : undefined;
+
+  return {
     nodeEnv: env.NODE_ENV,
     port: env.PORT,
     apiHost: env.API_HOST,
@@ -466,72 +194,59 @@ const envSchema = z
         env.GROQ_API_KEY !== undefined && {
           groq: {
             apiKey: env.GROQ_API_KEY,
-            model: env.GROQ_MODEL,
-            timeoutMs: env.GROQ_TIMEOUT_MS,
+            model: SETTINGS.agent.groq.model,
+            timeoutMs: SETTINGS.agent.groq.timeoutMs,
           },
         }),
     },
-    chain: { network: env.CELO_NETWORK, chainId: env.CELO_CHAIN_ID },
+    chain: { network: SETTINGS.celo.network, chainId: SETTINGS.celo.chainId },
     wallet: {
       provider: env.WALLET_PROVIDER,
       rpcUrl: env.CELO_RPC_URL,
       // The chain the validators run on (what a device key's signed payload is bound to).
-      onChainId: env.RECOVERY_CHAIN_ID ?? env.CELO_CHAIN_ID,
+      onChainId: chainId,
+      ...(deviceKeyContracts && { deviceKeyRoots: deviceKeyContracts }),
       ...(env.DEVICE_KEY_ROOTS_ENABLED &&
-        env.RECOVERY_PASSKEY_FACTORY_ADDRESS !== undefined &&
-        env.RECOVERY_PASSKEY_IMPLEMENTATION_ADDRESS !== undefined &&
-        env.RECOVERY_DEVICE_FACTORY_ADDRESS !== undefined &&
-        env.RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS !== undefined &&
-        env.RECOVERY_RELAYER_KEY_FILE !== undefined && {
-          deviceKeyRoots: {
-            contracts: {
-              passkeyFactory: env.RECOVERY_PASSKEY_FACTORY_ADDRESS,
-              passkeyImplementation: env.RECOVERY_PASSKEY_IMPLEMENTATION_ADDRESS,
-              deviceFactory: env.RECOVERY_DEVICE_FACTORY_ADDRESS,
-              deviceImplementation: env.RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS,
-            },
-            relayerKeyFile: env.RECOVERY_RELAYER_KEY_FILE,
+        attestationOn && {
+          deviceAttestation: {
+            androidApps,
+            androidMinimumLevel: SETTINGS.attestation.androidMinimumLevel,
+            iosAppIds,
+            // Apple's sandbox attestation is accepted everywhere EXCEPT production, by construction.
+            iosAllowDevelopment: !production,
+            challengeTtlMs: SETTINGS.attestation.challengeTtlSeconds * 1000,
+            revocationUrl: SETTINGS.attestation.revocationUrl,
+            revocationCacheMs: SETTINGS.attestation.revocationCacheSeconds * 1000,
           },
         }),
-      ...(env.DEVICE_ATTESTATION_ENABLED && {
-        deviceAttestation: {
-          androidApps: parseAndroidApps(env.ATTESTATION_ANDROID_APPS) ?? [],
-          androidMinimumLevel: env.ATTESTATION_ANDROID_MIN_LEVEL,
-          iosAppIds: parseIosAppIds(env.ATTESTATION_IOS_APP_IDS) ?? [],
-          iosAllowDevelopment: env.ATTESTATION_IOS_ALLOW_DEVELOPMENT,
-          challengeTtlMs: env.ATTESTATION_CHALLENGE_TTL_SECONDS * 1000,
-          revocationUrl: env.ATTESTATION_REVOCATION_URL,
-          revocationCacheMs: env.ATTESTATION_REVOCATION_CACHE_SECONDS * 1000,
-        },
-      }),
       ...(env.WALLET_PROVIDER === "kernel" &&
         env.PASSKEY_RP_ID !== undefined &&
         env.PASSKEY_ORIGIN !== undefined && {
           passkey: {
             rpId: env.PASSKEY_RP_ID,
-            rpName: env.PASSKEY_RP_NAME,
+            rpName: SETTINGS.passkey.rpName,
             origin: env.PASSKEY_ORIGIN,
           },
         }),
     },
     authorization: {
-      sessionTtlMs: env.AUTHORIZATION_SESSION_TTL_SECONDS * 1000,
-      paymentTtlMs: env.PAYMENT_AUTHORIZATION_TTL_SECONDS * 1000,
+      sessionTtlMs: SETTINGS.authorization.sessionTtlSeconds * 1000,
+      paymentTtlMs: SETTINGS.authorization.paymentTtlSeconds * 1000,
       ...(env.PIN_PEPPER !== undefined && { pinPepper: env.PIN_PEPPER }),
     },
     execution: {
-      minFirmWindowMs: env.FIRM_QUOTE_MIN_WINDOW_SECONDS * 1000,
-      firmTimeoutMs: env.FIRM_QUOTE_TIMEOUT_MS,
+      minFirmWindowMs: SETTINGS.execution.minFirmWindowSeconds * 1000,
+      firmTimeoutMs: SETTINGS.execution.firmTimeoutMs,
       bundlerConfigured: env.BUNDLER_URL !== undefined,
-      // Build 13: moving funds is a separate switch from planning one.
+      // Moving funds is a separate switch from planning a payment.
       enabled: env.EXECUTION_ENABLED,
       ...(env.BUNDLER_URL !== undefined && { bundlerUrl: env.BUNDLER_URL }),
       minNativeWei: BigInt(env.EXECUTION_MIN_NATIVE_WEI),
-      pollIntervalMs: env.EXECUTION_POLL_INTERVAL_MS,
-      pollMaxWaitMs: env.EXECUTION_POLL_MAX_WAIT_MS,
-      reconcileIntervalMs: env.EXECUTION_RECONCILE_INTERVAL_SECONDS * 1000,
-      maxOutstandingRfqs: env.TEXTILE_MAX_OUTSTANDING_RFQS,
-      // Newest first. Absent when no key is configured: firm quoting is then disabled.
+      pollIntervalMs: SETTINGS.execution.pollIntervalMs,
+      pollMaxWaitMs: SETTINGS.execution.pollMaxWaitMs,
+      reconcileIntervalMs: SETTINGS.execution.reconcileIntervalSeconds * 1000,
+      maxOutstandingRfqs: SETTINGS.execution.maxOutstandingRfqs,
+      // Newest first. Empty when no key is configured: firm quoting is then disabled.
       cipherKeys: [
         ...(env.EXECUTION_SECRET_KEY
           ? [{ version: env.EXECUTION_SECRET_KEY_VERSION, key: env.EXECUTION_SECRET_KEY }]
@@ -553,85 +268,232 @@ const envSchema = z
           textile: {
             env: "live" as const,
             apiKey: env.TEXTILE_LIVE_API_KEY,
-            apiUrl: env.TEXTILE_API_URL,
-            timeoutMs: env.TEXTILE_TIMEOUT_MS,
+            apiUrl: SETTINGS.textile.apiUrl,
+            timeoutMs: SETTINGS.textile.timeoutMs,
           },
         }),
     },
     recovery: {
       enabled: env.RECOVERY_ENABLED,
-      chainId: env.RECOVERY_CHAIN_ID ?? env.CELO_CHAIN_ID,
-      delaySeconds: env.RECOVERY_DELAY_SECONDS,
-      minDelaySeconds: env.RECOVERY_MIN_DELAY_SECONDS,
+      network: env.RECOVERY_NETWORK,
+      chainId,
+      delaySeconds: delays.delaySeconds,
+      minDelaySeconds: delays.minDelaySeconds,
       gasTopUpMaxWei: BigInt(env.RECOVERY_GAS_TOPUP_MAX_WEI),
-      sweepIntervalMs: env.RECOVERY_SWEEP_INTERVAL_SECONDS * 1000,
-      emailProvider: env.RECOVERY_EMAIL_PROVIDER,
+      sweepIntervalMs: SETTINGS.recovery.sweepIntervalSeconds * 1000,
+      emailProvider,
       ...(env.RECOVERY_SMTP_URL !== undefined &&
         env.RECOVERY_EMAIL_FROM !== undefined && {
           smtp: { url: env.RECOVERY_SMTP_URL, from: env.RECOVERY_EMAIL_FROM },
         }),
-      ...(env.TELEGRAM_BOT_TOKEN !== undefined && {
-        telegramBotToken: env.TELEGRAM_BOT_TOKEN,
-      }),
+      ...(env.TELEGRAM_BOT_TOKEN !== undefined && { telegramBotToken: env.TELEGRAM_BOT_TOKEN }),
       ...(env.RECOVERY_EMAIL_OUTBOX_FILE !== undefined && {
         emailOutboxFile: env.RECOVERY_EMAIL_OUTBOX_FILE,
       }),
-      ...(env.RECOVERY_ENABLED &&
-        env.RECOVERY_VALIDATOR_ADDRESS !== undefined &&
-        env.RECOVERY_PASSKEY_FACTORY_ADDRESS !== undefined &&
-        env.RECOVERY_PASSKEY_IMPLEMENTATION_ADDRESS !== undefined &&
-        env.RECOVERY_DEVICE_FACTORY_ADDRESS !== undefined &&
-        env.RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS !== undefined &&
-        env.RECOVERY_RELAYER_KEY_FILE !== undefined &&
-        (env.RECOVERY_ATTESTOR_SIGNER === "file"
-          ? env.RECOVERY_ATTESTOR_KEY_FILE !== undefined
-          : env.RECOVERY_ATTESTOR_KMS_KEY_ID !== undefined) &&
-        env.RECOVERY_CHALLENGE_SECRET !== undefined && {
-          setup: {
-            contracts: {
-              validator: env.RECOVERY_VALIDATOR_ADDRESS,
-              passkeyFactory: env.RECOVERY_PASSKEY_FACTORY_ADDRESS,
-              passkeyImplementation: env.RECOVERY_PASSKEY_IMPLEMENTATION_ADDRESS,
-              deviceFactory: env.RECOVERY_DEVICE_FACTORY_ADDRESS,
-              deviceImplementation: env.RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS,
-            },
-            relayerKeyFile: env.RECOVERY_RELAYER_KEY_FILE,
-            attestor:
-              env.RECOVERY_ATTESTOR_SIGNER === "kms"
-                ? { signer: "kms" as const, kmsKeyId: env.RECOVERY_ATTESTOR_KMS_KEY_ID ?? "" }
-                : { signer: "file" as const, keyFile: env.RECOVERY_ATTESTOR_KEY_FILE ?? "" },
-            challengeSecret: env.RECOVERY_CHALLENGE_SECRET,
-          },
-        }),
+      ...(recoverySetup && { setup: recoverySetup }),
     },
     ...(env.REDIS_URL !== undefined && {
-      redis: { url: env.REDIS_URL, prefix: env.REDIS_KEY_PREFIX },
+      redis: { url: env.REDIS_URL, prefix: SETTINGS.redis.keyPrefix },
     }),
     database: {
       url: env.DATABASE_URL,
       ...(env.DATABASE_DIRECT_URL && { directUrl: env.DATABASE_DIRECT_URL }),
-      poolMax: env.DATABASE_POOL_MAX,
-      poolTimeoutMs: env.DATABASE_POOL_TIMEOUT_MS,
-      transactionTimeoutMs: env.DATABASE_TRANSACTION_TIMEOUT_MS,
+      poolMax: SETTINGS.database.poolMax,
+      poolTimeoutMs: SETTINGS.database.poolTimeoutMs,
+      transactionTimeoutMs: SETTINGS.database.transactionTimeoutMs,
     },
-  }));
+  };
+}
 
-export type AppConfig = z.output<typeof envSchema>;
+export type AppConfig = ReturnType<typeof buildConfig>;
 
 export class ConfigError extends Error {
   override name = "ConfigError";
 }
 
+/** Cross-field rules. Each returns the problem, or null. They run on the validated env. */
+function crossChecks(
+  env: Env,
+  deployments: Readonly<Record<RecoveryNetwork, RecoveryContracts | null>>,
+): { path: string; message: string }[] {
+  const problems: { path: string; message: string }[] = [];
+  const add = (path: string, message: string) => problems.push({ path, message });
+  const production = env.NODE_ENV === "production";
+  const kernel = env.WALLET_PROVIDER === "kernel";
+  const contracts = deployments[env.RECOVERY_NETWORK];
+  const emailProvider = env.RECOVERY_SMTP_URL
+    ? "smtp"
+    : env.RECOVERY_EMAIL_OUTBOX_FILE
+      ? "outbox"
+      : "none";
+
+  if (production && env.AGENT_INTERPRETER === "mock")
+    add("AGENT_INTERPRETER", "the mock interpreter cannot be used in production");
+  if (production && env.FX_PROVIDER === "mock")
+    add("FX_PROVIDER", "the mock FX provider cannot be used in production");
+  if (env.AGENT_INTERPRETER === "groq" && env.GROQ_API_KEY === undefined)
+    add("GROQ_API_KEY", "GROQ_API_KEY is required when AGENT_INTERPRETER=groq");
+
+  // Wallets and passkeys.
+  if (kernel && (env.PASSKEY_RP_ID === undefined || env.PASSKEY_ORIGIN === undefined))
+    add(
+      "PASSKEY_ORIGIN",
+      "PASSKEY_RP_ID and PASSKEY_ORIGIN are required when WALLET_PROVIDER=kernel",
+    );
+  if (kernel && env.PASSKEY_RP_ID && env.PASSKEY_ORIGIN) {
+    const host = new URL(env.PASSKEY_ORIGIN).hostname;
+    if (!(host === env.PASSKEY_RP_ID || host.endsWith(`.${env.PASSKEY_RP_ID}`)))
+      add(
+        "PASSKEY_ORIGIN",
+        "PASSKEY_ORIGIN must be on PASSKEY_RP_ID (the same domain or a subdomain)",
+      );
+  }
+  if (
+    kernel &&
+    production &&
+    !(
+      env.PASSKEY_ORIGIN?.startsWith("https://") === true && env.CELO_RPC_URL.startsWith("https://")
+    )
+  )
+    add(
+      "PASSKEY_ORIGIN",
+      "production wallets need an https PASSKEY_ORIGIN and an https CELO_RPC_URL",
+    );
+  if (production && kernel && (env.PIN_PEPPER === undefined || env.PIN_PEPPER.length < 32))
+    add("PIN_PEPPER", "production wallets need a PIN_PEPPER of at least 32 characters");
+  if (production && (env.RECOVERY_ENABLED || kernel) && env.REDIS_URL === undefined)
+    add("REDIS_URL", "production wallets and recovery need REDIS_URL for the shared rate limits");
+
+  // Pricing.
+  if (env.FX_PROVIDER === "textile") {
+    if (env.TEXTILE_LIVE_API_KEY === undefined)
+      add("TEXTILE_LIVE_API_KEY", "TEXTILE_LIVE_API_KEY is required when FX_PROVIDER=textile");
+    else if (!env.TEXTILE_LIVE_API_KEY.startsWith("tx_live_"))
+      add("TEXTILE_LIVE_API_KEY", "TEXTILE_LIVE_API_KEY must be a live Textile key (tx_live_...)");
+  }
+
+  // Secrets and execution.
+  if (!isAesKey(env.EXECUTION_SECRET_KEY) || !isAesKey(env.EXECUTION_SECRET_KEY_PREVIOUS))
+    add("EXECUTION_SECRET_KEY", "EXECUTION_SECRET_KEY must be 32 random bytes encoded as base64");
+  if (
+    production &&
+    kernel &&
+    env.FX_PROVIDER === "textile" &&
+    env.EXECUTION_SECRET_KEY === undefined
+  )
+    add(
+      "EXECUTION_SECRET_KEY",
+      "production firm quotes need EXECUTION_SECRET_KEY to encrypt Textile claim tokens",
+    );
+  if (
+    env.EXECUTION_ENABLED &&
+    !(
+      env.BUNDLER_URL !== undefined &&
+      env.EXECUTION_SECRET_KEY !== undefined &&
+      kernel &&
+      env.FX_PROVIDER === "textile" &&
+      env.PASSKEY_RP_ID !== undefined &&
+      env.PASSKEY_ORIGIN !== undefined
+    )
+  )
+    add(
+      "EXECUTION_ENABLED",
+      "EXECUTION_ENABLED=true needs BUNDLER_URL, EXECUTION_SECRET_KEY, WALLET_PROVIDER=kernel, FX_PROVIDER=textile and the passkey settings",
+    );
+
+  // Recovery, device keys, attestation.
+  if (!isAesKey(env.RECOVERY_CHALLENGE_SECRET))
+    add(
+      "RECOVERY_CHALLENGE_SECRET",
+      "RECOVERY_CHALLENGE_SECRET must be 32 random bytes encoded as base64",
+    );
+  if (env.RECOVERY_SMTP_URL !== undefined && !/^smtps?:\/\/\S+$/.test(env.RECOVERY_SMTP_URL))
+    add("RECOVERY_SMTP_URL", "RECOVERY_SMTP_URL must be an smtp:// or smtps:// URL");
+  if (env.RECOVERY_SMTP_URL !== undefined && env.RECOVERY_EMAIL_FROM === undefined)
+    add("RECOVERY_EMAIL_FROM", "RECOVERY_EMAIL_FROM is required with RECOVERY_SMTP_URL");
+  if (production && emailProvider === "outbox")
+    add(
+      "RECOVERY_EMAIL_OUTBOX_FILE",
+      "the file outbox is for development; production needs RECOVERY_SMTP_URL",
+    );
+  if (env.RECOVERY_ENABLED) {
+    const missing: string[] = [];
+    if (!kernel) missing.push("WALLET_PROVIDER=kernel");
+    if (env.BUNDLER_URL === undefined) missing.push("BUNDLER_URL");
+    if (env.PASSKEY_RP_ID === undefined || env.PASSKEY_ORIGIN === undefined)
+      missing.push("the passkey settings");
+    if (env.RECOVERY_RELAYER_KEY_FILE === undefined) missing.push("RECOVERY_RELAYER_KEY_FILE");
+    if (production) {
+      if (env.RECOVERY_ATTESTOR_KMS_KEY_ID === undefined)
+        missing.push(
+          "RECOVERY_ATTESTOR_KMS_KEY_ID (production attests with a KMS/HSM signer, never a key file)",
+        );
+    } else if (env.RECOVERY_ATTESTOR_KEY_FILE === undefined)
+      missing.push("RECOVERY_ATTESTOR_KEY_FILE");
+    if (env.RECOVERY_CHALLENGE_SECRET === undefined) missing.push("RECOVERY_CHALLENGE_SECRET");
+    if (emailProvider === "none")
+      missing.push(
+        "an email provider (RECOVERY_SMTP_URL, or RECOVERY_EMAIL_OUTBOX_FILE in development)",
+      );
+    if (missing.length > 0)
+      add("RECOVERY_ENABLED", `RECOVERY_ENABLED=true needs ${missing.join(", ")}`);
+    if (!contracts)
+      add(
+        "RECOVERY_NETWORK",
+        `the recovery contracts are not deployed on ${env.RECOVERY_NETWORK} yet (see deployments.ts)`,
+      );
+  }
+  if (env.DEVICE_KEY_ROOTS_ENABLED) {
+    if (!kernel || env.RECOVERY_RELAYER_KEY_FILE === undefined)
+      add(
+        "DEVICE_KEY_ROOTS_ENABLED",
+        "DEVICE_KEY_ROOTS_ENABLED=true needs WALLET_PROVIDER=kernel and RECOVERY_RELAYER_KEY_FILE",
+      );
+    if (!contracts)
+      add(
+        "RECOVERY_NETWORK",
+        `the validator contracts are not deployed on ${env.RECOVERY_NETWORK} yet (see deployments.ts)`,
+      );
+  }
+  if (parseAndroidApps(env.ATTESTATION_ANDROID_APPS) === null)
+    add(
+      "ATTESTATION_ANDROID_APPS",
+      'ATTESTATION_ANDROID_APPS must look like "app.id=<64 hex>|<64 hex>,other.app=<64 hex>"',
+    );
+  if (parseIosAppIds(env.ATTESTATION_IOS_APP_IDS) === null)
+    add(
+      "ATTESTATION_IOS_APP_IDS",
+      'ATTESTATION_IOS_APP_IDS must look like "TEAMID123.com.example.app,..."',
+    );
+  if (
+    (env.ATTESTATION_ANDROID_APPS !== undefined || env.ATTESTATION_IOS_APP_IDS !== undefined) &&
+    !env.DEVICE_KEY_ROOTS_ENABLED
+  )
+    add(
+      "ATTESTATION_ANDROID_APPS",
+      "device attestation (ATTESTATION_*_APPS) needs DEVICE_KEY_ROOTS_ENABLED=true",
+    );
+  return problems;
+}
+
 /** Parses and validates environment variables. Throws ConfigError listing every invalid value. */
-export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
-  const result = envSchema.safeParse(env);
-  if (!result.success) {
-    const issues = result.error.issues
-      .map((issue) => `  - ${issue.path.join(".") || "(env)"}: ${issue.message}`)
-      .join("\n");
+export function loadConfig(
+  env: NodeJS.ProcessEnv = process.env,
+  options: LoadOptions = {},
+): AppConfig {
+  const deployments = options.deployments ?? RECOVERY_DEPLOYMENTS;
+  const result = z.object(envShape).safeParse(env);
+  const problems = result.success
+    ? crossChecks(result.data, deployments)
+    : result.error.issues.map((issue) => ({
+        path: issue.path.join(".") || "(env)",
+        message: issue.message,
+      }));
+  if (!result.success || problems.length > 0) {
+    const issues = problems.map((issue) => `  - ${issue.path}: ${issue.message}`).join("\n");
     throw new ConfigError(`Invalid environment configuration:\n${issues}`);
   }
-  return result.data;
+  return buildConfig(result.data, deployments);
 }
 
 export interface AndroidAppIdentity {
@@ -677,10 +539,9 @@ export interface TextileCredentials {
 }
 
 /**
- * Credentials for one explicitly chosen Textile environment, for tools such as the smoke script that
- * are not the app. There is no default environment and no fallback from one to the other: the key
- * must exist and carry that environment's prefix (tx_test_ / tx_live_). Throws ConfigError, and the
- * message never contains the key.
+ * Credentials for one explicitly chosen Textile environment, for tools such as the smoke script that are not the app. There
+ * is no default environment and no fallback from one to the other: the key must exist and carry that environment's prefix
+ * (tx_test_ / tx_live_). Throws ConfigError, and the message never contains the key.
  */
 export function loadTextileCredentials(
   textileEnv: "test" | "live",
@@ -688,24 +549,17 @@ export function loadTextileCredentials(
 ): TextileCredentials {
   const name = textileEnv === "test" ? "TEXTILE_TEST_API_KEY" : "TEXTILE_LIVE_API_KEY";
   const prefix = textileEnv === "test" ? "tx_test_" : "tx_live_";
-  const result = z
-    .object({
-      key: optionalSecret,
-      url: envSchemaShape.TEXTILE_API_URL,
-      timeout: envSchemaShape.TEXTILE_TIMEOUT_MS,
-    })
-    .safeParse({
-      key: env[name],
-      url: env["TEXTILE_API_URL"],
-      timeout: env["TEXTILE_TIMEOUT_MS"],
-    });
+  const result = z.object({ key: optionalSecret }).safeParse({ key: env[name] });
   if (!result.success) {
-    throw new ConfigError(
-      `Invalid Textile configuration: ${result.error.issues.map((i) => i.path.join(".")).join(", ")}`,
-    );
+    throw new ConfigError(`Invalid Textile configuration: ${name}`);
   }
-  const { key, url, timeout } = result.data;
+  const { key } = result.data;
   if (key === undefined) throw new ConfigError(`${name} is not set`);
   if (!key.startsWith(prefix)) throw new ConfigError(`${name} must be a ${prefix}... key`);
-  return { env: textileEnv, apiKey: key, apiUrl: url, timeoutMs: timeout };
+  return {
+    env: textileEnv,
+    apiKey: key,
+    apiUrl: SETTINGS.textile.apiUrl,
+    timeoutMs: SETTINGS.textile.timeoutMs,
+  };
 }

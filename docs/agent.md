@@ -198,9 +198,8 @@ message -> Groq (1 call) -> JSON parse -> wire schema -> mapping -> interpretati
 
 **Selection** (`AGENT_INTERPRETER`): `none` (default, agent off), `mock` (dev only), `groq`. Config
 validation refuses `mock` when `NODE_ENV=production`, refuses `groq` without `GROQ_API_KEY`, and the
-module never falls back to the mock. `GROQ_MODEL` (default `openai/gpt-oss-20b`) must support strict
-structured output: `openai/gpt-oss-20b`, `openai/gpt-oss-120b` or `qwen/qwen3.8-27b`.
-`GROQ_TIMEOUT_MS` (default 8000) is per HTTP attempt.
+module never falls back to the mock. The model (`openai/gpt-oss-20b`) and the per-attempt timeout (8000 ms) are fixed in `packages/config/src/settings.ts`; the model must
+support strict structured output (`openai/gpt-oss-20b`, `openai/gpt-oss-120b` or `qwen/qwen3.8-27b` do).
 
 **Settings per call:** `temperature` 0, `max_completion_tokens` 512 (reasoning included), strict
 `json_schema` response format, no tools, no streaming. Reasoning models get `reasoning_effort: low`

@@ -48,16 +48,28 @@ These are the MVP contract. Changing any of them needs a deliberate security rev
    tokens are in the URL **fragment**), the Recovery Code never leaves the browser, and logs redact tokens, PINs and codes.
 7. Rate limits fail **closed**: unreachable Redis means a refused request, never an open door.
 
-## Production requirements (enforced at startup)
+## Configuration: what is an environment variable and what is not
 
-| Setting                      | Rule                                                                                                                                                                                                                                                                           |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `REDIS_URL`                  | **Required** in production for wallets and recovery: every API instance shares the same limits and they survive restarts. `rediss://` sets the TLS server name explicitly (managed Redis routes by SNI).                                                                       |
-| `RECOVERY_ATTESTOR_SIGNER`   | `kms` in production; the file signer is refused. `RECOVERY_ATTESTOR_KMS_KEY_ID` names the key; the deployment installs the adapter through the `ATTESTOR_SIGNER_FACTORY` provider (built on `createExternalSigner`). With `kms` and no adapter the process **does not start**. |
-| `RECOVERY_EMAIL_PROVIDER`    | `smtp` (`RECOVERY_SMTP_URL`, `RECOVERY_EMAIL_FROM`); the file outbox is refused in production.                                                                                                                                                                                 |
-| `TELEGRAM_BOT_TOKEN`         | Optional. When set, linked Telegram identities get the same recovery alerts.                                                                                                                                                                                                   |
-| `RECOVERY_MIN_DELAY_SECONDS` | Never below 24 h (the contract floor).                                                                                                                                                                                                                                         |
-| Key files                    | Relayer and (dev) attestor keys must live outside the repository.                                                                                                                                                                                                              |
+Environment variables hold **secrets and per-deployment facts** only (about 30, listed in `.env.example`). Everything else is code:
+
+- `packages/config/src/settings.ts`: tunables and **security floors** (authorization lifetimes, the recovery delay, timeouts, intervals,
+  the attestation policy, the Groq model). They are deliberately **not** overridable from the environment, so a typo in a deployment
+  cannot weaken a floor. A change is a reviewed, tested diff.
+- `packages/config/src/deployments.ts`: per-network contract addresses and recovery delays (public). `RECOVERY_NETWORK` selects one;
+  recovery and device keys refuse to start on a network whose contracts are not listed.
+- Derived from `NODE_ENV`, never configured: production attests with a KMS/HSM signer (a key file is refused), never accepts Apple's
+  sandbox attestation, never uses the file outbox, and needs Redis for wallets and recovery.
+
+Production rules enforced at startup:
+
+| Setting              | Rule                                                                                                                                                                                                                   |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `REDIS_URL`          | **Required** for wallets and recovery: every API instance shares the limits and they survive restarts. `rediss://` sets the TLS server name explicitly.                                                                |
+| Attestor             | Production needs `RECOVERY_ATTESTOR_KMS_KEY_ID`; the deployment installs the adapter through the `ATTESTOR_SIGNER_FACTORY` provider (built on `createExternalSigner`). With none installed the process does not start. |
+| Recovery email       | `RECOVERY_SMTP_URL` + `RECOVERY_EMAIL_FROM`; the file outbox is refused.                                                                                                                                               |
+| `TELEGRAM_BOT_TOKEN` | Optional. When set, linked Telegram identities get the same recovery alerts.                                                                                                                                           |
+| Recovery delay       | Fixed floor of 24 h (the contract's own), in `deployments.ts`.                                                                                                                                                         |
+| Key files            | The relayer key (and the dev attestor key) must live outside the repository.                                                                                                                                           |
 
 ## Rate limits
 

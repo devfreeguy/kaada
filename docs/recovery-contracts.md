@@ -50,7 +50,7 @@ uninstall needed).
 
 | Parameter                         | Value                                                                                       |
 | --------------------------------- | ------------------------------------------------------------------------------------------- |
-| Minimum delay (contract constant) | 24 h (`RECOVERY_MIN_DELAY_SECONDS`)                                                         |
+| Minimum delay (contract constant) | 24 h (`RECOVERY_DELAYS` in `deployments.ts`)                                                |
 | Default delay Kaada configures    | 72 h (`RECOVERY_DEFAULT_DELAY_SECONDS`), configurable above the floor via `setDelay`        |
 | Recovery key                      | secp256k1 address derived from the Recovery Code; rotated via `setRecoveryKey` or reinstall |
 

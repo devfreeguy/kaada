@@ -18,12 +18,12 @@ leave that package (`Database.client` is for repository implementations only).
 
 ## Connections (Neon)
 
-| Variable                   | Used by         | Value                                           |
-| -------------------------- | --------------- | ----------------------------------------------- |
-| `DATABASE_URL`             | API, seed       | Pooled connection (host contains `-pooler`)     |
-| `DATABASE_DIRECT_URL`      | Prisma CLI only | Direct connection; falls back to `DATABASE_URL` |
-| `DATABASE_POOL_MAX`        | runtime pool    | default 10                                      |
-| `DATABASE_POOL_TIMEOUT_MS` | runtime pool    | connect timeout, default 10000                  |
+| Variable              | Used by         | Value                                           |
+| --------------------- | --------------- | ----------------------------------------------- |
+| `DATABASE_URL`        | API, seed       | Pooled connection (host contains `-pooler`)     |
+| `DATABASE_DIRECT_URL` | Prisma CLI only | Direct connection; falls back to `DATABASE_URL` |
+
+The pool size (10), connect timeout (10 s) and transaction timeout (5 s) are fixed in `packages/config/src/settings.ts`.
 
 Put them in the repo-root `.env` (copy `.env.example`). Use `sslmode=verify-full` in the URLs.
 

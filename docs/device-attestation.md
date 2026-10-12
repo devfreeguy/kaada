@@ -21,7 +21,7 @@ Ranking: `UNKNOWN` < `WEB_NON_EXTRACTABLE` < `APP_ATTESTED_DEVICE` < `TRUSTED_DE
   - Hardware Attestation Root (RSA, 2022-2042) `cedb1cb6…0dfc`
   - Key Attestation CA1 (EC, 2025-2035) `6d9db4ce…bcc0`
     A chain must end at a pinned root (byte-identical) or at a certificate issued and signed by one. Nothing in the evidence can add a root: a self-signed or other-vendor chain (incl. the software-attestation root) is `CHAIN_UNTRUSTED_ROOT`. **Rotation:** Google publishes new roots rarely; add the new root next to the old ones (never replace first), ship, then retire the old one after devices have moved. The fingerprints are asserted in tests.
-- Revocation: Google's list (`ATTESTATION_REVOCATION_URL`), serials in decimal and hex spellings, cached, **fail-closed** (unreachable and no recent copy → evidence refused, `REVOCATION_UNAVAILABLE`).
+- Revocation: Google's list (fixed in `settings.ts`), serials in decimal and hex spellings, cached, **fail-closed** (unreachable and no recent copy → evidence refused, `REVOCATION_UNAVAILABLE`).
 - Checks, in order: base64/DER, chain signatures + CA flags + validity at `now`, revocation, key description extension present and parseable, leaf public key is P-256 and **equals the enrolled key**, `attestationChallenge` **equals the issued nonce**, key not created before the challenge was issued.
 - Then policy (a failing item makes the evidence _authentic but not qualifying_ → `UNKNOWN`, recorded as shortfalls): attestation and keymaster security level both ≥ the minimum (`ATTESTATION_ANDROID_MIN_LEVEL`, default TEE; the weaker of the two counts); attestation version ≥ 3; hardware-enforced purpose is sign (and optionally verify) only; EC / P-256 / SHA-256; origin = generated on device; verified boot + locked bootloader; exactly one package and every signing digest in the allow-list (`ATTESTATION_ANDROID_APPS`). Properties are read from the **hardware-enforced list only**; the same claim in the software list is not trusted.
 - Assumptions: Google's roots and the device OEM's attestation key are trustworthy; revoked keys appear on Google's list; Android Keystore enforces what it attests.
@@ -68,7 +68,7 @@ val chain = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
 
 ## Configuration
 
-`DEVICE_ATTESTATION_ENABLED` (needs `DEVICE_KEY_ROOTS_ENABLED` and an app identity), `ATTESTATION_ANDROID_APPS` (`pkg=sha256hex|sha256hex,…`), `ATTESTATION_ANDROID_MIN_LEVEL`, `ATTESTATION_IOS_APP_IDS`, `ATTESTATION_IOS_ALLOW_DEVELOPMENT`, `ATTESTATION_CHALLENGE_TTL_SECONDS`, `ATTESTATION_REVOCATION_URL`, `ATTESTATION_REVOCATION_CACHE_SECONDS`. With no app configured nothing can rise above `UNKNOWN`, so that combination refuses to start.
+Attestation is enabled by naming trusted apps (it needs `DEVICE_KEY_ROOTS_ENABLED`): `ATTESTATION_ANDROID_APPS` (`pkg=sha256hex|sha256hex,…`), `ATTESTATION_ANDROID_MIN_LEVEL`, `ATTESTATION_IOS_APP_IDS`, `ATTESTATION_IOS_ALLOW_DEVELOPMENT`, `ATTESTATION_CHALLENGE_TTL_SECONDS`, `ATTESTATION_REVOCATION_URL`, `ATTESTATION_REVOCATION_CACHE_SECONDS`. With no app configured nothing can rise above `UNKNOWN`, so that combination refuses to start.
 
 ## Validation status
 

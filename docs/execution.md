@@ -89,7 +89,7 @@ The claim token is decrypted only for the request that needs it and tombstoned (
 ## Recovery
 
 `ExecutionRunner.run(executionId)` reads persisted state every time and continues from there, so it is safe to call
-again at any point. `reconcile()` (a timer, `EXECUTION_RECONCILE_INTERVAL_SECONDS`, plus a first pass shortly after
+again at any point. `reconcile()` (a timer, the 30 s reconcile interval in `settings.ts`, plus a first pass shortly after
 start; no queue) runs every unfinished execution. Running it twice, concurrently, or after a crash is safe because the
 lock is a conditional database update.
 

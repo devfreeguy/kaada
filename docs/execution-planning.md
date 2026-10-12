@@ -22,7 +22,7 @@ one live attempt per authorization and provider, so duplicate deliveries and con
 
 `EXECUTION_READY` ("Payment authorized and final pricing confirmed.") - `EXECUTION_BLOCKED` (the plan found something to
 review) - `REAUTHORIZATION_REQUIRED` (price outside the limits, or the approval is no longer valid; the authorization is
-left untouched) - `FIRM_QUOTE_TOO_CLOSE_TO_EXPIRY` (< `FIRM_QUOTE_MIN_WINDOW_SECONDS`, default 12 s, no automatic retry)
+left untouched) - `FIRM_QUOTE_TOO_CLOSE_TO_EXPIRY` (< the 12 s minimum window in `settings.ts`, no automatic retry)
 
 - `FINAL_PRICE_UNAVAILABLE` - `PROVIDER_CAPACITY_REACHED` - `INSUFFICIENT_BALANCE` - `EXECUTION_ROUTE_UNSUPPORTED`.
 

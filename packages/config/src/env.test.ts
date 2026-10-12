@@ -1,317 +1,251 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { RECOVERY_DELAYS, RECOVERY_DEPLOYMENTS } from "./deployments.js";
+import type { RecoveryContracts, RecoveryNetwork } from "./deployments.js";
 import { ConfigError, loadConfig, loadTextileCredentials } from "./env.js";
+import { SETTINGS } from "./settings.js";
 
-const databaseUrl = "postgresql://user:pass@localhost:5432/kaada";
+const databaseUrl = "postgresql://user:secret-password@db.example.com/kaada";
+const base = { DATABASE_URL: databaseUrl };
+const key = Buffer.alloc(32, 7).toString("base64");
+const address = (n: number) => `0x${n.toString(16).padStart(40, "0")}`;
+const contracts: RecoveryContracts = {
+  validator: address(1),
+  passkeyFactory: address(2),
+  passkeyImplementation: address(3),
+  deviceFactory: address(4),
+  deviceImplementation: address(5),
+};
+/** A deployments table where Celo Sepolia has contracts (the committed table has none yet). */
+const deployed: Readonly<Record<RecoveryNetwork, RecoveryContracts | null>> = {
+  "celo-mainnet": null,
+  "celo-sepolia": contracts,
+};
+
+const kernel = {
+  ...base,
+  WALLET_PROVIDER: "kernel",
+  PASSKEY_RP_ID: "kaada.app",
+  PASSKEY_ORIGIN: "https://app.kaada.app",
+};
+
+/** A production wallet setup that satisfies every production rule. */
+const production = {
+  ...kernel,
+  NODE_ENV: "production",
+  PIN_PEPPER: "p".repeat(32),
+  REDIS_URL: "rediss://redis.example:6380",
+};
 
 describe("loadConfig", () => {
   it("applies defaults and nests database settings", () => {
-    const config = loadConfig({ DATABASE_URL: databaseUrl });
+    const config = loadConfig(base);
+    assert.equal(config.nodeEnv, "development");
     assert.equal(config.port, 4000);
-    assert.deepEqual(config.corsOrigins, [config.webUrl]);
-    assert.deepEqual(config.database, {
-      url: databaseUrl,
-      poolMax: 10,
-      poolTimeoutMs: 10_000,
-      transactionTimeoutMs: 5_000,
-    });
+    assert.equal(config.logLevel, "info");
+    assert.deepEqual(config.corsOrigins, ["http://localhost:3000"]);
+    assert.equal(config.database.url, databaseUrl);
+    assert.equal("directUrl" in config.database, false);
+    assert.equal(config.database.poolMax, SETTINGS.database.poolMax);
+    assert.equal(config.database.transactionTimeoutMs, 5000);
   });
 
-  it("accepts a direct URL and pool overrides", () => {
+  it("accepts a direct URL, ports and explicit CORS origins", () => {
     const config = loadConfig({
-      DATABASE_URL: databaseUrl,
-      DATABASE_DIRECT_URL: "postgres://user:pass@localhost:5432/direct",
-      DATABASE_POOL_MAX: "5",
-      DATABASE_POOL_TIMEOUT_MS: "2000",
+      ...base,
+      DATABASE_DIRECT_URL: "postgresql://u:p@direct.example.com/kaada",
+      PORT: "8080",
+      CORS_ORIGINS: " https://a.example , https://b.example ",
     });
-    assert.equal(config.database.directUrl, "postgres://user:pass@localhost:5432/direct");
-    assert.equal(config.database.poolMax, 5);
-    assert.equal(config.database.poolTimeoutMs, 2000);
+    assert.equal(config.database.directUrl, "postgresql://u:p@direct.example.com/kaada");
+    assert.equal(config.port, 8080);
+    assert.deepEqual(config.corsOrigins, ["https://a.example", "https://b.example"]);
   });
 
-  it("keeps the agent disabled by default and rejects the mock interpreter in production", () => {
-    assert.equal(loadConfig({ DATABASE_URL: databaseUrl }).agent.interpreter, "none");
-    assert.equal(
-      loadConfig({ DATABASE_URL: databaseUrl, AGENT_INTERPRETER: "mock" }).agent.interpreter,
-      "mock",
-    );
-    assert.throws(
-      () =>
-        loadConfig({
-          DATABASE_URL: databaseUrl,
-          AGENT_INTERPRETER: "mock",
-          NODE_ENV: "production",
-        }),
-      ConfigError,
-    );
-    assert.throws(
-      () => loadConfig({ DATABASE_URL: databaseUrl, AGENT_INTERPRETER: "gpt" }),
-      ConfigError,
-    );
+  it("requires DATABASE_URL and refuses non-postgres or malformed URLs, without leaking them", () => {
+    assert.throws(() => loadConfig({}), ConfigError);
+    for (const bad of ["mysql://u:p@h/db", "not a url"]) {
+      assert.throws(() => loadConfig({ DATABASE_URL: bad }), ConfigError);
+    }
+    try {
+      loadConfig({ DATABASE_URL: "mysql://user:secret-password@h/db" });
+      assert.fail("expected a failure");
+    } catch (error) {
+      assert.equal(String((error as Error).message).includes("secret-password"), false);
+    }
   });
 
-  it("requires a Groq key only when the Groq interpreter is selected", () => {
-    const base = { DATABASE_URL: databaseUrl };
-    assert.equal(loadConfig(base).agent.groq, undefined);
-    assert.equal(loadConfig({ ...base, AGENT_INTERPRETER: "mock" }).agent.groq, undefined);
-    assert.equal(loadConfig({ ...base, GROQ_API_KEY: "" }).agent.groq, undefined, "blank is unset");
-    assert.throws(() => loadConfig({ ...base, AGENT_INTERPRETER: "groq" }), ConfigError);
+  it("keeps the agent disabled by default, requires the Groq key only for Groq, and refuses the mock in production", () => {
+    assert.equal(loadConfig(base).agent.interpreter, "none");
+    assert.throws(() => loadConfig({ ...base, AGENT_INTERPRETER: "groq" }), /GROQ_API_KEY/);
+    const groq = loadConfig({ ...base, AGENT_INTERPRETER: "groq", GROQ_API_KEY: " gsk_test " });
+    assert.deepEqual(groq.agent.groq, {
+      apiKey: "gsk_test",
+      model: SETTINGS.agent.groq.model,
+      timeoutMs: SETTINGS.agent.groq.timeoutMs,
+    });
     assert.throws(
-      () => loadConfig({ ...base, AGENT_INTERPRETER: "groq", GROQ_API_KEY: "   " }),
-      ConfigError,
+      () => loadConfig({ ...base, NODE_ENV: "production", AGENT_INTERPRETER: "mock" }),
+      /mock interpreter/,
     );
-
-    const config = loadConfig({ ...base, AGENT_INTERPRETER: "groq", GROQ_API_KEY: "gsk_test" });
-    assert.deepEqual(config.agent, {
-      interpreter: "groq",
-      groq: { apiKey: "gsk_test", model: "openai/gpt-oss-20b", timeoutMs: 8000 },
-    });
-  });
-
-  it("allows Groq in production but never the mock, and bounds the Groq settings", () => {
-    const prod = { DATABASE_URL: databaseUrl, NODE_ENV: "production", GROQ_API_KEY: "gsk_test" };
-    assert.equal(loadConfig({ ...prod, AGENT_INTERPRETER: "groq" }).agent.interpreter, "groq");
-    assert.throws(() => loadConfig({ ...prod, AGENT_INTERPRETER: "mock" }), ConfigError);
-
-    const groq = { DATABASE_URL: databaseUrl, AGENT_INTERPRETER: "groq", GROQ_API_KEY: "gsk_test" };
-    const custom = loadConfig({
-      ...groq,
-      GROQ_MODEL: "openai/gpt-oss-120b",
-      GROQ_TIMEOUT_MS: "3000",
-    });
-    assert.equal(custom.agent.groq?.model, "openai/gpt-oss-120b");
-    assert.equal(custom.agent.groq?.timeoutMs, 3000);
-    assert.throws(() => loadConfig({ ...groq, GROQ_TIMEOUT_MS: "10" }), ConfigError);
-    assert.throws(() => loadConfig({ ...groq, GROQ_MODEL: " " }), ConfigError);
+    assert.doesNotThrow(() =>
+      loadConfig({ ...base, NODE_ENV: "production", AGENT_INTERPRETER: "groq", GROQ_API_KEY: "k" }),
+    );
   });
 
   it("never echoes the Groq key in an error", () => {
     try {
-      loadConfig({
-        DATABASE_URL: "mysql://nope",
-        AGENT_INTERPRETER: "groq",
-        GROQ_API_KEY: "gsk_super_secret_value",
-        GROQ_TIMEOUT_MS: "1",
-      });
-      assert.fail("expected ConfigError");
+      loadConfig({ ...base, AGENT_INTERPRETER: "bogus", GROQ_API_KEY: "gsk_super_secret" });
+      assert.fail("expected a failure");
     } catch (error) {
-      assert.ok(error instanceof ConfigError);
-      assert.ok(!error.message.includes("gsk_super_secret_value"));
-    }
-  });
-
-  it("requires DATABASE_URL", () => {
-    assert.throws(() => loadConfig({}), ConfigError);
-  });
-
-  it("rejects non-postgres and malformed database URLs", () => {
-    assert.throws(() => loadConfig({ DATABASE_URL: "mysql://localhost/kaada" }), ConfigError);
-    assert.throws(() => loadConfig({ DATABASE_URL: "not a url" }), ConfigError);
-    assert.throws(
-      () => loadConfig({ DATABASE_URL: databaseUrl, DATABASE_DIRECT_URL: "http://localhost" }),
-      ConfigError,
-    );
-  });
-
-  it("rejects out-of-range pool settings", () => {
-    assert.throws(
-      () => loadConfig({ DATABASE_URL: databaseUrl, DATABASE_POOL_MAX: "0" }),
-      ConfigError,
-    );
-    assert.throws(
-      () => loadConfig({ DATABASE_URL: databaseUrl, DATABASE_POOL_TIMEOUT_MS: "5" }),
-      ConfigError,
-    );
-  });
-
-  it("does not leak the connection string in error messages", () => {
-    try {
-      loadConfig({ DATABASE_URL: "mysql://user:s3cret@localhost/kaada" });
-      assert.fail("expected ConfigError");
-    } catch (error) {
-      assert.ok(error instanceof ConfigError);
-      assert.ok(!error.message.includes("s3cret"));
+      assert.equal(String((error as Error).message).includes("gsk_super_secret"), false);
     }
   });
 });
 
-describe("FX provider configuration", () => {
-  const dev = { DATABASE_URL: databaseUrl };
-
-  it("defaults to no pricing, and accepts the mock in development", () => {
-    assert.equal(loadConfig(dev).fx.provider, "none");
-    assert.equal(loadConfig({ ...dev, FX_PROVIDER: "mock" }).fx.provider, "mock");
+describe("hardcoded settings are not configurable from the environment", () => {
+  it("ignores every variable that used to tune them", () => {
+    const ignored = {
+      DATABASE_POOL_MAX: "99",
+      DATABASE_POOL_TIMEOUT_MS: "1000",
+      DATABASE_TRANSACTION_TIMEOUT_MS: "120000",
+      AUTHORIZATION_SESSION_TTL_SECONDS: "900",
+      PAYMENT_AUTHORIZATION_TTL_SECONDS: "600",
+      EXECUTION_POLL_INTERVAL_MS: "250",
+      EXECUTION_POLL_MAX_WAIT_MS: "120000",
+      EXECUTION_RECONCILE_INTERVAL_SECONDS: "0",
+      FIRM_QUOTE_MIN_WINDOW_SECONDS: "5",
+      FIRM_QUOTE_TIMEOUT_MS: "10000",
+      TEXTILE_MAX_OUTSTANDING_RFQS: "1",
+      TEXTILE_API_URL: "https://evil.example",
+      TEXTILE_TIMEOUT_MS: "80000",
+      GROQ_MODEL: "something/else",
+      GROQ_TIMEOUT_MS: "60000",
+      PASSKEY_RP_NAME: "Phish",
+      REDIS_KEY_PREFIX: "x:",
+      CELO_CHAIN_ID: "1",
+      CELO_NETWORK: "testnet",
+      RECOVERY_MIN_DELAY_SECONDS: "1",
+      RECOVERY_DELAY_SECONDS: "1",
+      RECOVERY_SWEEP_INTERVAL_SECONDS: "0",
+      RECOVERY_ATTESTOR_SIGNER: "file",
+      RECOVERY_EMAIL_PROVIDER: "outbox",
+      ATTESTATION_ANDROID_MIN_LEVEL: "TEE",
+      ATTESTATION_IOS_ALLOW_DEVELOPMENT: "true",
+      ATTESTATION_CHALLENGE_TTL_SECONDS: "900",
+      ATTESTATION_REVOCATION_URL: "https://evil.example",
+      ATTESTATION_REVOCATION_CACHE_SECONDS: "86400",
+      TEXTILE_ENV: "test",
+    };
+    const withNoise = loadConfig({ ...base, ...ignored, NODE_ENV: "production" });
+    const without = loadConfig({ ...base, NODE_ENV: "production" });
+    assert.deepEqual(withNoise, without);
   });
 
-  it("rejects the mock FX provider in production, and unknown providers", () => {
-    assert.throws(
-      () => loadConfig({ ...dev, NODE_ENV: "production", FX_PROVIDER: "mock" }),
-      ConfigError,
-    );
-    assert.equal(loadConfig({ ...dev, NODE_ENV: "production" }).fx.provider, "none");
-    assert.throws(() => loadConfig({ ...dev, FX_PROVIDER: "acme" }), ConfigError);
+  it("keeps the security floors where the code says they are", () => {
+    const config = loadConfig(base);
+    assert.equal(config.authorization.sessionTtlMs, 300_000);
+    assert.equal(config.authorization.paymentTtlMs, 600_000);
+    assert.equal(config.recovery.minDelaySeconds, 86_400);
+    assert.equal(config.recovery.delaySeconds, 259_200);
+    assert.equal(config.chain.chainId, 42220);
+    assert.equal(config.chain.network, "mainnet");
+    assert.equal(config.execution.minFirmWindowMs, 12_000);
+    assert.equal(config.execution.firmTimeoutMs, 75_000);
+    assert.equal(config.execution.maxOutstandingRfqs, 4);
+    for (const network of ["celo-mainnet", "celo-sepolia"] as const) {
+      assert.ok(RECOVERY_DELAYS[network].minDelaySeconds >= 86_400, network);
+      assert.ok(RECOVERY_DELAYS[network].delaySeconds >= RECOVERY_DELAYS[network].minDelaySeconds);
+    }
   });
 });
 
-describe("Textile configuration", () => {
-  const live = {
-    DATABASE_URL: databaseUrl,
-    FX_PROVIDER: "textile",
-    TEXTILE_ENV: "live",
-    TEXTILE_LIVE_API_KEY: "tx_live_abcd1234.supersecretvalue",
-  };
-
-  it("needs an explicit environment and the matching key, with no default or fallback", () => {
+describe("pricing and Textile", () => {
+  it("defaults to no pricing and accepts the mock in development, never in production", () => {
+    assert.equal(loadConfig(base).fx.provider, "none");
+    assert.equal(loadConfig({ ...base, FX_PROVIDER: "mock" }).fx.provider, "mock");
     assert.throws(
-      () => loadConfig({ DATABASE_URL: databaseUrl, FX_PROVIDER: "textile" }),
-      /TEXTILE_ENV .* is required/,
+      () => loadConfig({ ...base, NODE_ENV: "production", FX_PROVIDER: "mock" }),
+      /mock FX provider/,
     );
-    assert.throws(
-      () => loadConfig({ ...live, TEXTILE_LIVE_API_KEY: undefined }),
-      /TEXTILE_LIVE_API_KEY is required/,
-    );
-    // A test key does not satisfy live, and a live key does not satisfy test.
-    assert.throws(
-      () =>
-        loadConfig({
-          ...live,
-          TEXTILE_LIVE_API_KEY: undefined,
-          TEXTILE_TEST_API_KEY: "tx_test_a.b",
-        }),
-      /TEXTILE_LIVE_API_KEY is required/,
-    );
-    assert.throws(() => loadConfig({ ...live, TEXTILE_LIVE_API_KEY: "   " }), ConfigError);
+    assert.throws(() => loadConfig({ ...base, FX_PROVIDER: "bogus" }), ConfigError);
   });
 
-  it("accepts live with the documented defaults", () => {
-    const config = loadConfig(live);
+  it("textile pricing needs a live key, with the documented host and timeout", () => {
+    assert.throws(() => loadConfig({ ...base, FX_PROVIDER: "textile" }), /TEXTILE_LIVE_API_KEY/);
+    const config = loadConfig({
+      ...base,
+      FX_PROVIDER: "textile",
+      TEXTILE_LIVE_API_KEY: "tx_live_abcd1234.supersecretvalue",
+    });
     assert.deepEqual(config.fx.textile, {
       env: "live",
-      apiKey: live.TEXTILE_LIVE_API_KEY,
-      apiUrl: "https://api.textilecredit.com",
-      timeoutMs: 8000,
+      apiKey: "tx_live_abcd1234.supersecretvalue",
+      apiUrl: SETTINGS.textile.apiUrl,
+      timeoutMs: SETTINGS.textile.timeoutMs,
     });
-    assert.deepEqual(config.chain, { network: "mainnet", chainId: 42220 });
   });
 
-  it("refuses the test environment for Kaada, which settles on Celo, in every NODE_ENV", () => {
-    for (const NODE_ENV of ["development", "test", "production"]) {
-      assert.throws(
-        () =>
-          loadConfig({
-            DATABASE_URL: databaseUrl,
-            NODE_ENV,
-            FX_PROVIDER: "textile",
-            TEXTILE_ENV: "test",
-            TEXTILE_TEST_API_KEY: "tx_test_abcd1234.secret",
-          }),
-        /cannot quote Celo mainnet/,
-        NODE_ENV,
-      );
-    }
-  });
-
-  it("is allowed in production with a live key, and the mock still is not", () => {
-    assert.equal(loadConfig({ ...live, NODE_ENV: "production" }).fx.provider, "textile");
-    assert.throws(
-      () => loadConfig({ DATABASE_URL: databaseUrl, NODE_ENV: "production", FX_PROVIDER: "mock" }),
-      ConfigError,
-    );
-  });
-
-  it("requires the live key to look like a live key, without echoing it", () => {
-    const secret = "tx_test_wrongenvironment.SECRETVALUE";
+  it("rejects a key that is not a live key, without echoing it", () => {
     try {
-      loadConfig({ ...live, TEXTILE_LIVE_API_KEY: secret });
-      assert.fail("expected a ConfigError");
+      loadConfig({
+        ...base,
+        FX_PROVIDER: "textile",
+        TEXTILE_LIVE_API_KEY: "tx_test_abcd.secretvalue",
+      });
+      assert.fail("expected a failure");
     } catch (error) {
-      assert.ok(error instanceof ConfigError);
-      assert.match(error.message, /tx_live_/);
-      assert.equal(error.message.includes("SECRETVALUE"), false);
+      assert.match((error as Error).message, /tx_live_/);
+      assert.equal((error as Error).message.includes("secretvalue"), false);
     }
   });
 
-  it("only supports Celo mainnet and a host-only API URL", () => {
-    assert.throws(() => loadConfig({ DATABASE_URL: databaseUrl, CELO_CHAIN_ID: "1" }), ConfigError);
-    assert.throws(
-      () => loadConfig({ DATABASE_URL: databaseUrl, CELO_NETWORK: "alfajores" }),
-      ConfigError,
-    );
-    assert.throws(
-      () => loadConfig({ ...live, TEXTILE_API_URL: "https://api.textilecredit.com/v2" }),
-      ConfigError,
-    );
-  });
-
-  it("ignores Textile settings unless the provider is textile", () => {
-    const { fx } = loadConfig({ DATABASE_URL: databaseUrl, TEXTILE_LIVE_API_KEY: "tx_live_a.b" });
-    assert.equal(fx.textile, undefined);
+  it("ignores Textile keys unless the provider is textile", () => {
+    const config = loadConfig({ ...base, TEXTILE_LIVE_API_KEY: "tx_live_x.y" });
+    assert.equal("textile" in config.fx, false);
   });
 });
 
 describe("loadTextileCredentials", () => {
   it("selects exactly the requested environment's key and never falls back", () => {
-    const env = {
-      TEXTILE_TEST_API_KEY: "tx_test_a.secret1",
-      TEXTILE_LIVE_API_KEY: "tx_live_b.secret2",
-    };
-    assert.equal(loadTextileCredentials("test", env).apiKey, "tx_test_a.secret1");
-    assert.equal(loadTextileCredentials("live", env).apiKey, "tx_live_b.secret2");
+    const env = { TEXTILE_TEST_API_KEY: "tx_test_a.b", TEXTILE_LIVE_API_KEY: "tx_live_c.d" };
+    assert.equal(loadTextileCredentials("test", env).apiKey, "tx_test_a.b");
+    assert.equal(loadTextileCredentials("live", env).apiKey, "tx_live_c.d");
+    assert.equal(loadTextileCredentials("live", env).apiUrl, SETTINGS.textile.apiUrl);
     assert.throws(
-      () => loadTextileCredentials("live", { TEXTILE_TEST_API_KEY: "tx_test_a.secret1" }),
-      /TEXTILE_LIVE_API_KEY is not set/,
+      () => loadTextileCredentials("test", { TEXTILE_LIVE_API_KEY: "tx_live_c.d" }),
+      /not set/,
     );
     assert.throws(
-      () => loadTextileCredentials("test", { TEXTILE_TEST_API_KEY: "tx_live_oops.secret" }),
-      /must be a tx_test_/,
+      () => loadTextileCredentials("live", { TEXTILE_LIVE_API_KEY: "tx_test_x.y" }),
+      /tx_live_/,
     );
   });
 });
 
 describe("wallet configuration", () => {
-  const base = { DATABASE_URL: databaseUrl };
-  const kernel = {
-    ...base,
-    WALLET_PROVIDER: "kernel",
-    PASSKEY_RP_ID: "kaada.app",
-    PASSKEY_ORIGIN: "https://app.kaada.app",
-  };
-
-  it("defaults to no wallet stack and the public Celo RPC", () => {
+  it("defaults to no wallet stack, the public Celo RPC and Celo mainnet validators", () => {
     const config = loadConfig(base);
     assert.equal(config.wallet.provider, "none");
     assert.equal(config.wallet.rpcUrl, "https://forno.celo.org");
-    assert.equal(config.wallet.passkey, undefined);
+    assert.equal(config.wallet.onChainId, 42220);
+    assert.equal("passkey" in config.wallet, false);
   });
 
-  it("validates the selected stack: Kernel needs a relying party and origin", () => {
-    assert.throws(
-      () => loadConfig({ ...base, WALLET_PROVIDER: "kernel" }),
-      /PASSKEY_RP_ID and PASSKEY_ORIGIN/,
-    );
-    assert.deepEqual(loadConfig(kernel).wallet.passkey, {
+  it("Kernel needs a relying party and an origin on that domain", () => {
+    assert.throws(() => loadConfig({ ...base, WALLET_PROVIDER: "kernel" }), /PASSKEY_RP_ID/);
+    const config = loadConfig(kernel);
+    assert.deepEqual(config.wallet.passkey, {
       rpId: "kaada.app",
       rpName: "Kaada",
       origin: "https://app.kaada.app",
     });
-    assert.equal(
-      loadConfig({ ...kernel, PASSKEY_RP_NAME: " Kaada Pay " }).wallet.passkey?.rpName,
-      "Kaada Pay",
-    );
-    assert.throws(() => loadConfig({ ...kernel, PASSKEY_RP_NAME: "" }), ConfigError);
-    assert.throws(() => loadConfig({ ...base, WALLET_PROVIDER: "other" }), ConfigError);
-  });
-
-  it("rejects an origin that is not on the relying party domain", () => {
     assert.throws(
       () => loadConfig({ ...kernel, PASSKEY_ORIGIN: "https://evil.example" }),
-      /must be on PASSKEY_RP_ID/,
+      /must be on/,
     );
-    assert.throws(
-      () => loadConfig({ ...kernel, PASSKEY_ORIGIN: "https://notkaada.app" }),
-      ConfigError,
-    );
+    assert.doesNotThrow(() => loadConfig({ ...kernel, PASSKEY_ORIGIN: "https://x.kaada.app" }));
   });
 
   it("requires https in production and allows localhost in development", () => {
@@ -323,446 +257,290 @@ describe("wallet configuration", () => {
     };
     assert.equal(loadConfig(local).wallet.provider, "kernel");
     assert.throws(() => loadConfig({ ...local, NODE_ENV: "production" }), /https/);
-    const production = {
-      ...kernel,
-      NODE_ENV: "production",
-      REDIS_URL: "redis://redis.example:6379",
-      PIN_PEPPER: "p".repeat(32),
-    };
     assert.equal(loadConfig(production).wallet.provider, "kernel");
     assert.throws(() => loadConfig({ ...production, CELO_RPC_URL: "http://rpc.example" }), /https/);
   });
 });
 
-describe("execution (moving funds) configuration", () => {
-  const key = Buffer.alloc(32, 5).toString("base64");
+describe("payment authorization secrets", () => {
+  it("needs no pepper in development, and a 32+ character one in production wallets", () => {
+    assert.equal("pinPepper" in loadConfig(kernel).authorization, false);
+    const { PIN_PEPPER: _p, ...noPepper } = production;
+    assert.throws(() => loadConfig(noPepper), /PIN_PEPPER/);
+    assert.throws(() => loadConfig({ ...production, PIN_PEPPER: "short" }), /PIN_PEPPER/);
+    assert.equal(loadConfig(production).authorization.pinPepper, "p".repeat(32));
+  });
+});
+
+describe("execution (moving funds)", () => {
   const ready = {
-    DATABASE_URL: databaseUrl,
-    WALLET_PROVIDER: "kernel",
-    PASSKEY_RP_ID: "kaada.app",
-    PASSKEY_ORIGIN: "https://app.kaada.app",
+    ...kernel,
     FX_PROVIDER: "textile",
-    TEXTILE_ENV: "live",
     TEXTILE_LIVE_API_KEY: "tx_live_abcd1234.supersecretvalue",
     EXECUTION_SECRET_KEY: key,
   };
 
   it("is off unless exactly true", () => {
-    assert.equal(loadConfig({ ...ready }).execution.enabled, false);
+    assert.equal(loadConfig(ready).execution.enabled, false);
     assert.throws(() => loadConfig({ ...ready, EXECUTION_ENABLED: "yes" }), ConfigError);
   });
 
-  it("refuses to start enabled without a bundler", () => {
+  it("refuses to start enabled without a bundler, the key, wallets, pricing or passkeys", () => {
     assert.throws(() => loadConfig({ ...ready, EXECUTION_ENABLED: "true" }), /BUNDLER_URL/);
-    const config = loadConfig({
-      ...ready,
-      EXECUTION_ENABLED: "true",
-      BUNDLER_URL: "https://bundler.example/rpc",
-    });
+    const on = { ...ready, EXECUTION_ENABLED: "true", BUNDLER_URL: "https://bundler.example/rpc" };
+    const config = loadConfig(on);
     assert.equal(config.execution.enabled, true);
     assert.equal(config.execution.bundlerUrl, "https://bundler.example/rpc");
+    for (const drop of [
+      "EXECUTION_SECRET_KEY",
+      "FX_PROVIDER",
+      "WALLET_PROVIDER",
+      "PASSKEY_ORIGIN",
+    ]) {
+      const { [drop]: _gone, ...without } = on as Record<string, string>;
+      assert.throws(() => loadConfig(without), ConfigError, drop);
+    }
   });
 
-  it("refuses to start enabled without the secret key, wallets or pricing", () => {
-    const enabled = { ...ready, EXECUTION_ENABLED: "true", BUNDLER_URL: "https://b.example/rpc" };
-    const { EXECUTION_SECRET_KEY: _key, ...noKey } = enabled;
-    assert.throws(() => loadConfig(noKey), ConfigError);
-    assert.throws(() => loadConfig({ ...enabled, FX_PROVIDER: "mock" }), ConfigError);
-  });
-
-  it("validates the gas floor and the polling bounds", () => {
-    assert.throws(() => loadConfig({ ...ready, EXECUTION_MIN_NATIVE_WEI: "0" }), ConfigError);
-    assert.throws(() => loadConfig({ ...ready, EXECUTION_MIN_NATIVE_WEI: "1.5" }), ConfigError);
-    assert.throws(() => loadConfig({ ...ready, EXECUTION_POLL_INTERVAL_MS: "5" }), ConfigError);
+  it("validates the gas floor, and keeps a 32-byte key and its previous one for rotation", () => {
+    assert.equal(loadConfig(base).execution.minNativeWei, 50_000_000_000_000_000n);
     assert.equal(
-      loadConfig({ ...ready, EXECUTION_RECONCILE_INTERVAL_SECONDS: "0" }).execution
-        .reconcileIntervalMs,
-      0,
+      loadConfig({ ...base, EXECUTION_MIN_NATIVE_WEI: "1000000000000000" }).execution.minNativeWei,
+      1_000_000_000_000_000n,
     );
-  });
-});
-
-describe("payment authorization configuration", () => {
-  const base = { DATABASE_URL: databaseUrl };
-  const kernel = {
-    ...base,
-    WALLET_PROVIDER: "kernel",
-    PASSKEY_RP_ID: "kaada.app",
-    PASSKEY_ORIGIN: "https://app.kaada.app",
-  };
-
-  it("defaults to short lifetimes and no pepper in development", () => {
-    const { authorization } = loadConfig(base);
-    assert.equal(authorization.sessionTtlMs, 300_000);
-    assert.equal(authorization.paymentTtlMs, 600_000);
-    assert.equal("pinPepper" in authorization, false);
-  });
-
-  it("keeps the lifetimes short: a half-hour authorization is refused", () => {
-    assert.equal(
-      loadConfig({ ...base, PAYMENT_AUTHORIZATION_TTL_SECONDS: "120" }).authorization.paymentTtlMs,
-      120_000,
-    );
+    for (const bad of ["0", "-1", "1.5", "abc"]) {
+      assert.throws(() => loadConfig({ ...base, EXECUTION_MIN_NATIVE_WEI: bad }), ConfigError, bad);
+    }
     assert.throws(
-      () => loadConfig({ ...base, PAYMENT_AUTHORIZATION_TTL_SECONDS: "1800" }),
-      ConfigError,
+      () => loadConfig({ ...base, EXECUTION_SECRET_KEY: "tooshort" }),
+      /32 random bytes/,
     );
-    assert.throws(
-      () => loadConfig({ ...base, PAYMENT_AUTHORIZATION_TTL_SECONDS: "5" }),
-      ConfigError,
-    );
-    assert.throws(
-      () => loadConfig({ ...base, AUTHORIZATION_SESSION_TTL_SECONDS: "3600" }),
-      ConfigError,
-    );
-  });
-
-  it("requires a PIN pepper of at least 32 characters in production wallets", () => {
-    const production = {
-      ...kernel,
-      NODE_ENV: "production",
-      REDIS_URL: "redis://redis.example:6379",
-    };
-    assert.throws(() => loadConfig(production), /PIN_PEPPER/);
-    assert.throws(() => loadConfig({ ...production, PIN_PEPPER: "short" }), /PIN_PEPPER/);
-    assert.equal(
-      loadConfig({ ...production, PIN_PEPPER: "p".repeat(32) }).authorization.pinPepper,
-      "p".repeat(32),
-    );
-  });
-});
-
-describe("firm quote configuration", () => {
-  const base = { DATABASE_URL: databaseUrl };
-  const key = Buffer.alloc(32, 5).toString("base64");
-
-  it("defaults to a 12 s minimum window, a 75 s timeout, 4 slots and no key", () => {
-    const { execution } = loadConfig(base);
-    assert.equal(execution.minFirmWindowMs, 12_000);
-    assert.equal(execution.firmTimeoutMs, 75_000);
-    assert.equal(execution.maxOutstandingRfqs, 4);
-    assert.deepEqual(execution.cipherKeys, []);
-    assert.equal(execution.bundlerConfigured, false);
-    assert.equal(execution.enabled, false, "moving funds is off by default");
-    assert.equal(execution.minNativeWei, 50_000_000_000_000_000n);
-  });
-
-  it("accepts only a 32-byte key, and keeps the previous one for rotation", () => {
-    assert.deepEqual(loadConfig({ ...base, EXECUTION_SECRET_KEY: key }).execution.cipherKeys, [
-      { version: 1, key },
-    ]);
-    assert.throws(() => loadConfig({ ...base, EXECUTION_SECRET_KEY: "c2hvcnQ=" }), ConfigError);
-    assert.throws(
-      () => loadConfig({ ...base, EXECUTION_SECRET_KEY: key, EXECUTION_SECRET_KEY_PREVIOUS: "x" }),
-      ConfigError,
-    );
+    assert.deepEqual(loadConfig(base).execution.cipherKeys, []);
+    const previous = Buffer.alloc(32, 9).toString("base64");
     const rotated = loadConfig({
       ...base,
       EXECUTION_SECRET_KEY: key,
       EXECUTION_SECRET_KEY_VERSION: "2",
-      EXECUTION_SECRET_KEY_PREVIOUS: Buffer.alloc(32, 6).toString("base64"),
+      EXECUTION_SECRET_KEY_PREVIOUS: previous,
     });
-    assert.deepEqual(
-      rotated.execution.cipherKeys.map((k) => k.version),
-      [2, 1],
-    );
+    assert.deepEqual(rotated.execution.cipherKeys, [
+      { version: 2, key },
+      { version: 1, key: previous },
+    ]);
   });
 
-  it("bounds the safety window and the slot count", () => {
-    assert.throws(() => loadConfig({ ...base, FIRM_QUOTE_MIN_WINDOW_SECONDS: "1" }), ConfigError);
-    assert.throws(() => loadConfig({ ...base, FIRM_QUOTE_MIN_WINDOW_SECONDS: "120" }), ConfigError);
-    assert.throws(() => loadConfig({ ...base, TEXTILE_MAX_OUTSTANDING_RFQS: "9" }), ConfigError);
-    assert.equal(
-      loadConfig({ ...base, FIRM_QUOTE_MIN_WINDOW_SECONDS: "15" }).execution.minFirmWindowMs,
-      15_000,
-    );
-  });
-
-  it("production with Textile pricing and wallets needs the key", () => {
-    const production = {
-      ...base,
-      NODE_ENV: "production",
-      REDIS_URL: "redis://redis.example:6379",
-      WALLET_PROVIDER: "kernel",
-      PASSKEY_RP_ID: "kaada.app",
-      PASSKEY_ORIGIN: "https://app.kaada.app",
-      PIN_PEPPER: "p".repeat(32),
-      FX_PROVIDER: "textile",
-      TEXTILE_ENV: "live",
-      TEXTILE_LIVE_API_KEY: "tx_live_abcd1234.supersecretvalue",
-    };
-    assert.throws(() => loadConfig(production), /EXECUTION_SECRET_KEY/);
-    assert.equal(
-      loadConfig({ ...production, EXECUTION_SECRET_KEY: key }).execution.cipherKeys.length,
-      1,
-    );
+  it("production firm quotes need the key", () => {
+    const quoting = { ...production, FX_PROVIDER: "textile", TEXTILE_LIVE_API_KEY: "tx_live_a.b" };
+    assert.throws(() => loadConfig(quoting), /EXECUTION_SECRET_KEY/);
+    assert.doesNotThrow(() => loadConfig({ ...quoting, EXECUTION_SECRET_KEY: key }));
   });
 });
 
-describe("account recovery configuration", () => {
-  const secret = Buffer.alloc(32, 9).toString("base64");
-  const address = (n: number) => `0x${n.toString(16).padStart(40, "0")}`;
-  const ready = {
-    DATABASE_URL: databaseUrl,
-    WALLET_PROVIDER: "kernel",
-    PASSKEY_RP_ID: "kaada.app",
-    PASSKEY_ORIGIN: "https://app.kaada.app",
+describe("account recovery", () => {
+  const dev = {
+    ...kernel,
+    PASSKEY_RP_ID: "localhost",
+    PASSKEY_ORIGIN: "http://localhost:3000",
     BUNDLER_URL: "https://bundler.example/rpc",
     RECOVERY_ENABLED: "true",
-    RECOVERY_VALIDATOR_ADDRESS: address(1),
-    RECOVERY_PASSKEY_FACTORY_ADDRESS: address(2),
-    RECOVERY_PASSKEY_IMPLEMENTATION_ADDRESS: address(3),
-    RECOVERY_DEVICE_FACTORY_ADDRESS: address(4),
-    RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS: address(5),
+    RECOVERY_NETWORK: "celo-sepolia",
     RECOVERY_RELAYER_KEY_FILE: "/secrets/relayer.key",
     RECOVERY_ATTESTOR_KEY_FILE: "/secrets/attestor.key",
-    RECOVERY_CHALLENGE_SECRET: secret,
-    RECOVERY_EMAIL_PROVIDER: "outbox",
+    RECOVERY_CHALLENGE_SECRET: key,
     RECOVERY_EMAIL_OUTBOX_FILE: "/tmp/outbox.jsonl",
   };
 
   it("is off by default and carries the 72 hour delay and the 24 hour floor", () => {
-    const off = loadConfig({ DATABASE_URL: databaseUrl });
-    assert.equal(off.recovery.enabled, false);
-    assert.equal(off.recovery.delaySeconds, 72 * 3600);
-    assert.equal(off.recovery.minDelaySeconds, 24 * 3600);
-    assert.equal(off.recovery.gasTopUpMaxWei, 0n);
-    assert.equal("setup" in off.recovery, false);
+    const config = loadConfig(base);
+    assert.equal(config.recovery.enabled, false);
+    assert.equal(config.recovery.delaySeconds, 259_200);
+    assert.equal(config.recovery.minDelaySeconds, 86_400);
+    assert.equal(config.recovery.emailProvider, "none");
+    assert.equal(config.recovery.gasTopUpMaxWei, 0n);
+    assert.equal("setup" in config.recovery, false);
   });
 
-  it("is on only when exactly true, and then needs every piece", () => {
-    assert.throws(() => loadConfig({ ...ready, RECOVERY_ENABLED: "yes" }), ConfigError);
-    const config = loadConfig(ready);
-    assert.equal(config.recovery.enabled, true);
+  it("is on only when exactly true, then needs every piece and the contracts of its network", () => {
+    assert.throws(
+      () => loadConfig({ ...dev, RECOVERY_ENABLED: "yes" }, { deployments: deployed }),
+      ConfigError,
+    );
+    const config = loadConfig(dev, { deployments: deployed });
     assert.equal(config.recovery.setup?.contracts.validator, address(1));
-    assert.equal(config.recovery.chainId, 42220);
-    for (const key of Object.keys(ready).filter(
-      (k) => k !== "RECOVERY_ENABLED" && k !== "DATABASE_URL",
-    )) {
-      const { [key]: _removed, ...without } = ready as Record<string, string>;
-      assert.throws(() => loadConfig(without), ConfigError, key);
+    assert.equal(config.recovery.setup?.attestor.signer, "file");
+    assert.equal(config.recovery.chainId, 11142220);
+    assert.equal(config.wallet.onChainId, 11142220);
+    assert.equal(config.recovery.emailProvider, "outbox");
+    for (const drop of [
+      "WALLET_PROVIDER",
+      "BUNDLER_URL",
+      "RECOVERY_RELAYER_KEY_FILE",
+      "RECOVERY_ATTESTOR_KEY_FILE",
+      "RECOVERY_CHALLENGE_SECRET",
+      "RECOVERY_EMAIL_OUTBOX_FILE",
+    ]) {
+      const { [drop]: _gone, ...without } = dev as Record<string, string>;
+      assert.throws(() => loadConfig(without, { deployments: deployed }), ConfigError, drop);
     }
   });
 
-  it("rejects malformed addresses and a challenge secret that is not 32 bytes", () => {
+  it("refuses a network whose contracts are not deployed (the committed table has none yet)", () => {
+    assert.deepEqual(RECOVERY_DEPLOYMENTS, { "celo-mainnet": null, "celo-sepolia": null });
+    assert.throws(() => loadConfig(dev), /not deployed on celo-sepolia/);
     assert.throws(
-      () => loadConfig({ ...ready, RECOVERY_VALIDATOR_ADDRESS: "0x1234" }),
-      ConfigError,
+      () => loadConfig({ ...dev, RECOVERY_NETWORK: "celo-mainnet" }, { deployments: deployed }),
+      /not deployed on celo-mainnet/,
     );
     assert.throws(
-      () => loadConfig({ ...ready, RECOVERY_CHALLENGE_SECRET: "c2hvcnQ=" }),
+      () => loadConfig({ ...dev, RECOVERY_NETWORK: "nowhere" }, { deployments: deployed }),
       ConfigError,
     );
   });
 
-  it("production never starts with a delay floor below 24 hours (a test chain may)", () => {
-    const production = {
-      ...ready,
-      NODE_ENV: "production",
-      REDIS_URL: "redis://redis.example:6379",
-      PIN_PEPPER: "p".repeat(32),
-      CELO_RPC_URL: "https://rpc.example",
+  it("rejects a challenge secret that is not 32 bytes", () => {
+    assert.throws(
+      () => loadConfig({ ...dev, RECOVERY_CHALLENGE_SECRET: "short" }, { deployments: deployed }),
+      /32 random bytes/,
+    );
+  });
+
+  it("production: Redis, a KMS attestor, SMTP, never the file outbox or a key file", () => {
+    const prod = {
+      ...dev,
+      ...production,
+      RECOVERY_NETWORK: "celo-sepolia",
+      BUNDLER_URL: "https://bundler.example/rpc",
+      RECOVERY_ENABLED: "true",
+      RECOVERY_RELAYER_KEY_FILE: "/secrets/relayer.key",
+      RECOVERY_CHALLENGE_SECRET: key,
+      RECOVERY_ATTESTOR_KMS_KEY_ID: "attestor-key-1",
+      RECOVERY_SMTP_URL: "smtps://user:pass@mail.example:465",
+      RECOVERY_EMAIL_FROM: "Kaada <no-reply@kaada.app>",
     };
-    // The file outbox is a development tool: until a real email provider exists, production cannot enable recovery.
-    assert.throws(() => loadConfig(production), /outbox/);
+    const { RECOVERY_EMAIL_OUTBOX_FILE: _o, RECOVERY_ATTESTOR_KEY_FILE: _k, ...clean } = prod;
+    const config = loadConfig(clean, { deployments: deployed });
+    assert.deepEqual(config.recovery.setup?.attestor, {
+      signer: "kms",
+      kmsKeyId: "attestor-key-1",
+    });
+    assert.equal(config.recovery.emailProvider, "smtp");
+    assert.equal(config.recovery.smtp?.from, "Kaada <no-reply@kaada.app>");
+    assert.equal(config.redis?.url, "rediss://redis.example:6380");
+
+    const { RECOVERY_ATTESTOR_KMS_KEY_ID: _id, ...noKms } = clean;
+    assert.throws(() => loadConfig(noKms, { deployments: deployed }), /KMS/);
+    const { REDIS_URL: _r, ...noRedis } = clean;
+    assert.throws(() => loadConfig(noRedis, { deployments: deployed }), /REDIS_URL/);
+    const { RECOVERY_SMTP_URL: _s, RECOVERY_EMAIL_FROM: _f, ...noSmtp } = clean;
     assert.throws(
       () =>
-        loadConfig({
-          ...production,
-          RECOVERY_MIN_DELAY_SECONDS: "10",
-          RECOVERY_DELAY_SECONDS: "10",
-        }),
-      /24 hours/,
+        loadConfig({ ...noSmtp, RECOVERY_EMAIL_OUTBOX_FILE: "/tmp/o" }, { deployments: deployed }),
+      /development/,
     );
-    // With the floor intact, the floor is not what stops it.
-    assert.doesNotThrow(() => {
-      try {
-        loadConfig(production);
-      } catch (error) {
-        if (/24 hours/.test(String(error))) throw error;
-      }
-    });
-    const test = loadConfig({
-      ...ready,
-      RECOVERY_MIN_DELAY_SECONDS: "10",
-      RECOVERY_DELAY_SECONDS: "25",
-      RECOVERY_CHAIN_ID: "11142220",
-    });
-    assert.equal(test.recovery.minDelaySeconds, 10);
-    assert.equal(test.recovery.chainId, 11142220);
   });
 
-  it("the default delay may not be below the floor", () => {
-    assert.throws(() => loadConfig({ ...ready, RECOVERY_DELAY_SECONDS: "3600" }), ConfigError);
+  it("validates SMTP and Redis URLs", () => {
+    assert.throws(
+      () => loadConfig({ ...base, RECOVERY_SMTP_URL: "http://x", RECOVERY_EMAIL_FROM: "a@b.c" }),
+      ConfigError,
+    );
+    assert.throws(
+      () => loadConfig({ ...base, RECOVERY_SMTP_URL: "smtps://u:p@h:465" }),
+      /RECOVERY_EMAIL_FROM/,
+    );
+    assert.throws(() => loadConfig({ ...base, REDIS_URL: "http://x" }), ConfigError);
+    assert.equal(
+      loadConfig({ ...base, REDIS_URL: "redis://localhost:6379" }).redis?.prefix,
+      SETTINGS.redis.keyPrefix,
+    );
+    assert.equal("redis" in loadConfig(base), false);
+  });
+
+  it("the Telegram token is optional", () => {
+    assert.equal(
+      loadConfig({ ...base, TELEGRAM_BOT_TOKEN: "123:abc" }).recovery.telegramBotToken,
+      "123:abc",
+    );
+    assert.equal("telegramBotToken" in loadConfig(base).recovery, false);
   });
 });
 
-describe("device-key root configuration", () => {
-  const address = (n: number) => `0x${n.toString(16).padStart(40, "0")}`;
-  const ready = {
-    DATABASE_URL: databaseUrl,
-    WALLET_PROVIDER: "kernel",
-    PASSKEY_RP_ID: "kaada.app",
-    PASSKEY_ORIGIN: "https://app.kaada.app",
+describe("device keys and attestation", () => {
+  const roots = {
+    ...kernel,
+    PASSKEY_RP_ID: "localhost",
+    PASSKEY_ORIGIN: "http://localhost:3000",
+    RECOVERY_NETWORK: "celo-sepolia",
     DEVICE_KEY_ROOTS_ENABLED: "true",
-    RECOVERY_PASSKEY_FACTORY_ADDRESS: address(2),
-    RECOVERY_PASSKEY_IMPLEMENTATION_ADDRESS: address(3),
-    RECOVERY_DEVICE_FACTORY_ADDRESS: address(4),
-    RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS: address(5),
     RECOVERY_RELAYER_KEY_FILE: "/secrets/relayer.key",
   };
+  const digest = "ab".repeat(32);
 
-  it("is off by default and the chain id defaults to Celo mainnet", () => {
-    const off = loadConfig({ DATABASE_URL: databaseUrl });
-    assert.equal("deviceKeyRoots" in off.wallet, false);
-    assert.equal(off.wallet.onChainId, 42220);
-  });
-
-  it("is on only when exactly true, and then needs the factories, the relayer key and the kernel wallet", () => {
-    assert.throws(() => loadConfig({ ...ready, DEVICE_KEY_ROOTS_ENABLED: "yes" }), ConfigError);
-    const config = loadConfig(ready);
+  it("device-key roots are off by default and on only when exactly true, needing the contracts and the relayer", () => {
+    assert.equal("deviceKeyRoots" in loadConfig(base).wallet, false);
+    assert.throws(
+      () => loadConfig({ ...roots, DEVICE_KEY_ROOTS_ENABLED: "yes" }, { deployments: deployed }),
+      ConfigError,
+    );
+    const config = loadConfig(roots, { deployments: deployed });
     assert.equal(config.wallet.deviceKeyRoots?.contracts.deviceFactory, address(4));
     assert.equal(config.wallet.deviceKeyRoots?.relayerKeyFile, "/secrets/relayer.key");
-    for (const key of Object.keys(ready).filter(
-      (k) => k !== "DEVICE_KEY_ROOTS_ENABLED" && k !== "DATABASE_URL",
-    )) {
-      const { [key]: _removed, ...without } = ready as Record<string, string>;
-      assert.throws(() => loadConfig(without), ConfigError, key);
-    }
-  });
-});
-
-describe("device attestation configuration", () => {
-  const address = (n: number) => `0x${n.toString(16).padStart(40, "0")}`;
-  const digest = "ab".repeat(32);
-  const ready = {
-    DATABASE_URL: databaseUrl,
-    WALLET_PROVIDER: "kernel",
-    PASSKEY_RP_ID: "kaada.app",
-    PASSKEY_ORIGIN: "https://app.kaada.app",
-    DEVICE_KEY_ROOTS_ENABLED: "true",
-    RECOVERY_PASSKEY_FACTORY_ADDRESS: address(2),
-    RECOVERY_PASSKEY_IMPLEMENTATION_ADDRESS: address(3),
-    RECOVERY_DEVICE_FACTORY_ADDRESS: address(4),
-    RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS: address(5),
-    RECOVERY_RELAYER_KEY_FILE: "/secrets/relayer.key",
-    DEVICE_ATTESTATION_ENABLED: "true",
-    ATTESTATION_ANDROID_APPS: `app.kaada.wallet=${digest}|${"cd".repeat(32)}`,
-    ATTESTATION_IOS_APP_IDS: "ABCDE12345.app.kaada.wallet",
-  };
-
-  it("is off by default and on only when exactly true", () => {
-    assert.equal("deviceAttestation" in loadConfig({ DATABASE_URL: databaseUrl }).wallet, false);
-    assert.throws(() => loadConfig({ ...ready, DEVICE_ATTESTATION_ENABLED: "yes" }), ConfigError);
+    assert.throws(() => loadConfig(roots), /not deployed/);
+    const { RECOVERY_RELAYER_KEY_FILE: _r, ...noRelayer } = roots;
+    assert.throws(() => loadConfig(noRelayer, { deployments: deployed }), ConfigError);
   });
 
-  it("parses the accepted app identities and applies the safe defaults", () => {
-    const config = loadConfig(ready).wallet.deviceAttestation;
-    assert.deepEqual(config?.androidApps, [
+  it("attestation is enabled by naming trusted apps, needs device-key roots, and has fixed policy", () => {
+    const on = {
+      ...roots,
+      ATTESTATION_ANDROID_APPS: `app.kaada.wallet=${digest}|${"cd".repeat(32)}`,
+      ATTESTATION_IOS_APP_IDS: "ABCDE12345.app.kaada.wallet",
+    };
+    const config = loadConfig(on, { deployments: deployed });
+    assert.deepEqual(config.wallet.deviceAttestation?.androidApps, [
       { packageName: "app.kaada.wallet", signatureDigests: [digest, "cd".repeat(32)] },
     ]);
-    assert.deepEqual(config?.iosAppIds, ["ABCDE12345.app.kaada.wallet"]);
-    assert.equal(config?.androidMinimumLevel, "TEE");
-    assert.equal(config?.iosAllowDevelopment, false);
-    assert.equal(config?.challengeTtlMs, 300_000);
+    assert.deepEqual(config.wallet.deviceAttestation?.iosAppIds, ["ABCDE12345.app.kaada.wallet"]);
+    assert.equal(config.wallet.deviceAttestation?.androidMinimumLevel, "TEE");
+    assert.equal(config.wallet.deviceAttestation?.challengeTtlMs, 300_000);
+    assert.equal(
+      config.wallet.deviceAttestation?.iosAllowDevelopment,
+      true,
+      "sandbox attestation outside production",
+    );
+    assert.equal("deviceAttestation" in loadConfig(roots, { deployments: deployed }).wallet, false);
+    const { DEVICE_KEY_ROOTS_ENABLED: _d, ...noRoots } = on;
+    assert.throws(() => loadConfig(noRoots, { deployments: deployed }), /DEVICE_KEY_ROOTS_ENABLED/);
   });
 
-  it("refuses to start enabled without device-key roots or without any app identity", () => {
-    const { DEVICE_KEY_ROOTS_ENABLED: _off, ...withoutRoots } = ready;
-    assert.throws(() => loadConfig(withoutRoots), ConfigError);
-    const { ATTESTATION_ANDROID_APPS: _a, ATTESTATION_IOS_APP_IDS: _i, ...withoutApps } = ready;
-    assert.throws(() => loadConfig(withoutApps), ConfigError);
+  it("never accepts Apple's sandbox attestation in production, whatever the environment says", () => {
+    const prod = {
+      ...roots,
+      ...production,
+      DEVICE_KEY_ROOTS_ENABLED: "true",
+      ATTESTATION_IOS_APP_IDS: "ABCDE12345.app.kaada.wallet",
+      ATTESTATION_IOS_ALLOW_DEVELOPMENT: "true",
+    };
+    const config = loadConfig(prod, { deployments: deployed });
+    assert.equal(config.wallet.deviceAttestation?.iosAllowDevelopment, false);
   });
 
   it("rejects malformed app identities", () => {
     for (const bad of [
       "app.kaada.wallet",
-      "nodots=" + digest,
+      `nodots=${digest}`,
       `app.kaada.wallet=${digest.slice(1)}`,
     ]) {
       assert.throws(
-        () => loadConfig({ ...ready, ATTESTATION_ANDROID_APPS: bad }),
+        () => loadConfig({ ...roots, ATTESTATION_ANDROID_APPS: bad }, { deployments: deployed }),
         ConfigError,
         bad,
       );
     }
     assert.throws(
-      () => loadConfig({ ...ready, ATTESTATION_IOS_APP_IDS: "short.app" }),
+      () =>
+        loadConfig({ ...roots, ATTESTATION_IOS_APP_IDS: "short.app" }, { deployments: deployed }),
       ConfigError,
     );
-  });
-
-  it("never accepts Apple's development environment in production", () => {
-    const production = {
-      ...ready,
-      ATTESTATION_IOS_ALLOW_DEVELOPMENT: "true",
-      NODE_ENV: "production",
-    };
-    assert.throws(() => loadConfig(production), ConfigError);
-    assert.equal(
-      loadConfig({ ...ready, ATTESTATION_IOS_ALLOW_DEVELOPMENT: "true" }).wallet.deviceAttestation
-        ?.iosAllowDevelopment,
-      true,
-    );
-  });
-});
-
-describe("production safety for the security MVP", () => {
-  const address = (n: number) => `0x${n.toString(16).padStart(40, "0")}`;
-  const secret = Buffer.alloc(32, 7).toString("base64");
-  const recovery = {
-    DATABASE_URL: databaseUrl,
-    WALLET_PROVIDER: "kernel",
-    PASSKEY_RP_ID: "kaada.app",
-    PASSKEY_ORIGIN: "https://app.kaada.app",
-    BUNDLER_URL: "https://bundler.example/rpc",
-    PIN_PEPPER: "p".repeat(32),
-    RECOVERY_ENABLED: "true",
-    RECOVERY_VALIDATOR_ADDRESS: address(1),
-    RECOVERY_PASSKEY_FACTORY_ADDRESS: address(2),
-    RECOVERY_PASSKEY_IMPLEMENTATION_ADDRESS: address(3),
-    RECOVERY_DEVICE_FACTORY_ADDRESS: address(4),
-    RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS: address(5),
-    RECOVERY_RELAYER_KEY_FILE: "/secrets/relayer.key",
-    RECOVERY_ATTESTOR_KEY_FILE: "/secrets/attestor.key",
-    RECOVERY_CHALLENGE_SECRET: secret,
-    RECOVERY_EMAIL_PROVIDER: "smtp",
-    RECOVERY_SMTP_URL: "smtps://user:pass@mail.example:465",
-    RECOVERY_EMAIL_FROM: "Kaada <no-reply@kaada.app>",
-  };
-  const production = {
-    ...recovery,
-    NODE_ENV: "production",
-    REDIS_URL: "rediss://redis.example:6380",
-    RECOVERY_ATTESTOR_SIGNER: "kms",
-    RECOVERY_ATTESTOR_KMS_KEY_ID: "attestor-key-1",
-  };
-
-  it("accepts a production recovery setup with Redis, a KMS attestor and SMTP", () => {
-    const config = loadConfig(production);
-    assert.equal(config.redis?.url, "rediss://redis.example:6380");
-    assert.equal(config.recovery.setup?.attestor.signer, "kms");
-    assert.equal(config.recovery.smtp?.from, "Kaada <no-reply@kaada.app>");
-  });
-
-  it("refuses production without Redis, with a file-held attestor key, or without a KMS key id", () => {
-    const { REDIS_URL: _r, ...noRedis } = production;
-    assert.throws(() => loadConfig(noRedis), /REDIS_URL/);
-    assert.throws(
-      () => loadConfig({ ...production, RECOVERY_ATTESTOR_SIGNER: "file" }),
-      /file-held/,
-    );
-    const { RECOVERY_ATTESTOR_KMS_KEY_ID: _k, ...noKey } = production;
-    assert.throws(() => loadConfig(noKey), ConfigError);
-  });
-
-  it("keeps the file signer for development, and validates SMTP and Redis URLs", () => {
-    const dev = loadConfig(recovery);
-    assert.equal(dev.recovery.setup?.attestor.signer, "file");
-    assert.equal("redis" in dev, false);
-    assert.throws(() => loadConfig({ ...recovery, RECOVERY_SMTP_URL: "http://x" }), ConfigError);
-    assert.throws(() => loadConfig({ ...recovery, REDIS_URL: "http://x" }), ConfigError);
-    const { RECOVERY_EMAIL_FROM: _f, ...noFrom } = recovery;
-    assert.throws(() => loadConfig(noFrom), ConfigError);
   });
 });

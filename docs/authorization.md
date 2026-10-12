@@ -33,7 +33,7 @@ A new session cannot dodge a lock. HTTP throttling (per link and per address) is
   - EXACT_OUTPUT: receive at least `exactOutput`, spend at most `maximumInput`.
   - Bound to user, wallet, chain, intent revision, route id, recipient, assets and the asset path/providers. Not to a
     provider quote: it survives indicative -> firm so long as the firm price fits the bounds.
-  - Immutable, 10 minutes by default (`PAYMENT_AUTHORIZATION_TTL_SECONDS`, 30-600 s; a real first-time wallet setup on a browser needs more than the old 3), single-use (`consume` is one conditional UPDATE), one ACTIVE per intent.
+  - Immutable, 10 minutes (fixed in `packages/config/src/settings.ts`, not an environment variable; a real first-time wallet setup on a browser needs more than the old 3), single-use (`consume` is one conditional UPDATE), one ACTIVE per intent.
 - A revised intent, or a new route for the same revision, cancels pending sessions and revokes approvals (history kept).
 - `validateExecutionAgainstAuthorization` (pure, domain values only) lists every reason an execution does not fit.
 
