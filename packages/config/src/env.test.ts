@@ -384,7 +384,7 @@ describe("payment authorization configuration", () => {
   it("defaults to short lifetimes and no pepper in development", () => {
     const { authorization } = loadConfig(base);
     assert.equal(authorization.sessionTtlMs, 300_000);
-    assert.equal(authorization.paymentTtlMs, 180_000);
+    assert.equal(authorization.paymentTtlMs, 600_000);
     assert.equal("pinPepper" in authorization, false);
   });
 

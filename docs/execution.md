@@ -334,5 +334,5 @@ the transport is Sepolia, the bundler is a local Alto, tokens are testnet fixtur
 ### Not verified here
 
 The final "Payment sent." text on the payment page was not directly witnessed by the person (they were on the wallet-setup page when it completed); the server shows the execution `COMPLETED`.
-A production bundler, Textile with a real wallet, Celo mainnet, a second device/account, and recovery are untested. The payment authorization lifetime (3 minutes by default) is short for a
+A production bundler, Textile with a real wallet, Celo mainnet, a second device/account, and recovery are untested. The payment authorization lifetime was 3 minutes (now 10 by default) and was too short for a
 first-time wallet setup on a real browser; this run used 10 minutes through configuration.

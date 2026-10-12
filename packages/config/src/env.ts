@@ -60,7 +60,7 @@ const envSchema = z
     // Payment authorization. The session is the time to open the link and enter the PIN; the
     // authorization is how long an approved payment may still be executed. Both are deliberately short.
     AUTHORIZATION_SESSION_TTL_SECONDS: z.coerce.number().int().min(30).max(900).default(300),
-    PAYMENT_AUTHORIZATION_TTL_SECONDS: z.coerce.number().int().min(30).max(600).default(180),
+    PAYMENT_AUTHORIZATION_TTL_SECONDS: z.coerce.number().int().min(30).max(600).default(600),
     // A server-side secret mixed into every PIN hash (Argon2 "secret"). With only 10,000 possible
     // PINs, a leaked database alone must not be enough to recover them. Required in production.
     PIN_PEPPER: optionalSecret,
