@@ -10,7 +10,6 @@
  * Scenario RECOVERY: KaadaRecoveryValidator (short-delay build) commits to the PREDICTED clone for a recovered
  * passkey P4, the exact atomic batch switches the root to it, P4 signs, P3 does not.
  */
-import { createHash, generateKeyPairSync, randomBytes, sign } from "node:crypto";
 import { writeFileSync } from "node:fs";
 
 import { artifacts } from "@kaada/contracts";
@@ -28,20 +27,12 @@ import {
 } from "@kaada/contracts";
 import type { PasskeyCredential } from "@kaada/contracts";
 import { KernelV3_3AccountAbi } from "@zerodev/sdk";
-import {
-  bytesToHex,
-  encodeAbiParameters,
-  encodeFunctionData,
-  keccak256,
-  pad,
-  parseAbi,
-  toHex,
-  zeroAddress,
-} from "viem";
+import { encodeFunctionData, keccak256, pad, parseAbi, zeroAddress } from "viem";
 import type { Abi, Address, Hex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { celoSepolia } from "viem/chains";
 
+import { SoftPasskey } from "./soft-keys.js";
 import {
   deployer,
   describeError,
@@ -65,9 +56,6 @@ import type { Account, Call } from "./kernel-probe-lib.js";
 
 const GAS = { verification: 700_000n, call: 600_000n };
 const DELAY = 25;
-const RP_ID = "kaada.test";
-const ORIGIN = "https://kaada.test";
-const P256_N = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551n;
 
 const factoryAbi = artifacts.KaadaPasskeyValidatorFactory.abi as unknown as Abi;
 const recoveryAbi = artifacts.ShortDelayRecoveryValidator.abi as unknown as Abi;
@@ -83,58 +71,6 @@ async function waitUntil(timestamp: bigint): Promise<void> {
   while ((await chainTime()) <= timestamp + 4n) await sleep(2000);
 }
 const sameAddress = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
-
-/** A software WebAuthn authenticator: signs the assertion shape the ZeroDev validator checks. */
-class SoftPasskey {
-  readonly credential: PasskeyCredential;
-  private readonly privateKeyPem: string;
-  private counter = 0;
-
-  constructor() {
-    const { publicKey, privateKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
-    const jwk = publicKey.export({ format: "jwk" });
-    this.privateKeyPem = privateKey.export({ format: "pem", type: "pkcs8" }).toString();
-    this.credential = {
-      x: BigInt(`0x${Buffer.from(jwk.x ?? "", "base64url").toString("hex")}`),
-      y: BigInt(`0x${Buffer.from(jwk.y ?? "", "base64url").toString("hex")}`),
-      authenticatorIdHash: keccak256(toHex(randomBytes(32))),
-    };
-  }
-
-  sign = (challenge: Hex): Hex => {
-    this.counter += 1;
-    const authData = Buffer.concat([
-      createHash("sha256").update(RP_ID).digest(),
-      Buffer.from([0x05]),
-      Buffer.from([0, 0, 0, this.counter]),
-    ]);
-    const clientData = JSON.stringify({
-      type: "webauthn.get",
-      challenge: Buffer.from(challenge.slice(2), "hex").toString("base64url"),
-      origin: ORIGIN,
-      crossOrigin: false,
-    });
-    const digestInput = Buffer.concat([
-      authData,
-      createHash("sha256").update(Buffer.from(clientData)).digest(),
-    ]);
-    const raw = sign("sha256", digestInput, { key: this.privateKeyPem, dsaEncoding: "ieee-p1363" });
-    const r = BigInt(bytesToHex(raw.subarray(0, 32)));
-    let s = BigInt(bytesToHex(raw.subarray(32)));
-    if (s > P256_N / 2n) s = P256_N - s; // low-s
-    return encodeAbiParameters(
-      [
-        { type: "bytes" },
-        { type: "string" },
-        { type: "uint256" },
-        { type: "uint256" },
-        { type: "uint256" },
-        { type: "bool" },
-      ],
-      [bytesToHex(authData), clientData, 1n, r, s, true],
-    );
-  };
-}
 
 const throwaway: Call = { to: deployer.address, value: 1n };
 

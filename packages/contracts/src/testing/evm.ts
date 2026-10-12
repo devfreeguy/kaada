@@ -1,5 +1,5 @@
 // A minimal in-process EVM for contract tests: deploy, call as any sender, control block time and chain id.
-import { Common, Hardfork, Mainnet } from "@ethereumjs/common";
+import { Hardfork, Mainnet, createCustomCommon } from "@ethereumjs/common";
 import { createEVM } from "@ethereumjs/evm";
 import type { EVM } from "@ethereumjs/evm";
 import { SimpleStateManager } from "@ethereumjs/statemanager";
@@ -67,17 +67,26 @@ export class TestChain {
   timestamp = 1_700_000_000n;
   private nonce = 0n;
 
-  static async create(chainId = 1n): Promise<TestChain> {
-    const common = new Common({ chain: Mainnet, hardfork: Hardfork.Cancun });
+  static async create(
+    chainId = 1n,
+    options: { p256Precompile?: boolean } = {},
+  ): Promise<TestChain> {
+    // block.chainid inside the EVM is this chain id, so a test can run the same contract on two chains
+    const common = createCustomCommon({ chainId: Number(chainId) }, Mainnet, {
+      hardfork: Hardfork.Cancun,
+    });
     const evm = await createEVM({
       common,
       stateManager: new SimpleStateManager(),
-      customPrecompiles: [
-        {
-          address: createAddressFromString("0x0000000000000000000000000000000000000100"),
-          function: p256Precompile as never,
-        },
-      ],
+      customPrecompiles:
+        options.p256Precompile === false
+          ? []
+          : [
+              {
+                address: createAddressFromString("0x0000000000000000000000000000000000000100"),
+                function: p256Precompile as never,
+              },
+            ],
     });
     return new TestChain(evm, chainId);
   }

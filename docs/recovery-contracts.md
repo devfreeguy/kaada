@@ -229,6 +229,144 @@ verified ZeroDev runtime behind clones, software WebAuthn authenticator, RIP-721
 - Gas: factory deployment 623,550 (runtime 2,609 B); a clone deployment 70,122 to 70,261 per transaction, including the
   21,000 base cost (about 48,000 execution).
 
+## KaadaDeviceKeyValidator
+
+Source: `packages/contracts/contracts/KaadaDeviceKeyValidator.sol`; shared client/backend definitions: `src/device-key.ts`.
+
+An ERC-7579 validator for Kernel v3.3 whose signers are raw P-256 device keys, for users whose devices cannot do passkeys. It is
+used exactly like the passkey validator (a Kernel root or secondary validator), so the Kernel wallet architecture is
+unchanged. No owner, no admin, no upgrade path, no `CALL`/`DELEGATECALL`/`CREATE`/`SELFDESTRUCT`, no payable administration,
+no secp256k1 or software fallback. Runtime 5,309 bytes.
+
+### Signing domain (exact)
+
+A device key signs, with ECDSA P-256 over SHA-256 (the native "SHA256withECDSA" of WebCrypto, Secure Enclave and Android
+Keystore, which hash the message themselves), these 153 bytes:
+
+```
+payload = "KaadaDeviceKey/v1"     17 bytes ASCII: domain tag and version
+       || chainId                  32 bytes big-endian
+       || validator                20 bytes: the validator INSTANCE (the clone address when the root is a clone)
+       || account                  20 bytes: the Kernel account (msg.sender of validateUserOp)
+       || keyId                    32 bytes
+       || userOpHash               32 bytes: the ERC-4337 userOpHash
+digest  = sha256(payload)          what the RIP-7212 precompile at 0x100 verifies
+```
+
+`userOp.signature` is exactly 96 bytes: `keyId (32) || r (32) || s (32)`, with `0 < r < n` and `0 < s <= n/2` (low-s only).
+Anything else (other lengths, zero or out-of-range r or s, a high-s twin, an unknown keyId) returns `SIG_VALIDATION_FAILED`
+(1); the validator never reverts on a bad signature. A valid signature returns 0 with no validity window. The domain tag makes a
+device signature useless on the passkey validator (whose signed message starts with a WebAuthn authenticator-data hash) and the
+other way round; the 96-byte layout is incompatible with the passkey ABI encoding. `signingPayload` and `signingDigest` are
+public views, and `deviceKeyPayload`/`deviceKeyDigest` in `src/device-key.ts` are checked against them by tests (including a
+100-input fuzz). Clients normalise platform output with `parseDerSignature` (iOS/Android DER) and `normalizeLowS` (WebCrypto
+returns raw r||s and can produce high-s).
+
+### Keys and administration
+
+- Install data: `abi.encode(uint256 x, uint256 y, bytes32 keyId)`: the first key. The same 96-byte shape as the passkey install
+  data, so `KaadaPasskeyValidatorFactory.credentialCommitment` and the recovery commitment work on it unchanged.
+- Per account: up to 16 keys, each with a non-zero `keyId`, an on-curve P-256 point (the contract checks `y² = x³ - 3x + b`, `0 < x, y < p`
+  at enrolment), no duplicate `keyId`, and no duplicate point. `keyId` is an opaque id; descriptions such as "iPhone 14" stay off-chain.
+- `addKey(keyId, x, y)`, `removeKey(keyId)`, `onInstall`, `onUninstall`, `isInitialized`, `keyCount`, `keyExists`, `keyOf`, `keyIds`.
+  Every call is keyed by `msg.sender`, so only the Kernel account itself can change its own keys (through its own execution).
+  An outsider that calls `onInstall` only creates an entry under its own address.
+- All enrolled keys are equals: any one can sign for the account, and so can add or remove the others. That is the "root policy";
+  a stolen enrolled device is full control until another key removes it (or recovery runs), which is why the tier below matters.
+- ERC-1271 is intentionally unsupported (`isValidSignatureWithSender` returns `0xffffffff`): Kaada authorizes payments with
+  UserOperations only. A device-key root therefore cannot sign dapp login messages.
+
+### Final-key protection
+
+Kernel exposes `rootValidator()`. `removeKey` and `onUninstall` read it from the calling account; while this validator instance is the
+current root, removing the last key (or uninstalling) reverts (`CannotRemoveFinalKey`, `CannotUninstallWhileRoot`). A batch that
+replaces the root first (`changeRootValidator`, then `removeKey`) is therefore allowed, which is exactly "unless the root is being
+replaced". A validator that is not the root may lose its last key. Checked in-process with a settable mock root and live in Kernel.
+
+### Fresh instances (important)
+
+Kernel's `changeRootValidator` to a validator that is **already installed** for the account does not call `onInstall`: its old keys come
+back to life. A root must therefore always be a never-used instance. Use `KaadaPasskeyValidatorFactory` with this contract as the
+implementation (a second factory deployment; the factory is implementation-agnostic) and one clone per root period; `canUseForAccount`
+flags a used one. The contract has no immutables and derives its domain from `address(this)`, so it is safe behind an EIP-1167 clone
+(tested: the signature domain, the state and the root check all follow the clone address).
+
+### Platform storage assumptions
+
+| Platform | Expected key storage                                                                                                                                   | Notes                                                                                                                                                                                                                                                                          |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| iOS      | Secure Enclave P-256 key (`kSecAttrTokenIDSecureEnclave`), non-exportable, user presence / biometry (`.userPresence`) where the device supports it     | Signs with `ecdsaSignatureMessageX962SHA256` (DER; parse and low-s normalise). A device without a Secure Enclave must be treated as unknown.                                                                                                                                   |
+| Android  | Hardware-backed Android Keystore key, StrongBox where available (`setIsStrongBoxBacked`), non-exportable, user authentication required where supported | `SHA256withECDSA`; DER output. Key Attestation proves hardware backing when the backend verifies the certificate chain.                                                                                                                                                        |
+| Web      | Non-extractable WebCrypto P-256 `CryptoKey` persisted in IndexedDB                                                                                     | **Not hardware-backed.** The key cannot be exported, but any JavaScript running on the origin (including an XSS or a malicious extension with page access) can still ask the browser to sign; browser storage can be cleared; there is no attestation. WebCrypto returns raw r |     | s (normalise to low-s). |
+
+### Security tier (policy input, never a client claim)
+
+`DeviceKeyTier` (in `src/device-key.ts`) is `trusted-device`, `web-non-extractable` or `unknown`. It is assigned by the backend with
+`classifyDeviceKey`: `trusted-device` only when a verifier reports a verified platform attestation that binds this exact public key,
+reports hardware backing, and matches the server challenge, for a native enrolment channel observed by the server. Missing
+evidence, a missing verifier, a platform mismatch, a verifier error or any false flag never upgrades. A web enrolment is capped at
+`web-non-extractable`; anything else is `unknown`. The tier lives off-chain (nothing on-chain can verify attestation); spend-limit
+policy that uses it is a later component. The real Apple App Attest / Android Key Attestation verifiers are part of the backend work.
+
+### RIP-7212 assumptions
+
+- Celo has the P-256 precompile at `0x100` (gas 3,450), already proven with the passkey validator. The validator treats the call as valid
+  only when it returns exactly 32 bytes equal to 1. A chain without the precompile returns success with **empty** data, so every
+  signature **fails closed** (tested with a chain that has no precompile). There is no software fallback by design; deploying on such
+  a chain would make the root unusable, not insecure.
+- Public ERC-4337 bundlers must accept a staticcall to `0x100` during validation. The self-hosted Alto bundler does; other bundlers
+  (and ERC-7562 rule sets) should be checked before relying on them.
+
+### Celo Sepolia proof (52/52 plus 8/8), through the self-hosted Alto bundler
+
+`device-key-sepolia.ts` and `device-key-reuse-sepolia.ts` (`KAADA_VIA_ALTO=1`): every operation was sent with
+`eth_sendUserOperation` to Alto and executed by Alto's own executor, against the real EntryPoint 0.7, Kernel v3.3 and the real
+RIP-7212 precompile. Software P-256 keys.
+
+- Device-key root creates the Kernel; a real UserOperation signed by the device key executes; a signature for another chain id,
+  validator, account or an unenrolled key is refused (`AA24`).
+- K1 adds K2; both sign; K2 revokes K1; K1 is refused. Removing the last key while the validator is root reverts with
+  `CannotRemoveFinalKey` (selector `0x466b423b`, the operation is included with `success = false`) and the key count stays 1.
+- Device root to passkey root (batch with `invalidateNonce`): the passkey signs; the old device key is refused through the root and its
+  old validator lane is refused (`InvalidNonce`, `0x756688fe`). Passkey root back to a fresh device-key instance: the new key signs, the
+  passkey and the old key are refused. The wallet address `0x7665…3cca` never changed.
+- Recovery on one wallet, three times, each committing to the predicted clone and its install data: passkey to device key, device key
+  to a different device key, device key to passkey. Each time a batch with different install data is refused (`NotTheCommittedBatch`,
+  `0xe52331d3`), the exact batch executes, the recovered credential signs, the previous one is refused, and the new root re-arms recovery.
+- Fresh instances are required, exactly as predicted: rotating back to an already-used instance U with install data for a new key
+  left that key not enrolled (`onInstall` never ran, `AA24`) and revived a previously revoked-by-rotation key (it signed again).
+
+Observed behavior worth knowing:
+
+- Alto accepted the validator's staticcall to the `0x100` precompile during validation; a bad signature is rejected at
+  `eth_sendUserOperation` with `AA24 signature error`; a reverting validator (the passkey validator on a foreign signature) shows as
+  `AA23 reverted`.
+- The RIP-7212 precompile behaved exactly as in the passkey proof: valid low-s signatures verify; nothing else did.
+
+Measured on Sepolia (EntryPoint `actualGasUsed`, which includes the fixed verification and call overhead):
+
+| Item                                                                       | Gas                                                       |
+| -------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Device validator deployment (runtime 5,309 B)                              | 1,199,562                                                 |
+| Clone factory deployment (reused implementation-agnostic factory, 2,609 B) | 623,550                                                   |
+| Clone deployment (each)                                                    | 70,122 to 70,261 (about 48k execution)                    |
+| Plain device-signed operation (validation + one 1-wei transfer)            | 192,463                                                   |
+| Plain passkey-signed operation (for comparison)                            | 244,661 to 244,860                                        |
+| Account creation with device root + first operation (includes `onInstall`) | 480,833                                                   |
+| Operation with `addKey`                                                    | 292,506 (about 100k over a plain operation)               |
+| Operation with `removeKey`                                                 | 221,730 (about 29k over a plain operation)                |
+| Rotate device root to passkey root (batch with `invalidateNonce`)          | 263,185                                                   |
+| Rotate passkey root to a fresh device root (includes `onInstall`)          | 396,833                                                   |
+| Recovery batch, to device key / to passkey                                 | 426,771, 392,571 (device to device), 311,328 (to passkey) |
+
+A device-signed operation is about 52k cheaper than a passkey-signed one (no WebAuthn parsing).
+
+### Gas and size
+
+Runtime 5,309 bytes. In-process EVM execution gas (a ratio guide, not a chain figure; clearing storage earns refunds that make
+removal look small): `onInstall` about 138k (first key, cold storage), `addKey` about 116k, `removeKey` about 5k to 6k net,
+`validateUserOp` about 13k including the 3,450 precompile.
+
 ## Tooling
 
 - `pnpm --filter @kaada/contracts generate` compiles every `.sol` with solc-js into `src/generated/artifacts.ts` (EVM

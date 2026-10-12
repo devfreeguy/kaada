@@ -32,6 +32,8 @@ interface IKernelCalls {
     ) external payable;
     function invalidateNonce(uint32 nonce) external payable;
     function currentNonce() external view returns (uint32);
+    /// The account current root validation id: 0x01 || validator address for a validator-type root.
+    function rootValidator() external view returns (bytes21);
 }
 
 /// The shared, timelocked attestor registry. Recovery validators only READ it.

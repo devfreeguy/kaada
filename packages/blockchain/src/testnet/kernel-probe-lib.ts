@@ -199,6 +199,8 @@ export interface Outcome {
   accepted: boolean; // survived validation
   executed: boolean; // inner call succeeded
   detail: string;
+  /** The EntryPoint's actualGasUsed for the operation (verification + execution + overhead), when included. */
+  actualGasUsed?: bigint;
 }
 
 /** Signs a UserOperation hash (a passkey assertion, say) when the validator is not ECDSA. */
@@ -273,6 +275,7 @@ export async function submit(
     typeof signer === "function"
       ? await signer(hash)
       : await privateKeyToAccount(signer).sign({ hash });
+  if (process.env["KAADA_VIA_ALTO"]) return submitViaBundler(operation, account);
   const packed = toPackedUserOperation(operation);
   try {
     const { request } = await pub.simulateContract({
@@ -287,11 +290,15 @@ export async function submit(
     const receipt = await pub.waitForTransactionReceipt({ hash: txHash });
     let executed = false;
     let detail = "";
+    let actualGasUsed: bigint | undefined;
     for (const log of receipt.logs) {
       if (log.address.toLowerCase() !== EP.toLowerCase()) continue;
       try {
         const event = decodeEventLog({ abi: entryPoint07Abi, data: log.data, topics: log.topics });
-        if (event.eventName === "UserOperationEvent") executed = event.args.success;
+        if (event.eventName === "UserOperationEvent") {
+          executed = event.args.success;
+          actualGasUsed = event.args.actualGasUsed;
+        }
         if (event.eventName === "UserOperationRevertReason")
           detail = describeError({ message: event.args.revertReason });
       } catch {
@@ -301,7 +308,12 @@ export async function submit(
     if (!account.deployed) account.deployed = true;
     // Let the RPC node catch up before anything reads state or builds the next nonce.
     await new Promise((resolve) => setTimeout(resolve, 4000));
-    return { accepted: true, executed, detail };
+    return {
+      accepted: true,
+      executed,
+      detail,
+      ...(actualGasUsed !== undefined && { actualGasUsed }),
+    };
   } catch (error) {
     return { accepted: false, executed: false, detail: describeError(error) };
   }
@@ -371,3 +383,80 @@ export const salt = (): Hex =>
   pad(`0x${Buffer.from(generatePrivateKey().slice(2, 18), "hex").toString("hex")}`, { size: 32 });
 export const rootOf = async (a: Account): Promise<string> =>
   String(await read<Hex>(a, "rootValidator")).toLowerCase();
+
+// ── the self-hosted Alto bundler (KAADA_VIA_ALTO=1, BUNDLER_URL_TESTNET) ──────────────────────────
+
+const toQuantity = (value: bigint): Hex => `0x${value.toString(16)}`;
+
+async function bundlerRpc(
+  method: string,
+  params: unknown[],
+): Promise<{ result?: unknown; error?: { message: string; data?: unknown } }> {
+  const url = process.env["BUNDLER_URL_TESTNET"] ?? "http://localhost:4337";
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+  });
+  return (await response.json()) as {
+    result?: unknown;
+    error?: { message: string; data?: unknown };
+  };
+}
+
+/** Sends the signed operation through Alto (its own validation, its own executor) and waits for the receipt. */
+async function submitViaBundler(
+  operation: {
+    sender: Address;
+    nonce: bigint;
+    factory?: Address;
+    factoryData?: Hex;
+    callData: Hex;
+    callGasLimit: bigint;
+    verificationGasLimit: bigint;
+    preVerificationGas: bigint;
+    maxFeePerGas: bigint;
+    maxPriorityFeePerGas: bigint;
+    signature: Hex;
+  },
+  account: Account,
+): Promise<Outcome> {
+  const wire = {
+    sender: operation.sender,
+    nonce: toQuantity(operation.nonce),
+    ...(operation.factory && { factory: operation.factory, factoryData: operation.factoryData }),
+    callData: operation.callData,
+    callGasLimit: toQuantity(operation.callGasLimit),
+    verificationGasLimit: toQuantity(operation.verificationGasLimit),
+    preVerificationGas: toQuantity(operation.preVerificationGas),
+    maxFeePerGas: toQuantity(operation.maxFeePerGas),
+    maxPriorityFeePerGas: toQuantity(operation.maxPriorityFeePerGas),
+    signature: operation.signature,
+  };
+  const sent = await bundlerRpc("eth_sendUserOperation", [wire, EP]);
+  if (sent.error) {
+    return {
+      accepted: false,
+      executed: false,
+      detail: `alto: ${sent.error.message}`.slice(0, 200),
+    };
+  }
+  const opHash = sent.result as Hex;
+  for (let i = 0; i < 60; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const receipt = await bundlerRpc("eth_getUserOperationReceipt", [opHash]);
+    const found = receipt.result as
+      { success?: boolean; actualGasUsed?: Hex; reason?: string } | null | undefined;
+    if (found) {
+      if (!account.deployed) account.deployed = true;
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+      return {
+        accepted: true,
+        executed: found.success === true,
+        detail: found.reason ? describeError({ message: found.reason }) : "",
+        ...(found.actualGasUsed && { actualGasUsed: BigInt(found.actualGasUsed) }),
+      };
+    }
+  }
+  return { accepted: false, executed: false, detail: "alto: no receipt within 2 minutes" };
+}

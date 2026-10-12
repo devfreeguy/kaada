@@ -6,3 +6,4 @@ export {
   ZERODEV_PASSKEY_VALIDATOR_MAINNET,
   ZERODEV_PASSKEY_VALIDATOR_RUNTIME,
 } from "./generated/passkey-validator.js";
+export * from "./device-key.js";

@@ -1,7 +1,8 @@
 // Runtime bytecode of the ZeroDev WebAuthn (passkey) validator v0.0.3 as deployed on Celo mainnet
 // (0x7ab16Ff354AcB328452F1D445b3Ddee9a91e9e69), read with eth_getCode. NOT compiled here: Kaada reuses it as is.
 // Used by tests (as the clone implementation) and by the Celo Sepolia tooling to cross-check the deployed copy.
-export const ZERODEV_PASSKEY_VALIDATOR_MAINNET = "0x7ab16Ff354AcB328452F1D445b3Ddee9a91e9e69" as const;
+export const ZERODEV_PASSKEY_VALIDATOR_MAINNET =
+  "0x7ab16Ff354AcB328452F1D445b3Ddee9a91e9e69" as const;
 export const ZERODEV_PASSKEY_VALIDATOR_CODEHASH =
   "0x726d987ac55574f77f5184326631c5c51142f94c16c9b9281b751f97519c9eea" as const;
 export const ZERODEV_PASSKEY_VALIDATOR_RUNTIME =
