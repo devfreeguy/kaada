@@ -14,7 +14,10 @@ import { createId } from "@kaada/domain";
 import { ChannelActionService } from "../src/core/channels/action-service.js";
 import { ChannelIdentityService } from "../src/core/channels/identity-service.js";
 import { ChannelMessageService } from "../src/core/channels/message-service.js";
-import { TelegramAdapter } from "../src/infrastructure/channels/telegram/telegram-adapter.js";
+import {
+  TelegramAdapter,
+  TelegramApiError,
+} from "../src/infrastructure/channels/telegram/telegram-adapter.js";
 import { TelegramWebhookController } from "../src/channels/telegram-webhook.controller.js";
 import { createMemoryChannelStores } from "./support/channels-memory.js";
 import { SENDER, createHarness, intent } from "./support/harness.js";
@@ -239,5 +242,94 @@ describe("the Telegram webhook", () => {
       },
       headers,
     );
+  });
+});
+
+describe("when Telegram's own API fails while replying", () => {
+  const failing = (status: number, description: string) => {
+    const t = build();
+    t.h.script.set(
+      "send daniel",
+      intent({ type: "SEND", recipient: { type: "SAVED_BENEFICIARY", value: "Daniel" } }),
+    );
+    const adapter = new TelegramAdapter({
+      botToken: "1:TOKEN",
+      webhookSecret: SECRET,
+      fetch: () =>
+        Promise.resolve(new Response(JSON.stringify({ ok: false, description }), { status })),
+    });
+    const logs: unknown[] = [];
+    const service = new ChannelMessageService({
+      adapters: new Map([["TELEGRAM", adapter]]),
+      identities: new ChannelIdentityService({
+        users: t.h.world.repositories.users,
+        identities: t.h.world.repositories.identities,
+      }),
+      actions: new ChannelActionService(t.stores.channelActions),
+      inboundEvents: t.stores.inboundEvents,
+      statuses: t.stores.channelPaymentStatuses,
+      agent: t.h.agent,
+      links: {
+        setupLink: () => Promise.resolve("https://app.kaada.test/setup/TOKEN"),
+        authorizationLink: () => Promise.resolve("https://app.kaada.test/authorize/TOKEN"),
+      },
+      wallets: { hasActiveWallet: () => Promise.resolve(true) },
+      facts: { read: () => Promise.reject(new Error("unused")) },
+      log: (_level, _event, fields) => logs.push(fields),
+    });
+    return { controller: new TelegramWebhookController(adapter, service), logs, h: t.h };
+  };
+
+  it("a permanent refusal (400) is logged with its cause and acknowledged, so Telegram stops redelivering", async () => {
+    const { controller, logs } = failing(400, "Bad Request: wrong HTTP URL specified");
+    assert.deepEqual(await controller.webhook(text("send daniel"), headers), { ok: true });
+    assert.deepEqual(logs[0], {
+      channel: "TELEGRAM",
+      error: "TelegramApiError",
+      message: "telegram sendMessage failed (400)",
+      method: "sendMessage",
+      status: 400,
+      description: "Bad Request: wrong HTTP URL specified",
+    });
+    assert.ok(!JSON.stringify(logs).includes("TOKEN"), "the bot token is never logged");
+  });
+
+  it("a transient failure (429 or 502) still answers 503 so Telegram retries, and does not duplicate the agent turn", async () => {
+    for (const status of [429, 502]) {
+      const { controller, h } = failing(status, "try later");
+      const update = text("send daniel", 9000 + status);
+      await assert.rejects(controller.webhook(update, headers), ServiceUnavailableException);
+      const calls = h.interpreterCalls;
+      await assert.rejects(controller.webhook(update, headers), ServiceUnavailableException);
+      assert.equal(h.interpreterCalls, calls, "the retried agent turn is not interpreted again");
+    }
+  });
+});
+
+describe("a reply that failed to send is delivered on Telegram's retry", () => {
+  it("sends it exactly once more without interpreting the message again or processing it twice", async () => {
+    const { controller, api, h } = build();
+    h.script.set(
+      "send daniel",
+      intent({ type: "SEND", recipient: { type: "SAVED_BENEFICIARY", value: "Daniel" } }),
+    );
+    let failSend = true;
+    // Break only the first sendMessage by wrapping the fake Bot API used by build().
+    const send = api.push.bind(api);
+    api.push = (...items) => {
+      if (failSend && items[0]?.method === "sendMessage") {
+        failSend = false;
+        throw new TelegramApiError("sendMessage", 502, "bad gateway");
+      }
+      return send(...items);
+    };
+    const update = text("send daniel", 9500);
+    await assert.rejects(controller.webhook(update, headers), ServiceUnavailableException);
+    assert.equal(h.interpreterCalls, 1);
+    assert.deepEqual(await controller.webhook(update, headers), { ok: true });
+    assert.equal(h.interpreterCalls, 1, "not interpreted twice");
+    assert.equal(api.filter((c) => c.method === "sendMessage").length, 1, "the reply arrives");
+    assert.deepEqual(await controller.webhook(update, headers), { ok: true });
+    assert.equal(api.filter((c) => c.method === "sendMessage").length, 1, "and is not repeated");
   });
 });

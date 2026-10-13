@@ -11,6 +11,7 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 
+import { errorDetails, isPermanentProviderError } from "../core/channels/error-details.js";
 import type { ChannelMessageService } from "../core/channels/message-service.js";
 import type { TelegramAdapter } from "../infrastructure/channels/telegram/telegram-adapter.js";
 import { CHANNEL_MESSAGE_SERVICE, TELEGRAM_ADAPTER } from "./channels.tokens.js";
@@ -48,10 +49,11 @@ export class TelegramWebhookController {
       if (result === "IN_PROGRESS") throw new ServiceUnavailableException();
     } catch (error) {
       if (error instanceof ServiceUnavailableException) throw error;
-      this.logger.error({
-        event: "telegram.webhook.failed",
-        error: error instanceof Error ? error.name : "unknown",
-      });
+      const permanent = isPermanentProviderError(error);
+      this.logger.error({ event: "telegram.webhook.failed", permanent, ...errorDetails(error) });
+      // Telegram refusing a reply (bad button URL, blocked bot, chat gone) fails the same way every time: answering 5xx would
+      // only make it redeliver the update for ever. The claim is already released and the agent turn is idempotent.
+      if (permanent) return { ok: true };
       throw new ServiceUnavailableException();
     }
     return { ok: true };

@@ -10,6 +10,7 @@ import { ConversationAccessError } from "../agent/errors.js";
 import type { AgentLog } from "../agent/ports.js";
 import { noopLog } from "../agent/ports.js";
 import type { ChannelActionService } from "./action-service.js";
+import { errorDetails } from "./error-details.js";
 import type { ChannelIdentityService } from "./identity-service.js";
 import { describeProgress } from "./payment-status.js";
 import type { PaymentFactsReader } from "./payment-status.js";
@@ -111,7 +112,7 @@ export class ChannelMessageService {
       await this.deps.inboundEvents.release(message.channel, message.externalEventId);
       this.log("error", "channel.inbound.failed", {
         channel: message.channel,
-        error: error instanceof Error ? error.name : "unknown",
+        ...errorDetails(error),
       });
       throw error;
     }
@@ -191,8 +192,9 @@ export class ChannelMessageService {
       throw error;
     }
 
-    // An agent-level redelivery was answered before: do not say it twice.
-    if (turn.duplicate) return;
+    // A turn the agent already answered is still delivered. A redelivery of a PROCESSED update never gets this far (the
+    // channel claim answers DUPLICATE first), so reaching here means an earlier attempt stored the answer but failed to send
+    // it. Skipping would drop the person's reply for good; at worst this repeats a message after a crash.
     await this.deliver(adapter, message, userId, turn);
   }
 

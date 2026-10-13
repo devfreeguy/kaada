@@ -174,11 +174,12 @@ export class TelegramAdapter implements ChannelAdapter {
   // ───────────────────────────────── outbound ─────────────────────────────────
 
   async send(target: ChannelTarget, message: OutboundChannelMessage): Promise<SentMessage> {
+    const { text, actions } = renderable(message);
     const result = await this.call<{ message_id: number }>("sendMessage", {
       chat_id: target.externalConversationId,
-      text: clip(message.text, MAX_TEXT),
+      text: clip(text, MAX_TEXT),
       link_preview_options: { is_disabled: true },
-      ...keyboardOf(message.actions),
+      ...keyboardOf(actions),
     });
     return { externalMessageId: String(result.message_id) };
   }
@@ -188,14 +189,15 @@ export class TelegramAdapter implements ChannelAdapter {
     externalMessageId: string,
     message: OutboundChannelMessage,
   ): Promise<SentMessage> {
+    const { text, actions } = renderable(message);
     try {
       await this.call("editMessageText", {
         chat_id: target.externalConversationId,
         message_id: Number(externalMessageId),
-        text: clip(message.text, MAX_TEXT),
+        text: clip(text, MAX_TEXT),
         link_preview_options: { is_disabled: true },
         // An empty keyboard removes the buttons: a closed payment must not keep offering "Authorize".
-        reply_markup: keyboardOf(message.actions).reply_markup ?? { inline_keyboard: [] },
+        reply_markup: keyboardOf(actions).reply_markup ?? { inline_keyboard: [] },
       });
       return { externalMessageId };
     } catch (error) {
@@ -296,6 +298,21 @@ function buttonOf(
   if (action.type === "OPEN_URL") return { text: clip(action.label, MAX_BUTTON), url: action.url };
   const label = action.description ? `${action.label} (${action.description})` : action.label;
   return { text: clip(label, MAX_BUTTON), callback_data: `${CALLBACK_PREFIX}${action.handle}` };
+}
+
+/**
+ * Telegram refuses a whole message whose button URL is not https (a local http://localhost link, for one). Those links go into
+ * the text instead, so the message still arrives and the link can be copied.
+ */
+function renderable(message: OutboundChannelMessage): { text: string; actions: OutboundAction[] } {
+  const actions: OutboundAction[] = [];
+  const links: string[] = [];
+  for (const action of message.actions ?? []) {
+    if (action.type === "OPEN_URL" && !/^https:\/\/\S+$/i.test(action.url)) {
+      links.push(`${action.label}: ${action.url}`);
+    } else actions.push(action);
+  }
+  return { text: links.length ? `${message.text}\n\n${links.join("\n")}` : message.text, actions };
 }
 
 /** One button per row: choices stay readable on a phone, and the primary action is never beside a destructive one. */

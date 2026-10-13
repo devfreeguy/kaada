@@ -399,3 +399,54 @@ describe("NotificationService", () => {
     });
   });
 });
+
+describe("Telegram refuses non-https button URLs", () => {
+  it("puts an http (local development) link into the text instead of a button, and keeps https links as buttons", async () => {
+    const { adapter, calls } = build();
+    await adapter.send(
+      { externalConversationId: "42" },
+      {
+        text: "Welcome",
+        actions: [
+          {
+            type: "OPEN_URL",
+            semantic: "OPEN_SETUP",
+            label: "Set up Kaada",
+            url: "http://localhost:3000/setup/TOKEN",
+          },
+          {
+            type: "OPEN_URL",
+            semantic: "OPEN_AUTHORIZATION",
+            label: "Authorize",
+            url: "https://app.kaada.test/authorize/T",
+          },
+        ],
+      },
+    );
+    const body = calls[0]?.body as {
+      text: string;
+      reply_markup: { inline_keyboard: { url?: string }[][] };
+    };
+    assert.match(body.text, /Set up Kaada: http:\/\/localhost:3000\/setup\/TOKEN/);
+    assert.deepEqual(
+      body.reply_markup.inline_keyboard.flat().map((b) => b.url),
+      ["https://app.kaada.test/authorize/T"],
+    );
+
+    await adapter.send(
+      { externalConversationId: "42" },
+      {
+        text: "Only a local link",
+        actions: [
+          {
+            type: "OPEN_URL",
+            semantic: "OPEN_SETUP",
+            label: "Go",
+            url: "http://localhost:3000/x",
+          },
+        ],
+      },
+    );
+    assert.equal(calls[1]?.body["reply_markup"], undefined, "no keyboard is sent at all");
+  });
+});
