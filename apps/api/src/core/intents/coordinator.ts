@@ -22,6 +22,7 @@ import { chatFallbackText } from "../conversation/fallbacks.js";
 import type { AgentResolvers } from "../agent/resolvers.js";
 import type {
   AgentErrorCode,
+  ResumeInfo,
   AgentResponse,
   ClarificationOption,
   ClarificationRequiredResponse,
@@ -44,6 +45,8 @@ export interface Applied {
   supersededIntentId?: string;
   /** For logs: how the turn related to the intent in progress. */
   mergeKind: string;
+  /** The payment that was open while a side question was answered (see ResumeInfo). */
+  resume?: ResumeInfo;
   /** Details of the operation in progress that this message CHANGED (not merely supplied): "AMOUNT", "RECIPIENT"... */
   corrected?: string[];
 }
@@ -57,6 +60,15 @@ export interface CoordinatorDeps {
   choiceTtlMs: number;
   /** Whether balances can be read; when not, a balance question honestly says it is not available. */
   balancesEnabled?: boolean;
+  /** Whether a price question can be answered (a pricing provider exists). Needed to answer one beside an open payment. */
+  sideQuotesEnabled?: boolean;
+}
+
+/** "Continue" on a saved payment: resume THAT intent from stored state, with no interpretation. */
+export interface ResumeTurn {
+  kind: "RESUME";
+  /** The payment the button belonged to. Absent: whatever payment is open. */
+  intentId?: string;
 }
 
 /** What was understood so far, for the tone of the next question. Display strings only, never used to decide anything. */
@@ -153,17 +165,35 @@ export class IntentCoordinator {
   async applyInterpretation(
     repositories: AgentRepositories,
     conversation: Conversation,
-    interpretation: Interpretation,
+    interpretation: Interpretation | ResumeTurn,
   ): Promise<Applied> {
     const active = await repositories.intents.findOpenByConversation(conversation.id);
 
+    if (interpretation.kind === "RESUME") {
+      return this.resumePayment(repositories, conversation, active, interpretation.intentId);
+    }
     if (interpretation.kind === "COMMAND") {
       return this.applyCommand(repositories, conversation, interpretation.command, active);
     }
 
+    // A price question beside an open payment is a SIDE question: the payment is not revised, replaced or cancelled by it.
+    if (
+      interpretation.intent.type === "QUOTE" &&
+      active?.parsed &&
+      (active.parsed.type === "SEND" || active.parsed.type === "CONVERT")
+    ) {
+      return this.applySideQuote(repositories, conversation, interpretation.intent, active);
+    }
+
     const merged = mergeAgentIntent(active?.parsed, interpretation.intent);
     if (merged.kind === "SIDE_REQUEST") {
-      return this.applySideRequest(repositories, conversation, merged.intent, active);
+      const answered = await this.applySideRequest(
+        repositories,
+        conversation,
+        merged.intent,
+        active,
+      );
+      return this.withResume(repositories, conversation, active, merged.intent, answered);
     }
     if (!isTransactionalIntent(merged.intent)) {
       throw new Error("a non-transactional intent cannot start an operation");
@@ -178,6 +208,143 @@ export class IntentCoordinator {
     });
     const corrected = merging ? correctedFields(active?.parsed, merged.intent) : [];
     return corrected.length > 0 ? { ...applied, corrected } : applied;
+  }
+
+  // ───────────────────────────────── side questions ─────────────────────────────────
+
+  /**
+   * The payment that is open, in display terms, so a side answer can offer to carry on. Read only: it re-reads what was stored,
+   * and never changes the intent.
+   */
+  private async resumeOf(
+    repositories: AgentRepositories,
+    conversation: Conversation,
+    active: Intent | null,
+  ): Promise<ResumeInfo | undefined> {
+    const parsed = active?.parsed;
+    if (!active || !parsed || !isTransactionalIntent(parsed) || parsed.type === "QUOTE") {
+      return undefined;
+    }
+    const recipientOverride = await this.reusableRecipient(repositories, parsed, active);
+    const resolvers = this.deps.createResolvers(repositories);
+    const assessment = await assessIntent(parsed, {
+      userId: conversation.userId,
+      assets: resolvers.assets,
+      recipients: resolvers.recipients,
+      countries: this.deps.countries,
+      ...(recipientOverride && { resolvedRecipient: recipientOverride }),
+    });
+    const { amount, recipient } = assessment.facts.display;
+    return {
+      intentId: active.id,
+      revision: active.revision,
+      operation: parsed.type,
+      ...(recipient && { recipient }),
+      ...(amount && { amount }),
+      pending: assessment.status === "NEEDS_INFO",
+    };
+  }
+
+  /** Greetings, help and balance questions answered while a payment is open say which payment is still waiting. */
+  private async withResume(
+    repositories: AgentRepositories,
+    conversation: Conversation,
+    active: Intent | null,
+    intent: AgentIntent,
+    applied: Applied,
+  ): Promise<Applied> {
+    const isSide =
+      (intent.type === "HELP" && !(isChatTopic(intent.topic) && intent.topic === "FAREWELL")) ||
+      intent.type === "BALANCE";
+    if (!isSide) return applied;
+    const resume = await this.resumeOf(repositories, conversation, active);
+    return resume ? { ...applied, resume } : applied;
+  }
+
+  /**
+   * A rate question beside an open payment. The payment is left exactly as it was (no revision, no new intent, no route, no
+   * authorization); the price is asked for afterwards, outside the transaction, and nothing about it is stored.
+   */
+  private async applySideQuote(
+    repositories: AgentRepositories,
+    conversation: Conversation,
+    quote: Extract<AgentIntent, { type: "QUOTE" }>,
+    active: Intent,
+  ): Promise<Applied> {
+    const mergeKind = "SIDE_QUOTE";
+    const resume = await this.resumeOf(repositories, conversation, active);
+    const answer = (response: AgentResponse): Applied => ({
+      response,
+      mergeKind,
+      ...(resume && { resume }),
+    });
+    if (!this.deps.sideQuotesEnabled) {
+      return answer({
+        type: "ERROR",
+        code: "FEATURE_NOT_AVAILABLE",
+        text: "Rates aren't available yet.",
+      });
+    }
+    const askForPair = answer({
+      type: "MESSAGE",
+      text: "Which pair should I check? Tell me both sides, like “USDT to cNGN”.",
+    });
+    const resolvers = this.deps.createResolvers(repositories);
+    const assessment = await assessIntent(quote, {
+      userId: conversation.userId,
+      assets: resolvers.assets,
+      recipients: resolvers.recipients,
+      countries: this.deps.countries,
+    });
+    if (assessment.status !== "READY") return askForPair;
+    const now = this.deps.now();
+    const state = buildIntentState({
+      id: createId(),
+      userId: conversation.userId,
+      conversationId: conversation.id,
+      parsed: quote,
+      assessment,
+      recipientId: undefined,
+    });
+    const request = buildRoutingRequest({ ...state, createdAt: now, updatedAt: now });
+    if (!request) return askForPair;
+    return answer({ type: "SIDE_QUOTE_REQUIRED", text: "Checking that rate…", request });
+  }
+
+  /**
+   * "Continue" under a side answer. It restates the payment that is open, from stored state, exactly as the person left it:
+   * the same intent and revision, asking again for whatever it was waiting for, or priced again if it was ready (an expired
+   * price is re-priced, never reused). If that payment is gone (cancelled, expired, replaced) nothing is resurrected.
+   */
+  private async resumePayment(
+    repositories: AgentRepositories,
+    conversation: Conversation,
+    active: Intent | null,
+    intentId: string | undefined,
+  ): Promise<Applied> {
+    const parsed = active?.parsed;
+    if (
+      !active ||
+      !parsed ||
+      !isTransactionalIntent(parsed) ||
+      parsed.type === "QUOTE" ||
+      (intentId !== undefined && active.id !== intentId)
+    ) {
+      return {
+        response: {
+          type: "MESSAGE",
+          text: "That payment isn't open any more. Tell me what you'd like to do.",
+        },
+        mergeKind: "RESUME_STALE",
+      };
+    }
+    return this.advance(repositories, {
+      conversation,
+      parsed,
+      target: active,
+      restate: true,
+      mergeKind: "RESUME",
+    });
   }
 
   /** Checks an option against server state. Nothing is changed. */

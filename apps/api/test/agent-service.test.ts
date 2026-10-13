@@ -218,9 +218,11 @@ describe("collecting details", () => {
         amount: usd("20", "EXACT_INPUT"),
       }),
     );
-    h.script.set("quote", intent({ type: "QUOTE" }));
+    // A different operation replaces the old one and inherits nothing from it. (A QUOTE no longer does: it is a side question
+    // beside an open payment, see side-queries.test.ts.)
+    h.script.set("convert", intent({ type: "CONVERT" }));
     await h.say("send $20 to daniel");
-    const turn = await h.say("quote");
+    const turn = await h.say("convert");
     const stored = h.world.intents.get(turn.intentId ?? "");
     assert.equal(stored?.amount, undefined);
     assert.equal(stored?.recipientId, undefined);

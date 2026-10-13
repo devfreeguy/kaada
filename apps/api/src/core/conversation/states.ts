@@ -168,6 +168,7 @@ export function deriveResponseState(turn: {
     case "PAYMENT_READY":
       return corrected ? "PAYMENT_CORRECTION" : "PAYMENT_READY";
     case "QUOTE_RESULT":
+    case "SIDE_QUOTE_REQUIRED":
       return "RATE_QUERY";
     case "BALANCE_RESULT":
     case "BALANCE_REQUIRED":

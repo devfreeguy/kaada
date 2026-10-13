@@ -525,6 +525,18 @@ export class ChannelMessageService {
       case "RETRY":
         await adapter.send(target, { text: "Tell me what you'd like to send and I'll set it up." });
         return null;
+      case "CONTINUE_PAYMENT": {
+        const intentId = action.payload["intentId"];
+        if (!intentId) return null;
+        // Deterministic: no interpretation. The agent restates the stored payment, or says it is no longer open.
+        return this.deps.agent!.handle({
+          kind: "COMMAND",
+          ...base,
+          command: "CONTINUE_PAYMENT",
+          resumeIntentId: intentId,
+          externalMessageId: `cb:${message.externalEventId}`,
+        });
+      }
       case "SUGGESTION": {
         const id = action.payload["suggestion"];
         if (!id || !isSuggestionId(id)) return null;
@@ -655,6 +667,7 @@ export class ChannelMessageService {
         onboardingStep,
         response: turn.response,
         corrected: turn.corrected,
+        resume: turn.resume,
         userMessage: userMessageOf(inbound),
         history,
         seed: turn.messageId,
@@ -675,7 +688,7 @@ export class ChannelMessageService {
   ): Promise<OutboundChannelMessage> {
     const actions: OutboundAction[] = [];
     const issue = (
-      kind: "SELECT_OPTION" | "CANCEL" | "SUGGESTION",
+      kind: "SELECT_OPTION" | "CANCEL" | "SUGGESTION" | "CONTINUE_PAYMENT",
       payload?: Record<string, string>,
       reusable = false,
     ) =>
@@ -731,6 +744,19 @@ export class ChannelMessageService {
       const url = await this.deps.links.setupLink(userId);
       if (url)
         actions.push({ type: "OPEN_URL", semantic: "OPEN_SETUP", label: "Set up Kaada", url });
+    }
+
+    // A payment is still open behind a side answer: Continue resumes exactly that payment from stored state.
+    if (presented.resume) {
+      actions.push({
+        type: "ACTION",
+        semantic: "CONTINUE_PAYMENT",
+        label: "Continue",
+        handle: await issue("CONTINUE_PAYMENT", {
+          intentId: presented.resume.intentId,
+          revision: String(presented.resume.revision),
+        }),
+      });
     }
 
     // Suggestions are buttons beside the conversation, never a replacement for typing. Each is server-bound like any button.

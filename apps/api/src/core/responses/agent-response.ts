@@ -167,6 +167,8 @@ export interface QuoteResultResponse {
   route: RouteSummary;
   mock?: boolean;
   indicative?: boolean;
+  /** Priced beside an open payment: nothing was stored, and the ids here describe no stored intent or route. */
+  side?: boolean;
 }
 
 /**
@@ -193,6 +195,31 @@ export interface BalanceResultResponse {
   type: "BALANCE_RESULT";
   text: string;
   lines: { symbol: string; display: string }[];
+}
+
+/**
+ * A price question asked BESIDE an open payment ("what's the USDT to cNGN rate?"). It is priced without writing anything, so the
+ * payment in progress is untouched. The agent prices it outside any transaction and answers with QUOTE_RESULT (side: true).
+ */
+export interface SideQuoteRequiredResponse {
+  type: "SIDE_QUOTE_REQUIRED";
+  text: string;
+  request: RoutingRequest;
+}
+
+/**
+ * The payment that was open when a side question was answered, in display terms, so the conversation can offer to carry on. It is
+ * trusted application state (read from the stored intent), never taken from the question or from a model. Pressing "Continue"
+ * resumes THIS intent; nothing about it changed while the question was answered.
+ */
+export interface ResumeInfo {
+  intentId: string;
+  revision: number;
+  operation: "SEND" | "CONVERT";
+  recipient?: string;
+  amount?: string;
+  /** True when the payment still lacks a detail (resuming asks for it again) rather than being ready to price. */
+  pending: boolean;
 }
 
 export interface CancelledResponse {
@@ -242,4 +269,5 @@ export type AgentResponse =
   | ChatResponse
   | BalanceRequiredResponse
   | BalanceResultResponse
+  | SideQuoteRequiredResponse
   | ErrorResponse;

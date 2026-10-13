@@ -472,7 +472,8 @@ export const ChannelActionKind = {
   CANCEL: 'CANCEL',
   VIEW_STATUS: 'VIEW_STATUS',
   RETRY: 'RETRY',
-  SUGGESTION: 'SUGGESTION'
+  SUGGESTION: 'SUGGESTION',
+  CONTINUE_PAYMENT: 'CONTINUE_PAYMENT'
 } as const
 
 export type ChannelActionKind = (typeof ChannelActionKind)[keyof typeof ChannelActionKind]

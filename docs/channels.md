@@ -151,3 +151,26 @@ as reply buttons or a template), add it to the `adapters` map in `channels.modul
 button store, the idempotency table and the notification service are reused unchanged, and nothing in the Agent Core, resolvers,
 route planner, authorization, wallet or execution code changes. Provider-specific limits (button counts, template approval, the
 24-hour session window) belong in that adapter.
+
+## Local development over HTTPS (Telegram needs it)
+
+Telegram will only call an HTTPS webhook, and only opens HTTPS buttons. For local development:
+
+```
+pnpm --filter @kaada/api dev:tunnels     # opens two cloudflared tunnels and writes the matching .env values
+pnpm dev:api                             # restart the API so it reads them
+pnpm dev:web
+pnpm --filter @kaada/api telegram:webhook set
+```
+
+`dev:tunnels` (`apps/api/scripts/dev-tunnels.ts`) tunnels the API (:4000) and the web app (:3000), waits until **both are really
+connected** (it uses HTTP/2 over TCP, because the default QUIC transport is silently blocked on some networks and leaves a tunnel
+that starts but never connects), then sets `WEB_URL`, `CORS_ORIGINS`, `PASSKEY_ORIGIN`, `PASSKEY_RP_ID` and
+`TELEGRAM_WEBHOOK_URL`. Notes:
+
+- **`PASSKEY_RP_ID` is the tunnel's full host** (`abc-def.trycloudflare.com`), not its first label. A WebAuthn RP ID must be the
+  origin's host or a registrable parent; `trycloudflare.com` is a public suffix, so the host itself is the only valid choice.
+- trycloudflare hostnames change on every run, and a passkey is bound to its RP ID, so wallets created under one hostname cannot
+  sign under the next. Use throw-away test wallets. The credential architecture is untouched: these are environment values only.
+- The web dev server allows `*.trycloudflare.com` as a dev origin (`allowedDevOrigins`, development only).
+- The webhook must keep refusing requests without the secret (401), and the secret header is redacted from request logs.

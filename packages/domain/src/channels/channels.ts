@@ -11,6 +11,7 @@ export const CHANNEL_ACTION_KINDS = [
   "VIEW_STATUS",
   "RETRY",
   "SUGGESTION",
+  "CONTINUE_PAYMENT",
 ] as const;
 export type ChannelActionKind = (typeof CHANNEL_ACTION_KINDS)[number];
 

@@ -6,6 +6,9 @@ const apiUrl = (process.env["API_URL"] ?? "http://localhost:4000").replace(/\/$/
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Development only: lets the dev server be opened through a public HTTPS tunnel (pnpm --filter @kaada/api dev:tunnels), which
+  // Telegram's secure buttons need. It has no effect on a production build.
+  allowedDevOrigins: ["*.trycloudflare.com"],
   rewrites() {
     return [{ source: "/api/:path*", destination: `${apiUrl}/api/:path*` }];
   },

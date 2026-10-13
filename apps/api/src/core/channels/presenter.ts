@@ -17,6 +17,8 @@ export interface PresentedMessage {
   cancellable?: boolean;
   /** A secure page to open (the setup page, or the PIN step), issued by the channel service when it composes the message. */
   link?: { kind: "WALLET_SETUP" | "PIN_SETUP"; label: string };
+  /** A payment is still open behind this answer: offer to carry on with it (or cancel it). The ids are trusted state. */
+  resume?: { intentId: string; revision: number };
   /** Things worth offering next, from the server's allowlist (see conversation/suggestions). Rendered as buttons by the channel. */
   suggestions?: SuggestionId[];
 }
@@ -100,6 +102,7 @@ export function presentAgentResponse(response: AgentResponse, now: Date): Presen
 
     // Plain wording only; the conversation layer replaces it with a friendlier reply when it can.
     case "CHAT":
+    case "SIDE_QUOTE_REQUIRED":
     case "BALANCE_REQUIRED":
     case "BALANCE_RESULT":
       return { text: response.text };

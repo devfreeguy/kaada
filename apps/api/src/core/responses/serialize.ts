@@ -69,6 +69,11 @@ const storedResponseSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("CHAT"), topic: z.enum(CHAT_TOPICS), text: z.string() }),
   z.object({ type: z.literal("BALANCE_REQUIRED"), text: z.string(), asset: z.string().optional() }),
   z.looseObject({ type: z.literal("BALANCE_RESULT"), text: z.string() }),
+  z.looseObject({
+    type: z.literal("SIDE_QUOTE_REQUIRED"),
+    text: z.string(),
+    request: z.looseObject({}),
+  }),
   z.object({ type: z.literal("CANCELLED"), text: z.string(), intentId: z.string().optional() }),
   z.object({
     type: z.literal("ERROR"),

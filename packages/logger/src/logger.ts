@@ -44,6 +44,9 @@ export const redactPaths: string[] = [
   "req.headers.authorization",
   "req.headers.cookie",
   'req.headers["x-api-key"]',
+  // Chat webhooks authenticate with a shared secret in a header: it must never reach a log line.
+  'req.headers["x-telegram-bot-api-secret-token"]',
+  'req.headers["x-hub-signature-256"]',
   'res.headers["set-cookie"]',
   ...sensitiveKeys.flatMap((key) => [key, `*.${key}`]),
 ];

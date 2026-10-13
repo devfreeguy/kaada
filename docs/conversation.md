@@ -162,3 +162,28 @@ adapter reuses everything here unchanged.
 - The history stored for the interpreter holds the Agent Core's plain wording, not the model's phrasing of it.
 - Conversational replies are English unless the person clearly writes in another language (the model is told so; fixed
   wording is English).
+
+## Questions beside an open payment (Build 14.2)
+
+A rate, balance or "what can you do?" question asked while a payment is open is a **side query**: the payment is a primary intent
+that is merely paused, and nothing about it changes.
+
+| Side query | Answered by                                                                           | Touches the payment? |
+| ---------- | ------------------------------------------------------------------------------------- | -------------------- |
+| rate       | `RoutingService.quoteOnly`: priced by the normal planner/provider, **nothing stored** | no                   |
+| balance    | a fresh wallet read (`BALANCE_REQUIRED` then `BALANCE_RESULT`)                        | no                   |
+| help/chat  | a typed `CHAT` answer                                                                 | no                   |
+
+- A QUOTE read while a SEND/CONVERT is open is routed to the side path in `IntentCoordinator.applyInterpretation` _before_ the merge,
+  so it can no longer replace the payment (the old behaviour). It creates no intent, quote, route or authorization.
+- The Agent Core attaches a trusted `ResumeInfo` (intent id, revision, recipient and amount in display form, and whether the
+  payment still lacks a detail) to the answer, and stores it with the assistant message so a redelivered turn offers it too.
+- The presenter then ends the answer with the application's own line, "You were sending 20.00 USDT to Daniel. Want to
+  continue?", with **Continue** and **Cancel** buttons and no competing suggestions or questions. The model never chooses which
+  payment is resumed or what the line says.
+- **Continue** is a deterministic command (`CONTINUE_PAYMENT`, a server-bound `ChannelActionKind`): no interpreter call. It
+  restates the stored payment from state: the pending question again, or the priced summary (an expired price is re-priced, never
+  shown stale). If the payment was cancelled or replaced, it says so and resurrects nothing. A second press is refused as already
+  used, and a redelivery changes nothing.
+- Explicit corrections ("Actually make it 30", "Use USDC instead") and "cancel" still behave as before.
+- Not supported on purpose: any other nested conversation. A rate question when no payment is open behaves as before.

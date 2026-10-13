@@ -228,6 +228,66 @@ export class RoutingService {
     }
   }
 
+  /**
+   * Prices a question ("what's the USDT to cNGN rate?") WITHOUT storing anything: no intent, quote or route is written, so it can
+   * be asked beside an open payment without touching it. `request` describes a one-unit quote; its ids are throwaway.
+   */
+  async quoteOnly(request: RoutingRequest): Promise<AgentResponse> {
+    const outcome = await this.plan({ ...request, purpose: "QUOTE" });
+    if (outcome.status === "FAILED") return outcome.response;
+    if (outcome.status !== "PLANNED") {
+      return {
+        type: "ERROR",
+        code: "ROUTING_UNAVAILABLE",
+        text: "I couldn't price that right now.",
+      };
+    }
+    const planned = outcome.route;
+    const assets = new Map<string, Asset>();
+    const fees = await Promise.all(planned.fees.map((fee) => this.view(fee, assets)));
+    const metadata = planned.hops.map((hop) => hop.quote.metadata ?? {});
+    const mock = metadata.some((m) => m["mock"] === true);
+    const indicative = metadata.some((m) => m["indicative"] === true);
+    const fine = mock
+      ? " (mock pricing, development only, not a real price)"
+      : indicative
+        ? " (indicative price, not a firm quote)"
+        : "";
+    const feeText = fees.length > 0 ? fees.map((fee) => fee.display).join(" + ") : "none";
+    const seconds = planned.expiresAt ? secondsUntil(planned.expiresAt, this.now()) : 0;
+    const input = await this.view(planned.input, assets);
+    const output = await this.view(planned.output, assets);
+    const routeSummary: RouteSummary = {
+      hops: await Promise.all(
+        planned.hops.map(async (hop) => ({
+          provider: hop.providerId,
+          from: (await this.view(hop.input, assets)).symbol,
+          to: (await this.view(hop.output, assets)).symbol,
+        })),
+      ),
+    };
+    const response: QuoteResultResponse = {
+      type: "QUOTE_RESULT",
+      text:
+        request.amountMode === "EXACT_INPUT"
+          ? `${input.display} currently gives approximately ${output.display}${fine}. Fees: ${feeText}. The prices expire in ${String(seconds)} seconds. Nothing was sent.`
+          : `To get ${output.display} you would need approximately ${input.display}${fine}. Fees: ${feeText}. The prices expire in ${String(seconds)} seconds. Nothing was sent.`,
+      intentId: request.intentId,
+      revision: request.intentRevision,
+      routeId: createId(),
+      source: input,
+      destination: output,
+      fees,
+      slippageBps: planned.slippageBps,
+      expiresAt: (planned.expiresAt ?? this.now()).toISOString(),
+      route: routeSummary,
+      side: true,
+      ...(mock && { mock }),
+      ...(indicative && { indicative }),
+    };
+    return response;
+  }
+
   /** The wallet or the chain could not be read. Not a balance verdict, so nothing is claimed. */
   private fundingUnavailable(request: RoutingRequest, error: unknown): RoutingOutcome {
     this.log("error", "routing.funding_unavailable", {

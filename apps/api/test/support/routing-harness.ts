@@ -16,6 +16,7 @@ import { MOCK_FX_FIXTURES, MockFxProvider } from "../../src/infrastructure/fx/mo
 import type { MockPairFixture } from "../../src/infrastructure/fx/mock-fx-provider.js";
 import type { WalletFundingResolver } from "../../src/core/routing/funding-resolver.js";
 import type { AuthorizationGate } from "../../src/core/routing/routing-service.js";
+import type { AgentBalanceReader } from "../../src/core/agent/agent-service.js";
 import type { IntentInterpreter } from "../../src/core/agent/interpreter.js";
 import { RoutingService } from "../../src/core/routing/routing-service.js";
 import { createHarness, SENDER } from "./harness.js";
@@ -77,6 +78,8 @@ export function createRoutingHarness(
     mockClockSkewMs?: number;
     /** Price with this provider (bound to the "textile" capability) instead of the mock. */
     pricing?: (context: { assets: AssetRegistry; now: () => Date }) => FxProvider;
+    /** Reads wallet balances (otherwise a balance question says it is unavailable). */
+    balances?: AgentBalanceReader;
     /** Use a different interpreter (e.g. a real model for the conversation review) instead of the scripted mock. */
     interpreter?: IntentInterpreter;
     /** Balance-aware funding for payments, built from the asset registry. */
@@ -107,6 +110,7 @@ export function createRoutingHarness(
   const h = createHarness({
     now: () => clock.now,
     ...(options.interpreter && { interpreter: options.interpreter }),
+    ...(options.balances && { balances: options.balances }),
     routing: (world) => {
       const registry = createAssetRegistry(world.repositories.assets);
       const capabilities = createProviderCapabilityRegistry(world.repositories.providers, {

@@ -1,6 +1,8 @@
 import type { ConversationTurn } from "@kaada/domain";
 
 import type { OnboardingFacts, OnboardingStep } from "../onboarding/state.js";
+import type { ResumeInfo } from "../responses/agent-response.js";
+import { resumeLine } from "./resume.js";
 import { FUNDING_NONE } from "./funding.js";
 
 import type { AgentLog } from "../agent/ports.js";
@@ -42,6 +44,8 @@ export interface PresentationInput {
   now: Date;
   /** Where the person is in onboarding, when known: while incomplete, payments are not offered or suggested. */
   onboardingStep?: OnboardingStep | undefined;
+  /** A payment is still open behind this answer (a side question): the reply ends by offering to carry on with it. */
+  resume?: ResumeInfo | undefined;
 }
 
 /** What the person is being told about their setup, and why now. */
@@ -68,6 +72,8 @@ interface PhraseInput {
   seed: string;
   firstName?: string | undefined;
   missingFields?: string[];
+  /** The reply is followed by the application's "continue the payment?" line, so it must not end with a question of its own. */
+  resuming?: boolean;
 }
 
 export interface ConversationPresenterDeps {
@@ -192,9 +198,10 @@ export class ConversationPresenter {
     };
     const policy = suggestionPolicy(state, flags);
 
+    const resume = input.resume;
     if (mode === "DETERMINISTIC") {
       const parts = fallbackParts(state, facts, input.seed);
-      return this.finish(base, parts ? joinParts(parts, ORDER) : base.text, policy);
+      return this.finish(base, parts ? joinParts(parts, ORDER) : base.text, policy, resume);
     }
 
     const phrased = await this.phrase(
@@ -203,6 +210,7 @@ export class ConversationPresenter {
         history: input.history,
         seed: input.seed,
         firstName: input.firstName,
+        ...(resume && { resuming: true }),
         ...(response.type === "CLARIFICATION_REQUIRED" && { missingFields: [response.field] }),
       },
       state,
@@ -212,21 +220,37 @@ export class ConversationPresenter {
       facts,
       flags,
     );
+    // With a payment waiting, the reply is just the answer: no hand-back question and no "want to send some?" of its own.
+    const order: (keyof ReplyParts)[] = resume ? ["acknowledgement", "body"] : ORDER;
     if (mode === "MODEL_FULL") {
-      const text = joinParts(phrased.parts, ORDER);
-      return this.finish(base, text.length > 0 ? text : base.text, phrased.suggestions);
+      const text = joinParts(phrased.parts, order);
+      return this.finish(base, text.length > 0 ? text : base.text, phrased.suggestions, resume);
     }
-    const text = [phrased.parts.acknowledgement, base.text, phrased.parts.closing]
+    const text = [
+      phrased.parts.acknowledgement,
+      base.text,
+      resume ? undefined : phrased.parts.closing,
+    ]
       .filter((piece): piece is string => typeof piece === "string" && piece.trim().length > 0)
       .join("\n\n");
-    return this.finish(base, text, phrased.suggestions);
+    return this.finish(base, text, phrased.suggestions, resume);
   }
 
   private finish(
     base: PresentedMessage,
     text: string,
     suggestions: readonly SuggestionId[],
+    resume?: ResumeInfo,
   ): PresentedMessage {
+    if (resume) {
+      // The open payment is what the person should do something about: Continue or Cancel, nothing else competes with it.
+      return {
+        ...base,
+        text: `${text}\n\n${resumeLine(resume)}`,
+        resume: { intentId: resume.intentId, revision: resume.revision },
+        cancellable: true,
+      };
+    }
     const chosen = suggestions.slice(0, MAX_SUGGESTIONS);
     return { ...base, text, ...(chosen.length > 0 && { suggestions: [...chosen] }) };
   }
@@ -251,7 +275,7 @@ export class ConversationPresenter {
       suggestions: policy,
     });
 
-    const key = `${input.seed}:${state}`;
+    const key = `${input.seed}:${state}:${input.resuming ? "resume" : "plain"}`;
     const cached = this.cache.get(key);
     if (cached) return cached;
 
@@ -278,7 +302,7 @@ export class ConversationPresenter {
         flags,
         allowedSuggestions: policy,
         knownFactValues: Object.values(known),
-        needsQuestion: instruction.needsQuestion,
+        needsQuestion: instruction.needsQuestion && !input.resuming,
       });
       if (!checked.ok) return this.remember(key, fallback(), state, checked.reason);
       return this.remember(

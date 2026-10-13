@@ -1,5 +1,6 @@
 import { createId, defaultCountryDirectory } from "@kaada/domain";
 import type {
+  JsonObject,
   ChannelType,
   Conversation,
   ConversationTurn,
@@ -11,7 +12,7 @@ import { interpretationSchema } from "@kaada/schemas";
 
 import { loadConversationContext, toHistory } from "../conversations/context.js";
 import { IntentCoordinator } from "../intents/coordinator.js";
-import type { Applied } from "../intents/coordinator.js";
+import type { Applied, ResumeTurn } from "../intents/coordinator.js";
 import { composeRevisionHooks, noopOnIntentRevised } from "../intents/intent-commit.js";
 import type { OnIntentRevised } from "../intents/intent-commit.js";
 import {
@@ -19,7 +20,7 @@ import {
   invalidateRoutesOnRevision,
 } from "../routing/invalidation.js";
 import type { RoutingService } from "../routing/routing-service.js";
-import type { AgentResponse } from "../responses/agent-response.js";
+import type { AgentResponse, ResumeInfo } from "../responses/agent-response.js";
 import { responseFromStored, responseToJson } from "../responses/serialize.js";
 import { ConversationAccessError } from "./errors.js";
 import { InterpreterOutputError } from "./interpreter.js";
@@ -55,7 +56,9 @@ export interface ChoiceInput extends IncomingBase {
  */
 export interface CommandInput extends IncomingBase {
   kind: "COMMAND";
-  command: "CANCEL_ACTIVE_INTENT" | "START_OVER" | "SHOW_BALANCE";
+  command: "CANCEL_ACTIVE_INTENT" | "START_OVER" | "SHOW_BALANCE" | "CONTINUE_PAYMENT";
+  /** CONTINUE_PAYMENT: the payment the pressed button belonged to. */
+  resumeIntentId?: string;
 }
 
 /** What the agent needs to answer "what's my balance?": a fresh read of the wallet, or "no wallet yet". */
@@ -80,6 +83,8 @@ export interface AgentTurnResult {
   response: AgentResponse;
   /** Details of an operation in progress that this message CHANGED (for tone only: "AMOUNT", "RECIPIENT", ...). */
   corrected?: string[];
+  /** The payment still open behind a side answer (a rate, balance or help question): offer to carry on with it. */
+  resume?: ResumeInfo;
 }
 
 export interface AgentServiceDeps {
@@ -103,6 +108,38 @@ export interface AgentServiceDeps {
   choiceTtlMs?: number;
   /** How many earlier messages the interpreter sees as context. */
   historyLimit?: number;
+}
+
+/** The resume info as stored with the assistant message, so a redelivered turn still offers to carry on. */
+function resumeToJson(resume: ResumeInfo): JsonObject {
+  return {
+    intentId: resume.intentId,
+    revision: resume.revision,
+    operation: resume.operation,
+    ...(resume.recipient && { recipient: resume.recipient }),
+    ...(resume.amount && { amount: resume.amount }),
+    pending: resume.pending,
+  };
+}
+
+function resumeFromJson(value: unknown): ResumeInfo | undefined {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const v = value as Record<string, unknown>;
+  if (
+    typeof v["intentId"] !== "string" ||
+    typeof v["revision"] !== "number" ||
+    (v["operation"] !== "SEND" && v["operation"] !== "CONVERT")
+  ) {
+    return undefined;
+  }
+  return {
+    intentId: v["intentId"],
+    revision: v["revision"],
+    operation: v["operation"],
+    ...(typeof v["recipient"] === "string" && { recipient: v["recipient"] }),
+    ...(typeof v["amount"] === "string" && { amount: v["amount"] }),
+    pending: v["pending"] === true,
+  };
 }
 
 const TROUBLE_RESPONSE: AgentResponse = {
@@ -155,6 +192,7 @@ export class AgentService {
       ),
       choiceTtlMs: deps.choiceTtlMs ?? 30 * 60 * 1000,
       balancesEnabled: deps.balances !== undefined,
+      sideQuotesEnabled: deps.routing !== undefined,
     });
     this.historyLimit = deps.historyLimit ?? 12;
   }
@@ -168,7 +206,7 @@ export class AgentService {
 
   /** A deterministic command: stored like a message (so it is idempotent), applied without the interpreter. */
   async handleCommand(input: CommandInput): Promise<AgentTurnResult> {
-    const { kind: _kind, command, ...base } = input;
+    const { kind: _kind, command, resumeIntentId: _resume, ...base } = input;
     const accepted = await this.accept({
       ...base,
       content:
@@ -176,15 +214,19 @@ export class AgentService {
           ? "Cancel"
           : command === "SHOW_BALANCE"
             ? "Show my balance"
-            : "Start over",
+            : command === "CONTINUE_PAYMENT"
+              ? "Continue"
+              : "Start over",
     });
     if ("reply" in accepted) {
       return this.duplicateResult(accepted.conversation, accepted.message, accepted.reply);
     }
-    const interpretation: Interpretation =
+    const interpretation: Interpretation | ResumeTurn =
       command === "SHOW_BALANCE"
         ? { kind: "INTENT", intent: { type: "BALANCE" } }
-        : { kind: "COMMAND", command };
+        : command === "CONTINUE_PAYMENT"
+          ? { kind: "RESUME", ...(input.resumeIntentId && { intentId: input.resumeIntentId }) }
+          : { kind: "COMMAND", command };
     return this.route(
       await this.complete(accepted.conversation, accepted.message, interpretation, accepted.fresh),
       input.userId,
@@ -371,7 +413,7 @@ export class AgentService {
   private complete(
     conversation: Conversation,
     message: Message,
-    interpretation: Interpretation,
+    interpretation: Interpretation | ResumeTurn,
     fresh: boolean,
   ): Promise<AgentTurnResult> {
     return this.unitOfWork.transaction(async (repositories) => {
@@ -402,6 +444,9 @@ export class AgentService {
   private async route(result: AgentTurnResult, userId: string): Promise<AgentTurnResult> {
     if (result.response.type === "BALANCE_REQUIRED" && !result.duplicate) {
       return this.resolveBalance(result, result.response, userId);
+    }
+    if (result.response.type === "SIDE_QUOTE_REQUIRED" && !result.duplicate) {
+      return this.resolveSideQuote(result, result.response);
     }
     const routing = this.routing;
     const response = result.response;
@@ -499,7 +544,53 @@ export class AgentService {
         role: "ASSISTANT",
         content: response.text,
         structuredData: responseToJson(response),
-        metadata: { inReplyTo: result.messageId, stage: "BALANCE" },
+        metadata: {
+          inReplyTo: result.messageId,
+          stage: "BALANCE",
+          ...(result.resume && { resume: resumeToJson(result.resume) }),
+        },
+      });
+    });
+    return { ...result, response };
+  }
+
+  /**
+   * Prices a rate question asked beside an open payment. Outside any transaction; nothing is stored but the answer, so the
+   * payment in progress (its intent, revision, route and authorization) is exactly as it was.
+   */
+  private async resolveSideQuote(
+    result: AgentTurnResult,
+    pending: Extract<AgentResponse, { type: "SIDE_QUOTE_REQUIRED" }>,
+  ): Promise<AgentTurnResult> {
+    let response: AgentResponse;
+    try {
+      response = this.routing
+        ? await this.routing.quoteOnly(pending.request)
+        : { type: "ERROR", code: "FEATURE_NOT_AVAILABLE", text: "Rates aren't available yet." };
+    } catch (error) {
+      this.log("error", "agent.side_quote.failed", {
+        conversationId: result.conversationId,
+        error: error instanceof Error ? error.name : "unknown",
+      });
+      response = {
+        type: "ERROR",
+        code: "ROUTING_UNAVAILABLE",
+        text: "I couldn't check that rate right now. Please try again in a moment.",
+      };
+    }
+    await this.unitOfWork.transaction(async (repositories) => {
+      await repositories.conversations.lockForUpdate(result.conversationId);
+      await repositories.messages.append({
+        id: createId(),
+        conversationId: result.conversationId,
+        role: "ASSISTANT",
+        content: response.text,
+        structuredData: responseToJson(response),
+        metadata: {
+          inReplyTo: result.messageId,
+          stage: "SIDE_QUOTE",
+          ...(result.resume && { resume: resumeToJson(result.resume) }),
+        },
       });
     });
     return { ...result, response };
@@ -531,6 +622,7 @@ export class AgentService {
       metadata: {
         inReplyTo: message.id,
         ...(applied.intentId && { intentId: applied.intentId }),
+        ...(applied.resume && { resume: resumeToJson(applied.resume) }),
       },
     });
 
@@ -549,6 +641,7 @@ export class AgentService {
       ...(applied.intentId && { intentId: applied.intentId }),
       ...(applied.supersededIntentId && { supersededIntentId: applied.supersededIntentId }),
       ...(applied.corrected && { corrected: applied.corrected }),
+      ...(applied.resume && { resume: applied.resume }),
     };
   }
 
@@ -558,12 +651,14 @@ export class AgentService {
     reply: Message,
   ): AgentTurnResult {
     const intentId = reply.metadata?.["intentId"];
+    const resume = resumeFromJson(reply.metadata?.["resume"]);
     return {
       conversationId: conversation.id,
       messageId: message.id,
       duplicate: true,
       response: responseFromStored(reply.structuredData, reply.content),
       ...(typeof intentId === "string" && { intentId }),
+      ...(resume && { resume }),
     };
   }
 }
