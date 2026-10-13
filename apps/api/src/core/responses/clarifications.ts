@@ -61,7 +61,7 @@ export function clarificationText(clarification: Clarification): string {
         if (detail === "UNSUPPORTED_TYPE") {
           return "I can't look up that kind of contact yet. You can use a saved contact, a Kaada username, or a wallet address. Who would you like to send it to?";
         }
-        return `I couldn't find ${subject ?? "that recipient"}. Who would you like to send it to? You can use a saved contact, a Kaada username, or a wallet address.`;
+        return `I couldn't find ${subject ?? "that recipient"}. Who would you like to send it to?`;
       }
       return "Who would you like to send it to?";
 

@@ -167,7 +167,7 @@ describe("the chat follows the web setup by itself", () => {
     walletCreated(w.facts);
     const result = await w.announcer().sweep();
     assert.equal(result.announced, 1);
-    assert.match(w.adapter.last?.text ?? "", /Your wallet is ready 🎉/);
+    assert.match(w.adapter.last?.text ?? "", /Wallet ready 🎉/);
     assert.match(w.adapter.last?.text ?? "", /6-digit PIN/);
     const button = urls(w.adapter.last)[0];
     assert.equal(button?.label, "Set up PIN");
@@ -214,10 +214,10 @@ describe("the chat follows the web setup by itself", () => {
     assert.deepEqual(
       buttons(w.adapter.last).map((a) => [a.semantic, a.label]),
       [
-        ["SUGGESTION", "Fund wallet"],
-        ["SUGGESTION", "Send money"],
-        ["SUGGESTION", "Today's rates"],
-        ["SUGGESTION", "Check balance"],
+        ["SUGGESTION", "💰 Fund wallet"],
+        ["SUGGESTION", "💸 Send money"],
+        ["SUGGESTION", "💱 Today's rates"],
+        ["SUGGESTION", "👛 Balance"],
       ],
     );
     assert.equal(urls(w.adapter.last).length, 0, "nothing left to set up");
@@ -263,7 +263,7 @@ describe("returning people", () => {
     assert.doesNotMatch(w.adapter.last?.text ?? "", /Set up|wallet ready/i);
     assert.deepEqual(
       buttons(w.adapter.last).map((a) => a.label),
-      ["Send money", "Today's rates", "Check balance"],
+      ["💸 Send money", "💱 Today's rates", "👛 Balance"],
     );
     // The announcement that was waiting is moot now: it must not arrive afterwards.
     const before = w.adapter.sent.length;
@@ -471,7 +471,7 @@ describe("the conversation knows where setup stands", () => {
     assert.match(prompts.at(-1) ?? "", /"onboardingStep":"COMPLETE"/);
     assert.deepEqual(
       buttons(w.adapter.last).map((a) => a.label),
-      ["Send money", "Today's rates", "Check balance"],
+      ["💸 Send money", "💱 Today's rates", "👛 Balance"],
     );
   });
 });
@@ -489,31 +489,76 @@ describe("funding", () => {
     assert.ok(button, `no "${label}" button`);
     await w.service.handleInbound(press(button.handle));
   };
+  const copyButtons = (message: OutboundChannelMessage | undefined) =>
+    (message?.actions ?? []).filter(
+      (a): a is Extract<OutboundAction, { type: "COPY_TEXT" }> => a.type === "COPY_TEXT",
+    );
+  const command = (name: "FUND" | "WALLET" | "HELP" | "RATES" | "BALANCE") =>
+    inbound({ eventId: `ob-${String(++n)}`, command: name });
 
-  it("'Fund wallet' offers only the funding methods that exist", async () => {
+  it("'Fund wallet' goes straight to the real way to fund: the wallet's address, the network and the supported assets", async () => {
     const w = await ready();
-    await tap(w, "Fund wallet");
-    assert.match(w.adapter.last?.text ?? "", /How would you like to fund your wallet\?/);
+    await tap(w, "💰 Fund wallet");
+    const text = w.adapter.last?.text ?? "";
+    assert.match(text, /^Sure 👍 You can fund your Kaada wallet from another wallet\./);
+    assert.match(text, /Network: Celo/);
+    assert.ok(text.includes(`Wallet: ${ADDRESS}`));
+    assert.match(text, /Supported assets: USDT, USDC, cNGN/);
+    assert.match(
+      text,
+      /Only send supported assets on the Celo network to this address\. Funds sent on another network, or unsupported assets, may not appear in Kaada and may be difficult or impossible to recover\./,
+    );
+    assert.deepEqual(w.adapter.last?.code, [ADDRESS], "the address is shown monospace");
+    assert.deepEqual(
+      copyButtons(w.adapter.last).map((a) => [a.label, a.text]),
+      [["📋 Copy address", ADDRESS]],
+    );
     assert.deepEqual(
       buttons(w.adapter.last).map((a) => a.label),
-      ["Send from another wallet", "View wallet address"],
+      ["👛 Balance"],
     );
+    assert.doesNotMatch(text, /local currency/i);
   });
 
-  it("a method with no working provider (local currency) is never advertised, anywhere", async () => {
+  it("'How can I fund my account?' typed in words gets the same trusted answer, not 'I don't know'", async () => {
     const w = await ready();
-    await tap(w, "Fund wallet");
-    const everything = JSON.stringify(w.adapter.sent);
-    assert.doesNotMatch(everything, /local currency/i);
+    w.h.script.set("How can I fund my account?", intent({ type: "HELP", topic: "FUNDING" }));
+    await w.service.handleInbound(say("How can I fund my account?"));
+    assert.ok((w.adapter.last?.text ?? "").includes(ADDRESS));
+    assert.match(w.adapter.last?.text ?? "", /Network: Celo/);
+  });
 
-    // Registry control: the option appears only when its flag says a real provider flow exists.
+  it("/fund and /wallet are shortcuts to the same flows", async () => {
+    const w = await ready();
+    await w.service.handleInbound(command("FUND"));
+    assert.match(w.adapter.last?.text ?? "", /You can fund your Kaada wallet/);
+    await w.service.handleInbound(command("WALLET"));
+    assert.equal(w.adapter.last?.text, `Your Kaada wallet\nNetwork: Celo\nAddress: ${ADDRESS}`);
+    assert.deepEqual(w.adapter.last?.code, [ADDRESS]);
+  });
+
+  it("before the wallet exists, funding points at the setup step instead", async () => {
+    const w = world();
+    await w.service.handleInbound(start());
+    await w.service.handleInbound(command("FUND"));
+    assert.doesNotMatch(w.adapter.last?.text ?? "", /0x[0-9a-f]{40}/i);
+    assert.equal(urls(w.adapter.last)[0]?.label, "Set up Kaada");
+  });
+
+  it("a method with no working provider (local currency) is never advertised; a real choice shows a menu", async () => {
+    const w = await ready();
+    await tap(w, "💰 Fund wallet");
+    assert.doesNotMatch(JSON.stringify(w.adapter.sent), /local currency/i);
+
+    // Registry control: with a real provider flag there are two ways, so there is a choice to make.
     const live = await ready({
       flags: { ...FLAGS, funding: { walletTransfer: true, localCurrency: true } },
     });
-    await tap(live, "Fund wallet");
+    await tap(live, "💰 Fund wallet");
+    assert.match(live.adapter.last?.text ?? "", /How would you like to fund your wallet\?/);
     assert.deepEqual(
       buttons(live.adapter.last).map((a) => a.label),
-      ["Send from another wallet", "View wallet address", "Fund with local currency"],
+      ["Send from another wallet", "Fund with local currency"],
     );
   });
 
@@ -521,10 +566,10 @@ describe("funding", () => {
     const w = await ready({
       flags: { ...FLAGS, funding: { walletTransfer: false, localCurrency: false } },
     });
-    assert.ok(!buttons(w.adapter.last).some((a) => a.label === "Fund wallet"));
+    assert.ok(!buttons(w.adapter.last).some((a) => a.label === "💰 Fund wallet"));
   });
 
-  it("funding details come from trusted state, not from any model", async () => {
+  it("funding details come from trusted state, never from a model", async () => {
     let modelCalls = 0;
     const w = await ready({
       writer: {
@@ -541,21 +586,11 @@ describe("funding", () => {
       },
     });
     const before = modelCalls;
-    await tap(w, "Fund wallet");
-    await tap(w, "Send from another wallet");
+    await tap(w, "💰 Fund wallet");
     const text = w.adapter.last?.text ?? "";
     assert.ok(text.includes(ADDRESS));
-    assert.match(text, /Celo/);
-    assert.match(text, /USDT, USDC, cNGN/);
     assert.doesNotMatch(text, /DEADBEEF|Ethereum/);
     assert.equal(modelCalls, before, "no model call for funding");
-  });
-
-  it("'View wallet address' shows just the address", async () => {
-    const w = await ready();
-    await tap(w, "Fund wallet");
-    await tap(w, "View wallet address");
-    assert.equal(w.adapter.last?.text, `Your Kaada wallet address (Celo):\n${ADDRESS}`);
   });
 
   it("a button for a funding method that is not offered answers 'not available' and reveals nothing", async () => {

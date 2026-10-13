@@ -91,14 +91,6 @@ export interface AuthorizationGate {
   ): Promise<void>;
 }
 
-/** Whole seconds until `at`, never negative. Integer arithmetic only. */
-function secondsUntil(at: Date, now: Date): number {
-  const ms = at.getTime() - now.getTime();
-  if (ms <= 0) return 0;
-  const rounded = ms + 999;
-  return (rounded - (rounded % 1000)) / 1000;
-}
-
 /**
  * Turns a RoutingRequest into a priced route and, separately, writes it. Application orchestration
  * only: asset discovery, route search, pricing, validation and ranking live in the domain
@@ -254,7 +246,6 @@ export class RoutingService {
         ? " (indicative price, not a firm quote)"
         : "";
     const feeText = fees.length > 0 ? fees.map((fee) => fee.display).join(" + ") : "none";
-    const seconds = planned.expiresAt ? secondsUntil(planned.expiresAt, this.now()) : 0;
     const input = await this.view(planned.input, assets);
     const output = await this.view(planned.output, assets);
     const routeSummary: RouteSummary = {
@@ -270,8 +261,8 @@ export class RoutingService {
       type: "QUOTE_RESULT",
       text:
         request.amountMode === "EXACT_INPUT"
-          ? `${input.display} currently gives approximately ${output.display}${fine}. Fees: ${feeText}. The prices expire in ${String(seconds)} seconds. Nothing was sent.`
-          : `To get ${output.display} you would need approximately ${input.display}${fine}. Fees: ${feeText}. The prices expire in ${String(seconds)} seconds. Nothing was sent.`,
+          ? `${input.display} currently gives approximately ${output.display}${fine}. Fees: ${feeText}.`
+          : `To get ${output.display} you would need approximately ${input.display}${fine}. Fees: ${feeText}.`,
       intentId: request.intentId,
       revision: request.intentRevision,
       routeId: createId(),
@@ -491,7 +482,6 @@ export class RoutingService {
     };
     const mock = quotes.some((quote) => quote.rawProviderData?.["mock"] === true);
     const expiresAt = (route.expiresAt ?? this.now()).toISOString();
-    const seconds = route.expiresAt ? secondsUntil(route.expiresAt, this.now()) : 0;
     const indicative = quotes.some((quote) => quote.rawProviderData?.["indicative"] === true);
     const fine = mock
       ? " (mock pricing, development only, not a real price)"
@@ -499,7 +489,6 @@ export class RoutingService {
         ? " (indicative price, not a firm quote)"
         : "";
     const feeText = fees.length > 0 ? fees.map((fee) => fee.display).join(" + ") : "none";
-    const expiry = `The prices expire in ${seconds} seconds.`;
 
     const input = await this.view(route.input, assets);
     const output = await this.view(route.output, assets);
@@ -509,8 +498,8 @@ export class RoutingService {
         type: "QUOTE_RESULT",
         text:
           request.amountMode === "EXACT_INPUT"
-            ? `${input.display} currently gives approximately ${output.display}${fine}. Fees: ${feeText}. ${expiry} Nothing was sent.`
-            : `To get ${output.display} you would need approximately ${input.display}${fine}. Fees: ${feeText}. ${expiry} Nothing was sent.`,
+            ? `${input.display} currently gives approximately ${output.display}${fine}. Fees: ${feeText}.`
+            : `To get ${output.display} you would need approximately ${input.display}${fine}. Fees: ${feeText}.`,
         intentId: request.intentId,
         revision: request.intentRevision,
         routeId: route.id,
@@ -572,8 +561,8 @@ export class RoutingService {
     const response: PaymentReadyResponse = {
       type: "PAYMENT_READY",
       text: exactInput
-        ? `You spend exactly ${input.display}; ${who} receives about ${output.display}${fine}. Fees: ${feeText}. ${expiry}`
-        : `${who} receives exactly ${output.display}; estimated spend ${input.display}${fine}. Fees: ${feeText}. ${expiry}`,
+        ? `You spend exactly ${input.display}; ${who} receives about ${output.display}${fine}. Fees: ${feeText}.`
+        : `${who} receives exactly ${output.display}; estimated spend ${input.display}${fine}. Fees: ${feeText}.`,
       intentId: request.intentId,
       revision: request.intentRevision,
       routeId: route.id,

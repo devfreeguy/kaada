@@ -174,3 +174,53 @@ that starts but never connects), then sets `WEB_URL`, `CORS_ORIGINS`, `PASSKEY_O
   sign under the next. Use throw-away test wallets. The credential architecture is untouched: these are environment values only.
 - The web dev server allows `*.trycloudflare.com` as a dev origin (`allowedDevOrigins`, development only).
 - The webhook must keep refusing requests without the secret (401), and the secret header is redacted from request logs.
+
+## Commands (Build 14.2 live-review fixes)
+
+Slash commands are shortcuts to things people can also say in words; natural typing stays the main way to use Kaada (there is no
+`/send`: "Send Daniel $20" is the interface). The menu is published with `pnpm --filter @kaada/api telegram:webhook commands` (and
+by `set`), built by `commandMenu(flags)` so a command exists only when its feature does:
+
+| Command    | Does                                                       | Same as                      |
+| ---------- | ---------------------------------------------------------- | ---------------------------- |
+| `/start`   | state-aware welcome, or resumes the exact setup step       | first contact                |
+| `/help`    | concise list of what is available here, plus the shortcuts | "what can you do?"           |
+| `/balance` | the wallet's balance (empty wallet leads to funding)       | "what's my balance?"         |
+| `/fund`    | the wallet address, network and supported assets           | "how can I fund my account?" |
+| `/wallet`  | the wallet address and network                             | -                            |
+| `/rates`   | asks which pair to check                                   | "what's today's rate?"       |
+| `/cancel`  | cancels what is open                                       | the Cancel button            |
+
+Not offered because the feature does not exist yet: `/history` (transaction history) and `/status` (payment status lookup).
+Commands are parsed by the adapter (syntax only) and resolved in `ChannelMessageService` to the same channel-neutral actions as the
+buttons, so another adapter reuses them.
+
+## Funding flow
+
+"Fund wallet" (button, `/fund`, or "how do I add money?" typed in words) shows the real, currently supported way: a transfer from
+another wallet or an exchange on Celo. The message is fixed wording over trusted state (the wallet address, the network, the
+tokens Kaada recognises); no model writes any of it:
+
+```
+Sure 👍 You can fund your Kaada wallet from another wallet.
+
+Network: Celo
+Wallet: 0x…
+Supported assets: USDT, USDC, …
+
+Only send supported assets on the Celo network to this address. Funds sent on another network, or unsupported assets, may not
+appear in Kaada and may be difficult or impossible to recover.
+```
+
+Telegram shows the address as monospace and with a native **Copy address** button (`copy_text`, Bot API 7.11+); an adapter that
+cannot copy shows only the text. A menu appears only when there are two or more real choices (today there is one), and "Fund with
+local currency" stays hidden until a real provider flow exists. If a payment is open (for example it was short on funds), the message
+also offers **Continue**, which re-prices the same payment once the funds have arrived.
+
+## Balance outcomes
+
+A successful read of an empty wallet answers "Your wallet is empty right now. Want to add some funds?" with **Fund wallet**; asking
+for one token the wallet lacks says "You don't have any USDT in your Kaada wallet yet." A payment that cannot proceed for want of
+funds says "You're short on USDT for this payment. Want to fund your wallet and come back to it?" with **Fund wallet** and
+**Cancel**, and the payment stays open. A failed read is logged with its reason (`WALLET_NOT_READY`, `ASSET_UNSUPPORTED` with the
+token symbol, `RPC_UNAVAILABLE`, `BALANCE_UNAVAILABLE`); the person only sees "I couldn't read your balance right now."

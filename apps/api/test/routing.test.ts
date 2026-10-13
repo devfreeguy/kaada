@@ -579,7 +579,7 @@ describe("quote versus payment", () => {
     // net 49.995 USDT at 5.42 = 270.97290 wBRL
     assert.equal(quote.destination.display, "270.9729 wBRL");
     assert.match(quote.text, /50 USDT currently gives approximately 270.9729 wBRL/);
-    assert.match(quote.text, /Nothing was sent/);
+    assert.doesNotMatch(quote.text, /Nothing was sent|expire/, "no infrastructure narration");
     for (const message of r.world.messages) {
       const type = (message.structuredData as { type?: string } | undefined)?.type;
       assert.notEqual(type, "AUTHORIZATION_REQUIRED");

@@ -78,6 +78,14 @@ function commandOf(text: string): ChannelCommand | null {
       return "START";
     case "help":
       return "HELP";
+    case "balance":
+      return "BALANCE";
+    case "fund":
+      return "FUND";
+    case "rates":
+      return "RATES";
+    case "wallet":
+      return "WALLET";
     case "cancel":
       return "CANCEL";
     default:
@@ -179,6 +187,7 @@ export class TelegramAdapter implements ChannelAdapter {
       chat_id: target.externalConversationId,
       text: clip(text, MAX_TEXT),
       link_preview_options: { is_disabled: true },
+      ...entitiesOf(clip(text, MAX_TEXT), message.code),
       ...keyboardOf(actions),
     });
     return { externalMessageId: String(result.message_id) };
@@ -196,6 +205,7 @@ export class TelegramAdapter implements ChannelAdapter {
         message_id: Number(externalMessageId),
         text: clip(text, MAX_TEXT),
         link_preview_options: { is_disabled: true },
+        ...entitiesOf(clip(text, MAX_TEXT), message.code),
         // An empty keyboard removes the buttons: a closed payment must not keep offering "Authorize".
         reply_markup: keyboardOf(actions).reply_markup ?? { inline_keyboard: [] },
       });
@@ -209,6 +219,11 @@ export class TelegramAdapter implements ChannelAdapter {
         return this.send(target, message);
       throw error;
     }
+  }
+
+  /** Sets Telegram's "/" menu. Used by the setup script. */
+  async registerCommands(commands: { command: string; description: string }[]): Promise<void> {
+    await this.call("setMyCommands", { commands });
   }
 
   async acknowledge(message: InboundChannelMessage): Promise<void> {
@@ -289,13 +304,38 @@ export class TelegramAdapter implements ChannelAdapter {
 
 // ───────────────────────────────── rendering ─────────────────────────────────
 
+/**
+ * Telegram "code" entities for the parts of the text that should be monospace and tap-to-copy (a wallet address). Offsets and
+ * lengths are in UTF-16 code units, which is what JavaScript strings index by. A part that is not in the text is ignored.
+ */
+function entitiesOf(
+  text: string,
+  code: string[] | undefined,
+): { entities?: { type: "code"; offset: number; length: number }[] } {
+  if (!code || code.length === 0) return {};
+  const entities: { type: "code"; offset: number; length: number }[] = [];
+  for (const part of code) {
+    const offset = text.indexOf(part);
+    if (part.length > 0 && offset >= 0)
+      entities.push({ type: "code", offset, length: part.length });
+  }
+  return entities.length > 0 ? { entities } : {};
+}
+
 const clip = (text: string, max: number): string =>
   text.length <= max ? text : `${text.slice(0, max - 1)}…`;
 
 function buttonOf(
   action: OutboundAction,
-): { text: string; url: string } | { text: string; callback_data: string } {
+):
+  | { text: string; url: string }
+  | { text: string; callback_data: string }
+  | { text: string; copy_text: { text: string } } {
   if (action.type === "OPEN_URL") return { text: clip(action.label, MAX_BUTTON), url: action.url };
+  // Telegram's own copy-to-clipboard button (Bot API 7.11+): the text is limited to 256 characters.
+  if (action.type === "COPY_TEXT") {
+    return { text: clip(action.label, MAX_BUTTON), copy_text: { text: action.text.slice(0, 256) } };
+  }
   const label = action.description ? `${action.label} (${action.description})` : action.label;
   return { text: clip(label, MAX_BUTTON), callback_data: `${CALLBACK_PREFIX}${action.handle}` };
 }

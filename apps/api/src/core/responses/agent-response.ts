@@ -195,6 +195,10 @@ export interface BalanceResultResponse {
   type: "BALANCE_RESULT";
   text: string;
   lines: { symbol: string; display: string }[];
+  /** The wallet holds none of the supported tokens: the answer leads to funding, not to a dead end. */
+  empty?: boolean;
+  /** The person asked about this token and holds none of it. */
+  missingAsset?: string;
 }
 
 /**
@@ -256,6 +260,8 @@ export interface ErrorResponse {
   type: "ERROR";
   code: AgentErrorCode;
   text: string;
+  /** The token a balance error is about, when there is one ("You're short on USDT"). */
+  asset?: string;
 }
 
 export type AgentResponse =

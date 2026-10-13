@@ -187,3 +187,16 @@ that is merely paused, and nothing about it changes.
   used, and a redelivery changes nothing.
 - Explicit corrections ("Actually make it 30", "Use USDC instead") and "cancel" still behave as before.
 - Not supported on purpose: any other nested conversation. A rate question when no payment is open behaves as before.
+
+## Emoji and wording policy (Build 14.2)
+
+- **Light and meaningful.** A small icon on buttons where it helps (💸 Send money, 💰 Fund wallet, 💱 Today's rates, 👛 Balance,
+  ▶️ Continue, ❌ Cancel) and an occasional one in friendly moments ("Wallet ready 🎉", "Sure 👍", "Checking that for you 👀"). Never on
+  every sentence; the model is held to at most two.
+- **Calm around money.** No playful emoji when a payment failed, funds are short, an outcome is unknown, or recovery/security is
+  involved. Those messages are fixed wording, and a test asserts the "short on funds" message carries none.
+- **No infrastructure narration.** Price expiry ("the prices expire in 27 seconds"), "the final price is confirmed after you
+  authorize" and "Nothing was sent" are no longer shown on summaries, quotes or ordinary errors. "Nothing was sent" is kept only where
+  a person who authorized could reasonably worry (the payment changed after authorization).
+- **Errors that move you forward**: an unknown recipient is "I couldn't find John. Who would you like to send it to?" with Cancel;
+  missing funds offer Fund wallet.

@@ -7,6 +7,7 @@ import type { AppConfig } from "@kaada/config";
 import { APP_CONFIG } from "../config/config.module.js";
 import { DATABASE } from "../database/database.module.js";
 import { AgentService } from "../core/agent/agent-service.js";
+import { classifyBalanceFailure } from "../core/wallets/balance-failure.js";
 import type { AgentBalanceReader } from "../core/agent/agent-service.js";
 import { createDevInterpreter } from "../core/agent/dev-fixtures.js";
 import type { IntentInterpreter } from "../core/agent/interpreter.js";
@@ -52,7 +53,7 @@ function walletBalanceReader(balances: WalletBalanceService): AgentBalanceReader
         };
       } catch (error) {
         if (error instanceof KaadaError && error.code === "WALLET_NOT_ACTIVE") return "NO_WALLET";
-        throw error;
+        throw classifyBalanceFailure(error);
       }
     },
   };

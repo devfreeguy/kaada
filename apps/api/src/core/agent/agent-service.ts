@@ -61,6 +61,25 @@ export interface CommandInput extends IncomingBase {
   resumeIntentId?: string;
 }
 
+/**
+ * Why a balance could not be read. Kept apart so the cause is findable in the logs even though the person only ever sees a friendly
+ * "I couldn't read that right now": a wallet that is not ready is not an RPC outage, and neither is a token that is not a contract.
+ */
+export type BalanceFailureReason =
+  "WALLET_NOT_READY" | "ASSET_UNSUPPORTED" | "RPC_UNAVAILABLE" | "BALANCE_UNAVAILABLE";
+
+export class BalanceReadError extends Error {
+  override readonly name = "BalanceReadError";
+  constructor(
+    readonly reason: BalanceFailureReason,
+    /** Safe to log: a token symbol or an error class, never a URL or a key. */
+    readonly detail?: string,
+    options?: { cause?: unknown },
+  ) {
+    super(`balance unavailable: ${reason}`, options);
+  }
+}
+
 /** What the agent needs to answer "what's my balance?": a fresh read of the wallet, or "no wallet yet". */
 export interface AgentBalanceReader {
   read(userId: string): Promise<{ lines: { symbol: string; display: string }[] } | "NO_WALLET">;
@@ -511,24 +530,44 @@ export class AgentService {
           text: "You need to set up your Kaada wallet first.",
         };
       } else {
-        const wanted = request.asset?.trim().toLowerCase();
-        const shown = wanted
-          ? read.lines.filter((line) => line.symbol.toLowerCase() === wanted)
+        // The balances are what the wallet service returned (zero balances are not listed). Nothing is estimated or filled in.
+        const wanted = request.asset?.trim();
+        const held = wanted
+          ? read.lines.filter((line) => line.symbol.toLowerCase() === wanted.toLowerCase())
           : read.lines;
-        const lines = shown.length > 0 ? shown : read.lines;
-        response = {
-          type: "BALANCE_RESULT",
-          lines,
-          text:
-            lines.length === 0
-              ? "Your wallet is empty."
-              : `Your balance:\n${lines.map((line) => `• ${line.display} ${line.symbol}`).join("\n")}`,
-        };
+        if (read.lines.length === 0) {
+          response = {
+            type: "BALANCE_RESULT",
+            lines: [],
+            empty: true,
+            text: "Your wallet is empty right now. Want to add some funds?",
+          };
+        } else if (wanted && held.length === 0) {
+          response = {
+            type: "BALANCE_RESULT",
+            lines: [],
+            missingAsset: wanted.toUpperCase(),
+            text: `You don't have any ${wanted.toUpperCase()} in your Kaada wallet yet.\n\nWant to fund it?`,
+          };
+        } else {
+          response = {
+            type: "BALANCE_RESULT",
+            lines: held,
+            text: `Your balance:\n${held.map((line) => `• ${line.display} ${line.symbol}`).join("\n")}`,
+          };
+        }
       }
     } catch (error) {
+      const reason: BalanceFailureReason =
+        error instanceof BalanceReadError ? error.reason : "BALANCE_UNAVAILABLE";
       this.log("error", "agent.balance.failed", {
         conversationId: result.conversationId,
+        reason,
+        ...(error instanceof BalanceReadError && error.detail && { detail: error.detail }),
         error: error instanceof Error ? error.name : "unknown",
+        ...((error as { cause?: { name?: string } } | null)?.cause?.name && {
+          cause: (error as { cause: { name: string } }).cause.name,
+        }),
       });
       response = {
         type: "ERROR",
@@ -594,6 +633,27 @@ export class AgentService {
       });
     });
     return { ...result, response };
+  }
+
+  /**
+   * The payment still open in this chat, if any (display facts only). Lets a message about funding offer to carry on with the
+   * payment once the wallet has money, without the channel knowing anything about intents. Read only.
+   */
+  async openPaymentResume(input: {
+    userId: string;
+    channel: ChannelType;
+    externalConversationId: string;
+  }): Promise<ResumeInfo | undefined> {
+    const repositories = this.unitOfWork.read;
+    const conversation = await repositories.conversations.getOrCreateByExternalId({
+      id: createId(),
+      userId: input.userId,
+      channel: input.channel,
+      status: "ACTIVE",
+      externalConversationId: input.externalConversationId,
+    });
+    if (conversation.userId !== input.userId) return undefined;
+    return this.coordinator.openPaymentResume(repositories, conversation.userId, conversation.id);
   }
 
   /** The last few turns of a conversation (oldest first), for the conversation layer's tone. Read only. */

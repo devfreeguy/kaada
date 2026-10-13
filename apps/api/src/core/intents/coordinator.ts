@@ -216,9 +216,19 @@ export class IntentCoordinator {
    * The payment that is open, in display terms, so a side answer can offer to carry on. Read only: it re-reads what was stored,
    * and never changes the intent.
    */
+  /** The payment open in a conversation, in display terms (see ResumeInfo). Read only. */
+  async openPaymentResume(
+    repositories: AgentRepositories,
+    userId: string,
+    conversationId: string,
+  ): Promise<ResumeInfo | undefined> {
+    const active = await repositories.intents.findOpenByConversation(conversationId);
+    return this.resumeOf(repositories, { userId }, active);
+  }
+
   private async resumeOf(
     repositories: AgentRepositories,
-    conversation: Conversation,
+    conversation: Pick<Conversation, "userId">,
     active: Intent | null,
   ): Promise<ResumeInfo | undefined> {
     const parsed = active?.parsed;
@@ -308,7 +318,7 @@ export class IntentCoordinator {
     });
     const request = buildRoutingRequest({ ...state, createdAt: now, updatedAt: now });
     if (!request) return askForPair;
-    return answer({ type: "SIDE_QUOTE_REQUIRED", text: "Checking that rate…", request });
+    return answer({ type: "SIDE_QUOTE_REQUIRED", text: "Checking that for you 👀", request });
   }
 
   /**

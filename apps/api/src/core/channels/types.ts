@@ -19,7 +19,7 @@ export interface ChannelIdentity {
 }
 
 /** Syntax-level commands a provider has (Telegram's /start). They are not payment language. */
-export type ChannelCommand = "START" | "HELP" | "CANCEL";
+export type ChannelCommand = "START" | "HELP" | "CANCEL" | "BALANCE" | "FUND" | "RATES" | "WALLET";
 
 export type InboundContent =
   | { kind: "TEXT"; text: string }
@@ -51,6 +51,11 @@ export type OutboundAction =
       label: string;
       url: string;
     }
+  /**
+   * Copies `text` to the person's clipboard where the channel has a real copy button. Never used for anything secret (it is
+   * visible in the message anyway): an address, a reference.
+   */
+  | { type: "COPY_TEXT"; label: string; text: string }
   /** A button the server will recognise by its opaque handle. */
   | {
       type: "ACTION";
@@ -64,6 +69,11 @@ export type OutboundAction =
 export interface OutboundChannelMessage {
   text: string;
   actions?: OutboundAction[];
+  /**
+   * Parts of `text` to show in a monospace, tap-to-copy style where the channel can (a wallet address). They must appear in the
+   * text verbatim; an adapter that cannot format them just shows the text.
+   */
+  code?: string[];
 }
 
 /** Where a message goes: the chat. (In a one-to-one chat the provider needs nothing else.) */
@@ -98,6 +108,9 @@ export interface ChannelAdapter {
 
   /** Tells the provider a button press was received (stops a spinner). Best effort. */
   acknowledge(message: InboundChannelMessage): Promise<void>;
+
+  /** Publishes the slash-command menu where the channel has one. Best effort; called from setup tooling, not at run time. */
+  registerCommands?(commands: { command: string; description: string }[]): Promise<void>;
 
   /** "typing..." while the agent thinks. Best effort. */
   indicateTyping?(target: ChannelTarget): Promise<void>;

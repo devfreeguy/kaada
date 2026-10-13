@@ -409,7 +409,7 @@ describe("the secure authorization flow", () => {
     assert.match(text, /You spend exactly: 20\.00 USDT/);
     assert.match(text, /about 102\.30 wBRL, at least 101\.50 wBRL/);
     assert.match(text, /Fees: 0\.10 USDT/);
-    assert.match(text, /6-digit PIN on a secure Kaada page; never type it in this chat/);
+    assert.match(text, /6-digit PIN on a secure Kaada page\. Never type it in this chat/);
 
     const [authorize] = urlActions(adapter.last);
     assert.equal(authorize?.semantic, "OPEN_AUTHORIZATION");
@@ -490,7 +490,11 @@ describe("the secure authorization flow", () => {
           code: "INSUFFICIENT_BALANCE",
           text: "You don't have enough USDT for this payment.",
         },
-        /enough USDT/,
+        /You're short on funds for this payment/,
+      ],
+      [
+        { type: "ERROR", code: "WALLET_NEEDS_FUNDING", text: "internal" },
+        /don't have a supported balance for this payment yet/,
       ],
     ];
     for (const [response, expected] of cases) {

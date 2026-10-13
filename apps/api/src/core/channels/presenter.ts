@@ -17,14 +17,14 @@ export interface PresentedMessage {
   cancellable?: boolean;
   /** A secure page to open (the setup page, or the PIN step), issued by the channel service when it composes the message. */
   link?: { kind: "WALLET_SETUP" | "PIN_SETUP"; label: string };
+  /** Address-like text to show monospace, and a copy button for it (see OutboundChannelMessage.code and COPY_TEXT). */
+  code?: string[];
+  copy?: { label: string; text: string };
   /** A payment is still open behind this answer: offer to carry on with it (or cancel it). The ids are trusted state. */
   resume?: { intentId: string; revision: number };
   /** Things worth offering next, from the server's allowlist (see conversation/suggestions). Rendered as buttons by the channel. */
   suggestions?: SuggestionId[];
 }
-
-const minutesLeft = (expiresAt: Date, now: Date): number =>
-  Math.max(1, Math.ceil((expiresAt.getTime() - now.getTime()) / 60_000));
 
 /** The payment summary: only figures the authorization will bind, labelled for people. */
 export function describePayment(
@@ -51,7 +51,7 @@ const feeLine = (fees: { display: string }[]): string | null =>
   fees.length === 0 ? null : `Fees: ${fees.map((fee) => fee.display).join(" + ")}`;
 
 /** Maps an agent response to what a person is shown. Never parses `text` to decide anything: only the typed fields. */
-export function presentAgentResponse(response: AgentResponse, now: Date): PresentedMessage {
+export function presentAgentResponse(response: AgentResponse, _now: Date): PresentedMessage {
   switch (response.type) {
     case "MESSAGE":
       return { text: response.text };
@@ -79,10 +79,7 @@ export function presentAgentResponse(response: AgentResponse, now: Date): Presen
       const body = [
         describePayment(response.summary, { mock: response.mock }),
         fees,
-        response.indicative
-          ? "The final price is confirmed after you authorize, and can never exceed the limits above."
-          : null,
-        `Authorize within ${String(minutesLeft(expiresAt, now))} min. You confirm with your 6-digit PIN on a secure Kaada page; never type it in this chat.`,
+        "You confirm with your 6-digit PIN on a secure Kaada page. Never type it in this chat.",
       ].filter((line): line is string => line !== null);
       return {
         text: body.join("\n\n"),
@@ -135,8 +132,19 @@ function presentError(response: Extract<AgentResponse, { type: "ERROR" }>): Pres
       return {
         text: "That option is no longer available. Tell me what you'd like to do and I'll start from where we are.",
       };
-    case "INSUFFICIENT_BALANCE":
+    // A payment that cannot go ahead for want of funds points at the way forward. The payment itself stays open.
     case "WALLET_NEEDS_FUNDING":
+      return {
+        text: "You don't have a supported balance for this payment yet.\n\nWant to fund your wallet?",
+        suggestions: ["FUND_WALLET"],
+        cancellable: true,
+      };
+    case "INSUFFICIENT_BALANCE":
+      return {
+        text: `You're short on ${response.asset ?? "funds"} for this payment.\n\nWant to fund your wallet and come back to it?`,
+        suggestions: ["FUND_WALLET"],
+        cancellable: true,
+      };
     case "FEATURE_NOT_AVAILABLE":
     case "BALANCE_UNAVAILABLE":
       return { text: response.text };

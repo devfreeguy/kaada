@@ -93,6 +93,7 @@ const storedResponseSchema = z.discriminatedUnion("type", [
       "INSUFFICIENT_BALANCE",
     ]),
     text: z.string(),
+    asset: z.string().optional(),
   }),
 ]);
 

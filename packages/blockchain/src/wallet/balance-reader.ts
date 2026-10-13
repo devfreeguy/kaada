@@ -69,8 +69,7 @@ export class ChainBalanceReader implements WalletBalanceReader {
       });
     }
 
-    const balances =
-      tokens.length === 0 ? [] : await this.options.chain.getErc20Balances(address, tokens);
+    const balances = tokens.length === 0 ? [] : await this.readAll(address, tokens, assets);
     if (balances.length !== assets.length) {
       throw new KaadaError(
         "PROVIDER_UNAVAILABLE",
@@ -81,5 +80,34 @@ export class ChainBalanceReader implements WalletBalanceReader {
       createMoney((balances[index] ?? 0n).toString(), asset.id),
     );
     return { chainId: input.chainId, address, tokens: money };
+  }
+
+  /**
+   * One batched call. If it fails, each token is asked on its own to find out WHICH one cannot be read, so the failure names a
+   * token (an address that is not a contract on this chain, typically a fixture left over from a test network) instead of
+   * collapsing every balance into one anonymous error. A token that answers alone means the failure was elsewhere (the RPC),
+   * and the original error stands. Nothing is skipped or guessed.
+   */
+  private async readAll(address: string, tokens: string[], assets: Asset[]): Promise<bigint[]> {
+    try {
+      return await this.options.chain.getErc20Balances(address, tokens);
+    } catch (batchError) {
+      for (const [index, token] of tokens.entries()) {
+        try {
+          await this.options.chain.getErc20Balances(address, [token]);
+        } catch {
+          const asset = assets[index];
+          throw new KaadaError("ASSET_NOT_SUPPORTED", "this token cannot be read on this chain", {
+            details: {
+              assetId: asset?.id ?? "",
+              symbol: asset?.symbol ?? "",
+              reason: "NOT_A_TOKEN_CONTRACT",
+            },
+            cause: batchError,
+          });
+        }
+      }
+      throw batchError;
+    }
   }
 }

@@ -18,9 +18,12 @@ import {
   isSuggestionId,
   labelOf,
 } from "../conversation/capabilities.js";
+import type { CapabilityFlags } from "../conversation/capabilities.js";
 import { ConversationPresenter } from "../conversation/presenter.js";
+import type { ResumeInfo } from "../responses/agent-response.js";
 import { pick } from "../conversation/fallbacks.js";
 import {
+  FUNDING_NONE,
   FUNDING_NOT_READY,
   FUNDING_UNAVAILABLE,
   fundingInstructions,
@@ -30,6 +33,7 @@ import type { FundingInfo } from "../conversation/funding.js";
 import type { OnboardingLifecycleService, Announcement } from "../onboarding/lifecycle-service.js";
 import type { OnboardingFacts, OnboardingStep } from "../onboarding/state.js";
 import type { ChannelActionService } from "./action-service.js";
+import { helpText } from "./commands.js";
 import { errorDetails } from "./error-details.js";
 import type { ChannelIdentityService } from "./identity-service.js";
 import { describeProgress } from "./payment-status.js";
@@ -40,6 +44,7 @@ import type { PresentedMessage } from "./presenter.js";
 import type {
   ChannelAdapter,
   InboundChannelMessage,
+  ChannelCommand,
   OutboundAction,
   OutboundChannelMessage,
 } from "./types.js";
@@ -54,6 +59,12 @@ export interface ChannelMessageServiceDeps {
   /** The Agent Core. Absent when no interpreter is configured: the channel then says so politely. */
   agent: {
     handle(input: IncomingAgentInput): Promise<AgentTurnResult>;
+    /** The payment still open in a chat, if any. Optional: without it funding messages simply do not offer to carry on. */
+    openPaymentResume?(input: {
+      userId: string;
+      channel: ChannelType;
+      externalConversationId: string;
+    }): Promise<ResumeInfo | undefined>;
     /** The last few turns, for the conversation layer's tone. Optional: without it the reply is phrased from the answer alone. */
     recentTurns?(
       conversationId: string,
@@ -222,8 +233,10 @@ export class ChannelMessageService {
       }
       return;
     }
-    if (content.kind === "COMMAND" && content.command === "HELP") {
-      await adapter.send(target, { text: HELP });
+    if (
+      content.kind === "COMMAND" &&
+      (await this.handleCommand(adapter, message, userId, content.command))
+    ) {
       return;
     }
 
@@ -261,7 +274,7 @@ export class ChannelMessageService {
         turn = await this.deps.agent.handle({
           kind: "COMMAND",
           ...base,
-          command: "CANCEL_ACTIVE_INTENT",
+          command: content.command === "BALANCE" ? "SHOW_BALANCE" : "CANCEL_ACTIVE_INTENT",
           externalMessageId: `cmd:${message.externalEventId}`,
         });
       } else {
@@ -279,6 +292,11 @@ export class ChannelMessageService {
     // A turn the agent already answered is still delivered. A redelivery of a PROCESSED update never gets this far (the
     // channel claim answers DUPLICATE first), so reaching here means an earlier attempt stored the answer but failed to send
     // it. Skipping would drop the person's reply for good; at worst this repeats a message after a crash.
+    // "How do I fund my account?" is answered with the wallet's real funding details (or, mid-setup, the next setup step).
+    if (turn.response.type === "CHAT" && turn.response.topic === "FUNDING") {
+      await this.fundWallet(adapter, message, userId);
+      return;
+    }
     if (await this.answerFromOnboardingState(adapter, message, userId, turn)) return;
     await this.deliver(adapter, message, userId, turn);
   }
@@ -546,7 +564,7 @@ export class ChannelMessageService {
           id === "VIEW_WALLET_ADDRESS" ||
           id === "FUND_LOCAL_CURRENCY"
         ) {
-          await this.handleFunding(adapter, message, userId, id, action.conversationId);
+          await this.handleFunding(adapter, message, userId, id);
           return null;
         }
         // No model is involved in a button press: a balance is read by the Agent Core, the rest are fixed prompts.
@@ -575,42 +593,165 @@ export class ChannelMessageService {
     }
   }
 
+  /** The channel's flags (what Kaada really offers here). */
+  private flags(): CapabilityFlags {
+    return (this.deps.conversation ?? FIXED_WORDING).flags;
+  }
+
+  /**
+   * Slash commands: shortcuts to things people can also say in words. Each resolves to the same channel-neutral action as its
+   * button or its sentence. Returns true when handled here; /cancel and /balance continue to the Agent Core.
+   */
+  private async handleCommand(
+    adapter: ChannelAdapter,
+    message: InboundChannelMessage,
+    userId: string,
+    command: ChannelCommand,
+  ): Promise<boolean> {
+    const target = { externalConversationId: message.externalConversationId };
+    switch (command) {
+      case "HELP":
+        await adapter.send(target, {
+          text: this.deps.conversation ? helpText(this.flags()) : HELP,
+        });
+        return true;
+      case "FUND":
+        await this.fundWallet(adapter, message, userId);
+        return true;
+      case "WALLET":
+        await this.sendWalletDetails(adapter, message, userId, "ADDRESS");
+        return true;
+      case "RATES":
+        await adapter.send(target, {
+          text: this.flags().rates
+            ? pick(message.externalEventId, [
+                "Which rate should I check? Tell me the pair, like “USDT to cNGN”.",
+                "Sure, which pair? For example “USDT to cNGN”.",
+              ])
+            : "Rates aren't available right now.",
+        });
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * "Fund wallet": the funding choices that really exist. With a single way (a transfer from another wallet) there is nothing to
+   * choose, so the instructions are shown straight away; a menu appears only when there is a real choice.
+   */
+  private async fundWallet(
+    adapter: ChannelAdapter,
+    message: InboundChannelMessage,
+    userId: string,
+  ): Promise<void> {
+    const target = { externalConversationId: message.externalConversationId };
+    const presenter = this.deps.conversation ?? FIXED_WORDING;
+    const choices = availableFundingMethods(presenter.flags).filter((method) => method.choice);
+    if (choices.length === 0) {
+      await adapter.send(target, { text: FUNDING_NONE });
+      return;
+    }
+    if (choices.length === 1 && choices[0]?.id === "FUND_FROM_WALLET") {
+      await this.sendWalletDetails(adapter, message, userId, "INSTRUCTIONS");
+      return;
+    }
+    await adapter.send(
+      target,
+      await this.compose(
+        { channel: message.channel, externalUserId: message.sender.externalUserId },
+        userId,
+        createId(),
+        presenter.presentFundingOptions(message.externalEventId),
+      ),
+    );
+  }
+
+  /**
+   * The wallet's address and how to fund it. Every value (address, network, tokens) is trusted application state and the wording
+   * is fixed: no model writes any of it. The address is shown monospace with a copy button where the channel has one. If a
+   * payment is open, Continue is offered so the person can come back to it once the funds have arrived.
+   */
+  private async sendWalletDetails(
+    adapter: ChannelAdapter,
+    message: InboundChannelMessage,
+    userId: string,
+    kind: "INSTRUCTIONS" | "ADDRESS",
+  ): Promise<void> {
+    const target = { externalConversationId: message.externalConversationId };
+    const info = (await this.deps.funding?.info(userId)) ?? null;
+    if (!info) {
+      const state = await this.deps.onboarding?.stateOf(userId);
+      if (state && state.step !== "COMPLETE") {
+        await this.sendOnboardingStep(adapter, message, userId, state.step, {
+          context: "CHECK_IN",
+          complete: "ONBOARDING_COMPLETE",
+          userMessage: userMessageOf(message),
+          seed: message.externalEventId,
+          firstName: message.sender.displayName?.split(" ")[0],
+          facts: state.facts,
+        });
+        return;
+      }
+      await adapter.send(target, { text: FUNDING_NOT_READY });
+      return;
+    }
+    const resume =
+      kind === "INSTRUCTIONS"
+        ? await this.deps.agent
+            ?.openPaymentResume?.({
+              userId,
+              channel: message.channel,
+              externalConversationId: message.externalConversationId,
+            })
+            .catch(() => undefined)
+        : undefined;
+    const presented: PresentedMessage = {
+      text:
+        kind === "ADDRESS"
+          ? walletAddressMessage(info)
+          : `${fundingInstructions(info)}${resume ? "\n\nWhen the funds arrive, tap Continue and I'll check your payment again." : ""}`,
+      code: [info.address],
+      copy: { label: "📋 Copy address", text: info.address },
+      ...(this.flags().balance && { suggestions: ["CHECK_BALANCE" as const] }),
+      ...(resume && { resume: { intentId: resume.intentId, revision: resume.revision } }),
+    };
+    await adapter.send(
+      target,
+      await this.compose(
+        { channel: message.channel, externalUserId: message.sender.externalUserId },
+        userId,
+        createId(),
+        presented,
+      ),
+    );
+  }
+
   /** Funding buttons. Only methods the capability registry says exist are ever answered; the details come from trusted state. */
   private async handleFunding(
     adapter: ChannelAdapter,
     message: InboundChannelMessage,
     userId: string,
     id: "FUND_WALLET" | "FUND_FROM_WALLET" | "VIEW_WALLET_ADDRESS" | "FUND_LOCAL_CURRENCY",
-    conversationId: string,
   ): Promise<void> {
-    const target = { externalConversationId: message.externalConversationId };
-    const presenter = this.deps.conversation ?? FIXED_WORDING;
     if (id === "FUND_WALLET") {
-      const presented = presenter.presentFundingOptions(message.externalEventId);
+      await this.fundWallet(adapter, message, userId);
+      return;
+    }
+    const offered = availableFundingMethods(this.flags()).some((method) => method.id === id);
+    if (!offered || id === "FUND_LOCAL_CURRENCY") {
       await adapter.send(
-        target,
-        await this.compose(
-          { channel: message.channel, externalUserId: message.sender.externalUserId },
-          userId,
-          conversationId,
-          presented,
-        ),
+        { externalConversationId: message.externalConversationId },
+        { text: FUNDING_UNAVAILABLE },
       );
       return;
     }
-    const offered = availableFundingMethods(presenter.flags).some((method) => method.id === id);
-    if (!offered) {
-      await adapter.send(target, { text: FUNDING_UNAVAILABLE });
-      return;
-    }
-    const info = (await this.deps.funding?.info(userId)) ?? null;
-    if (!info) {
-      await adapter.send(target, { text: FUNDING_NOT_READY });
-      return;
-    }
-    await adapter.send(target, {
-      text: id === "VIEW_WALLET_ADDRESS" ? walletAddressMessage(info) : fundingInstructions(info),
-    });
+    await this.sendWalletDetails(
+      adapter,
+      message,
+      userId,
+      id === "VIEW_WALLET_ADDRESS" ? "ADDRESS" : "INSTRUCTIONS",
+    );
   }
 
   /** Renders an agent turn as a neutral message (with stored actions and secure links) and sends it. */
@@ -751,7 +892,7 @@ export class ChannelMessageService {
       actions.push({
         type: "ACTION",
         semantic: "CONTINUE_PAYMENT",
-        label: "Continue",
+        label: "▶️ Continue",
         handle: await issue("CONTINUE_PAYMENT", {
           intentId: presented.resume.intentId,
           revision: String(presented.resume.revision),
@@ -773,11 +914,23 @@ export class ChannelMessageService {
       actions.push({
         type: "ACTION",
         semantic: "CANCEL",
-        label: "Cancel",
+        label: "❌ Cancel",
         handle: await issue("CANCEL"),
       });
     }
-    return { text: presented.text, ...(actions.length > 0 && { actions }) };
+    // A copy button (an address), placed before the suggestions so the most useful thing is first.
+    if (presented.copy) {
+      actions.unshift({
+        type: "COPY_TEXT",
+        label: presented.copy.label,
+        text: presented.copy.text,
+      });
+    }
+    return {
+      text: presented.text,
+      ...(presented.code && { code: presented.code }),
+      ...(actions.length > 0 && { actions }),
+    };
   }
 
   private async welcome(userId: string): Promise<OutboundChannelMessage> {

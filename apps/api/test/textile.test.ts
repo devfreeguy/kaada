@@ -630,7 +630,7 @@ describe("through the RoutingService (offline)", () => {
     );
     assert.equal(turn.response.indicative, true);
     assert.match(turn.response.text, /indicative price, not a firm quote/);
-    assert.match(turn.response.text, /Nothing was sent/);
+    assert.doesNotMatch(turn.response.text, /Nothing was sent|expire/);
     const calls = transport().calls;
     assert.deepEqual(
       calls.map((c) => Object.keys(c.body).includes("sellAmount")),

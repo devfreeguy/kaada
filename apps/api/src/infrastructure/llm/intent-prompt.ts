@@ -36,7 +36,7 @@ type: SEND (pay someone) | CONVERT | QUOTE (asks what something would give; noth
 - sourceAsset (SEND: asset to pay with); fromAsset, toAsset (CONVERT and QUOTE: the assets named, including a currency like "reais" as BRL).
 - destination {country,currency,asset}: SEND and QUOTE only, never CONVERT. country is an ISO alpha-2 code, only if a country is named; currency only if a currency is named; asset only if a token is named. Never turn one into another.
 - asset (BALANCE), reference (TRANSACTION_STATUS).
-- topic (HELP only): GREETING (hi, hey, good morning) | SMALL_TALK (what's up, how are you, a joke or compliment) | FAREWELL (thanks, that's all, bye, I'm good) | CAPABILITIES (what can you do, help) | FINANCE_QUESTION (a money question that is not a payment, quote, rate or balance) | OUT_OF_SCOPE (not about money: sports, weather, news, code). RATE uses fromAsset, toAsset, destination.
+- topic (HELP only): GREETING (hi, hey, good morning) | SMALL_TALK (what's up, how are you, a joke or compliment) | FAREWELL (thanks, that's all, bye, I'm good) | CAPABILITIES (what can you do, help) | FUNDING (how do I fund my account or wallet, add money, deposit, top up) | FINANCE_QUESTION (a money question that is not a payment, quote, rate or balance) | OUT_OF_SCOPE (not about money: sports, weather, news, code). RATE uses fromAsset, toAsset, destination.
 
 Rules:
 1. Never guess recipients, addresses, countries, currencies, tokens or amounts; never invent rates. If unsure use null.

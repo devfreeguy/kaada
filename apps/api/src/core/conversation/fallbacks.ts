@@ -47,6 +47,7 @@ const CHAT_TEXT: Record<ChatTopic, string> = {
   FAREWELL: "Perfect 👌 Catch you later.",
   CAPABILITIES: "I can help you with money: sending it, rates and your wallet.",
   FINANCE_QUESTION: "Good question. I don't have an answer for that one yet.",
+  FUNDING: "Let's get your wallet funded 💰",
   OUT_OF_SCOPE: "That's outside my department 😄 I'm your money guy.",
   RATE_GENERAL: "Which rate would you like to check? Tell me the pair.",
 };
@@ -173,7 +174,7 @@ export function fallbackParts(
         };
       }
       return {
-        acknowledgement: "Your wallet is ready 🎉",
+        acknowledgement: "Wallet ready 🎉",
         body: "Now set up your 6-digit PIN. You'll use it to approve payments without having to confirm with your root credential every time.",
       };
     case "ONBOARDING_RECOVERY_NEEDED":
@@ -225,7 +226,7 @@ export function resultFallback(
     };
   }
   return {
-    acknowledgement: pick(seed, ["Here's the latest I've got 👇", "Here's where that stands 👇"]),
+    acknowledgement: pick(seed, ["Here's the latest I've got 💱", "Here's where that stands 💱"]),
     ...(facts.capabilities.send && { closing: "Want to send some?" }),
   };
 }

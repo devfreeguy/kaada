@@ -173,6 +173,7 @@ export class WalletFundingResolver {
       response: {
         type: "ERROR",
         code: "INSUFFICIENT_BALANCE",
+        asset: symbol,
         text: `This would take up to ${formatAmount(spend.amount, decimals)} ${symbol}, but your wallet has ${formatAmount(have.toString(), decimals)} ${symbol}.`,
       },
     };
@@ -194,6 +195,7 @@ export class WalletFundingResolver {
     return {
       type: "ERROR",
       code: "INSUFFICIENT_BALANCE",
+      ...(asset && { asset: asset.symbol }),
       text: `You don't currently have enough ${asset?.symbol ?? "funds"} for this payment.`,
     };
   }
@@ -219,6 +221,7 @@ export class WalletFundingResolver {
       return {
         type: "ERROR",
         code: "INSUFFICIENT_BALANCE",
+        ...(asset && { asset: symbol }),
         text: `You don't currently have enough ${symbol} for this payment.${detail}`,
       };
     }

@@ -30,7 +30,9 @@ export function suggestionPolicy(state: ResponseState, flags: CapabilityFlags): 
       return only("FUND_WALLET", "SEND_MONEY", "CHECK_RATE", "CHECK_BALANCE");
     // The funding choices: exactly the methods that really exist.
     case "FUNDING_OPTIONS":
-      return availableFundingMethods(flags).map((method) => method.id);
+      return availableFundingMethods(flags)
+        .filter((method) => method.choice)
+        .map((method) => method.id);
     // Someone just looked at a rate or a balance: the natural next step is to send, or to look at the other one.
     case "RATE_QUERY":
       return only("SEND_MONEY", "CHECK_BALANCE");
@@ -39,6 +41,12 @@ export function suggestionPolicy(state: ResponseState, flags: CapabilityFlags): 
       return [];
     case "BALANCE_QUERY":
       return only("SEND_MONEY", "CHECK_RATE");
+    // A payment waiting on funds: the way forward is funding the wallet.
+    case "INSUFFICIENT_BALANCE":
+      return only("FUND_WALLET");
+    // Nothing in the wallet: the way forward is funding it.
+    case "BALANCE_EMPTY":
+      return only("FUND_WALLET");
     // A finished payment: light, relevant follow-ups (the wording stays "Anything else?").
     case "PAYMENT_COMPLETED":
       return only("SEND_MONEY", "CHECK_BALANCE");

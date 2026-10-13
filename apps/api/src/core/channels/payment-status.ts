@@ -145,9 +145,9 @@ export function describeProgress(progress: PaymentProgress, seed = ""): string {
     case "AWAITING_AUTHORIZATION":
       return "Waiting for your confirmation on the secure page.";
     case "AUTHORIZATION_EXPIRED":
-      return "That payment wasn't confirmed in time, so I cancelled it. Nothing was spent. Tell me again if you still want to send it.";
+      return "That payment wasn't confirmed in time, so I cancelled it. Tell me again if you still want to send it.";
     case "AUTHORIZATION_CANCELLED":
-      return "That payment was cancelled. Nothing was spent.";
+      return "That payment was cancelled.";
     case "PREPARING":
       return "Authorized ✅ Confirming the final price…";
     case "ROOT_ACTION_REQUIRED":
@@ -165,13 +165,13 @@ export function describeProgress(progress: PaymentProgress, seed = ""): string {
     case "FAILED":
       return `The payment didn't go through, and your funds are safe.${progress.code ? ` Reference: ${progress.code}.` : ""}`;
     case "INSUFFICIENT_BALANCE":
-      return "You don't have enough funds for this payment. Nothing was sent.";
+      return "You don't have enough funds for this payment.";
     case "REAUTHORIZATION_REQUIRED":
       return "The price or the authorization changed before the payment went out, so nothing was sent. Ask me to set the payment up again and you'll confirm it once more.";
     case "GAS_FUNDING_REQUIRED":
       return "Your wallet needs a little CELO to cover network fees before this payment can be sent.";
     case "NO_ROUTE":
-      return "I can't find an available route for this payment right now. Nothing was sent.";
+      return "I can't find an available route for this payment right now. Try again in a little while.";
   }
 }
 

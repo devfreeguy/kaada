@@ -53,6 +53,8 @@ export interface Capability {
 export interface FundingMethod {
   id: SuggestionId;
   label: string;
+  /** Offered as a choice after "Fund wallet". A method that is only a view of another (the address) is not. */
+  choice: boolean;
   available: (flags: FundingFlags) => boolean;
 }
 
@@ -61,11 +63,22 @@ export interface FundingMethod {
  * the provider and flip its flag, and the button appears everywhere. Never listed here "for later" with its flag on.
  */
 const FUNDING_METHODS: readonly FundingMethod[] = [
-  { id: "FUND_FROM_WALLET", label: "Send from another wallet", available: (f) => f.walletTransfer },
-  { id: "VIEW_WALLET_ADDRESS", label: "View wallet address", available: (f) => f.walletTransfer },
+  {
+    id: "FUND_FROM_WALLET",
+    label: "Send from another wallet",
+    choice: true,
+    available: (f) => f.walletTransfer,
+  },
+  {
+    id: "VIEW_WALLET_ADDRESS",
+    label: "View wallet address",
+    choice: false,
+    available: (f) => f.walletTransfer,
+  },
   {
     id: "FUND_LOCAL_CURRENCY",
     label: "Fund with local currency",
+    choice: true,
     available: (f) => f.localCurrency,
   },
 ];
@@ -78,25 +91,25 @@ export function availableFundingMethods(flags: CapabilityFlags): FundingMethod[]
 const REGISTRY: readonly Capability[] = [
   {
     id: "FUND_WALLET",
-    label: "Fund wallet",
+    label: "💰 Fund wallet",
     blurb: "help you fund your wallet",
     available: (flags) => availableFundingMethods(flags).length > 0,
   },
   {
     id: "SEND_MONEY",
-    label: "Send money",
+    label: "💸 Send money",
     blurb: "send money to someone",
     available: (flags) => flags.send,
   },
   {
     id: "CHECK_RATE",
-    label: "Today's rates",
+    label: "💱 Today's rates",
     blurb: "check today's rates",
     available: (flags) => flags.rates,
   },
   {
     id: "CHECK_BALANCE",
-    label: "Check balance",
+    label: "👛 Balance",
     blurb: "see your balance",
     available: (flags) => flags.balance,
   },

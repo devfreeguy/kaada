@@ -12,16 +12,16 @@ export interface FundingInfo {
 }
 
 export function fundingInstructions(info: FundingInfo): string {
-  const tokens = info.assets.length > 0 ? `\n\nSupported tokens: ${info.assets.join(", ")}` : "";
+  const assets = info.assets.length > 0 ? `\nSupported assets: ${info.assets.join(", ")}` : "";
   return [
-    `Send tokens to your Kaada wallet from any wallet or exchange that supports ${info.network}.`,
-    `Your address (${info.network}):\n${info.address}${tokens}`,
-    `Only send on the ${info.network} network. Tokens sent on another network may be lost.`,
+    "Sure 👍 You can fund your Kaada wallet from another wallet.",
+    `Network: ${info.network}\nWallet: ${info.address}${assets}`,
+    `Only send supported assets on the ${info.network} network to this address. Funds sent on another network, or unsupported assets, may not appear in Kaada and may be difficult or impossible to recover.`,
   ].join("\n\n");
 }
 
 export function walletAddressMessage(info: FundingInfo): string {
-  return `Your Kaada wallet address (${info.network}):\n${info.address}`;
+  return `Your Kaada wallet\nNetwork: ${info.network}\nAddress: ${info.address}`;
 }
 
 export const FUNDING_NOT_READY =

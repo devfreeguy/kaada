@@ -355,8 +355,8 @@ describe("in the chat", () => {
     assert.deepEqual(
       buttons(adapter.last).map((a) => [a.semantic, a.label]),
       [
-        ["CONTINUE_PAYMENT", "Continue"],
-        ["CANCEL", "Cancel"],
+        ["CONTINUE_PAYMENT", "▶️ Continue"],
+        ["CANCEL", "❌ Cancel"],
       ],
     );
     assert.doesNotMatch(text, /Want to send some\?/, "no competing question");

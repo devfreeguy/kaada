@@ -12,6 +12,7 @@ import type {
 
 import type {
   ChannelAdapter,
+  ChannelCommand,
   ChannelTarget,
   InboundChannelMessage,
   OutboundChannelMessage,
@@ -201,7 +202,7 @@ export class FakeAdapter implements ChannelAdapter {
 /** A Telegram-shaped inbound text, with stable ids. */
 export function inbound(input: {
   text?: string;
-  command?: "START" | "HELP" | "CANCEL";
+  command?: ChannelCommand;
   action?: string;
   eventId: string;
   telegramUserId?: string;

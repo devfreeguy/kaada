@@ -13,6 +13,8 @@ export const RESPONSE_STATES = [
   /** A rate was asked for without saying which pair. Nothing is shown; the person is asked which one. */
   "RATE_PAIR_NEEDED",
   "BALANCE_QUERY",
+  /** The wallet holds nothing (or none of the asked token): the answer leads to funding. */
+  "BALANCE_EMPTY",
   "RECENT_TRANSACTIONS_QUERY",
   "PAYMENT_INTENT_STARTED",
   "MISSING_RECIPIENT",
@@ -72,6 +74,7 @@ export const STATE_MODE: Record<ResponseState, PresentationMode> = {
   RATE_QUERY: "MODEL_WRAPPED",
   RATE_PAIR_NEEDED: "MODEL_FULL",
   BALANCE_QUERY: "MODEL_WRAPPED",
+  BALANCE_EMPTY: "DETERMINISTIC",
   RECENT_TRANSACTIONS_QUERY: "DETERMINISTIC",
   PAYMENT_INTENT_STARTED: "DETERMINISTIC",
   MISSING_RECIPIENT: "MODEL_FULL",
@@ -143,6 +146,8 @@ export function deriveResponseState(turn: {
           return "CAPABILITY_DISCOVERY";
         case "FINANCE_QUESTION":
           return "FINANCIAL_QUESTION";
+        case "FUNDING":
+          return "FUNDING_OPTIONS";
         case "OUT_OF_SCOPE":
           return "OUT_OF_SCOPE";
         case "RATE_GENERAL":
@@ -171,6 +176,7 @@ export function deriveResponseState(turn: {
     case "SIDE_QUOTE_REQUIRED":
       return "RATE_QUERY";
     case "BALANCE_RESULT":
+      return response.empty || response.missingAsset ? "BALANCE_EMPTY" : "BALANCE_QUERY";
     case "BALANCE_REQUIRED":
       return "BALANCE_QUERY";
     case "CANCELLED":

@@ -610,13 +610,13 @@ describe("Kaada's voice through the real Agent Core", () => {
     assert.deepEqual(
       labels(sent).map((a) => [a.semantic, a.label]),
       [
-        ["SUGGESTION", "Send money"],
-        ["SUGGESTION", "Today's rates"],
-        ["SUGGESTION", "Check balance"],
+        ["SUGGESTION", "💸 Send money"],
+        ["SUGGESTION", "💱 Today's rates"],
+        ["SUGGESTION", "👛 Balance"],
       ],
     );
     assert.ok(labels(sent).every((a) => /^[A-Za-z0-9_-]{22}$/.test(a.handle)));
-    assert.ok(!sent?.text.includes("Send money"), "button labels are never typed into the text");
+    assert.ok(!sent?.text.includes("💸 Send money"), "button labels are never typed into the text");
   });
 
   it("pressing a suggestion is deterministic: no interpreter, no model", async () => {
@@ -626,7 +626,7 @@ describe("Kaada's voice through the real Agent Core", () => {
     const { h, adapter, svc } = service(writer);
     h.script.set("hi", intent({ type: "HELP", topic: "GREETING" }));
     await svc.handleInbound(say("hi"));
-    const send = labels(adapter.last).find((a) => a.label === "Send money");
+    const send = labels(adapter.last).find((a) => a.label === "💸 Send money");
     const before = { interpreter: h.interpreterCalls, model: writer.calls.length };
     await svc.handleInbound(
       inbound({ eventId: `press-${String(++n)}`, action: send?.handle ?? "missing" }),
@@ -785,18 +785,17 @@ describe("Telegram rendering of suggestions", () => {
   };
 
   it("pairs short labels two per row", async () => {
-    assert.deepEqual(await send(["Send money", "Today's rates", "My balance"]), [
-      ["Send money", "Today's rates"],
+    assert.deepEqual(await send(["💸 Send money", "💱 Today's rates", "My balance"]), [
+      ["💸 Send money", "💱 Today's rates"],
       ["My balance"],
     ]);
   });
 
   it("gives a long label a row of its own and never squeezes it beside another", async () => {
-    assert.deepEqual(await send(["Send money", "Check the latest exchange rates", "My balance"]), [
-      ["Send money"],
-      ["Check the latest exchange rates"],
-      ["My balance"],
-    ]);
+    assert.deepEqual(
+      await send(["💸 Send money", "Check the latest exchange rates", "My balance"]),
+      [["💸 Send money"], ["Check the latest exchange rates"], ["My balance"]],
+    );
   });
 });
 
