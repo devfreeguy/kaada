@@ -71,6 +71,14 @@ Production rules enforced at startup:
 | Recovery delay       | Fixed floor of 24 h (the contract's own), in `deployments.ts`.                                                                                                                                                         |
 | Key files            | The relayer key (and the dev attestor key) must live outside the repository.                                                                                                                                           |
 
+## Chat channels
+
+Telegram (and later other chats) is an adapter in front of the unchanged Agent Core: [channels.md](channels.md). The security
+properties: webhooks need Telegram's secret header (constant time); buttons carry only an opaque 22-character handle bound to the
+Telegram account, conversation, expiry and a single use; the **PIN is entered only on the secure browser page** and a six-digit chat
+message is deleted and never stored; payments are handled in private chats only; the status dispatcher only observes and never
+advances a payment.
+
 ## Rate limits
 
 Redis fixed windows (`RedisRateLimiter`, one atomic Lua script: `INCR` + `PEXPIRE`, with a TTL guard so a key can never live forever).

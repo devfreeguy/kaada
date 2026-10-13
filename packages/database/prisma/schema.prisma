@@ -366,6 +366,8 @@ model User {
   rootChanges            RootChange[]
   recoveryConfigurations RecoveryConfiguration[]
   recoveryAttempts       RecoveryAttempt[]
+  channelActions         ChannelAction[]
+  channelPaymentStatuses ChannelPaymentStatus[]
   attestationChallenges  DeviceAttestationChallenge[]
   deviceAttestations     DeviceAttestation[]
 }
@@ -1434,4 +1436,79 @@ model DeviceAttestation {
   challenge DeviceAttestationChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
 
   @@index([userId, publicKeyHash])
+}
+
+enum ChannelInboundStatus {
+  RECEIVED
+  PROCESSED
+}
+
+enum ChannelActionKind {
+  SELECT_OPTION
+  CANCEL
+  VIEW_STATUS
+  RETRY
+}
+
+/// One webhook delivery from a chat provider (a Telegram update id, ...). The unique key is what makes a redelivery harmless:
+/// the first delivery claims it, a duplicate of a PROCESSED one is acknowledged and dropped, and a RECEIVED one that is stale
+/// (the first attempt died) is reclaimed. Holds no message content.
+model ChannelInboundEvent {
+  id              String               @id @db.Uuid
+  channel         ChannelType
+  externalEventId String
+  status          ChannelInboundStatus @default(RECEIVED)
+  receivedAt      DateTime             @default(now()) @db.Timestamptz(3)
+  processedAt     DateTime?            @db.Timestamptz(3)
+
+  @@unique([channel, externalEventId])
+  @@index([receivedAt])
+}
+
+/// What a button in a chat means. The chat provider only ever sees the opaque `handle` (Telegram: callback_data "kaada:a:<handle>");
+/// the meaning lives here, bound to the user who was shown the button, their chat, an expiry and (unless reusable) one use.
+/// Never holds a PIN, a token, a claim token or a financial figure.
+model ChannelAction {
+  id             String            @id @db.Uuid
+  /// The opaque handle the provider sees (16 random bytes, base64url). Unrelated to `id`.
+  handle         String            @unique
+  userId         String            @db.Uuid
+  channel        ChannelType
+  /// The provider's account id the button was shown to (Telegram numeric user id). Nobody else may use it.
+  externalUserId String
+  conversationId String            @db.Uuid
+  kind           ChannelActionKind
+  /// Small, non-sensitive: an option id, a session reference.
+  payload        Json
+  reusable       Boolean           @default(false)
+  expiresAt      DateTime          @db.Timestamptz(3)
+  usedAt         DateTime?         @db.Timestamptz(3)
+  createdAt      DateTime          @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// The chat messages that show one payment's progress, so it can be EDITED as the payment moves (not repeated). One per
+/// authorization session. `lastState` is what the person was last told; it is moved by compare-and-set so two instances
+/// cannot announce the same change twice.
+model ChannelPaymentStatus {
+  id                     String      @id @db.Uuid
+  userId                 String      @db.Uuid
+  channel                ChannelType
+  externalConversationId String
+  authorizationSessionId String      @unique @db.Uuid
+  externalSummaryMessageId String?
+  externalStatusMessageId  String?
+  lastState              String
+  terminal               Boolean     @default(false)
+  createdAt              DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt              DateTime    @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([terminal, updatedAt])
+  @@index([userId])
 }

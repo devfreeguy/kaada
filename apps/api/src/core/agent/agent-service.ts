@@ -48,8 +48,17 @@ export interface ChoiceInput extends IncomingBase {
   optionId: string;
 }
 
+/**
+ * A conversation command from a button or a slash command ("Cancel"): deterministic, so it needs no interpreter call. It goes
+ * through the same apply step as an interpreted "cancel that", so the intent history and invalidation rules are identical.
+ */
+export interface CommandInput extends IncomingBase {
+  kind: "COMMAND";
+  command: "CANCEL_ACTIVE_INTENT" | "START_OVER";
+}
+
 /** What every channel is normalised to before it reaches the agent. */
-export type IncomingAgentInput = TextInput | ChoiceInput;
+export type IncomingAgentInput = TextInput | ChoiceInput | CommandInput;
 
 export type HandleMessageInput = Omit<TextInput, "kind"> & { kind?: "TEXT" };
 
@@ -137,9 +146,31 @@ export class AgentService {
     this.historyLimit = deps.historyLimit ?? 12;
   }
 
-  /** The single entry point: text and selected options are the only two kinds of input. */
+  /** The single entry point: text, selected options and conversation commands are the only kinds of input. */
   handle(input: IncomingAgentInput): Promise<AgentTurnResult> {
-    return input.kind === "CHOICE" ? this.handleChoice(input) : this.handleMessage(input);
+    if (input.kind === "CHOICE") return this.handleChoice(input);
+    if (input.kind === "COMMAND") return this.handleCommand(input);
+    return this.handleMessage(input);
+  }
+
+  /** A deterministic command: stored like a message (so it is idempotent), applied without the interpreter. */
+  async handleCommand(input: CommandInput): Promise<AgentTurnResult> {
+    const { kind: _kind, command, ...base } = input;
+    const accepted = await this.accept({
+      ...base,
+      content: command === "CANCEL_ACTIVE_INTENT" ? "Cancel" : "Start over",
+    });
+    if ("reply" in accepted) {
+      return this.duplicateResult(accepted.conversation, accepted.message, accepted.reply);
+    }
+    return this.route(
+      await this.complete(
+        accepted.conversation,
+        accepted.message,
+        { kind: "COMMAND", command },
+        accepted.fresh,
+      ),
+    );
   }
 
   async handleMessage(input: HandleMessageInput): Promise<AgentTurnResult> {

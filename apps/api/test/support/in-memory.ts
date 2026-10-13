@@ -117,6 +117,12 @@ export function createInMemoryWorld(): InMemoryWorld {
         return Promise.resolve(user);
       },
       createWithIdentity: ({ user, identity }) => {
+        // Like the database: one account per (type, externalId). The loser of a race gets a unique violation (P2002).
+        if (
+          identities.some((i) => i.type === identity.type && i.externalId === identity.externalId)
+        ) {
+          return Promise.reject(Object.assign(new Error("unique constraint"), { code: "P2002" }));
+        }
         const created: User = { ...user, createdAt: stamp(), updatedAt: stamp() };
         const createdIdentity: Identity = { ...identity, createdAt: stamp(), updatedAt: stamp() };
         users.set(created.id, created);
@@ -141,6 +147,19 @@ export function createInMemoryWorld(): InMemoryWorld {
         const created: Identity = { ...identity, createdAt: stamp(), updatedAt: stamp() };
         identities.push(created);
         return Promise.resolve(created);
+      },
+      updateProfile: (id, patch) => {
+        const index = identities.findIndex((i) => i.id === id);
+        const current = identities[index];
+        if (!current) return Promise.reject(new Error("identity not found"));
+        const next: Identity = {
+          ...current,
+          ...(patch.username !== undefined && { username: patch.username }),
+          ...(patch.metadata !== undefined && { metadata: patch.metadata }),
+          updatedAt: stamp(),
+        };
+        identities[index] = next;
+        return Promise.resolve(next);
       },
     },
 

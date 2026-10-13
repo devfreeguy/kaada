@@ -457,3 +457,21 @@ export const AttestationHardwareLevel = {
 } as const
 
 export type AttestationHardwareLevel = (typeof AttestationHardwareLevel)[keyof typeof AttestationHardwareLevel]
+
+
+export const ChannelInboundStatus = {
+  RECEIVED: 'RECEIVED',
+  PROCESSED: 'PROCESSED'
+} as const
+
+export type ChannelInboundStatus = (typeof ChannelInboundStatus)[keyof typeof ChannelInboundStatus]
+
+
+export const ChannelActionKind = {
+  SELECT_OPTION: 'SELECT_OPTION',
+  CANCEL: 'CANCEL',
+  VIEW_STATUS: 'VIEW_STATUS',
+  RETRY: 'RETRY'
+} as const
+
+export type ChannelActionKind = (typeof ChannelActionKind)[keyof typeof ChannelActionKind]

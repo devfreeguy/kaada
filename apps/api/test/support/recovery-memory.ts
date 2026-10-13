@@ -78,6 +78,18 @@ export function createRecoveryStores(now: () => Date): RecoveryStores {
       identities.push(identity);
       return Promise.resolve(copy(identity));
     },
+    updateProfile: (id, patch) => {
+      const index = identities.findIndex((i) => i.id === id);
+      const current = identities[index];
+      if (!current) return Promise.reject(new Error("identity not found"));
+      identities[index] = {
+        ...current,
+        ...(patch.username !== undefined && { username: patch.username }),
+        ...(patch.metadata !== undefined && { metadata: patch.metadata }),
+        updatedAt: now(),
+      };
+      return Promise.resolve(copy(identities[index]));
+    },
   };
 
   const walletCredentials = createMemoryWalletCredentials(now, credentials);

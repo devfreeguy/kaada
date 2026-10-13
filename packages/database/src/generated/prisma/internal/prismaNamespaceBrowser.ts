@@ -86,7 +86,10 @@ export const ModelName = {
   RecoveryAttempt: 'RecoveryAttempt',
   RecoveryEmailChallenge: 'RecoveryEmailChallenge',
   DeviceAttestationChallenge: 'DeviceAttestationChallenge',
-  DeviceAttestation: 'DeviceAttestation'
+  DeviceAttestation: 'DeviceAttestation',
+  ChannelInboundEvent: 'ChannelInboundEvent',
+  ChannelAction: 'ChannelAction',
+  ChannelPaymentStatus: 'ChannelPaymentStatus'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -835,6 +838,53 @@ export const DeviceAttestationScalarFieldEnum = {
 } as const
 
 export type DeviceAttestationScalarFieldEnum = (typeof DeviceAttestationScalarFieldEnum)[keyof typeof DeviceAttestationScalarFieldEnum]
+
+
+export const ChannelInboundEventScalarFieldEnum = {
+  id: 'id',
+  channel: 'channel',
+  externalEventId: 'externalEventId',
+  status: 'status',
+  receivedAt: 'receivedAt',
+  processedAt: 'processedAt'
+} as const
+
+export type ChannelInboundEventScalarFieldEnum = (typeof ChannelInboundEventScalarFieldEnum)[keyof typeof ChannelInboundEventScalarFieldEnum]
+
+
+export const ChannelActionScalarFieldEnum = {
+  id: 'id',
+  handle: 'handle',
+  userId: 'userId',
+  channel: 'channel',
+  externalUserId: 'externalUserId',
+  conversationId: 'conversationId',
+  kind: 'kind',
+  payload: 'payload',
+  reusable: 'reusable',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type ChannelActionScalarFieldEnum = (typeof ChannelActionScalarFieldEnum)[keyof typeof ChannelActionScalarFieldEnum]
+
+
+export const ChannelPaymentStatusScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  channel: 'channel',
+  externalConversationId: 'externalConversationId',
+  authorizationSessionId: 'authorizationSessionId',
+  externalSummaryMessageId: 'externalSummaryMessageId',
+  externalStatusMessageId: 'externalStatusMessageId',
+  lastState: 'lastState',
+  terminal: 'terminal',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ChannelPaymentStatusScalarFieldEnum = (typeof ChannelPaymentStatusScalarFieldEnum)[keyof typeof ChannelPaymentStatusScalarFieldEnum]
 
 
 export const SortOrder = {

@@ -70,6 +70,12 @@
       "device-attestation-roots.test.ts",
       "device-attestation-recovery.test.ts",
       "google-revocation-list.test.ts"
+    ],
+    "chat channels": [
+      "channel-message-service.test.ts",
+      "channel-payment-status.test.ts",
+      "telegram-adapter.test.ts",
+      "telegram-webhook.test.ts"
     ]
   },
   "integration": [
@@ -78,6 +84,7 @@
     "integration/device-attestation.integration.test.ts",
     "integration/redis.integration.test.ts",
     "integration/wallet-setup.integration.test.ts",
-    "integration/authorization.integration.test.ts"
+    "integration/authorization.integration.test.ts",
+    "integration/channels.integration.test.ts"
   ]
 }

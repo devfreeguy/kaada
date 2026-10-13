@@ -65,5 +65,18 @@ export function createIdentityRepository(db: Db): IdentityRepository {
     async add(identity) {
       return toIdentity(await db.identity.create({ data: identityCreateData(identity) }));
     },
+
+    async updateProfile(id, patch) {
+      const row = await db.identity.update({
+        where: { id },
+        data: {
+          ...(patch.username !== undefined && { username: patch.username }),
+          ...(patch.metadata !== undefined && {
+            metadata: patch.metadata,
+          }),
+        },
+      });
+      return toIdentity(row);
+    },
   };
 }

@@ -7,6 +7,7 @@ import {
   recoveryStartedMessage,
 } from "../src/core/recovery/messages.js";
 import { SmtpEmailSender } from "../src/infrastructure/recovery/smtp-email.js";
+import { TelegramAdapter } from "../src/infrastructure/channels/telegram/telegram-adapter.js";
 import { TelegramChannelMessenger } from "../src/infrastructure/recovery/telegram.js";
 
 describe("SMTP email", () => {
@@ -50,11 +51,15 @@ describe("Telegram alerts", () => {
   const calls: { url: string; body: Record<string, unknown> }[] = [];
   const okFetch = ((url: string, init: { body: string }) => {
     calls.push({ url, body: JSON.parse(init.body) as Record<string, unknown> });
-    return Promise.resolve(new Response("{}", { status: 200 }));
+    return Promise.resolve(
+      new Response(JSON.stringify({ ok: true, result: { message_id: 1 } }), { status: 200 }),
+    );
   }) as unknown as typeof fetch;
 
   it("only handles Telegram identities", () => {
-    const messenger = new TelegramChannelMessenger({ botToken: "123:abc", fetch: okFetch });
+    const messenger = new TelegramChannelMessenger(
+      new TelegramAdapter({ botToken: "123:abc", fetch: okFetch }),
+    );
     assert.equal(messenger.supports("TELEGRAM"), true);
     for (const other of ["EMAIL", "WHATSAPP", "PHONE", "DISCORD", "X"] as const) {
       assert.equal(messenger.supports(other), false);
@@ -62,7 +67,9 @@ describe("Telegram alerts", () => {
   });
 
   it("sends the alert text to the linked user's chat, with previews off", async () => {
-    const messenger = new TelegramChannelMessenger({ botToken: "123:abc", fetch: okFetch });
+    const messenger = new TelegramChannelMessenger(
+      new TelegramAdapter({ botToken: "123:abc", fetch: okFetch }),
+    );
     await messenger.send(
       { type: "TELEGRAM", externalId: "987654321" },
       recoveryCancelledMessage("ROOT"),
@@ -70,15 +77,17 @@ describe("Telegram alerts", () => {
     const [call] = calls;
     assert.equal(call?.url, "https://api.telegram.org/bot123:abc/sendMessage");
     assert.equal(call.body["chat_id"], "987654321");
-    assert.equal(call.body["disable_web_page_preview"], true);
+    assert.deepEqual(call.body["link_preview_options"], { is_disabled: true });
     assert.match(String(call.body["text"]), /cancelled/);
   });
 
   it("refuses a non-numeric identity and never leaks the bot token in an error", async () => {
-    const failing = new TelegramChannelMessenger({
-      botToken: "123:SECRETTOKEN",
-      fetch: () => Promise.resolve(new Response("nope", { status: 403 })),
-    });
+    const failing = new TelegramChannelMessenger(
+      new TelegramAdapter({
+        botToken: "123:SECRETTOKEN",
+        fetch: () => Promise.resolve(new Response("{}", { status: 403 })),
+      }),
+    );
     await assert.rejects(
       failing.send({ type: "TELEGRAM", externalId: "@someone" }, recoveryCancelledMessage("ROOT")),
       /numeric/,

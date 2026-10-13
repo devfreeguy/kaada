@@ -544,3 +544,64 @@ describe("device keys and attestation", () => {
     );
   });
 });
+
+describe("chat channels", () => {
+  const secret = "s".repeat(24);
+
+  it("has no channel unless the Telegram token and the webhook secret are both set", () => {
+    assert.deepEqual(loadConfig(base).channels, {});
+    assert.deepEqual(loadConfig({ ...base, TELEGRAM_BOT_TOKEN: "123:abc" }).channels, {});
+    assert.equal(
+      loadConfig({ ...base, TELEGRAM_BOT_TOKEN: "123:abc" }).recovery.telegramBotToken,
+      "123:abc",
+    );
+  });
+
+  it("enables Telegram conversations with a token, a secret and wallets", () => {
+    const config = loadConfig({
+      ...kernel,
+      TELEGRAM_BOT_TOKEN: "123:abc",
+      TELEGRAM_WEBHOOK_SECRET: secret,
+    });
+    assert.deepEqual(config.channels.telegram, { botToken: "123:abc", webhookSecret: secret });
+  });
+
+  it("refuses a secret without a token, a weak secret, and conversations without wallets", () => {
+    assert.throws(
+      () => loadConfig({ ...kernel, TELEGRAM_WEBHOOK_SECRET: secret }),
+      /TELEGRAM_BOT_TOKEN/,
+    );
+    for (const weak of ["short", "has spaces in it 123456", "bad/chars/123456789012"]) {
+      assert.throws(
+        () =>
+          loadConfig({ ...kernel, TELEGRAM_BOT_TOKEN: "123:abc", TELEGRAM_WEBHOOK_SECRET: weak }),
+        ConfigError,
+        weak,
+      );
+    }
+    assert.throws(
+      () => loadConfig({ ...base, TELEGRAM_BOT_TOKEN: "123:abc", TELEGRAM_WEBHOOK_SECRET: secret }),
+      /WALLET_PROVIDER=kernel/,
+    );
+  });
+
+  it("treats an empty secret as unset and never echoes the token or secret in an error", () => {
+    assert.deepEqual(
+      loadConfig({ ...kernel, TELEGRAM_BOT_TOKEN: "123:abc", TELEGRAM_WEBHOOK_SECRET: "" })
+        .channels,
+      {},
+    );
+    try {
+      loadConfig({
+        ...base,
+        TELEGRAM_BOT_TOKEN: "123:SECRETTOKEN",
+        TELEGRAM_WEBHOOK_SECRET: secret,
+      });
+      assert.fail("expected a failure");
+    } catch (error) {
+      const message = (error as Error).message;
+      assert.equal(message.includes("SECRETTOKEN"), false);
+      assert.equal(message.includes(secret), false);
+    }
+  });
+});

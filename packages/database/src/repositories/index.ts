@@ -13,6 +13,9 @@ import type {
   RecoveryCleanupRepository,
   RecoveryConfigurationRepository,
   RecoveryEmailChallengeRepository,
+  ChannelActionRepository,
+  ChannelInboundEventRepository,
+  ChannelPaymentStatusRepository,
   DeviceAttestationRepository,
   RootChangeRepository,
   WalletCredentialRepository,
@@ -58,6 +61,11 @@ import {
   createWalletCredentialRepository,
 } from "./recovery.js";
 import { createDeviceAttestationRepository } from "./attestation.js";
+import {
+  createChannelActionRepository,
+  createChannelInboundEventRepository,
+  createChannelPaymentStatusRepository,
+} from "./channels.js";
 import { createRootChangeRepository } from "./root-change.js";
 import { createExecutionTransactionRepository, createRootActionSessionRepository } from "./run.js";
 import { createIdentityRepository, createUserRepository } from "./identity.js";
@@ -106,6 +114,9 @@ export interface Repositories {
   walletCredentials: WalletCredentialRepository;
   rootChanges: RootChangeRepository;
   deviceAttestations: DeviceAttestationRepository;
+  channelActions: ChannelActionRepository;
+  channelInboundEvents: ChannelInboundEventRepository;
+  channelPaymentStatuses: ChannelPaymentStatusRepository;
   recoveryConfigurations: RecoveryConfigurationRepository;
   recoveryAttempts: RecoveryAttemptRepository;
   recoveryEmailChallenges: RecoveryEmailChallengeRepository;
@@ -142,6 +153,9 @@ function buildRepositories(db: Db): Repositories {
     walletCredentials: createWalletCredentialRepository(db),
     rootChanges: createRootChangeRepository(db),
     deviceAttestations: createDeviceAttestationRepository(db),
+    channelActions: createChannelActionRepository(db),
+    channelInboundEvents: createChannelInboundEventRepository(db),
+    channelPaymentStatuses: createChannelPaymentStatusRepository(db),
     recoveryConfigurations: createRecoveryConfigurationRepository(db),
     recoveryAttempts: createRecoveryAttemptRepository(db),
     recoveryEmailChallenges: createRecoveryEmailChallengeRepository(db),

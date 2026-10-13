@@ -4,6 +4,7 @@ import type { AppConfig } from "@kaada/config";
 import { LoggerModule } from "nestjs-pino";
 
 import { AgentModule } from "./agent/agent.module.js";
+import { ChannelsModule } from "./channels/channels.module.js";
 import { AuthorizationModule } from "./authorization/authorization.module.js";
 import { ExecutionModule } from "./execution/execution.module.js";
 import { AppConfigModule, APP_CONFIG } from "./config/config.module.js";
@@ -33,6 +34,7 @@ import { WalletModule } from "./wallet/wallet.module.js";
     AuthorizationModule,
     ExecutionModule,
     RecoveryModule,
+    ChannelsModule,
   ],
 })
 export class AppModule {}

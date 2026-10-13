@@ -432,7 +432,10 @@ export const ModelName = {
   RecoveryAttempt: 'RecoveryAttempt',
   RecoveryEmailChallenge: 'RecoveryEmailChallenge',
   DeviceAttestationChallenge: 'DeviceAttestationChallenge',
-  DeviceAttestation: 'DeviceAttestation'
+  DeviceAttestation: 'DeviceAttestation',
+  ChannelInboundEvent: 'ChannelInboundEvent',
+  ChannelAction: 'ChannelAction',
+  ChannelPaymentStatus: 'ChannelPaymentStatus'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -448,7 +451,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "transactionPinSecurity" | "authorizationSession" | "paymentAuthorization" | "executionSecret" | "firmQuoteAttempt" | "rootActionSession" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent" | "walletCredential" | "rootChange" | "recoveryConfiguration" | "recoveryAttempt" | "recoveryEmailChallenge" | "deviceAttestationChallenge" | "deviceAttestation"
+    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "transactionPinSecurity" | "authorizationSession" | "paymentAuthorization" | "executionSecret" | "firmQuoteAttempt" | "rootActionSession" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent" | "walletCredential" | "rootChange" | "recoveryConfiguration" | "recoveryAttempt" | "recoveryEmailChallenge" | "deviceAttestationChallenge" | "deviceAttestation" | "channelInboundEvent" | "channelAction" | "channelPaymentStatus"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -3116,6 +3119,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ChannelInboundEvent: {
+      payload: Prisma.$ChannelInboundEventPayload<ExtArgs>
+      fields: Prisma.ChannelInboundEventFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ChannelInboundEventFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelInboundEventPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ChannelInboundEventFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelInboundEventPayload>
+        }
+        findFirst: {
+          args: Prisma.ChannelInboundEventFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelInboundEventPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ChannelInboundEventFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelInboundEventPayload>
+        }
+        findMany: {
+          args: Prisma.ChannelInboundEventFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelInboundEventPayload>[]
+        }
+        create: {
+          args: Prisma.ChannelInboundEventCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelInboundEventPayload>
+        }
+        createMany: {
+          args: Prisma.ChannelInboundEventCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ChannelInboundEventCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelInboundEventPayload>[]
+        }
+        delete: {
+          args: Prisma.ChannelInboundEventDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelInboundEventPayload>
+        }
+        update: {
+          args: Prisma.ChannelInboundEventUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelInboundEventPayload>
+        }
+        deleteMany: {
+          args: Prisma.ChannelInboundEventDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ChannelInboundEventUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ChannelInboundEventUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelInboundEventPayload>[]
+        }
+        upsert: {
+          args: Prisma.ChannelInboundEventUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelInboundEventPayload>
+        }
+        aggregate: {
+          args: Prisma.ChannelInboundEventAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateChannelInboundEvent>
+        }
+        groupBy: {
+          args: Prisma.ChannelInboundEventGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ChannelInboundEventGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ChannelInboundEventCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ChannelInboundEventCountAggregateOutputType> | number
+        }
+      }
+    }
+    ChannelAction: {
+      payload: Prisma.$ChannelActionPayload<ExtArgs>
+      fields: Prisma.ChannelActionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ChannelActionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelActionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ChannelActionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelActionPayload>
+        }
+        findFirst: {
+          args: Prisma.ChannelActionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelActionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ChannelActionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelActionPayload>
+        }
+        findMany: {
+          args: Prisma.ChannelActionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelActionPayload>[]
+        }
+        create: {
+          args: Prisma.ChannelActionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelActionPayload>
+        }
+        createMany: {
+          args: Prisma.ChannelActionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ChannelActionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelActionPayload>[]
+        }
+        delete: {
+          args: Prisma.ChannelActionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelActionPayload>
+        }
+        update: {
+          args: Prisma.ChannelActionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelActionPayload>
+        }
+        deleteMany: {
+          args: Prisma.ChannelActionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ChannelActionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ChannelActionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelActionPayload>[]
+        }
+        upsert: {
+          args: Prisma.ChannelActionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelActionPayload>
+        }
+        aggregate: {
+          args: Prisma.ChannelActionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateChannelAction>
+        }
+        groupBy: {
+          args: Prisma.ChannelActionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ChannelActionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ChannelActionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ChannelActionCountAggregateOutputType> | number
+        }
+      }
+    }
+    ChannelPaymentStatus: {
+      payload: Prisma.$ChannelPaymentStatusPayload<ExtArgs>
+      fields: Prisma.ChannelPaymentStatusFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ChannelPaymentStatusFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelPaymentStatusPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ChannelPaymentStatusFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelPaymentStatusPayload>
+        }
+        findFirst: {
+          args: Prisma.ChannelPaymentStatusFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelPaymentStatusPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ChannelPaymentStatusFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelPaymentStatusPayload>
+        }
+        findMany: {
+          args: Prisma.ChannelPaymentStatusFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelPaymentStatusPayload>[]
+        }
+        create: {
+          args: Prisma.ChannelPaymentStatusCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelPaymentStatusPayload>
+        }
+        createMany: {
+          args: Prisma.ChannelPaymentStatusCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ChannelPaymentStatusCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelPaymentStatusPayload>[]
+        }
+        delete: {
+          args: Prisma.ChannelPaymentStatusDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelPaymentStatusPayload>
+        }
+        update: {
+          args: Prisma.ChannelPaymentStatusUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelPaymentStatusPayload>
+        }
+        deleteMany: {
+          args: Prisma.ChannelPaymentStatusDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ChannelPaymentStatusUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ChannelPaymentStatusUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelPaymentStatusPayload>[]
+        }
+        upsert: {
+          args: Prisma.ChannelPaymentStatusUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChannelPaymentStatusPayload>
+        }
+        aggregate: {
+          args: Prisma.ChannelPaymentStatusAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateChannelPaymentStatus>
+        }
+        groupBy: {
+          args: Prisma.ChannelPaymentStatusGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ChannelPaymentStatusGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ChannelPaymentStatusCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ChannelPaymentStatusCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -3887,6 +4112,53 @@ export const DeviceAttestationScalarFieldEnum = {
 export type DeviceAttestationScalarFieldEnum = (typeof DeviceAttestationScalarFieldEnum)[keyof typeof DeviceAttestationScalarFieldEnum]
 
 
+export const ChannelInboundEventScalarFieldEnum = {
+  id: 'id',
+  channel: 'channel',
+  externalEventId: 'externalEventId',
+  status: 'status',
+  receivedAt: 'receivedAt',
+  processedAt: 'processedAt'
+} as const
+
+export type ChannelInboundEventScalarFieldEnum = (typeof ChannelInboundEventScalarFieldEnum)[keyof typeof ChannelInboundEventScalarFieldEnum]
+
+
+export const ChannelActionScalarFieldEnum = {
+  id: 'id',
+  handle: 'handle',
+  userId: 'userId',
+  channel: 'channel',
+  externalUserId: 'externalUserId',
+  conversationId: 'conversationId',
+  kind: 'kind',
+  payload: 'payload',
+  reusable: 'reusable',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type ChannelActionScalarFieldEnum = (typeof ChannelActionScalarFieldEnum)[keyof typeof ChannelActionScalarFieldEnum]
+
+
+export const ChannelPaymentStatusScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  channel: 'channel',
+  externalConversationId: 'externalConversationId',
+  authorizationSessionId: 'authorizationSessionId',
+  externalSummaryMessageId: 'externalSummaryMessageId',
+  externalStatusMessageId: 'externalStatusMessageId',
+  lastState: 'lastState',
+  terminal: 'terminal',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ChannelPaymentStatusScalarFieldEnum = (typeof ChannelPaymentStatusScalarFieldEnum)[keyof typeof ChannelPaymentStatusScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -4579,6 +4851,34 @@ export type ListEnumAttestationHardwareLevelFieldRefInput<$PrismaModel> = FieldR
 
 
 /**
+ * Reference to a field of type 'ChannelInboundStatus'
+ */
+export type EnumChannelInboundStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ChannelInboundStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'ChannelInboundStatus[]'
+ */
+export type ListEnumChannelInboundStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ChannelInboundStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'ChannelActionKind'
+ */
+export type EnumChannelActionKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ChannelActionKind'>
+    
+
+
+/**
+ * Reference to a field of type 'ChannelActionKind[]'
+ */
+export type ListEnumChannelActionKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ChannelActionKind[]'>
+    
+
+
+/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -4778,6 +5078,9 @@ export type GlobalOmitConfig = {
   recoveryEmailChallenge?: Prisma.RecoveryEmailChallengeOmit
   deviceAttestationChallenge?: Prisma.DeviceAttestationChallengeOmit
   deviceAttestation?: Prisma.DeviceAttestationOmit
+  channelInboundEvent?: Prisma.ChannelInboundEventOmit
+  channelAction?: Prisma.ChannelActionOmit
+  channelPaymentStatus?: Prisma.ChannelPaymentStatusOmit
 }
 
 /* Types for Logging */

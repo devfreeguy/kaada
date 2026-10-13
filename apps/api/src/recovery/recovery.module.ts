@@ -13,6 +13,7 @@ import { TRANSACTION_PIN_SERVICE } from "../authorization/authorization.tokens.j
 import type { TransactionPinService } from "../core/authorization/pin-service.js";
 import { EmailChannelMessenger, FileOutboxEmailSender } from "../infrastructure/recovery/email.js";
 import { SmtpEmailSender } from "../infrastructure/recovery/smtp-email.js";
+import { TelegramAdapter } from "../infrastructure/channels/telegram/telegram-adapter.js";
 import { TelegramChannelMessenger } from "../infrastructure/recovery/telegram.js";
 import { RATE_LIMIT_FACTORY } from "../rate-limit/rate-limit.tokens.js";
 import type { RateLimitFactory } from "../rate-limit/rate-limit.module.js";
@@ -81,7 +82,11 @@ import { ATTESTOR_SIGNER_FACTORY, RECOVERY_RUNTIME } from "./recovery.tokens.js"
         const messengers: ChannelMessenger[] = [
           new EmailChannelMessenger(email),
           ...(recovery.telegramBotToken
-            ? [new TelegramChannelMessenger({ botToken: recovery.telegramBotToken })]
+            ? [
+                new TelegramChannelMessenger(
+                  new TelegramAdapter({ botToken: recovery.telegramBotToken }),
+                ),
+              ]
             : []),
         ];
         let attestorSource;

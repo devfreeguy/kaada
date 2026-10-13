@@ -116,7 +116,15 @@ const envShape = {
     .string()
     .regex(/^[0-9]{1,30}$/)
     .default("0"),
+  // The Telegram bot. With a token alone the bot can only SEND (recovery alerts). With the webhook secret too, people can talk
+  // to Kaada in Telegram: Telegram echoes the secret in a header on every webhook call and Kaada rejects any call without it.
   TELEGRAM_BOT_TOKEN: optionalSecret,
+  TELEGRAM_WEBHOOK_SECRET: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z0-9_-]{16,256}$/, "must be 16-256 characters of A-Z a-z 0-9 _ -")
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
   DEVICE_KEY_ROOTS_ENABLED: flag,
   // Device attestation is enabled by naming the apps whose keys are trusted (and needs DEVICE_KEY_ROOTS_ENABLED).
   // "package=sha256hex|sha256hex,package2=sha256hex" and "TEAMID.com.bundle.id,..."
@@ -292,6 +300,16 @@ function buildConfig(
       }),
       ...(recoverySetup && { setup: recoverySetup }),
     },
+    // Chat channels people can talk to. Telegram needs both the bot token and the webhook secret.
+    channels: {
+      ...(env.TELEGRAM_BOT_TOKEN !== undefined &&
+        env.TELEGRAM_WEBHOOK_SECRET !== undefined && {
+          telegram: {
+            botToken: env.TELEGRAM_BOT_TOKEN,
+            webhookSecret: env.TELEGRAM_WEBHOOK_SECRET,
+          },
+        }),
+    },
     ...(env.REDIS_URL !== undefined && {
       redis: { url: env.REDIS_URL, prefix: SETTINGS.redis.keyPrefix },
     }),
@@ -399,6 +417,14 @@ function crossChecks(
     add(
       "EXECUTION_ENABLED",
       "EXECUTION_ENABLED=true needs BUNDLER_URL, EXECUTION_SECRET_KEY, WALLET_PROVIDER=kernel, FX_PROVIDER=textile and the passkey settings",
+    );
+
+  if (env.TELEGRAM_WEBHOOK_SECRET !== undefined && env.TELEGRAM_BOT_TOKEN === undefined)
+    add("TELEGRAM_BOT_TOKEN", "TELEGRAM_WEBHOOK_SECRET needs TELEGRAM_BOT_TOKEN");
+  if (env.TELEGRAM_BOT_TOKEN !== undefined && env.TELEGRAM_WEBHOOK_SECRET !== undefined && !kernel)
+    add(
+      "TELEGRAM_BOT_TOKEN",
+      "talking to Kaada in Telegram needs WALLET_PROVIDER=kernel (payments need wallets)",
     );
 
   // Recovery, device keys, attestation.

@@ -291,6 +291,13 @@ function unitOfWork(database: Database): ExecutionUnitOfWork {
     },
     ExecutionReconciler,
   ],
-  exports: [EXECUTION_PREPARATION_SERVICE, EXECUTION_RUNNER, KERNEL_EXECUTION_PORT],
+  exports: [
+    EXECUTION_PREPARATION_SERVICE,
+    EXECUTION_RUNNER,
+    KERNEL_EXECUTION_PORT,
+    ROOT_ACTION_SERVICE,
+    RUN_TRACKER,
+    EXECUTION_REPOSITORIES,
+  ],
 })
 export class ExecutionModule {}

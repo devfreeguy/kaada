@@ -1,3 +1,4 @@
+import type { JsonObject } from "../json.js";
 import type { Identity, IdentityType, User } from "./identity.js";
 
 export type NewUser = Omit<User, "createdAt" | "updatedAt">;
@@ -22,4 +23,9 @@ export interface IdentityRepository {
   listForUser(userId: string): Promise<Identity[]>;
   /** Attaches another identity to an existing user. */
   add(identity: NewIdentity): Promise<Identity>;
+  /** Refreshes display metadata (a channel username or name changed). The stable `externalId` never changes. */
+  updateProfile(
+    id: string,
+    patch: { username?: string | undefined; metadata?: JsonObject | undefined },
+  ): Promise<Identity>;
 }

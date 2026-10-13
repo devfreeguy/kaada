@@ -13,6 +13,9 @@ core/
   responses/      AgentResponse model, clarification wording, payment stages
 ```
 
+> Chat channels (Telegram now, WhatsApp later) sit in front of this engine: see [channels.md](channels.md). The engine also accepts
+> deterministic `COMMAND` input (a Cancel button or `/cancel`) so no language-model call is made for it.
+
 ## Principle
 
 The interpreter (a mock now, an LLM later) only proposes a structured reading of a message. The

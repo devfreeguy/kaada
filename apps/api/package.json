@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "node --import tsx --test \"src/**/*.test.ts\" \"test/*.test.ts\"",
+    "telegram:webhook": "node --import tsx scripts/telegram-webhook.ts",
     "test:security": "node scripts/security-regression.mjs",
     "test:integration": "node --import tsx --test \"test/integration/*.test.ts\"",
     "smoke:groq": "node --import tsx scripts/groq-smoke.ts",

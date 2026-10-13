@@ -261,3 +261,24 @@ export type DeviceAttestationChallenge = Prisma.DeviceAttestationChallengeModel
  * certificate chain or attestation object. One per challenge; at most one VERIFIED per key (manual migration).
  */
 export type DeviceAttestation = Prisma.DeviceAttestationModel
+/**
+ * Model ChannelInboundEvent
+ * One webhook delivery from a chat provider (a Telegram update id, ...). The unique key is what makes a redelivery harmless:
+ * the first delivery claims it, a duplicate of a PROCESSED one is acknowledged and dropped, and a RECEIVED one that is stale
+ * (the first attempt died) is reclaimed. Holds no message content.
+ */
+export type ChannelInboundEvent = Prisma.ChannelInboundEventModel
+/**
+ * Model ChannelAction
+ * What a button in a chat means. The chat provider only ever sees the opaque `handle` (Telegram: callback_data "kaada:a:<handle>");
+ * the meaning lives here, bound to the user who was shown the button, their chat, an expiry and (unless reusable) one use.
+ * Never holds a PIN, a token, a claim token or a financial figure.
+ */
+export type ChannelAction = Prisma.ChannelActionModel
+/**
+ * Model ChannelPaymentStatus
+ * The chat messages that show one payment's progress, so it can be EDITED as the payment moves (not repeated). One per
+ * authorization session. `lastState` is what the person was last told; it is moved by compare-and-set so two instances
+ * cannot announce the same change twice.
+ */
+export type ChannelPaymentStatus = Prisma.ChannelPaymentStatusModel

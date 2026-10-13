@@ -149,5 +149,6 @@ function createInterpreter(config: AppConfig, log: AgentLog): IntentInterpreter 
       },
     },
   ],
+  exports: [AGENT_SERVICE],
 })
 export class AgentModule {}
