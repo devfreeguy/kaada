@@ -72,6 +72,15 @@ export function createConversationRepository(db: Db): ConversationRepository {
       await db.$queryRaw`SELECT id FROM "Conversation" WHERE id = ${id}::uuid FOR UPDATE`;
     },
 
+    async setFocus(id, focus) {
+      // One statement that touches only the "focus" key, so it cannot overwrite other metadata written at the same moment.
+      if (focus === null) {
+        await db.$executeRaw`UPDATE "Conversation" SET "metadata" = COALESCE("metadata", '{}'::jsonb) - 'focus', "updatedAt" = now() WHERE "id" = ${id}::uuid`;
+        return;
+      }
+      await db.$executeRaw`UPDATE "Conversation" SET "metadata" = jsonb_set(COALESCE("metadata", '{}'::jsonb), '{focus}', ${JSON.stringify(focus)}::jsonb), "updatedAt" = now() WHERE "id" = ${id}::uuid`;
+    },
+
     async updateStatus(id, status) {
       return toConversation(await db.conversation.update({ where: { id }, data: { status } }));
     },

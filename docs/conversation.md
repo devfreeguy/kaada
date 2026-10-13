@@ -200,3 +200,28 @@ that is merely paused, and nothing about it changes.
   a person who authorized could reasonably worry (the payment changed after authorization).
 - **Errors that move you forward**: an unknown recipient is "I couldn't find John. Who would you like to send it to?" with Cancel;
   missing funds offer Fund wallet.
+
+## What Kaada just asked decides what a short answer means (conversation focus)
+
+A fragment like "wARS to USDT" or "20" is meaningless on its own. Kaada therefore keeps the question it is waiting on as **state**,
+and reads the next message as the answer to it **before** any language model is consulted. It is never recovered by re-reading the
+wording of an earlier message.
+
+| Kaada asked                   | Stored as                                                   | The answer is read as                                                      |
+| ----------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------- |
+| "Which rate should I check?"  | `focus: RATE_PAIR` in the conversation's `metadata`         | a pair of assets: "wARS to USDT", "wARS/USDT", "wARS -> USDT", "USDT cNGN" |
+| "How much would you send?"    | the open payment's `missingFields[0] = AMOUNT` (existing)   | a bare number: "20", "10k"                                                 |
+| "What currency is the 20 in?" | the open payment's `missingFields[0] = CURRENCY` (existing) | a single label that names a known currency or asset                        |
+| "Which Daniel?"               | server-bound option buttons (existing)                      | the button (no interpretation)                                             |
+
+- **Rate pair:** both labels are checked against the asset registry. If both are real, the one-unit price is looked up directly, with
+  **no interpreter call and no payment**. An unknown asset gets "I don't support wXYZ yet. Which pair would you like to check
+  instead?" and the question stays open. Two ordinary words that are not assets ("what is up") are not mistaken for a pair.
+- **No trap:** a message that is not a pair goes to the interpreter, but only an **explicit** request overrides the question (a
+  payment with a recipient and an amount, a balance question, a command, a full pair). A fragment such as "20" never starts a payment:
+  the question is asked again.
+- **Lifecycle:** set when Kaada asks (typed question, the Today's rates button, `/rates`); cleared by any turn that answers or
+  replaces it, including cancel; ignored after 30 minutes; ignored if the payment that was open when it was asked has since been
+  cancelled, replaced or revised (the focus records that payment's id and revision). A redelivered answer is consumed once (the agent
+  is idempotent per message id).
+- **Not for PINs:** a PIN is never a valid answer to anything in chat; six digits typed into Telegram are still deleted and warned about.

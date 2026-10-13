@@ -1,8 +1,9 @@
-import { createId, defaultCountryDirectory } from "@kaada/domain";
+import { createId, defaultCountryDirectory, isTransactionalIntent } from "@kaada/domain";
 import type {
   JsonObject,
   ChannelType,
   Conversation,
+  ConversationFocus,
   ConversationTurn,
   CountryDirectory,
   Interpretation,
@@ -13,6 +14,14 @@ import { interpretationSchema } from "@kaada/schemas";
 import { loadConversationContext, toHistory } from "../conversations/context.js";
 import { IntentCoordinator } from "../intents/coordinator.js";
 import type { Applied, ResumeTurn } from "../intents/coordinator.js";
+import {
+  activeFocus,
+  isExplicitIntent,
+  parseBareAmount,
+  parseBareLabel,
+  parseRatePair,
+  rateQuestion,
+} from "../intents/focus.js";
 import { composeRevisionHooks, noopOnIntentRevised } from "../intents/intent-commit.js";
 import type { OnIntentRevised } from "../intents/intent-commit.js";
 import {
@@ -56,7 +65,13 @@ export interface ChoiceInput extends IncomingBase {
  */
 export interface CommandInput extends IncomingBase {
   kind: "COMMAND";
-  command: "CANCEL_ACTIVE_INTENT" | "START_OVER" | "SHOW_BALANCE" | "CONTINUE_PAYMENT";
+  command:
+    | "CANCEL_ACTIVE_INTENT"
+    | "START_OVER"
+    | "SHOW_BALANCE"
+    | "CONTINUE_PAYMENT"
+    /** "Today's rates" pressed (or /rates): Kaada asks which pair, and the answer is then read as a pair. */
+    | "ASK_RATE_PAIR";
   /** CONTINUE_PAYMENT: the payment the pressed button belonged to. */
   resumeIntentId?: string;
 }
@@ -188,6 +203,7 @@ export class AgentService {
   private readonly coordinator: IntentCoordinator;
   private readonly routing: RoutingService | undefined;
   private readonly balances: AgentBalanceReader | undefined;
+  private readonly createResolvers: (repositories: AgentRepositories) => AgentResolvers;
   private readonly log: AgentLog;
   private readonly now: () => Date;
   private readonly historyLimit: number;
@@ -198,6 +214,7 @@ export class AgentService {
     this.log = deps.log ?? noopLog;
     this.routing = deps.routing;
     this.balances = deps.balances;
+    this.createResolvers = deps.createResolvers ?? createDefaultResolvers;
     this.now = deps.now ?? (() => new Date());
     this.coordinator = new IntentCoordinator({
       createResolvers: deps.createResolvers ?? createDefaultResolvers,
@@ -235,7 +252,9 @@ export class AgentService {
             ? "Show my balance"
             : command === "CONTINUE_PAYMENT"
               ? "Continue"
-              : "Start over",
+              : command === "ASK_RATE_PAIR"
+                ? "Check a rate"
+                : "Start over",
     });
     if ("reply" in accepted) {
       return this.duplicateResult(accepted.conversation, accepted.message, accepted.reply);
@@ -243,9 +262,11 @@ export class AgentService {
     const interpretation: Interpretation | ResumeTurn =
       command === "SHOW_BALANCE"
         ? { kind: "INTENT", intent: { type: "BALANCE" } }
-        : command === "CONTINUE_PAYMENT"
-          ? { kind: "RESUME", ...(input.resumeIntentId && { intentId: input.resumeIntentId }) }
-          : { kind: "COMMAND", command };
+        : command === "ASK_RATE_PAIR"
+          ? { kind: "INTENT", intent: { type: "HELP", topic: "RATE_GENERAL" } }
+          : command === "CONTINUE_PAYMENT"
+            ? { kind: "RESUME", ...(input.resumeIntentId && { intentId: input.resumeIntentId }) }
+            : { kind: "COMMAND", command };
     return this.route(
       await this.complete(accepted.conversation, accepted.message, interpretation, accepted.fresh),
       input.userId,
@@ -263,6 +284,10 @@ export class AgentService {
     }
 
     const { conversation, message } = accepted;
+    // What Kaada just asked decides how a short answer is read, before any language model is consulted.
+    const focused = await this.answerFromFocus(conversation, message, accepted.fresh);
+    if (focused) return this.route(focused, input.userId);
+
     const interpretation = await this.interpret(conversation, message);
     if (!interpretation) {
       return {
@@ -276,6 +301,141 @@ export class AgentService {
       await this.complete(conversation, message, interpretation, accepted.fresh),
       input.userId,
     );
+  }
+
+  /**
+   * The expected-answer step. Two kinds of pending question, both stored state rather than guesses from earlier wording:
+   *
+   *  - the conversation's focus ("which rate should I check?"): the message is first read as a pair of assets and, if both are
+   *    real, priced directly. Anything else goes to the interpreter, but only an explicit request (a payment with a recipient and
+   *    an amount, a balance question, a command...) overrides the question; a fragment ("20") is not allowed to start a payment,
+   *    and the question is simply asked again.
+   *  - the open payment's own missing detail (its `missingFields`): a bare number answers a missing amount, and a single label
+   *    that names a known currency answers a missing currency.
+   *
+   * Returns undefined when nothing here applies, and the message is interpreted as usual.
+   */
+  private async answerFromFocus(
+    conversation: Conversation,
+    message: Message,
+    fresh: boolean,
+  ): Promise<AgentTurnResult | undefined> {
+    const read = this.unitOfWork.read;
+    const open = await read.intents.findOpenByConversation(conversation.id);
+
+    const focus = activeFocus(conversation.metadata, this.now(), open);
+    if (focus) return this.answerRatePair(conversation, message, fresh, focus);
+
+    const parsed = open?.parsed;
+    if (open?.status === "AWAITING_DETAILS" && parsed && isTransactionalIntent(parsed)) {
+      const expected = open.missingFields[0];
+      if (expected === "AMOUNT") {
+        const value = parseBareAmount(message.content);
+        if (value !== undefined) {
+          return this.complete(
+            conversation,
+            message,
+            { kind: "INTENT", intent: { type: parsed.type, amount: { value } } },
+            fresh,
+          );
+        }
+      }
+      if (expected === "CURRENCY" && parsed.amount?.value !== undefined) {
+        const label = parseBareLabel(message.content);
+        if (
+          label &&
+          (await this.createResolvers(read).assets.resolve(label)).status !== "NOT_FOUND"
+        ) {
+          return this.complete(
+            conversation,
+            message,
+            {
+              kind: "INTENT",
+              intent: {
+                type: parsed.type,
+                amount: { value: parsed.amount.value, currencyOrAsset: label },
+              },
+            },
+            fresh,
+          );
+        }
+      }
+    }
+    return undefined;
+  }
+
+  private async answerRatePair(
+    conversation: Conversation,
+    message: Message,
+    fresh: boolean,
+    focus: ConversationFocus,
+  ): Promise<AgentTurnResult> {
+    const pair = parseRatePair(message.content);
+    if (pair) {
+      const assets = this.createResolvers(this.unitOfWork.read).assets;
+      const [from, to] = await Promise.all([assets.resolve(pair.from), assets.resolve(pair.to)]);
+      const unknown = [
+        ...(from.status === "NOT_FOUND" ? [pair.from] : []),
+        ...(to.status === "NOT_FOUND" ? [pair.to] : []),
+      ];
+      if (unknown.length === 0) {
+        return this.complete(conversation, message, rateQuestion(pair), fresh);
+      }
+      // Two plain words that are not assets ("what is up") are not a pair at all: they are read like any other message. Only a
+      // pair with a real asset in it, or one written as a pair ("X/Y"), is answered with "I don't support ...".
+      if (unknown.length < 2 || pair.explicit) {
+        return this.reask(
+          conversation,
+          message,
+          fresh,
+          `I don't support ${unknown.join(" or ")} yet. Which pair would you like to check instead?`,
+          focus,
+        );
+      }
+    }
+
+    // Not shaped like a pair: read it, but let only an explicit request override the question.
+    const interpretation = await this.interpret(conversation, message);
+    if (!interpretation) {
+      return {
+        conversationId: conversation.id,
+        messageId: message.id,
+        duplicate: false,
+        response: TROUBLE_RESPONSE,
+      };
+    }
+    if (isExplicitIntent(interpretation)) {
+      return this.complete(conversation, message, interpretation, fresh);
+    }
+    return this.reask(
+      conversation,
+      message,
+      fresh,
+      "I didn't catch a pair there. Tell me both, like “USDT to cNGN”.",
+      focus,
+    );
+  }
+
+  /** Asks the pending question again, keeping the focus, without touching anything else. */
+  private reask(
+    conversation: Conversation,
+    message: Message,
+    fresh: boolean,
+    text: string,
+    focus: ConversationFocus,
+  ): Promise<AgentTurnResult> {
+    return this.unitOfWork.transaction(async (repositories) => {
+      await repositories.conversations.lockForUpdate(conversation.id);
+      if (!fresh) {
+        const existing = await repositories.messages.findReply(conversation.id, message.id);
+        if (existing) return this.duplicateResult(conversation, message, existing);
+      }
+      return this.finish(repositories, conversation, message, {
+        response: { type: "MESSAGE", text },
+        mergeKind: "FOCUS_REASK",
+        focus,
+      });
+    });
   }
 
   /**
@@ -685,6 +845,12 @@ export class AgentService {
         ...(applied.resume && { resume: resumeToJson(applied.resume) }),
       },
     });
+
+    // A turn that did not just ask a focus-setting question has answered (or replaced) whatever was pending.
+    const nextFocus = applied.focus ?? null;
+    if (nextFocus !== null || conversation.metadata?.["focus"] !== undefined) {
+      await repositories.conversations.setFocus(conversation.id, nextFocus);
+    }
 
     this.log("info", "agent.turn.completed", {
       conversationId: conversation.id,

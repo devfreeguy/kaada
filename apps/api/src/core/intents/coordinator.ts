@@ -10,6 +10,7 @@ import type {
   AgentCommand,
   AgentIntent,
   Conversation,
+  ConversationFocus,
   CountryDirectory,
   Intent,
   Interpretation,
@@ -47,6 +48,11 @@ export interface Applied {
   mergeKind: string;
   /** The payment that was open while a side question was answered (see ResumeInfo). */
   resume?: ResumeInfo;
+  /**
+   * What the conversation is waiting to be told after this turn. Absent means nothing: the turn answered whatever was pending, so
+   * the focus is cleared. Set only when Kaada has just asked a question whose answer must be read first as that answer.
+   */
+  focus?: ConversationFocus | null;
   /** Details of the operation in progress that this message CHANGED (not merely supplied): "AMOUNT", "RECIPIENT"... */
   corrected?: string[];
 }
@@ -264,7 +270,11 @@ export class IntentCoordinator {
     applied: Applied,
   ): Promise<Applied> {
     const isSide =
-      (intent.type === "HELP" && !(isChatTopic(intent.topic) && intent.topic === "FAREWELL")) ||
+      (intent.type === "HELP" &&
+        !(
+          isChatTopic(intent.topic) &&
+          (intent.topic === "FAREWELL" || intent.topic === "RATE_GENERAL")
+        )) ||
       intent.type === "BALANCE";
     if (!isSide) return applied;
     const resume = await this.resumeOf(repositories, conversation, active);
@@ -613,6 +623,14 @@ export class IntentCoordinator {
           return {
             response: { type: "CHAT", topic: intent.topic, text: chatFallbackText(intent.topic) },
             mergeKind,
+            // "Which rate should I check?" is a question: the next message is first read as the pair that answers it.
+            ...(intent.topic === "RATE_GENERAL" && {
+              focus: {
+                kind: "RATE_PAIR" as const,
+                setAt: this.deps.now().toISOString(),
+                ...(active && { intentId: active.id, intentRevision: active.revision }),
+              },
+            }),
           };
         }
         return { response: { type: "MESSAGE", text: HELP_TEXT }, mergeKind };

@@ -156,8 +156,7 @@ const ALLOWED_FIELDS: Record<IntentType | "RATE", readonly Field[]> = {
   RATE: ["fromAsset", "toAsset", "destination"],
 };
 
-/** The size of the one-unit quote that answers a rate question. A constant of the product, not something the model chooses. */
-const RATE_UNIT_AMOUNT = "1";
+import { RATE_UNIT_AMOUNT } from "../../core/intents/focus.js";
 /** The currency a rate is quoted from when the person names only the other side ("what is BRL today?"). */
 const RATE_DEFAULT_FROM = "USD";
 

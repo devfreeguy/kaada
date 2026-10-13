@@ -1,4 +1,10 @@
-import type { ChannelType, Conversation, ConversationStatus, Message } from "./conversation.js";
+import type {
+  ChannelType,
+  Conversation,
+  ConversationFocus,
+  ConversationStatus,
+  Message,
+} from "./conversation.js";
 
 export type NewConversation = Omit<Conversation, "createdAt" | "updatedAt">;
 export type NewMessage = Omit<Message, "createdAt">;
@@ -24,6 +30,8 @@ export interface ConversationRepository {
    */
   lockForUpdate(id: string): Promise<void>;
   updateStatus(id: string, status: ConversationStatus): Promise<Conversation>;
+  /** Sets (or, with null, clears) what the conversation is waiting to be told. Only the focus changes; other metadata is kept. */
+  setFocus(id: string, focus: ConversationFocus | null): Promise<void>;
 }
 
 export interface AppendMessageResult {

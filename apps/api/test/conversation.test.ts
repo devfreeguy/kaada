@@ -356,7 +356,7 @@ describe("rate and balance answers", () => {
     );
     const out = await present(presenter(good), rate, "What's USDT to cNGN today?");
     assert.equal(out.text, `Here's the latest I've got 👇\n\n${rate.text}\n\nWant to send some?`);
-    assert.deepEqual(out.suggestions, ["SEND_MONEY", "CHECK_BALANCE"]);
+    assert.deepEqual(out.suggestions, ["CHECK_RATE", "SEND_MONEY"]);
 
     const guessing = new FakeWriter(() => reply({ acknowledgement: "It's about 1,700 today 👇" }));
     const fixed = await present(presenter(guessing), rate);

@@ -2,7 +2,11 @@ import { createId } from "@kaada/domain";
 import type { Asset, Interpretation } from "@kaada/domain";
 
 import { AgentService } from "../../src/core/agent/agent-service.js";
-import type { AgentBalanceReader, AgentTurnResult } from "../../src/core/agent/agent-service.js";
+import type {
+  AgentBalanceReader,
+  AgentTurnResult,
+  IncomingAgentInput,
+} from "../../src/core/agent/agent-service.js";
 import { MockIntentInterpreter } from "../../src/core/agent/mock-interpreter.js";
 import type { IntentInterpreter, InterpretationInput } from "../../src/core/agent/interpreter.js";
 import type { AgentLog } from "../../src/core/agent/ports.js";
@@ -52,6 +56,16 @@ export interface Harness {
     content: string,
     options?: { externalMessageId?: string; externalConversationId?: string; userId?: string },
   ): Promise<AgentTurnResult>;
+  /** Sends a conversation command (a button or slash command), as a channel would. */
+  command(
+    command: Extract<IncomingAgentInput, { kind: "COMMAND" }>["command"],
+    options?: {
+      externalMessageId?: string;
+      externalConversationId?: string;
+      userId?: string;
+      resumeIntentId?: string;
+    },
+  ): Promise<AgentTurnResult>;
   /** Selects an option by id, as a channel would. */
   choose(
     optionId: string,
@@ -60,6 +74,8 @@ export interface Harness {
 }
 
 /** A ready-to-use world: seeded assets, a sender, and an interpreter driven by `script`. */
+let commandCounter = 0;
+
 export function createHarness(
   options: {
     delayMs?: (input: InterpretationInput) => number;
@@ -132,6 +148,16 @@ export function createHarness(
         externalConversationId: opts.externalConversationId ?? defaultChat,
         optionId,
         ...(opts.externalMessageId && { externalMessageId: opts.externalMessageId }),
+      }),
+    command: (command, opts = {}) =>
+      agent.handle({
+        kind: "COMMAND",
+        userId: opts.userId ?? SENDER,
+        channel: "TELEGRAM",
+        externalConversationId: opts.externalConversationId ?? defaultChat,
+        command,
+        externalMessageId: opts.externalMessageId ?? `cmd-${command}-${String(++commandCounter)}`,
+        ...(opts.resumeIntentId && { resumeIntentId: opts.resumeIntentId }),
       }),
     say: (content, opts = {}) =>
       agent.handleMessage({

@@ -1,7 +1,13 @@
-export { CHANNEL_TYPES, CONVERSATION_STATUSES, MESSAGE_ROLES } from "./conversation.js";
+export {
+  CHANNEL_TYPES,
+  CONVERSATION_STATUSES,
+  FOCUS_TTL_MS,
+  MESSAGE_ROLES,
+} from "./conversation.js";
 export type {
   ChannelType,
   Conversation,
+  ConversationFocus,
   ConversationStatus,
   Message,
   MessageRole,

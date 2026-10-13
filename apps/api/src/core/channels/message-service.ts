@@ -274,7 +274,12 @@ export class ChannelMessageService {
         turn = await this.deps.agent.handle({
           kind: "COMMAND",
           ...base,
-          command: content.command === "BALANCE" ? "SHOW_BALANCE" : "CANCEL_ACTIVE_INTENT",
+          command:
+            content.command === "BALANCE"
+              ? "SHOW_BALANCE"
+              : content.command === "RATES"
+                ? "ASK_RATE_PAIR"
+                : "CANCEL_ACTIVE_INTENT",
           externalMessageId: `cmd:${message.externalEventId}`,
         });
       } else {
@@ -576,17 +581,20 @@ export class ChannelMessageService {
             externalMessageId: `cb:${message.externalEventId}`,
           });
         }
+        if (id === "CHECK_RATE") {
+          // The Agent Core asks which pair and remembers the question: the next message is read as the answer to it.
+          return this.deps.agent!.handle({
+            kind: "COMMAND",
+            ...base,
+            command: "ASK_RATE_PAIR",
+            externalMessageId: `cb:${message.externalEventId}`,
+          });
+        }
         await adapter.send(target, {
-          text:
-            id === "SEND_MONEY"
-              ? pick(message.externalEventId, [
-                  "Sure 👍 Who are we sending to, and how much? For example “Send Daniel $20”.",
-                  "Okay! Tell me who it's for and how much, like “Send Daniel $20”.",
-                ])
-              : pick(message.externalEventId, [
-                  "Which rate should I check? Tell me the pair, like “USDT to cNGN”.",
-                  "Sure, which pair? For example “USDT to cNGN”.",
-                ]),
+          text: pick(message.externalEventId, [
+            "Sure 👍 Who are we sending to, and how much? For example “Send Daniel $20”.",
+            "Okay! Tell me who it's for and how much, like “Send Daniel $20”.",
+          ]),
         });
         return null;
       }
@@ -622,14 +630,9 @@ export class ChannelMessageService {
         await this.sendWalletDetails(adapter, message, userId, "ADDRESS");
         return true;
       case "RATES":
-        await adapter.send(target, {
-          text: this.flags().rates
-            ? pick(message.externalEventId, [
-                "Which rate should I check? Tell me the pair, like “USDT to cNGN”.",
-                "Sure, which pair? For example “USDT to cNGN”.",
-              ])
-            : "Rates aren't available right now.",
-        });
+        // Available: the Agent Core asks which pair (and remembers it asked), so the answer is read as a pair.
+        if (this.flags().rates) return false;
+        await adapter.send(target, { text: "Rates aren't available right now." });
         return true;
       default:
         return false;

@@ -33,9 +33,9 @@ export function suggestionPolicy(state: ResponseState, flags: CapabilityFlags): 
       return availableFundingMethods(flags)
         .filter((method) => method.choice)
         .map((method) => method.id);
-    // Someone just looked at a rate or a balance: the natural next step is to send, or to look at the other one.
+    // Someone just looked at a rate or a balance: the natural next step is another look, or to send.
     case "RATE_QUERY":
-      return only("SEND_MONEY", "CHECK_BALANCE");
+      return only("CHECK_RATE", "SEND_MONEY");
     // Waiting for a pair: the next thing to do is type it.
     case "RATE_PAIR_NEEDED":
       return [];

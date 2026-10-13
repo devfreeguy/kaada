@@ -188,6 +188,19 @@ export function createInMemoryWorld(): InMemoryWorld {
         return Promise.resolve(conversation);
       },
       lockForUpdate: () => Promise.resolve(),
+      setFocus: (id, focus) => {
+        const current = conversations.get(id);
+        if (!current) return Promise.reject(new Error("conversation not found"));
+        const { focus: _old, ...rest } = (current.metadata ?? {}) as Record<string, unknown>;
+        const metadata = { ...rest, ...(focus && { focus }) } as Conversation["metadata"];
+        const { metadata: _previous, ...base } = current;
+        conversations.set(id, {
+          ...base,
+          ...(metadata && Object.keys(metadata).length > 0 && { metadata }),
+          updatedAt: stamp(),
+        });
+        return Promise.resolve();
+      },
       updateStatus: (id, status) => {
         const current = conversations.get(id);
         if (!current) return Promise.reject(new Error("conversation not found"));
