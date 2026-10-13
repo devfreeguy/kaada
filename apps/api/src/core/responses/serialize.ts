@@ -1,4 +1,4 @@
-import { MISSING_FIELDS } from "@kaada/domain";
+import { CHAT_TOPICS, MISSING_FIELDS } from "@kaada/domain";
 import type { JsonValue } from "@kaada/domain";
 import { jsonValueSchema } from "@kaada/schemas";
 import { z } from "zod";
@@ -31,6 +31,7 @@ const storedResponseSchema = z.discriminatedUnion("type", [
     field: z.enum(MISSING_FIELDS),
     reason: z.enum(["MISSING", "AMBIGUOUS", "NOT_FOUND", "INVALID"]),
     options: z.array(option).optional(),
+    known: z.record(z.string(), z.string()).optional(),
   }),
   z.looseObject({
     type: z.literal("ROUTING_REQUIRED"),
@@ -65,6 +66,9 @@ const storedResponseSchema = z.discriminatedUnion("type", [
     revision: z.number().int(),
     routeId: z.string(),
   }),
+  z.object({ type: z.literal("CHAT"), topic: z.enum(CHAT_TOPICS), text: z.string() }),
+  z.object({ type: z.literal("BALANCE_REQUIRED"), text: z.string(), asset: z.string().optional() }),
+  z.looseObject({ type: z.literal("BALANCE_RESULT"), text: z.string() }),
   z.object({ type: z.literal("CANCELLED"), text: z.string(), intentId: z.string().optional() }),
   z.object({
     type: z.literal("ERROR"),
@@ -80,6 +84,7 @@ const storedResponseSchema = z.discriminatedUnion("type", [
       "ROUTING_STALE",
       "WALLET_SETUP_REQUIRED",
       "WALLET_NEEDS_FUNDING",
+      "BALANCE_UNAVAILABLE",
       "INSUFFICIENT_BALANCE",
     ]),
     text: z.string(),

@@ -291,3 +291,7 @@ dropped from about 4.17 s to about 3.67 s. The remainder is mostly sequential da
 `pnpm test` runs the behaviour tests with in-memory repositories. `pnpm --filter @kaada/api
 test:integration` runs the agent against the real database with committed transactions (so the row
 lock is truly exercised), using uniquely named test users that are deleted afterwards.
+
+## Conversation intents (Build 14.1)
+
+Besides payments the interpreter reads **conversational** turns as a `HELP` intent with a `topic` (GREETING, SMALL_TALK, FAREWELL, CAPABILITIES, FINANCE_QUESTION, OUT_OF_SCOPE, RATE_GENERAL), which the Agent Core answers with a typed `CHAT` response and never lets touch an operation in progress. A rate question is read as `RATE` on the wire and translated into a one-unit `QUOTE`, so the number always comes from pricing. A balance question is answered by a fresh wallet read outside any transaction (`BALANCE_REQUIRED` then `BALANCE_RESULT`). Details: [conversation.md](conversation.md).

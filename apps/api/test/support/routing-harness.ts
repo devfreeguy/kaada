@@ -16,6 +16,7 @@ import { MOCK_FX_FIXTURES, MockFxProvider } from "../../src/infrastructure/fx/mo
 import type { MockPairFixture } from "../../src/infrastructure/fx/mock-fx-provider.js";
 import type { WalletFundingResolver } from "../../src/core/routing/funding-resolver.js";
 import type { AuthorizationGate } from "../../src/core/routing/routing-service.js";
+import type { IntentInterpreter } from "../../src/core/agent/interpreter.js";
 import { RoutingService } from "../../src/core/routing/routing-service.js";
 import { createHarness, SENDER } from "./harness.js";
 import type { Harness } from "./harness.js";
@@ -76,6 +77,8 @@ export function createRoutingHarness(
     mockClockSkewMs?: number;
     /** Price with this provider (bound to the "textile" capability) instead of the mock. */
     pricing?: (context: { assets: AssetRegistry; now: () => Date }) => FxProvider;
+    /** Use a different interpreter (e.g. a real model for the conversation review) instead of the scripted mock. */
+    interpreter?: IntentInterpreter;
     /** Balance-aware funding for payments, built from the asset registry. */
     funding?: (registry: AssetRegistry) => WalletFundingResolver;
     /** Payment authorization (PIN step), built from the world and the clock. */
@@ -103,6 +106,7 @@ export function createRoutingHarness(
 
   const h = createHarness({
     now: () => clock.now,
+    ...(options.interpreter && { interpreter: options.interpreter }),
     routing: (world) => {
       const registry = createAssetRegistry(world.repositories.assets);
       const capabilities = createProviderCapabilityRegistry(world.repositories.providers, {

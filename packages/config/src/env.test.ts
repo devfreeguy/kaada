@@ -84,6 +84,7 @@ describe("loadConfig", () => {
       apiKey: "gsk_test",
       model: SETTINGS.agent.groq.model,
       timeoutMs: SETTINGS.agent.groq.timeoutMs,
+      presentation: SETTINGS.agent.groq.presentation,
     });
     assert.throws(
       () => loadConfig({ ...base, NODE_ENV: "production", AGENT_INTERPRETER: "mock" }),

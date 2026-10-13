@@ -1,12 +1,13 @@
 import { Logger, Module } from "@nestjs/common";
 import { createRepositories, withTransaction } from "@kaada/database";
-import { createAssetRegistry, createCachedAssetRepository } from "@kaada/domain";
+import { KaadaError, createAssetRegistry, createCachedAssetRepository } from "@kaada/domain";
 import type { Database, Repositories } from "@kaada/database";
 import type { AppConfig } from "@kaada/config";
 
 import { APP_CONFIG } from "../config/config.module.js";
 import { DATABASE } from "../database/database.module.js";
 import { AgentService } from "../core/agent/agent-service.js";
+import type { AgentBalanceReader } from "../core/agent/agent-service.js";
 import { createDevInterpreter } from "../core/agent/dev-fixtures.js";
 import type { IntentInterpreter } from "../core/agent/interpreter.js";
 import type { AgentLog } from "../core/agent/ports.js";
@@ -35,6 +36,25 @@ function nestAgentLog(): AgentLog {
     if (level === "info") logger.log(entry);
     else if (level === "warn") logger.warn(entry);
     else logger.error(entry);
+  };
+}
+
+/** Adapts the wallet balance service to what the agent needs. A user without a wallet is a normal answer, not an error. */
+function walletBalanceReader(balances: WalletBalanceService): AgentBalanceReader {
+  return {
+    async read(userId) {
+      try {
+        const view = await balances.forUser(userId);
+        return {
+          lines: view.balances
+            .filter((line) => line.money.amount !== "0")
+            .map((line) => ({ symbol: line.symbol, display: line.formatted })),
+        };
+      } catch (error) {
+        if (error instanceof KaadaError && error.code === "WALLET_NOT_ACTIVE") return "NO_WALLET";
+        throw error;
+      }
+    },
   };
 }
 
@@ -123,6 +143,7 @@ function createInterpreter(config: AppConfig, log: AgentLog): IntentInterpreter 
           log,
         });
         const routing = () => (service ? { routing: service } : {});
+        const balanceReader = balances ? walletBalanceReader(balances) : undefined;
         return new AgentService({
           interpreter,
           unitOfWork: {
@@ -132,6 +153,8 @@ function createInterpreter(config: AppConfig, log: AgentLog): IntentInterpreter 
           createResolvers: (transactional) => createDefaultResolvers({ ...transactional, assets }),
           // Null when FX_PROVIDER=none: the agent then stops at ROUTING_REQUIRED.
           ...routing(),
+          // Balances are read fresh from the chain, outside any transaction, and shown exactly as returned.
+          ...(balanceReader && { balances: balanceReader }),
           // The one place anything derived from an earlier revision is discarded. Candidate sets
           // are recomputed on demand and bound to a revision (isCandidateSetCurrent), so nothing is
           // persisted yet; a later build that stores candidates, quotes or routes adds its

@@ -3,12 +3,16 @@ import type {
   ChannelInboundEventRepository,
   ChannelPaymentStatusRepository,
   ChannelType,
+  ConversationTurn,
 } from "@kaada/domain";
 
 import type { AgentTurnResult, IncomingAgentInput } from "../agent/agent-service.js";
 import { ConversationAccessError } from "../agent/errors.js";
 import type { AgentLog } from "../agent/ports.js";
 import { noopLog } from "../agent/ports.js";
+import { capabilityById, isSuggestionId } from "../conversation/capabilities.js";
+import type { ConversationPresenter } from "../conversation/presenter.js";
+import { pick } from "../conversation/fallbacks.js";
 import type { ChannelActionService } from "./action-service.js";
 import { errorDetails } from "./error-details.js";
 import type { ChannelIdentityService } from "./identity-service.js";
@@ -32,7 +36,20 @@ export interface ChannelMessageServiceDeps {
   inboundEvents: ChannelInboundEventRepository;
   statuses: ChannelPaymentStatusRepository;
   /** The Agent Core. Absent when no interpreter is configured: the channel then says so politely. */
-  agent: { handle(input: IncomingAgentInput): Promise<AgentTurnResult> } | null;
+  agent: {
+    handle(input: IncomingAgentInput): Promise<AgentTurnResult>;
+    /** The last few turns, for the conversation layer's tone. Optional: without it the reply is phrased from the answer alone. */
+    recentTurns?(
+      conversationId: string,
+      excludeMessageId: string,
+      limit?: number,
+    ): Promise<ConversationTurn[]>;
+  } | null;
+  /**
+   * Phrases the Agent Core's answer in Kaada's voice (greetings, small talk, friendly questions, lead-ins around the summary).
+   * Absent: the plain deterministic text is used, exactly as before. It can never change a figure or a status.
+   */
+  conversation?: ConversationPresenter | null;
   links: {
     /** A secure link to the existing wallet setup page, or null when wallets are not enabled. */
     setupLink(userId: string): Promise<string | null>;
@@ -51,6 +68,14 @@ export type InboundResult = "PROCESSED" | "DUPLICATE" | "IN_PROGRESS" | "IGNORED
 
 const HELP =
   "I can send money for you. Try “Send Daniel $20” or “Send João R$500”. I'll show you the payment, and you confirm it with your 6-digit PIN on a secure Kaada page.\n\nCommands: /cancel stops what we're doing, /help shows this.";
+
+/** What the person wrote, for tone only: the text, or a short label for a command or a button press. */
+function userMessageOf(inbound: InboundChannelMessage): string {
+  const { content } = inbound;
+  if (content.kind === "TEXT") return content.text;
+  if (content.kind === "COMMAND") return `/${content.command.toLowerCase()}`;
+  return "(pressed a button)";
+}
 
 /** A message that is exactly six digits looks like a PIN. It must never be stored, interpreted or kept in the chat. */
 const LOOKS_LIKE_PIN = /^\s*\d{6}\s*$/;
@@ -255,6 +280,32 @@ export class ChannelMessageService {
       case "RETRY":
         await adapter.send(target, { text: "Tell me what you'd like to send and I'll set it up." });
         return null;
+      case "SUGGESTION": {
+        const id = action.payload["suggestion"];
+        if (!id || !isSuggestionId(id)) return null;
+        // No model is involved in a button press: a balance is read by the Agent Core, the rest are fixed prompts.
+        if (id === "CHECK_BALANCE") {
+          return this.deps.agent!.handle({
+            kind: "COMMAND",
+            ...base,
+            command: "SHOW_BALANCE",
+            externalMessageId: `cb:${message.externalEventId}`,
+          });
+        }
+        await adapter.send(target, {
+          text:
+            id === "SEND_MONEY"
+              ? pick(message.externalEventId, [
+                  "Sure 👍 Who are we sending to, and how much? For example “Send Daniel $20”.",
+                  "Okay! Tell me who it's for and how much, like “Send Daniel $20”.",
+                ])
+              : pick(message.externalEventId, [
+                  "Which rate should I check? Tell me the pair, like “USDT to cNGN”.",
+                  "Sure, which pair? For example “USDT to cNGN”.",
+                ]),
+        });
+        return null;
+      }
     }
   }
 
@@ -265,7 +316,7 @@ export class ChannelMessageService {
     userId: string,
     turn: AgentTurnResult,
   ): Promise<void> {
-    const presented = presentAgentResponse(turn.response, this.now());
+    const presented = await this.present(inbound, turn);
     const outbound = await this.compose(inbound, userId, turn.conversationId, presented);
     const sent = await adapter.send(
       { externalConversationId: inbound.externalConversationId },
@@ -285,6 +336,32 @@ export class ChannelMessageService {
     }
   }
 
+  /** The conversational presentation of a turn; any failure there falls back to the plain deterministic text. */
+  private async present(
+    inbound: InboundChannelMessage,
+    turn: AgentTurnResult,
+  ): Promise<PresentedMessage> {
+    const plain = presentAgentResponse(turn.response, this.now());
+    const presenter = this.deps.conversation;
+    if (!presenter) return plain;
+    try {
+      const history =
+        (await this.deps.agent?.recentTurns?.(turn.conversationId, turn.messageId)) ?? [];
+      return await presenter.present({
+        response: turn.response,
+        corrected: turn.corrected,
+        userMessage: userMessageOf(inbound),
+        history,
+        seed: turn.messageId,
+        firstName: inbound.sender.displayName?.split(" ")[0],
+        now: this.now(),
+      });
+    } catch (error) {
+      this.log("warn", "channel.presentation.failed", { ...errorDetails(error) });
+      return plain;
+    }
+  }
+
   private async compose(
     inbound: InboundChannelMessage,
     userId: string,
@@ -292,7 +369,11 @@ export class ChannelMessageService {
     presented: PresentedMessage,
   ): Promise<OutboundChannelMessage> {
     const actions: OutboundAction[] = [];
-    const issue = (kind: "SELECT_OPTION" | "CANCEL", payload?: Record<string, string>) =>
+    const issue = (
+      kind: "SELECT_OPTION" | "CANCEL" | "SUGGESTION",
+      payload?: Record<string, string>,
+      reusable = false,
+    ) =>
       this.deps.actions.issue({
         userId,
         channel: inbound.channel,
@@ -300,6 +381,7 @@ export class ChannelMessageService {
         conversationId,
         kind,
         ...(payload && { payload }),
+        ...(reusable && { reusable }),
       });
 
     for (const choice of presented.choices ?? []) {
@@ -330,6 +412,16 @@ export class ChannelMessageService {
       const url = await this.deps.links.setupLink(userId);
       if (url)
         actions.push({ type: "OPEN_URL", semantic: "OPEN_SETUP", label: "Set up Kaada", url });
+    }
+
+    // Suggestions are buttons beside the conversation, never a replacement for typing. Each is server-bound like any button.
+    for (const id of presented.suggestions ?? []) {
+      actions.push({
+        type: "ACTION",
+        semantic: "SUGGESTION",
+        label: capabilityById(id).label,
+        handle: await issue("SUGGESTION", { suggestion: id }, true),
+      });
     }
 
     if (presented.cancellable) {

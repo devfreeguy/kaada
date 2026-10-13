@@ -14,6 +14,8 @@ export interface GroqChatRequest {
   /** Upper bound on generated tokens (including any reasoning tokens). */
   maxCompletionTokens: number;
   timeoutMs: number;
+  /** Sampling temperature. Default 0 (extraction); presentation uses a little warmth. */
+  temperature?: number;
 }
 
 export interface GroqChatResult {

@@ -25,7 +25,12 @@ export const SETTINGS = {
 
   agent: {
     /** Must support strict structured output (json_schema). */
-    groq: { model: "openai/gpt-oss-20b", timeoutMs: 8_000 },
+    groq: {
+      model: "openai/gpt-oss-20b",
+      timeoutMs: 8_000,
+      /** The conversation presenter (wording only; never decides anything). The person waits for it, so it is bounded tighter. */
+      presentation: { timeoutMs: 5_000, temperature: 0.7 },
+    },
   },
 
   textile: {

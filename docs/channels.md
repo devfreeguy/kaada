@@ -137,6 +137,12 @@ pnpm --filter @kaada/api telegram:webhook info|set|delete
 The token alone enables recovery alerts only. Token + secret enables conversations. The bot username and domain are never
 hardcoded.
 
+## How Kaada sounds
+
+The wording of replies (greetings, friendly questions, lead-ins around summaries, suggestion buttons) comes from the channel-neutral
+conversation engine: see [conversation.md](conversation.md). The adapter only renders the neutral message and its semantic actions
+(a `SUGGESTION` action is a server-bound button like any other; Telegram pairs short ones two to a row).
+
 ## Adding WhatsApp
 
 Implement `ChannelAdapter` for WhatsApp (verify the signature header, normalise a message/button reply, render the neutral actions

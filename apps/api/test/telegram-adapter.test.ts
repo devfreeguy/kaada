@@ -350,7 +350,7 @@ describe("NotificationService", () => {
     });
     const result = await service.send("u", { type: "PAYMENT_COMPLETED" });
     assert.deepEqual(result, { delivered: 1, failed: 0, unsupported: 0 });
-    assert.equal(adapter.last?.text, "Payment sent ✅");
+    assert.match(adapter.last?.text ?? "", /✅ Your payment/);
     assert.equal(adapter.log[0]?.target?.externalConversationId, "424242");
   });
 

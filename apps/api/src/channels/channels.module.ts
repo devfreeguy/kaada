@@ -27,11 +27,24 @@ import { ExecutionModule } from "../execution/execution.module.js";
 import { ROOT_ACTION_SERVICE, RUN_TRACKER } from "../execution/execution.tokens.js";
 import { TelegramAdapter } from "../infrastructure/channels/telegram/telegram-adapter.js";
 import { WalletModule } from "../wallet/wallet.module.js";
-import { WALLET_SETUP_SERVICE } from "../wallet/wallet.tokens.js";
+import {
+  WALLET_BALANCE_SERVICE,
+  WALLET_SERVICE,
+  WALLET_SETUP_SERVICE,
+} from "../wallet/wallet.tokens.js";
+import type { WalletBalanceService } from "../core/wallets/balance-service.js";
+import type { WalletService } from "../core/wallets/wallet-service.js";
+import { capabilityById } from "../core/conversation/capabilities.js";
+import type { CapabilityFlags } from "../core/conversation/capabilities.js";
+import { suggestionPolicy } from "../core/conversation/suggestions.js";
+import { ConversationPresenter } from "../core/conversation/presenter.js";
+import { GroqConversationWriter } from "../infrastructure/llm/groq-conversation-writer.js";
+import { createGroqSdkTransport } from "../infrastructure/llm/groq-sdk-transport.js";
 import { ChannelSweeper } from "./channel-sweeper.js";
 import {
   CHANNEL_MESSAGE_SERVICE,
   CHANNEL_REPOSITORIES,
+  CONVERSATION_PRESENTER,
   PAYMENT_STATUS_DISPATCHER,
   TELEGRAM_ADAPTER,
 } from "./channels.tokens.js";
@@ -76,6 +89,34 @@ function nestLog(): AgentLog {
       },
     },
     {
+      // Kaada's voice. The model (when Groq is configured) only phrases; the application states every fact. Without it the
+      // deterministic wording is used, so the bot works the same, just a little plainer.
+      provide: CONVERSATION_PRESENTER,
+      inject: [APP_CONFIG, WALLET_SERVICE, WALLET_BALANCE_SERVICE, AUTHORIZATION_SESSION_SERVICE],
+      useFactory: (
+        config: AppConfig,
+        wallets: WalletService | null,
+        balances: WalletBalanceService | null,
+        authorization: AuthorizationSessionService | null,
+      ): ConversationPresenter => {
+        const groq = config.agent.groq;
+        const log = nestLog();
+        return new ConversationPresenter({
+          writer: groq
+            ? new GroqConversationWriter(createGroqSdkTransport({ apiKey: groq.apiKey }), {
+                model: groq.model,
+                timeoutMs: groq.presentation.timeoutMs,
+                temperature: groq.presentation.temperature,
+                log,
+              })
+            : null,
+          flags: capabilityFlags(config, { wallets, balances, authorization }),
+          timeoutMs: groq?.presentation.timeoutMs ?? 5_000,
+          log,
+        });
+      },
+    },
+    {
       provide: CHANNEL_MESSAGE_SERVICE,
       inject: [
         CHANNEL_REPOSITORIES,
@@ -84,6 +125,7 @@ function nestLog(): AgentLog {
         AUTHORIZATION_SESSION_SERVICE,
         WALLET_SETUP_SERVICE,
         RUN_TRACKER,
+        CONVERSATION_PRESENTER,
       ],
       useFactory: (
         repositories: Repositories,
@@ -92,6 +134,7 @@ function nestLog(): AgentLog {
         sessions: AuthorizationSessionService | null,
         setup: WalletSetupService | null,
         runs: RunTracker,
+        conversation: ConversationPresenter,
       ): ChannelMessageService | null => {
         if (!telegram) return null;
         const adapters = new Map<ChannelType, ChannelAdapter>([["TELEGRAM", telegram]]);
@@ -105,6 +148,7 @@ function nestLog(): AgentLog {
           inboundEvents: repositories.channelInboundEvents,
           statuses: repositories.channelPaymentStatuses,
           agent,
+          conversation,
           links: {
             setupLink: async (userId) => {
               if (!setup) return null;
@@ -131,18 +175,54 @@ function nestLog(): AgentLog {
     },
     {
       provide: PAYMENT_STATUS_DISPATCHER,
-      inject: [CHANNEL_REPOSITORIES, TELEGRAM_ADAPTER, ROOT_ACTION_SERVICE, RUN_TRACKER],
+      inject: [
+        CHANNEL_REPOSITORIES,
+        TELEGRAM_ADAPTER,
+        ROOT_ACTION_SERVICE,
+        RUN_TRACKER,
+        APP_CONFIG,
+        WALLET_SERVICE,
+        WALLET_BALANCE_SERVICE,
+        AUTHORIZATION_SESSION_SERVICE,
+      ],
       useFactory: (
         repositories: Repositories,
         telegram: TelegramAdapter | null,
         rootActions: RootActionService | null,
         runs: RunTracker,
+        config: AppConfig,
+        wallets: WalletService | null,
+        balances: WalletBalanceService | null,
+        authorization: AuthorizationSessionService | null,
       ): PaymentStatusDispatcher | null => {
         if (!telegram) return null;
+        const actions = new ChannelActionService(repositories.channelActions);
+        const completionIds = suggestionPolicy(
+          "PAYMENT_COMPLETED",
+          capabilityFlags(config, { wallets, balances, authorization }),
+        );
         return new PaymentStatusDispatcher({
           statuses: repositories.channelPaymentStatuses,
           facts: paymentFacts(repositories, runs),
           adapters: new Map<ChannelType, ChannelAdapter>([["TELEGRAM", telegram]]),
+          // Light follow-ups under a finished payment. A payment status is a one-to-one chat, where the chat id is the person.
+          completionActions: async (status) =>
+            Promise.all(
+              completionIds.map(async (id) => ({
+                type: "ACTION" as const,
+                semantic: "SUGGESTION" as const,
+                label: capabilityById(id).label,
+                handle: await actions.issue({
+                  userId: status.userId,
+                  channel: status.channel,
+                  externalUserId: status.externalConversationId,
+                  conversationId: status.id,
+                  kind: "SUGGESTION",
+                  payload: { suggestion: id },
+                  reusable: true,
+                }),
+              })),
+            ),
           rootActionLink: async (sessionId, userId) => {
             if (!rootActions) return null;
             const authorization = await repositories.paymentAuthorizations.findBySession(sessionId);
@@ -163,6 +243,27 @@ function nestLog(): AgentLog {
   exports: [CHANNEL_MESSAGE_SERVICE, PAYMENT_STATUS_DISPATCHER, TELEGRAM_ADAPTER],
 })
 export class ChannelsModule {}
+
+/**
+ * Which features this deployment really has, from the same conditions that switch them on in the agent: a pricing provider for
+ * rates, a pricing provider plus wallets plus the PIN step for payments, a wallet service for balances. A suggestion or a
+ * sentence about a feature is only ever produced when its flag is true.
+ */
+function capabilityFlags(
+  config: AppConfig,
+  deps: {
+    wallets: WalletService | null;
+    balances: WalletBalanceService | null;
+    authorization: AuthorizationSessionService | null;
+  },
+): CapabilityFlags {
+  const rates = config.fx.provider !== "none";
+  return {
+    rates,
+    send: rates && deps.wallets !== null && deps.balances !== null && deps.authorization !== null,
+    balance: deps.balances !== null,
+  };
+}
 
 /** Reads what the payment services already decided; the channel layer never changes any of it. */
 function paymentFacts(repositories: Repositories, runs: RunTracker): PaymentFactsReader {

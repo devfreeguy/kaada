@@ -1,6 +1,7 @@
 import {
   AGENT_COMMANDS,
   AMOUNT_MODES,
+  CHAT_TOPICS,
   INTENT_TYPES,
   RECIPIENT_TYPES,
   normalizeSpokenAmount,
@@ -26,7 +27,11 @@ import { InterpreterOutputError } from "../../core/agent/interpreter.js";
  * The domain and the app schema still support them; expose them here when routing needs them.
  */
 
-export const WIRE_TYPES = [...INTENT_TYPES, ...AGENT_COMMANDS] as const;
+/**
+ * RATE exists only on the wire: "what's USDT to cNGN today?" is read as a rate question and translated here into a one-unit
+ * QUOTE, so the number comes from the pricing layer and never from the model.
+ */
+export const WIRE_TYPES = [...INTENT_TYPES, "RATE", ...AGENT_COMMANDS] as const;
 
 const maybeText = z.string().nullable();
 // "value" and "currencyOrAsset" may each be unknown ("send 20 to Daniel" has no currency). Allowing
@@ -47,6 +52,8 @@ export const wireInterpretationSchema = z.strictObject({
   toAsset: maybeText,
   asset: maybeText,
   reference: maybeText,
+  /** HELP only: what a conversational message is about. */
+  topic: z.enum(CHAT_TOPICS).nullable(),
   destination: z
     .strictObject({ country: maybeText, currency: maybeText, asset: maybeText })
     .nullable(),
@@ -70,7 +77,7 @@ const UNSUPPORTED_KEYWORDS = new Set([
   "maxItems",
 ]);
 
-function stripUnsupported(node: unknown): unknown {
+export function stripUnsupported(node: unknown): unknown {
   if (Array.isArray(node)) return node.map(stripUnsupported);
   if (node !== null && typeof node === "object") {
     const entries: [string, unknown][] = Object.entries(node);
@@ -133,19 +140,26 @@ const FIELDS = [
   "asset",
   "reference",
   "destination",
+  "topic",
 ] as const;
 type Field = (typeof FIELDS)[number];
 
 /** Which fields each intent may carry. Anything else being non-null means the model was confused. */
-const ALLOWED_FIELDS: Record<IntentType, readonly Field[]> = {
+const ALLOWED_FIELDS: Record<IntentType | "RATE", readonly Field[]> = {
   SEND: ["recipient", "amount", "sourceAsset", "destination"],
   CONVERT: ["amount", "fromAsset", "toAsset"],
   QUOTE: ["amount", "fromAsset", "toAsset", "destination"],
   BALANCE: ["asset"],
   TRANSACTION_STATUS: ["reference"],
-  HELP: [],
+  HELP: ["topic"],
   UNKNOWN: [],
+  RATE: ["fromAsset", "toAsset", "destination"],
 };
+
+/** The size of the one-unit quote that answers a rate question. A constant of the product, not something the model chooses. */
+const RATE_UNIT_AMOUNT = "1";
+/** The currency a rate is quoted from when the person names only the other side ("what is BRL today?"). */
+const RATE_DEFAULT_FROM = "USD";
 
 const isCommand = (type: WireInterpretation["type"]): type is (typeof AGENT_COMMANDS)[number] =>
   (AGENT_COMMANDS as readonly string[]).includes(type);
@@ -175,8 +189,11 @@ export function wireToCandidate(wire: WireInterpretation): unknown {
     }
   }
   if (isCommand(wire.type)) return { kind: "COMMAND", command: wire.type };
+  if (wire.type === "RATE") return rateCandidate(wire);
 
   const intent: Record<string, unknown> = { type: wire.type };
+  const topic = wire.topic;
+  if (topic !== null) intent["topic"] = topic;
 
   if (wire.recipient) intent["recipient"] = wire.recipient;
   // No number means there is no amount to record. A number with no currency is kept as such: the
@@ -205,4 +222,36 @@ export function wireToCandidate(wire: WireInterpretation): unknown {
   }
 
   return { kind: "INTENT", intent };
+}
+
+/**
+ * A rate question as a QUOTE for one unit. The target must be named (an asset, a currency or a country); without one the
+ * question is conversational ("which rate?") and nothing is priced. The pricing layer, not the model, supplies the rate.
+ */
+function rateCandidate(wire: WireInterpretation): unknown {
+  const from = text(wire.fromAsset);
+  const to = text(wire.toAsset);
+  const destination = {
+    ...(text(wire.destination?.country ?? null) && {
+      country: text(wire.destination?.country ?? null),
+    }),
+    ...(text(wire.destination?.currency ?? null) && {
+      currency: text(wire.destination?.currency ?? null),
+    }),
+    ...(text(wire.destination?.asset ?? null) && { asset: text(wire.destination?.asset ?? null) }),
+  };
+  if (to === undefined && Object.keys(destination).length === 0) {
+    return { kind: "INTENT", intent: { type: "HELP", topic: "RATE_GENERAL" } };
+  }
+  const source = from ?? RATE_DEFAULT_FROM;
+  return {
+    kind: "INTENT",
+    intent: {
+      type: "QUOTE",
+      amount: { value: RATE_UNIT_AMOUNT, currencyOrAsset: source, mode: "EXACT_INPUT" },
+      fromAsset: source,
+      ...(to !== undefined && { toAsset: to }),
+      ...(Object.keys(destination).length > 0 && { destination }),
+    },
+  };
 }

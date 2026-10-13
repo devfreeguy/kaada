@@ -1,6 +1,7 @@
 import {
   buildRoutingRequest,
   createId,
+  isChatTopic,
   isTransactionalIntent,
   mergeAgentIntent,
   withoutSourcePreference,
@@ -17,6 +18,7 @@ import type {
 } from "@kaada/domain";
 
 import type { AgentRepositories } from "../agent/ports.js";
+import { chatFallbackText } from "../conversation/fallbacks.js";
 import type { AgentResolvers } from "../agent/resolvers.js";
 import type {
   AgentErrorCode,
@@ -42,6 +44,8 @@ export interface Applied {
   supersededIntentId?: string;
   /** For logs: how the turn related to the intent in progress. */
   mergeKind: string;
+  /** Details of the operation in progress that this message CHANGED (not merely supplied): "AMOUNT", "RECIPIENT"... */
+  corrected?: string[];
 }
 
 export interface CoordinatorDeps {
@@ -51,6 +55,46 @@ export interface CoordinatorDeps {
   onRevised: OnIntentRevised;
   /** How long a question's options can be selected. */
   choiceTtlMs: number;
+  /** Whether balances can be read; when not, a balance question honestly says it is not available. */
+  balancesEnabled?: boolean;
+}
+
+/** What was understood so far, for the tone of the next question. Display strings only, never used to decide anything. */
+function knownFacts(
+  facts: { display: { amount?: string; recipient?: string; country?: string } },
+  parsed: TransactionalIntent,
+): Record<string, string> {
+  const { amount, recipient, country } = facts.display;
+  // Before a currency is known there is no formatted amount, but the number the person typed is still theirs to hear back.
+  const typed = parsed.amount?.value;
+  return {
+    ...(recipient && { recipient }),
+    ...((amount ?? typed) && { amount: (amount ?? typed) as string }),
+    ...(country && { country }),
+  };
+}
+
+/** Which already-known details a merged intent changed. Only used to tell a correction from an answer. */
+function correctedFields(previous: AgentIntent | undefined, next: AgentIntent): string[] {
+  if (!previous || previous.type !== next.type || !isTransactionalIntent(next)) return [];
+  const before = previous as TransactionalIntent;
+  const changed: string[] = [];
+  if (before.amount?.value !== undefined && before.amount.value !== next.amount?.value) {
+    changed.push("AMOUNT");
+  }
+  const oldCurrency = before.amount?.currencyOrAsset?.toLowerCase();
+  if (oldCurrency !== undefined && oldCurrency !== next.amount?.currencyOrAsset?.toLowerCase()) {
+    changed.push("CURRENCY");
+  }
+  if (
+    before.type === "SEND" &&
+    next.type === "SEND" &&
+    before.recipient !== undefined &&
+    !sameReference(before.recipient, next.recipient)
+  ) {
+    changed.push("RECIPIENT");
+  }
+  return changed;
 }
 
 const HELP_TEXT =
@@ -125,13 +169,15 @@ export class IntentCoordinator {
       throw new Error("a non-transactional intent cannot start an operation");
     }
     const merging = merged.kind === "MERGED";
-    return this.advance(repositories, {
+    const applied = await this.advance(repositories, {
       conversation,
       parsed: merged.intent,
       target: merging ? (active ?? undefined) : undefined,
       supersede: merging ? undefined : (active ?? undefined),
       mergeKind: merged.kind,
     });
+    const corrected = merging ? correctedFields(active?.parsed, merged.intent) : [];
+    return corrected.length > 0 ? { ...applied, corrected } : applied;
   }
 
   /** Checks an option against server state. Nothing is changed. */
@@ -248,7 +294,10 @@ export class IntentCoordinator {
       if (!first) throw new Error("an intent that needs information must have a question");
       return {
         ...base,
-        response: await this.ask(repositories, conversation, saved, first, args.prefix),
+        response: {
+          ...(await this.ask(repositories, conversation, saved, first, args.prefix)),
+          known: knownFacts(assessment.facts, parsed),
+        },
       };
     }
 
@@ -382,9 +431,26 @@ export class IntentCoordinator {
     const mergeKind = "SIDE_REQUEST";
     switch (intent.type) {
       case "HELP":
+        // A conversational turn names its topic; a plain "help" does not and keeps the capability summary.
+        if (isChatTopic(intent.topic)) {
+          return {
+            response: { type: "CHAT", topic: intent.topic, text: chatFallbackText(intent.topic) },
+            mergeKind,
+          };
+        }
         return { response: { type: "MESSAGE", text: HELP_TEXT }, mergeKind };
 
       case "BALANCE":
+        if (this.deps.balancesEnabled) {
+          return {
+            response: {
+              type: "BALANCE_REQUIRED",
+              text: "Checking your balance…",
+              ...(intent.asset && { asset: intent.asset }),
+            },
+            mergeKind,
+          };
+        }
         return {
           response: {
             type: "ERROR",

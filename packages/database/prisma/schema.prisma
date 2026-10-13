@@ -1448,6 +1448,7 @@ enum ChannelActionKind {
   CANCEL
   VIEW_STATUS
   RETRY
+  SUGGESTION
 }
 
 /// One webhook delivery from a chat provider (a Telegram update id, ...). The unique key is what makes a redelivery harmless:

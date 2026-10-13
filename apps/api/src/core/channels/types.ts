@@ -54,7 +54,7 @@ export type OutboundAction =
   /** A button the server will recognise by its opaque handle. */
   | {
       type: "ACTION";
-      semantic: "SELECT_OPTION" | "CANCEL" | "RETRY" | "VIEW_STATUS";
+      semantic: "SELECT_OPTION" | "CANCEL" | "RETRY" | "VIEW_STATUS" | "SUGGESTION";
       label: string;
       description?: string;
       handle: string;

@@ -204,6 +204,7 @@ function buildConfig(
             apiKey: env.GROQ_API_KEY,
             model: SETTINGS.agent.groq.model,
             timeoutMs: SETTINGS.agent.groq.timeoutMs,
+            presentation: SETTINGS.agent.groq.presentation,
           },
         }),
     },

@@ -1,3 +1,4 @@
+import type { SuggestionId } from "../conversation/capabilities.js";
 import type { AgentResponse, AuthorizationSummary } from "../responses/agent-response.js";
 
 /**
@@ -14,6 +15,8 @@ export interface PresentedMessage {
   setup?: boolean;
   /** Offer a Cancel button (something is in progress that can be dropped). */
   cancellable?: boolean;
+  /** Things worth offering next, from the server's allowlist (see conversation/suggestions). Rendered as buttons by the channel. */
+  suggestions?: SuggestionId[];
 }
 
 const minutesLeft = (expiresAt: Date, now: Date): number =>
@@ -93,6 +96,12 @@ export function presentAgentResponse(response: AgentResponse, now: Date): Presen
     case "CANCELLED":
       return { text: response.text };
 
+    // Plain wording only; the conversation layer replaces it with a friendlier reply when it can.
+    case "CHAT":
+    case "BALANCE_REQUIRED":
+    case "BALANCE_RESULT":
+      return { text: response.text };
+
     case "ERROR":
       return presentError(response);
   }
@@ -124,6 +133,7 @@ function presentError(response: Extract<AgentResponse, { type: "ERROR" }>): Pres
     case "INSUFFICIENT_BALANCE":
     case "WALLET_NEEDS_FUNDING":
     case "FEATURE_NOT_AVAILABLE":
+    case "BALANCE_UNAVAILABLE":
       return { text: response.text };
   }
 }

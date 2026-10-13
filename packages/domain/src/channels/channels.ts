@@ -5,7 +5,13 @@
  */
 import type { ChannelType } from "../conversations/conversation.js";
 
-export const CHANNEL_ACTION_KINDS = ["SELECT_OPTION", "CANCEL", "VIEW_STATUS", "RETRY"] as const;
+export const CHANNEL_ACTION_KINDS = [
+  "SELECT_OPTION",
+  "CANCEL",
+  "VIEW_STATUS",
+  "RETRY",
+  "SUGGESTION",
+] as const;
 export type ChannelActionKind = (typeof CHANNEL_ACTION_KINDS)[number];
 
 /** What a pressed button means. The provider sees only `id`. */

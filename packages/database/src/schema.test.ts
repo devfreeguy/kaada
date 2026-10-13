@@ -143,7 +143,7 @@ const enumValues: Record<string, string[]> = {
   AttestationResult: ["VERIFIED_QUALIFIED", "VERIFIED_NOT_QUALIFIED", "REJECTED"],
   AttestationHardwareLevel: ["STRONGBOX", "TEE", "SOFTWARE"],
   ChannelInboundStatus: ["RECEIVED", "PROCESSED"],
-  ChannelActionKind: ["SELECT_OPTION", "CANCEL", "VIEW_STATUS", "RETRY"],
+  ChannelActionKind: ["SELECT_OPTION", "CANCEL", "VIEW_STATUS", "RETRY", "SUGGESTION"],
   RootChangeStatus: ["PREPARED", "SUBMITTED", "CONFIRMED", "FAILED", "EXPIRED", "CANCELLED"],
   WalletCredentialKind: ["PASSKEY", "DEVICE_KEY"],
   WalletCredentialRole: ["PRIMARY", "BACKUP", "RECOVERY"],

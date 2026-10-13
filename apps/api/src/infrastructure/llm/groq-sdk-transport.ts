@@ -88,7 +88,7 @@ export function createGroqSdkTransport(options: GroqSdkTransportOptions): GroqTr
               { role: "system", content: request.system },
               { role: "user", content: request.user },
             ],
-            temperature: 0,
+            temperature: request.temperature ?? 0,
             max_completion_tokens: request.maxCompletionTokens,
             response_format: {
               type: "json_schema",

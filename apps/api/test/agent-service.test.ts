@@ -103,6 +103,7 @@ describe("collecting details", () => {
       intentId: turn.intentId,
       field: "RECIPIENT",
       reason: "MISSING",
+      known: { amount: "20.00 USD" },
     });
     const stored = h.world.intents.get(turn.intentId ?? "");
     assert.equal(stored?.status, "AWAITING_DETAILS");

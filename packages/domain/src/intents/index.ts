@@ -1,4 +1,6 @@
+export { CHAT_TOPICS, isChatTopic } from "./agent-intent.js";
 export type {
+  ChatTopic,
   AgentIntent,
   BalanceIntent,
   ConvertIntent,

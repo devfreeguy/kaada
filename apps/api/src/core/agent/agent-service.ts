@@ -2,6 +2,7 @@ import { createId, defaultCountryDirectory } from "@kaada/domain";
 import type {
   ChannelType,
   Conversation,
+  ConversationTurn,
   CountryDirectory,
   Interpretation,
   Message,
@@ -54,7 +55,12 @@ export interface ChoiceInput extends IncomingBase {
  */
 export interface CommandInput extends IncomingBase {
   kind: "COMMAND";
-  command: "CANCEL_ACTIVE_INTENT" | "START_OVER";
+  command: "CANCEL_ACTIVE_INTENT" | "START_OVER" | "SHOW_BALANCE";
+}
+
+/** What the agent needs to answer "what's my balance?": a fresh read of the wallet, or "no wallet yet". */
+export interface AgentBalanceReader {
+  read(userId: string): Promise<{ lines: { symbol: string; display: string }[] } | "NO_WALLET">;
 }
 
 /** What every channel is normalised to before it reaches the agent. */
@@ -72,6 +78,8 @@ export interface AgentTurnResult {
   /** True when this message had already been handled; `response` is the original answer. */
   duplicate: boolean;
   response: AgentResponse;
+  /** Details of an operation in progress that this message CHANGED (for tone only: "AMOUNT", "RECIPIENT", ...). */
+  corrected?: string[];
 }
 
 export interface AgentServiceDeps {
@@ -89,6 +97,8 @@ export interface AgentServiceDeps {
    * It is called outside any transaction, like the interpreter.
    */
   routing?: RoutingService;
+  /** Reads wallet balances. When absent, a balance question honestly says it is not available. */
+  balances?: AgentBalanceReader;
   /** How long the options of a question stay selectable. */
   choiceTtlMs?: number;
   /** How many earlier messages the interpreter sees as context. */
@@ -121,6 +131,7 @@ export class AgentService {
   private readonly interpreter: IntentInterpreter;
   private readonly coordinator: IntentCoordinator;
   private readonly routing: RoutingService | undefined;
+  private readonly balances: AgentBalanceReader | undefined;
   private readonly log: AgentLog;
   private readonly now: () => Date;
   private readonly historyLimit: number;
@@ -130,6 +141,7 @@ export class AgentService {
     this.interpreter = deps.interpreter;
     this.log = deps.log ?? noopLog;
     this.routing = deps.routing;
+    this.balances = deps.balances;
     this.now = deps.now ?? (() => new Date());
     this.coordinator = new IntentCoordinator({
       createResolvers: deps.createResolvers ?? createDefaultResolvers,
@@ -142,6 +154,7 @@ export class AgentService {
         deps.onIntentRevised ?? noopOnIntentRevised,
       ),
       choiceTtlMs: deps.choiceTtlMs ?? 30 * 60 * 1000,
+      balancesEnabled: deps.balances !== undefined,
     });
     this.historyLimit = deps.historyLimit ?? 12;
   }
@@ -158,18 +171,23 @@ export class AgentService {
     const { kind: _kind, command, ...base } = input;
     const accepted = await this.accept({
       ...base,
-      content: command === "CANCEL_ACTIVE_INTENT" ? "Cancel" : "Start over",
+      content:
+        command === "CANCEL_ACTIVE_INTENT"
+          ? "Cancel"
+          : command === "SHOW_BALANCE"
+            ? "Show my balance"
+            : "Start over",
     });
     if ("reply" in accepted) {
       return this.duplicateResult(accepted.conversation, accepted.message, accepted.reply);
     }
+    const interpretation: Interpretation =
+      command === "SHOW_BALANCE"
+        ? { kind: "INTENT", intent: { type: "BALANCE" } }
+        : { kind: "COMMAND", command };
     return this.route(
-      await this.complete(
-        accepted.conversation,
-        accepted.message,
-        { kind: "COMMAND", command },
-        accepted.fresh,
-      ),
+      await this.complete(accepted.conversation, accepted.message, interpretation, accepted.fresh),
+      input.userId,
     );
   }
 
@@ -193,7 +211,10 @@ export class AgentService {
         response: TROUBLE_RESPONSE,
       };
     }
-    return this.route(await this.complete(conversation, message, interpretation, accepted.fresh));
+    return this.route(
+      await this.complete(conversation, message, interpretation, accepted.fresh),
+      input.userId,
+    );
   }
 
   /**
@@ -201,7 +222,7 @@ export class AgentService {
    * interpreter: lookup, verification and application are all deterministic.
    */
   async handleChoice(input: ChoiceInput): Promise<AgentTurnResult> {
-    return this.route(await this.applyChoiceTurn(input));
+    return this.route(await this.applyChoiceTurn(input), input.userId);
   }
 
   private applyChoiceTurn(input: ChoiceInput): Promise<AgentTurnResult> {
@@ -378,7 +399,10 @@ export class AgentService {
    * understood-request answer already stored stays in the history; the priced answer follows it. If
    * pricing itself breaks, the turn degrades to the ROUTING_REQUIRED answer it already had.
    */
-  private async route(result: AgentTurnResult): Promise<AgentTurnResult> {
+  private async route(result: AgentTurnResult, userId: string): Promise<AgentTurnResult> {
+    if (result.response.type === "BALANCE_REQUIRED" && !result.duplicate) {
+      return this.resolveBalance(result, result.response, userId);
+    }
     const routing = this.routing;
     const response = result.response;
     if (!routing || result.duplicate || response.type !== "ROUTING_REQUIRED") return result;
@@ -417,6 +441,80 @@ export class AgentService {
     }
   }
 
+  /**
+   * Reads the wallet OUTSIDE any transaction (it is a chain read), then stores the answer next to the one already stored. Nothing
+   * a model said is involved: the figures are exactly what the wallet service returned. A failed read becomes a plain error.
+   */
+  private async resolveBalance(
+    result: AgentTurnResult,
+    request: Extract<AgentResponse, { type: "BALANCE_REQUIRED" }>,
+    userId: string,
+  ): Promise<AgentTurnResult> {
+    let response: AgentResponse;
+    try {
+      const read = await this.balances?.read(userId);
+      if (!read) {
+        response = {
+          type: "ERROR",
+          code: "FEATURE_NOT_AVAILABLE",
+          text: "Balance checks aren't available yet.",
+        };
+      } else if (read === "NO_WALLET") {
+        response = {
+          type: "ERROR",
+          code: "WALLET_SETUP_REQUIRED",
+          text: "You need to set up your Kaada wallet first.",
+        };
+      } else {
+        const wanted = request.asset?.trim().toLowerCase();
+        const shown = wanted
+          ? read.lines.filter((line) => line.symbol.toLowerCase() === wanted)
+          : read.lines;
+        const lines = shown.length > 0 ? shown : read.lines;
+        response = {
+          type: "BALANCE_RESULT",
+          lines,
+          text:
+            lines.length === 0
+              ? "Your wallet is empty."
+              : `Your balance:\n${lines.map((line) => `• ${line.display} ${line.symbol}`).join("\n")}`,
+        };
+      }
+    } catch (error) {
+      this.log("error", "agent.balance.failed", {
+        conversationId: result.conversationId,
+        error: error instanceof Error ? error.name : "unknown",
+      });
+      response = {
+        type: "ERROR",
+        code: "BALANCE_UNAVAILABLE",
+        text: "I couldn't read your balance right now. Please try again in a moment.",
+      };
+    }
+    await this.unitOfWork.transaction(async (repositories) => {
+      await repositories.conversations.lockForUpdate(result.conversationId);
+      await repositories.messages.append({
+        id: createId(),
+        conversationId: result.conversationId,
+        role: "ASSISTANT",
+        content: response.text,
+        structuredData: responseToJson(response),
+        metadata: { inReplyTo: result.messageId, stage: "BALANCE" },
+      });
+    });
+    return { ...result, response };
+  }
+
+  /** The last few turns of a conversation (oldest first), for the conversation layer's tone. Read only. */
+  async recentTurns(
+    conversationId: string,
+    excludeMessageId: string,
+    limit = 6,
+  ): Promise<ConversationTurn[]> {
+    const messages = await this.unitOfWork.read.messages.listRecent(conversationId, limit + 2);
+    return toHistory(messages, excludeMessageId).slice(-limit);
+  }
+
   /** Stores the assistant's answer and describes the turn. */
   private async finish(
     repositories: AgentRepositories,
@@ -450,6 +548,7 @@ export class AgentService {
       response: applied.response,
       ...(applied.intentId && { intentId: applied.intentId }),
       ...(applied.supersededIntentId && { supersededIntentId: applied.supersededIntentId }),
+      ...(applied.corrected && { corrected: applied.corrected }),
     };
   }
 

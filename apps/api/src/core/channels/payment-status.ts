@@ -10,10 +10,13 @@ import { paymentView } from "../execution/run-status.js";
 import type { RunOutcome } from "../execution/runner.js";
 import type { AgentLog } from "../agent/ports.js";
 import { noopLog } from "../agent/ports.js";
+import { NO_CAPABILITIES } from "../conversation/capabilities.js";
+import { fallbackParts } from "../conversation/fallbacks.js";
 import type {
   ChannelAdapter,
   ChannelTarget,
   NotificationType,
+  OutboundAction,
   OutboundChannelMessage,
 } from "./types.js";
 
@@ -133,7 +136,11 @@ export function notificationTypeOf(progress: PaymentProgress): NotificationType 
  * The words for a payment state. Calm, never blames, and never tells anyone to retry a payment that might already be on its
  * way: an unconfirmed payment is "being confirmed", not "failed".
  */
-export function describeProgress(progress: PaymentProgress): string {
+/**
+ * What a person is told about a payment's progress. Every state's meaning is fixed; only the wording of a completed payment
+ * varies (stably, by `seed`), and it never invents a detail: there is no model here, and status messages are re-read on a timer.
+ */
+export function describeProgress(progress: PaymentProgress, seed = ""): string {
   switch (progress.state) {
     case "AWAITING_AUTHORIZATION":
       return "Waiting for your confirmation on the secure page.";
@@ -149,8 +156,12 @@ export function describeProgress(progress: PaymentProgress): string {
       return "Processing your payment…";
     case "PENDING":
       return "Your payment has been submitted and is still confirming. You don't need to do anything, and please don't send it again.";
-    case "COMPLETED":
-      return "Payment sent ✅";
+    case "COMPLETED": {
+      const parts = fallbackParts("PAYMENT_COMPLETED", { capabilities: NO_CAPABILITIES }, seed);
+      return parts
+        ? `${parts.acknowledgement ?? "Payment sent ✅"}\n\n${parts.closing ?? "Anything else?"}`
+        : "Payment sent ✅";
+    }
     case "FAILED":
       return `The payment didn't go through, and your funds are safe.${progress.code ? ` Reference: ${progress.code}.` : ""}`;
     case "INSUFFICIENT_BALANCE":
@@ -170,6 +181,8 @@ export interface PaymentStatusDispatcherDeps {
   adapters: ReadonlyMap<ChannelType, ChannelAdapter>;
   /** A secure link for the root step of this payment, issued when that state is announced. Null when none is waiting. */
   rootActionLink?(authorizationSessionId: string, userId: string): Promise<string | null>;
+  /** Light follow-up buttons offered under a completed payment (server-bound suggestions). Optional. */
+  completionActions?(status: ChannelPaymentStatus): Promise<OutboundAction[]>;
   now?: () => Date;
   log?: AgentLog;
   batch?: number;
@@ -242,7 +255,13 @@ export class PaymentStatusDispatcher {
     progress: PaymentProgress,
   ): Promise<void> {
     const target: ChannelTarget = { externalConversationId: claimed.externalConversationId };
-    const message: OutboundChannelMessage = { text: describeProgress(progress) };
+    const message: OutboundChannelMessage = {
+      text: describeProgress(progress, claimed.authorizationSessionId),
+    };
+    if (progress.state === "COMPLETED" && this.deps.completionActions) {
+      const actions = await this.deps.completionActions(claimed).catch(() => []);
+      if (actions.length > 0) message.actions = actions;
+    }
     if (progress.state === "ROOT_ACTION_REQUIRED" && this.deps.rootActionLink) {
       const url = await this.deps.rootActionLink(claimed.authorizationSessionId, claimed.userId);
       if (url) {

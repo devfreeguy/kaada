@@ -315,10 +315,33 @@ function renderable(message: OutboundChannelMessage): { text: string; actions: O
   return { text: links.length ? `${message.text}\n\n${links.join("\n")}` : message.text, actions };
 }
 
-/** One button per row: choices stay readable on a phone, and the primary action is never beside a destructive one. */
+/** Two suggestion buttons share a row only when both labels are short; a long label always gets a row of its own. */
+const PAIRED_LABEL_MAX = 16;
+const canPair = (a: string, b: string): boolean =>
+  a.length <= PAIRED_LABEL_MAX && b.length <= PAIRED_LABEL_MAX;
+
+/** One button per row (choices stay readable, and the primary action is never beside a destructive one); short suggestions pair up. */
 function keyboardOf(actions: OutboundAction[] | undefined): {
   reply_markup?: { inline_keyboard: unknown[][] };
 } {
   if (!actions || actions.length === 0) return {};
-  return { reply_markup: { inline_keyboard: actions.map((action) => [buttonOf(action)]) } };
+  const rows: unknown[][] = [];
+  let open: { row: unknown[]; label: string } | null = null;
+  for (const action of actions) {
+    const button = buttonOf(action);
+    if (action.type === "ACTION" && action.semantic === "SUGGESTION") {
+      if (open && open.row.length < 2 && canPair(open.label, action.label)) {
+        open.row.push(button);
+        open = null;
+      } else {
+        const row = [button];
+        rows.push(row);
+        open = { row, label: action.label };
+      }
+    } else {
+      open = null;
+      rows.push([button]);
+    }
+  }
+  return { reply_markup: { inline_keyboard: rows } };
 }

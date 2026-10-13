@@ -1,4 +1,4 @@
-import type { AmountMode, MissingField, RoutingRequest } from "@kaada/domain";
+import type { AmountMode, ChatTopic, MissingField, RoutingRequest } from "@kaada/domain";
 
 /**
  * The channel-independent result of one agent turn. Telegram, WhatsApp and web each render these
@@ -33,6 +33,8 @@ export interface ClarificationRequiredResponse {
   reason: ClarificationReason;
   /** When present, the user may answer by picking one of these instead of typing. */
   options?: ClarificationOption[];
+  /** What the application has understood so far, as display strings ("recipient": "Daniel", "amount": "20"). */
+  known?: Record<string, string>;
 }
 
 /** What was understood, in terms a channel can show without parsing text. No prices, no routes. */
@@ -167,6 +169,32 @@ export interface QuoteResultResponse {
   indicative?: boolean;
 }
 
+/**
+ * A conversational turn (a greeting, thanks, "what can you do?", an off-topic question). It carries NO financial data: `text`
+ * is only the plain fallback wording, and the conversation layer may phrase the reply itself. Nothing about any operation in
+ * progress changes.
+ */
+export interface ChatResponse {
+  type: "CHAT";
+  topic: ChatTopic;
+  text: string;
+}
+
+/** The person asked for their balance; the agent reads it (outside any transaction) and answers with BALANCE_RESULT. */
+export interface BalanceRequiredResponse {
+  type: "BALANCE_REQUIRED";
+  text: string;
+  /** A token the person named ("my USDT balance"), as written. Used only to filter what is shown. */
+  asset?: string;
+}
+
+/** What the wallet holds of the supported tokens, read fresh from the chain. `text` is the deterministic block. */
+export interface BalanceResultResponse {
+  type: "BALANCE_RESULT";
+  text: string;
+  lines: { symbol: string; display: string }[];
+}
+
 export interface CancelledResponse {
   type: "CANCELLED";
   text: string;
@@ -191,6 +219,8 @@ export type AgentErrorCode =
   | "WALLET_SETUP_REQUIRED"
   /** The wallet holds none of the supported assets that could fund this payment. */
   | "WALLET_NEEDS_FUNDING"
+  /** The balance could not be read right now. */
+  | "BALANCE_UNAVAILABLE"
   /** The wallet holds some of the funding asset, but not enough for this payment. */
   | "INSUFFICIENT_BALANCE";
 
@@ -209,4 +239,7 @@ export type AgentResponse =
   | QuoteResultResponse
   | AuthorizationRequiredResponse
   | CancelledResponse
+  | ChatResponse
+  | BalanceRequiredResponse
+  | BalanceResultResponse
   | ErrorResponse;

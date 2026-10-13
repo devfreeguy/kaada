@@ -176,7 +176,7 @@ describe("PaymentStatusDispatcher", () => {
     );
     assert.match(edits[0]?.message?.text ?? "", /Processing your payment/);
     assert.match(edits[1]?.message?.text ?? "", /still confirming/);
-    assert.match(edits[2]?.message?.text ?? "", /Payment sent ✅/);
+    assert.match(edits[2]?.message?.text ?? "", /✅ Your payment/);
   });
 
   it("does not repeat an announcement on further sweeps, and stops watching a finished payment", async () => {
@@ -211,7 +211,7 @@ describe("PaymentStatusDispatcher", () => {
     assert.deepEqual(await ctx.dispatcher.sweep(), { examined: 1, announced: 0 });
     assert.equal(ctx.adapter.sent.length, 0);
     assert.deepEqual(await ctx.dispatcher.sweep(), { examined: 1, announced: 1 });
-    assert.match(ctx.adapter.last?.text ?? "", /Payment sent/);
+    assert.match(ctx.adapter.last?.text ?? "", /payment/i);
   });
 
   it("a root step comes with a secure 'Continue securely' link, issued only when announced", async () => {

@@ -18,6 +18,7 @@ export function wire(
     asset: null,
     reference: null,
     destination: null,
+    topic: null,
     ...fields,
   };
   return JSON.stringify(full);

@@ -2,7 +2,7 @@ import { createId } from "@kaada/domain";
 import type { Asset, Interpretation } from "@kaada/domain";
 
 import { AgentService } from "../../src/core/agent/agent-service.js";
-import type { AgentTurnResult } from "../../src/core/agent/agent-service.js";
+import type { AgentBalanceReader, AgentTurnResult } from "../../src/core/agent/agent-service.js";
 import { MockIntentInterpreter } from "../../src/core/agent/mock-interpreter.js";
 import type { IntentInterpreter, InterpretationInput } from "../../src/core/agent/interpreter.js";
 import type { AgentLog } from "../../src/core/agent/ports.js";
@@ -70,6 +70,8 @@ export function createHarness(
     routing?: (world: InMemoryWorld) => RoutingService;
     /** The clock the agent uses. */
     now?: () => Date;
+    /** Reads wallet balances (otherwise a balance question says it is unavailable). */
+    balances?: AgentBalanceReader;
   } = {},
 ): Harness {
   const world = createInMemoryWorld();
@@ -106,6 +108,7 @@ export function createHarness(
     ...(options.onIntentRevised && { onIntentRevised: options.onIntentRevised }),
     ...(options.routing && { routing: options.routing(world) }),
     ...(options.now && { now: options.now }),
+    ...(options.balances && { balances: options.balances }),
   });
   let chat = 0;
   const defaultChat = `chat-${++chat}`;
