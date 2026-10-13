@@ -435,7 +435,8 @@ export const ModelName = {
   DeviceAttestation: 'DeviceAttestation',
   ChannelInboundEvent: 'ChannelInboundEvent',
   ChannelAction: 'ChannelAction',
-  ChannelPaymentStatus: 'ChannelPaymentStatus'
+  ChannelPaymentStatus: 'ChannelPaymentStatus',
+  UserNotification: 'UserNotification'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -451,7 +452,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "transactionPinSecurity" | "authorizationSession" | "paymentAuthorization" | "executionSecret" | "firmQuoteAttempt" | "rootActionSession" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent" | "walletCredential" | "rootChange" | "recoveryConfiguration" | "recoveryAttempt" | "recoveryEmailChallenge" | "deviceAttestationChallenge" | "deviceAttestation" | "channelInboundEvent" | "channelAction" | "channelPaymentStatus"
+    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "transactionPinSecurity" | "authorizationSession" | "paymentAuthorization" | "executionSecret" | "firmQuoteAttempt" | "rootActionSession" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent" | "walletCredential" | "rootChange" | "recoveryConfiguration" | "recoveryAttempt" | "recoveryEmailChallenge" | "deviceAttestationChallenge" | "deviceAttestation" | "channelInboundEvent" | "channelAction" | "channelPaymentStatus" | "userNotification"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -3341,6 +3342,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    UserNotification: {
+      payload: Prisma.$UserNotificationPayload<ExtArgs>
+      fields: Prisma.UserNotificationFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UserNotificationFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserNotificationPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UserNotificationFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserNotificationPayload>
+        }
+        findFirst: {
+          args: Prisma.UserNotificationFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserNotificationPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UserNotificationFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserNotificationPayload>
+        }
+        findMany: {
+          args: Prisma.UserNotificationFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserNotificationPayload>[]
+        }
+        create: {
+          args: Prisma.UserNotificationCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserNotificationPayload>
+        }
+        createMany: {
+          args: Prisma.UserNotificationCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.UserNotificationCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserNotificationPayload>[]
+        }
+        delete: {
+          args: Prisma.UserNotificationDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserNotificationPayload>
+        }
+        update: {
+          args: Prisma.UserNotificationUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserNotificationPayload>
+        }
+        deleteMany: {
+          args: Prisma.UserNotificationDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UserNotificationUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.UserNotificationUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserNotificationPayload>[]
+        }
+        upsert: {
+          args: Prisma.UserNotificationUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserNotificationPayload>
+        }
+        aggregate: {
+          args: Prisma.UserNotificationAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUserNotification>
+        }
+        groupBy: {
+          args: Prisma.UserNotificationGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserNotificationGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UserNotificationCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserNotificationCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -4159,6 +4234,19 @@ export const ChannelPaymentStatusScalarFieldEnum = {
 export type ChannelPaymentStatusScalarFieldEnum = (typeof ChannelPaymentStatusScalarFieldEnum)[keyof typeof ChannelPaymentStatusScalarFieldEnum]
 
 
+export const UserNotificationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  kind: 'kind',
+  createdAt: 'createdAt',
+  claimedAt: 'claimedAt',
+  deliveredAt: 'deliveredAt',
+  attempts: 'attempts'
+} as const
+
+export type UserNotificationScalarFieldEnum = (typeof UserNotificationScalarFieldEnum)[keyof typeof UserNotificationScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -4879,6 +4967,20 @@ export type ListEnumChannelActionKindFieldRefInput<$PrismaModel> = FieldRefInput
 
 
 /**
+ * Reference to a field of type 'UserNotificationKind'
+ */
+export type EnumUserNotificationKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UserNotificationKind'>
+    
+
+
+/**
+ * Reference to a field of type 'UserNotificationKind[]'
+ */
+export type ListEnumUserNotificationKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UserNotificationKind[]'>
+    
+
+
+/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -5081,6 +5183,7 @@ export type GlobalOmitConfig = {
   channelInboundEvent?: Prisma.ChannelInboundEventOmit
   channelAction?: Prisma.ChannelActionOmit
   channelPaymentStatus?: Prisma.ChannelPaymentStatusOmit
+  userNotification?: Prisma.UserNotificationOmit
 }
 
 /* Types for Logging */

@@ -15,6 +15,8 @@ export interface PresentedMessage {
   setup?: boolean;
   /** Offer a Cancel button (something is in progress that can be dropped). */
   cancellable?: boolean;
+  /** A secure page to open (the setup page, or the PIN step), issued by the channel service when it composes the message. */
+  link?: { kind: "WALLET_SETUP" | "PIN_SETUP"; label: string };
   /** Things worth offering next, from the server's allowlist (see conversation/suggestions). Rendered as buttons by the channel. */
   suggestions?: SuggestionId[];
 }

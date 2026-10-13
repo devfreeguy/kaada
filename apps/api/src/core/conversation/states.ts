@@ -34,6 +34,20 @@ export const RESPONSE_STATES = [
   "CANCELLED",
   "CONVERSATION_END",
   "OUT_OF_SCOPE",
+  /** First contact: the person has no wallet yet. Fixed welcome, with the secure setup button. */
+  "ONBOARDING_WALLET_NEEDED",
+  /** The wallet exists; the PIN is the next step. */
+  "ONBOARDING_PIN_NEEDED",
+  /** Only when recovery is required for onboarding (see SETTINGS.onboarding). */
+  "ONBOARDING_RECOVERY_NEEDED",
+  /** Everything required is done: the person can use Kaada. */
+  "ONBOARDING_COMPLETE",
+  /** Someone fully set up says hello again. */
+  "RETURNING_USER",
+  /** "How would you like to fund your wallet?" (only the methods that really exist). */
+  "FUNDING_OPTIONS",
+  /** The trusted funding details (address, network, supported tokens). */
+  "FUNDING_INFO",
   /** Anything else the Agent Core says ("I didn't catch that", "pricing is unavailable"): its own words are used. */
   "GENERAL_MESSAGE",
 ] as const;
@@ -79,10 +93,20 @@ export const STATE_MODE: Record<ResponseState, PresentationMode> = {
   CANCELLED: "DETERMINISTIC",
   CONVERSATION_END: "DETERMINISTIC",
   GENERAL_MESSAGE: "DETERMINISTIC",
+  ONBOARDING_WALLET_NEEDED: "DETERMINISTIC",
+  ONBOARDING_PIN_NEEDED: "MODEL_FULL",
+  ONBOARDING_RECOVERY_NEEDED: "MODEL_FULL",
+  ONBOARDING_COMPLETE: "MODEL_FULL",
+  RETURNING_USER: "MODEL_FULL",
+  FUNDING_OPTIONS: "DETERMINISTIC",
+  FUNDING_INFO: "DETERMINISTIC",
 };
 
 /** States where money may be at risk or an outcome is being reported: no jokes, no lightness. */
 export const SERIOUS_STATES: ReadonlySet<ResponseState> = new Set([
+  "ONBOARDING_WALLET_NEEDED",
+  "ONBOARDING_PIN_NEEDED",
+  "ONBOARDING_RECOVERY_NEEDED",
   "PAYMENT_READY",
   "AUTHORIZATION_REQUIRED",
   "PAYMENT_CORRECTION",

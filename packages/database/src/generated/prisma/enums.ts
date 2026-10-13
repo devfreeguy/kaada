@@ -476,3 +476,15 @@ export const ChannelActionKind = {
 } as const
 
 export type ChannelActionKind = (typeof ChannelActionKind)[keyof typeof ChannelActionKind]
+
+
+export const UserNotificationKind = {
+  ONBOARDING_STARTED: 'ONBOARDING_STARTED',
+  WALLET_ROOT_CREATED: 'WALLET_ROOT_CREATED',
+  WALLET_READY: 'WALLET_READY',
+  PIN_CREATED: 'PIN_CREATED',
+  RECOVERY_CONFIGURED: 'RECOVERY_CONFIGURED',
+  ONBOARDING_COMPLETED: 'ONBOARDING_COMPLETED'
+} as const
+
+export type UserNotificationKind = (typeof UserNotificationKind)[keyof typeof UserNotificationKind]

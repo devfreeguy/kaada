@@ -16,6 +16,7 @@ import type {
   ChannelActionRepository,
   ChannelInboundEventRepository,
   ChannelPaymentStatusRepository,
+  UserNotificationRepository,
   DeviceAttestationRepository,
   RootChangeRepository,
   WalletCredentialRepository,
@@ -66,6 +67,7 @@ import {
   createChannelInboundEventRepository,
   createChannelPaymentStatusRepository,
 } from "./channels.js";
+import { createUserNotificationRepository } from "./user-notifications.js";
 import { createRootChangeRepository } from "./root-change.js";
 import { createExecutionTransactionRepository, createRootActionSessionRepository } from "./run.js";
 import { createIdentityRepository, createUserRepository } from "./identity.js";
@@ -117,6 +119,7 @@ export interface Repositories {
   channelActions: ChannelActionRepository;
   channelInboundEvents: ChannelInboundEventRepository;
   channelPaymentStatuses: ChannelPaymentStatusRepository;
+  userNotifications: UserNotificationRepository;
   recoveryConfigurations: RecoveryConfigurationRepository;
   recoveryAttempts: RecoveryAttemptRepository;
   recoveryEmailChallenges: RecoveryEmailChallengeRepository;
@@ -156,6 +159,7 @@ function buildRepositories(db: Db): Repositories {
     channelActions: createChannelActionRepository(db),
     channelInboundEvents: createChannelInboundEventRepository(db),
     channelPaymentStatuses: createChannelPaymentStatusRepository(db),
+    userNotifications: createUserNotificationRepository(db),
     recoveryConfigurations: createRecoveryConfigurationRepository(db),
     recoveryAttempts: createRecoveryAttemptRepository(db),
     recoveryEmailChallenges: createRecoveryEmailChallengeRepository(db),

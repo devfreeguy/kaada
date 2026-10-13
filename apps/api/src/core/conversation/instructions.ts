@@ -192,6 +192,55 @@ export const STATE_INSTRUCTIONS: Partial<Record<ResponseState, StateInstruction>
     needsQuestion: true,
     maxSentences: 2,
   },
+  ONBOARDING_PIN_NEEDED: {
+    situation:
+      "The person's Kaada wallet exists (trusted: knownFacts.walletReady) but their 6-digit PIN is not set up yet (knownFacts.pinConfigured). knownFacts.context says why you are speaking: JUST_CREATED (the wallet was created a moment ago), RESUMING (they came back mid-setup) or CHECK_IN (they asked if they are done). The application attaches the secure setup button.",
+    objective:
+      "JUST_CREATED: celebrate the wallet in a few words, then say the next step is setting up their 6-digit PIN, used to approve payments. RESUMING: say the wallet is ready but the PIN still needs setting up and ask if they want to finish it. CHECK_IN: confirm the wallet is ready and that one step is left, the PIN.",
+    next: "Tap the button to set up the PIN on the secure page.",
+    rules: [
+      "Mention the PIN only to say it is set up on the secure page with the button. Never ask them to type it, send it or say it here.",
+      "Do not claim the PIN is set, and do not invent or skip steps. The PIN is the only step left.",
+      "Do not mention buttons or links by name.",
+    ],
+    needsQuestion: false,
+    maxSentences: 3,
+  },
+  ONBOARDING_RECOVERY_NEEDED: {
+    situation:
+      "The wallet and the PIN are set up (trusted). One security step remains: recovery, so the person can get back into the wallet if they lose their device.",
+    objective:
+      "Confirm the PIN is set in a few words and say the last step is setting up recovery.",
+    next: "Finish recovery setup.",
+    rules: [
+      "Do not claim onboarding is complete; recovery is still needed.",
+      "Never ask for a PIN or a recovery code here.",
+    ],
+    needsQuestion: false,
+    maxSentences: 2,
+  },
+  ONBOARDING_COMPLETE: {
+    situation:
+      "Everything required is done (trusted): the wallet is ready, the PIN is set. The application shows first-use buttons.",
+    objective:
+      "Tell them they are all set and their Kaada wallet is ready to use, then ask what they want to do first.",
+    next: "Pick what to do first.",
+    rules: [
+      "Warm and brief; one celebratory touch is fine.",
+      "Do not list features in the text; the buttons do that.",
+    ],
+    needsQuestion: true,
+    maxSentences: 2,
+  },
+  RETURNING_USER: {
+    situation: "A fully set-up person said hello or started the chat again.",
+    objective:
+      "Greet them warmly as someone you are glad to see again and ask what they are doing today.",
+    next: "Say what they want to do, or tap a suggestion.",
+    rules: ["Light and short. Do not mention setup. A little humor is fine."],
+    needsQuestion: true,
+    maxSentences: 2,
+  },
   BALANCE_QUERY: {
     situation: "The application shows the person's balance below your lead.",
     objective:

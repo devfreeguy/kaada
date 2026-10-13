@@ -258,3 +258,10 @@ export type ChannelAction = Prisma.ChannelActionModel
  * cannot announce the same change twice.
  */
 export type ChannelPaymentStatus = Prisma.ChannelPaymentStatusModel
+/**
+ * Model UserNotification
+ * A persisted, deduplicated notification outbox row. One row per (user, kind): the unique key is what makes a transition be
+ * announced once however many instances notice it. A worker claims a row (claimedAt) before delivering; a failed delivery
+ * releases it for a retry; deliveredAt is set when the person was told, or when no telling was needed (silent, superseded).
+ */
+export type UserNotification = Prisma.UserNotificationModel

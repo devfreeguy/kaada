@@ -2,7 +2,8 @@ import { Logger, Module } from "@nestjs/common";
 import { createRepositories } from "@kaada/database";
 import type { Database, Repositories } from "@kaada/database";
 import type { AppConfig } from "@kaada/config";
-import { CELO_CHAIN_ID } from "@kaada/domain";
+import { SETTINGS } from "@kaada/config";
+import { CELO_CHAIN_ID, KaadaError } from "@kaada/domain";
 import type { ChannelType } from "@kaada/domain";
 
 import { AgentModule } from "../agent/agent.module.js";
@@ -34,10 +35,13 @@ import {
 } from "../wallet/wallet.tokens.js";
 import type { WalletBalanceService } from "../core/wallets/balance-service.js";
 import type { WalletService } from "../core/wallets/wallet-service.js";
-import { capabilityById } from "../core/conversation/capabilities.js";
+import { labelOf } from "../core/conversation/capabilities.js";
 import type { CapabilityFlags } from "../core/conversation/capabilities.js";
 import { suggestionPolicy } from "../core/conversation/suggestions.js";
 import { ConversationPresenter } from "../core/conversation/presenter.js";
+import { OnboardingAnnouncer } from "../core/channels/onboarding-announcer.js";
+import { OnboardingLifecycleService } from "../core/onboarding/lifecycle-service.js";
+import type { OnboardingStateReader } from "../core/onboarding/state.js";
 import { GroqConversationWriter } from "../infrastructure/llm/groq-conversation-writer.js";
 import { createGroqSdkTransport } from "../infrastructure/llm/groq-sdk-transport.js";
 import { ChannelSweeper } from "./channel-sweeper.js";
@@ -45,6 +49,8 @@ import {
   CHANNEL_MESSAGE_SERVICE,
   CHANNEL_REPOSITORIES,
   CONVERSATION_PRESENTER,
+  ONBOARDING_ANNOUNCER,
+  ONBOARDING_LIFECYCLE,
   PAYMENT_STATUS_DISPATCHER,
   TELEGRAM_ADAPTER,
 } from "./channels.tokens.js";
@@ -117,6 +123,44 @@ function nestLog(): AgentLog {
       },
     },
     {
+      // Where each person is on the way to a working wallet, read from the services' own records (wallet, PIN, recovery).
+      provide: ONBOARDING_LIFECYCLE,
+      inject: [CHANNEL_REPOSITORIES, TELEGRAM_ADAPTER, APP_CONFIG],
+      useFactory: (
+        repositories: Repositories,
+        telegram: TelegramAdapter | null,
+        config: AppConfig,
+      ): OnboardingLifecycleService | null => {
+        if (!telegram) return null;
+        const reader: OnboardingStateReader = {
+          async read(userId) {
+            const wallet = await repositories.wallets.findEmbedded(userId, CELO_CHAIN_ID);
+            const walletReady = wallet?.status === "ACTIVE" && wallet.address !== undefined;
+            const pinConfigured =
+              (await repositories.transactionPins.findByUserId(userId)) !== null;
+            // Recovery only applies where this deployment has it; and only a wallet can have it armed.
+            const recoveryConfigured = !config.recovery.enabled
+              ? null
+              : wallet
+                ? (await repositories.recoveryConfigurations.findActive(wallet.id)) !== null
+                : false;
+            return {
+              walletReady,
+              ...(walletReady && wallet?.address && { walletAddress: wallet.address }),
+              pinConfigured,
+              recoveryConfigured,
+            };
+          },
+        };
+        return new OnboardingLifecycleService({
+          notifications: repositories.userNotifications,
+          state: reader,
+          policy: { requireRecovery: SETTINGS.onboarding.requireRecovery },
+          log: nestLog(),
+        });
+      },
+    },
+    {
       provide: CHANNEL_MESSAGE_SERVICE,
       inject: [
         CHANNEL_REPOSITORIES,
@@ -126,6 +170,8 @@ function nestLog(): AgentLog {
         WALLET_SETUP_SERVICE,
         RUN_TRACKER,
         CONVERSATION_PRESENTER,
+        ONBOARDING_LIFECYCLE,
+        WALLET_BALANCE_SERVICE,
       ],
       useFactory: (
         repositories: Repositories,
@@ -135,6 +181,8 @@ function nestLog(): AgentLog {
         setup: WalletSetupService | null,
         runs: RunTracker,
         conversation: ConversationPresenter,
+        onboarding: OnboardingLifecycleService | null,
+        balances: WalletBalanceService | null,
       ): ChannelMessageService | null => {
         if (!telegram) return null;
         const adapters = new Map<ChannelType, ChannelAdapter>([["TELEGRAM", telegram]]);
@@ -149,11 +197,34 @@ function nestLog(): AgentLog {
           statuses: repositories.channelPaymentStatuses,
           agent,
           conversation,
+          onboarding,
+          linked: repositories.identities,
+          funding: balances
+            ? {
+                // The trusted details for "fund my wallet": the person's own address, the network and the tokens Kaada supports.
+                async info(userId) {
+                  try {
+                    const wallet = await balances.activeWallet(userId);
+                    const tokens = await balances.supportedTokens();
+                    return {
+                      address: wallet.address,
+                      network: SETTINGS.celo.network === "mainnet" ? "Celo" : "Celo (test network)",
+                      assets: tokens.map((token) => token.symbol),
+                    };
+                  } catch (error) {
+                    if (error instanceof KaadaError && error.code === "WALLET_NOT_ACTIVE")
+                      return null;
+                    throw error;
+                  }
+                },
+              }
+            : null,
           links: {
-            setupLink: async (userId) => {
+            setupLink: async (userId, options) => {
               if (!setup) return null;
               try {
-                return (await setup.createSession(userId)).url;
+                // `existingWallet` continues a wallet that already exists (the PIN step) without creating another.
+                return (await setup.createSession(userId, options ?? {})).url;
               } catch {
                 // A person whose wallet is already active has nothing to set up.
                 return null;
@@ -169,6 +240,22 @@ function nestLog(): AgentLog {
               (await repositories.wallets.findEmbedded(userId, CELO_CHAIN_ID))?.status === "ACTIVE",
           },
           facts: paymentFacts(repositories, runs),
+          log: nestLog(),
+        });
+      },
+    },
+    {
+      // Delivers queued onboarding notifications on every chat the person has linked, and retries failures.
+      provide: ONBOARDING_ANNOUNCER,
+      inject: [ONBOARDING_LIFECYCLE, CHANNEL_MESSAGE_SERVICE],
+      useFactory: (
+        lifecycle: OnboardingLifecycleService | null,
+        messages: ChannelMessageService | null,
+      ): OnboardingAnnouncer | null => {
+        if (!lifecycle || !messages) return null;
+        return new OnboardingAnnouncer({
+          lifecycle,
+          announce: (announcement) => messages.announceOnboarding(announcement),
           log: nestLog(),
         });
       },
@@ -211,7 +298,7 @@ function nestLog(): AgentLog {
               completionIds.map(async (id) => ({
                 type: "ACTION" as const,
                 semantic: "SUGGESTION" as const,
-                label: capabilityById(id).label,
+                label: labelOf(id),
                 handle: await actions.issue({
                   userId: status.userId,
                   channel: status.channel,
@@ -240,7 +327,13 @@ function nestLog(): AgentLog {
       },
     },
   ],
-  exports: [CHANNEL_MESSAGE_SERVICE, PAYMENT_STATUS_DISPATCHER, TELEGRAM_ADAPTER],
+  exports: [
+    CHANNEL_MESSAGE_SERVICE,
+    PAYMENT_STATUS_DISPATCHER,
+    TELEGRAM_ADAPTER,
+    ONBOARDING_LIFECYCLE,
+    ONBOARDING_ANNOUNCER,
+  ],
 })
 export class ChannelsModule {}
 
@@ -262,6 +355,12 @@ function capabilityFlags(
     rates,
     send: rates && deps.wallets !== null && deps.balances !== null && deps.authorization !== null,
     balance: deps.balances !== null,
+    funding: {
+      // Anyone with a Kaada wallet can be sent tokens from another wallet or an exchange.
+      walletTransfer: deps.balances !== null,
+      // There is no on-ramp provider flow yet, so this stays off until one exists. Never switch it on "for later".
+      localCurrency: false,
+    },
   };
 }
 

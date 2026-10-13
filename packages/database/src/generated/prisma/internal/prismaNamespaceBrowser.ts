@@ -89,7 +89,8 @@ export const ModelName = {
   DeviceAttestation: 'DeviceAttestation',
   ChannelInboundEvent: 'ChannelInboundEvent',
   ChannelAction: 'ChannelAction',
-  ChannelPaymentStatus: 'ChannelPaymentStatus'
+  ChannelPaymentStatus: 'ChannelPaymentStatus',
+  UserNotification: 'UserNotification'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -885,6 +886,19 @@ export const ChannelPaymentStatusScalarFieldEnum = {
 } as const
 
 export type ChannelPaymentStatusScalarFieldEnum = (typeof ChannelPaymentStatusScalarFieldEnum)[keyof typeof ChannelPaymentStatusScalarFieldEnum]
+
+
+export const UserNotificationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  kind: 'kind',
+  createdAt: 'createdAt',
+  claimedAt: 'claimedAt',
+  deliveredAt: 'deliveredAt',
+  attempts: 'attempts'
+} as const
+
+export type UserNotificationScalarFieldEnum = (typeof UserNotificationScalarFieldEnum)[keyof typeof UserNotificationScalarFieldEnum]
 
 
 export const SortOrder = {

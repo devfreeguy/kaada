@@ -18,6 +18,8 @@ export interface ReplyParts {
 /** What deterministic wording may mention. Every value is trusted application state, never model output. */
 export interface FallbackFacts {
   capabilities: CapabilityFlags;
+  /** Why an onboarding message is being said: JUST_CREATED (it just happened), RESUMING (came back), CHECK_IN (asked). */
+  context?: string | undefined;
   recipient?: string | undefined;
   amount?: string | undefined;
 }
@@ -150,6 +152,47 @@ export function fallbackParts(
         { acknowledgement: "Here's the payment 👇", closing: "Happy with this?" },
         { acknowledgement: "Okay, this is what it looks like 👇", closing: "Look right to you?" },
       ]);
+    case "ONBOARDING_WALLET_NEEDED":
+      return {
+        acknowledgement: "Welcome to Kaada 👋",
+        body: "I can help you send money, check rates and manage payments right here.",
+        question:
+          "First, let's get your wallet ready. It takes a minute on a secure Kaada page: your keys and PIN never go through this chat.",
+      };
+    case "ONBOARDING_PIN_NEEDED":
+      if (facts.context === "RESUMING") {
+        return {
+          acknowledgement: "Looks like your wallet is ready, but your PIN still needs setting up.",
+          question: "Want to finish that?",
+        };
+      }
+      if (facts.context === "CHECK_IN") {
+        return {
+          acknowledgement: "Yep, your wallet is ready 🎉",
+          body: "One more step: set up your 6-digit PIN so you can approve payments securely.",
+        };
+      }
+      return {
+        acknowledgement: "Your wallet is ready 🎉",
+        body: "Now set up your 6-digit PIN. You'll use it to approve payments without having to confirm with your root credential every time.",
+      };
+    case "ONBOARDING_RECOVERY_NEEDED":
+      return {
+        acknowledgement: "Your PIN is set 👍",
+        body: "One last step: set up recovery, so you can get back into your wallet if you ever lose your device.",
+      };
+    case "ONBOARDING_COMPLETE":
+      return {
+        acknowledgement: "You're all set ✅ Your Kaada wallet is ready to use.",
+        question: "What do you want to do first?",
+      };
+    case "RETURNING_USER":
+      return pick(seed, [
+        { acknowledgement: "Hey 👋 Good to see you again.", question: "What are we doing today?" },
+        { acknowledgement: "Welcome back 👋", question: "What can I help you with today?" },
+      ]);
+    case "FUNDING_OPTIONS":
+      return { question: "How would you like to fund your wallet?" };
     case "CONVERSATION_END":
       return pick(seed, [
         { acknowledgement: "Perfect 👌 Catch you later." },

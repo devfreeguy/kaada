@@ -368,6 +368,7 @@ model User {
   recoveryAttempts       RecoveryAttempt[]
   channelActions         ChannelAction[]
   channelPaymentStatuses ChannelPaymentStatus[]
+  userNotifications      UserNotification[]
   attestationChallenges  DeviceAttestationChallenge[]
   deviceAttestations     DeviceAttestation[]
 }
@@ -1512,4 +1513,33 @@ model ChannelPaymentStatus {
 
   @@index([terminal, updatedAt])
   @@index([userId])
+}
+
+/// What a UserNotification is about. Semantic, never wording: the conversation layer decides how it is said.
+/// The first producer is onboarding (the person's wallet and PIN progress); others can be added without a new table.
+enum UserNotificationKind {
+  ONBOARDING_STARTED
+  WALLET_ROOT_CREATED
+  WALLET_READY
+  PIN_CREATED
+  RECOVERY_CONFIGURED
+  ONBOARDING_COMPLETED
+}
+
+/// A persisted, deduplicated notification outbox row. One row per (user, kind): the unique key is what makes a transition be
+/// announced once however many instances notice it. A worker claims a row (claimedAt) before delivering; a failed delivery
+/// releases it for a retry; deliveredAt is set when the person was told, or when no telling was needed (silent, superseded).
+model UserNotification {
+  id          String               @id @db.Uuid
+  userId      String               @db.Uuid
+  kind        UserNotificationKind
+  createdAt   DateTime             @default(now()) @db.Timestamptz(3)
+  claimedAt   DateTime?            @db.Timestamptz(3)
+  deliveredAt DateTime?            @db.Timestamptz(3)
+  attempts    Int                  @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind])
+  @@index([deliveredAt, createdAt])
 }

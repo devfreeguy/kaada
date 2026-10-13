@@ -2,8 +2,13 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import type { OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import type { Repositories } from "@kaada/database";
 
+import type { OnboardingAnnouncer } from "../core/channels/onboarding-announcer.js";
 import type { PaymentStatusDispatcher } from "../core/channels/payment-status.js";
-import { CHANNEL_REPOSITORIES, PAYMENT_STATUS_DISPATCHER } from "./channels.tokens.js";
+import {
+  CHANNEL_REPOSITORIES,
+  ONBOARDING_ANNOUNCER,
+  PAYMENT_STATUS_DISPATCHER,
+} from "./channels.tokens.js";
 
 const SWEEP_MS = 4_000;
 const HOUSEKEEPING_MS = 60 * 60 * 1000;
@@ -18,15 +23,18 @@ export class ChannelSweeper implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ChannelSweeper.name);
   private timers: NodeJS.Timeout[] = [];
   private running = false;
+  private onboardingRunning = false;
 
   constructor(
     @Inject(PAYMENT_STATUS_DISPATCHER) private readonly dispatcher: PaymentStatusDispatcher | null,
     @Inject(CHANNEL_REPOSITORIES) private readonly repositories: Repositories,
+    @Inject(ONBOARDING_ANNOUNCER) private readonly onboarding: OnboardingAnnouncer | null,
   ) {}
 
   onModuleInit(): void {
-    if (!this.dispatcher) return;
+    if (!this.dispatcher && !this.onboarding) return;
     this.timers.push(setInterval(() => void this.sweepNow(), SWEEP_MS).unref());
+    this.timers.push(setInterval(() => void this.onboardingNow(), SWEEP_MS).unref());
     this.timers.push(setInterval(() => void this.tidy(), HOUSEKEEPING_MS).unref());
   }
 
@@ -45,6 +53,21 @@ export class ChannelSweeper implements OnModuleInit, OnModuleDestroy {
       this.logger.warn("payment status sweep failed; it will be tried again");
     } finally {
       this.running = false;
+    }
+  }
+
+  /** Tells people their setup moved on (wallet ready, PIN set, all done). Safe to run from every instance at once. */
+  async onboardingNow(): Promise<void> {
+    if (!this.onboarding || this.onboardingRunning) return;
+    this.onboardingRunning = true;
+    try {
+      const { announced, failed } = await this.onboarding.sweep();
+      if (announced > 0) this.logger.log(`announced ${String(announced)} onboarding update(s)`);
+      if (failed > 0) this.logger.warn(`${String(failed)} onboarding update(s) will be retried`);
+    } catch {
+      this.logger.warn("onboarding sweep failed; it will be tried again");
+    } finally {
+      this.onboardingRunning = false;
     }
   }
 

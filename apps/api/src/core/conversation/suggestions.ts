@@ -1,9 +1,9 @@
-import { availableCapabilities } from "./capabilities.js";
+import { availableCapabilities, availableFundingMethods } from "./capabilities.js";
 import type { CapabilityFlags, SuggestionId } from "./capabilities.js";
 import type { ResponseState } from "./states.js";
 
 /** The most buttons ever offered with one reply. Buttons assist the conversation; they never crowd it. */
-export const MAX_SUGGESTIONS = 3;
+export const MAX_SUGGESTIONS = 4;
 
 /**
  * Which actions are worth offering after a reply. Contextual, not a reflex: a question the person must answer carries no
@@ -22,7 +22,15 @@ export function suggestionPolicy(state: ResponseState, flags: CapabilityFlags): 
     case "CAPABILITY_DISCOVERY":
     case "FINANCIAL_QUESTION":
     case "OUT_OF_SCOPE":
-      return available.slice(0, MAX_SUGGESTIONS);
+    case "RETURNING_USER":
+      // Everyday actions only. Funding is offered when someone has just set up (below), not as a reflex.
+      return only("SEND_MONEY", "CHECK_RATE", "CHECK_BALANCE");
+    // Just finished onboarding: help them take a first step, without the whole catalogue.
+    case "ONBOARDING_COMPLETE":
+      return only("FUND_WALLET", "SEND_MONEY", "CHECK_RATE", "CHECK_BALANCE");
+    // The funding choices: exactly the methods that really exist.
+    case "FUNDING_OPTIONS":
+      return availableFundingMethods(flags).map((method) => method.id);
     // Someone just looked at a rate or a balance: the natural next step is to send, or to look at the other one.
     case "RATE_QUERY":
       return only("SEND_MONEY", "CHECK_BALANCE");

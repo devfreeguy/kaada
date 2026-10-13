@@ -57,6 +57,13 @@ export const SETTINGS = {
     maxOutstandingRfqs: 4,
   },
 
+  /**
+   * What counts as "set up". A wallet and a PIN are always required. Recovery is encouraged but NOT required today (a person with
+   * a wallet and a PIN can already pay), so onboarding does not wait for it. Flip this to make it a required step: the chat then
+   * walks people through it before telling them they are all set.
+   */
+  onboarding: { requireRecovery: false },
+
   recovery: {
     sweepIntervalSeconds: 30,
   },

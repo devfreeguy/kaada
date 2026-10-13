@@ -280,6 +280,113 @@ describe("chat channels on the real database", { skip }, () => {
     });
   });
 
+  describe("the notification outbox", () => {
+    const stale = 60_000;
+    it("records a milestone once however many instances record it at the same moment", async () => {
+      const userId = await newUser();
+      const repo = repositories().userNotifications;
+      const results = await Promise.all(
+        Array.from({ length: 10 }, () =>
+          repo.record({ id: randomUUID(), userId, kind: "WALLET_READY", now: new Date() }),
+        ),
+      );
+      assert.equal(results.filter((r) => r.created).length, 1);
+      assert.equal((await repo.listForUser(userId)).length, 1);
+    });
+
+    it("gives each row to exactly one of many concurrent claimants, lets a failure be retried, and stops at the attempt limit", async () => {
+      const userId = await newUser();
+      const repo = repositories().userNotifications;
+      await repo.record({ id: randomUUID(), userId, kind: "WALLET_READY", now: new Date() });
+      const claim = () =>
+        repo.claim({ now: new Date(), staleMs: stale, maxAttempts: 3, limit: 50, userId });
+      const claims = await Promise.all(Array.from({ length: 8 }, claim));
+      assert.equal(claims.flat().length, 1, "claimed by exactly one");
+      assert.equal((await claim()).length, 0, "not handed out again while claimed");
+
+      const [row] = claims.flat();
+      assert.ok(row);
+      await repo.release([row.id]);
+      const again = await claim();
+      assert.equal(again.length, 1, "released after a failed delivery: retried");
+      assert.equal(again[0]?.attempts, 1);
+
+      await repo.release([row.id]);
+      await claim();
+      await repo.release([row.id]);
+      await repo.release([row.id]);
+      assert.equal((await claim()).length, 0, "no further attempts after the limit");
+
+      const fresh = await newUser();
+      await repo.record({ id: randomUUID(), userId: fresh, kind: "PIN_CREATED", now: new Date() });
+      const [claimed] = await repo.claim({
+        now: new Date(),
+        staleMs: stale,
+        maxAttempts: 3,
+        limit: 50,
+        userId: fresh,
+      });
+      assert.ok(claimed);
+      await repo.markDelivered([claimed.id], new Date());
+      assert.equal(
+        (
+          await repo.claim({
+            now: new Date(),
+            staleMs: stale,
+            maxAttempts: 3,
+            limit: 50,
+            userId: fresh,
+          })
+        ).length,
+        0,
+        "a delivered row is never claimed again",
+      );
+    });
+
+    it("takes over a claim whose worker died, but only one taker", async () => {
+      const userId = await newUser();
+      const repo = repositories().userNotifications;
+      await repo.record({ id: randomUUID(), userId, kind: "WALLET_READY", now: new Date() });
+      const long = new Date(Date.now() - 10 * 60_000);
+      assert.equal(
+        (await repo.claim({ now: long, staleMs: stale, maxAttempts: 3, limit: 5, userId })).length,
+        1,
+      );
+      const takers = await Promise.all(
+        Array.from({ length: 5 }, () =>
+          repo.claim({ now: new Date(), staleMs: stale, maxAttempts: 3, limit: 5, userId }),
+        ),
+      );
+      assert.equal(takers.flat().length, 1);
+    });
+
+    it("a silent milestone is born delivered, and only people still onboarding are listed", async () => {
+      const started = await newUser();
+      const done = await newUser();
+      const repo = repositories().userNotifications;
+      for (const userId of [started, done]) {
+        await repo.record({
+          id: randomUUID(),
+          userId,
+          kind: "ONBOARDING_STARTED",
+          now: new Date(),
+          silent: true,
+        });
+      }
+      await repo.record({
+        id: randomUUID(),
+        userId: done,
+        kind: "ONBOARDING_COMPLETED",
+        now: new Date(),
+      });
+      const listed = await repo.listUsersInOnboarding(500);
+      assert.ok(listed.includes(started));
+      assert.ok(!listed.includes(done));
+      const [row] = await repo.listForUser(started);
+      assert.ok(row?.deliveredAt, "silent rows need no telling");
+    });
+  });
+
   describe("identities", () => {
     it("two simultaneous first messages from one Telegram account make exactly one Kaada user", async () => {
       const repos = repositories();

@@ -612,7 +612,7 @@ describe("Kaada's voice through the real Agent Core", () => {
       [
         ["SUGGESTION", "Send money"],
         ["SUGGESTION", "Today's rates"],
-        ["SUGGESTION", "My balance"],
+        ["SUGGESTION", "Check balance"],
       ],
     );
     assert.ok(labels(sent).every((a) => /^[A-Za-z0-9_-]{22}$/.test(a.handle)));

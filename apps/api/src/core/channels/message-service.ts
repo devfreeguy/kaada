@@ -4,15 +4,31 @@ import type {
   ChannelPaymentStatusRepository,
   ChannelType,
   ConversationTurn,
+  IdentityRepository,
+  IdentityType,
 } from "@kaada/domain";
 
 import type { AgentTurnResult, IncomingAgentInput } from "../agent/agent-service.js";
 import { ConversationAccessError } from "../agent/errors.js";
 import type { AgentLog } from "../agent/ports.js";
 import { noopLog } from "../agent/ports.js";
-import { capabilityById, isSuggestionId } from "../conversation/capabilities.js";
-import type { ConversationPresenter } from "../conversation/presenter.js";
+import {
+  NO_CAPABILITIES,
+  availableFundingMethods,
+  isSuggestionId,
+  labelOf,
+} from "../conversation/capabilities.js";
+import { ConversationPresenter } from "../conversation/presenter.js";
 import { pick } from "../conversation/fallbacks.js";
+import {
+  FUNDING_NOT_READY,
+  FUNDING_UNAVAILABLE,
+  fundingInstructions,
+  walletAddressMessage,
+} from "../conversation/funding.js";
+import type { FundingInfo } from "../conversation/funding.js";
+import type { OnboardingLifecycleService, Announcement } from "../onboarding/lifecycle-service.js";
+import type { OnboardingFacts, OnboardingStep } from "../onboarding/state.js";
 import type { ChannelActionService } from "./action-service.js";
 import { errorDetails } from "./error-details.js";
 import type { ChannelIdentityService } from "./identity-service.js";
@@ -50,9 +66,21 @@ export interface ChannelMessageServiceDeps {
    * Absent: the plain deterministic text is used, exactly as before. It can never change a figure or a status.
    */
   conversation?: ConversationPresenter | null;
+  /**
+   * Where the person is on the way to a working wallet, and the notification outbox that tells them when it changes. Absent:
+   * the original first-contact welcome is used and nothing is announced.
+   */
+  onboarding?: OnboardingLifecycleService | null;
+  /** Trusted funding details for the person's wallet; null while they have none. Absent: funding is not offered. */
+  funding?: { info(userId: string): Promise<FundingInfo | null> } | null;
+  /** The accounts a person has linked, so a proactive message can reach them without an inbound message. */
+  linked?: Pick<IdentityRepository, "listForUser">;
   links: {
-    /** A secure link to the existing wallet setup page, or null when wallets are not enabled. */
-    setupLink(userId: string): Promise<string | null>;
+    /**
+     * A secure link to the existing wallet setup page, or null when wallets are not enabled. `existingWallet` asks for the
+     * link that continues a wallet that already exists (the PIN step) instead of creating one.
+     */
+    setupLink(userId: string, options?: { existingWallet?: boolean }): Promise<string | null>;
     /** The secure PIN page for a priced payment (the existing /authorize page). */
     authorizationLink(input: { sessionId: string; userId: string }): Promise<string>;
   };
@@ -82,6 +110,26 @@ const LOOKS_LIKE_PIN = /^\s*\d{6}\s*$/;
 
 const PIN_WARNING =
   "That looks like a PIN. Never type your PIN here: I've removed it from this chat. You confirm payments with your PIN on the secure Kaada page I link to.\n\n(If you meant an amount, add the currency, for example “250000 NGN”.)";
+
+/** The chat a linked account of this kind is reached through. */
+const CHANNEL_OF_IDENTITY: Partial<Record<IdentityType, ChannelType>> = {
+  TELEGRAM: "TELEGRAM",
+  WHATSAPP: "WHATSAPP",
+};
+
+/** Typed words that a state-aware onboarding answer may replace ("done", thanks, hello, "didn't understand"). */
+function canAnswerWithOnboarding(response: AgentTurnResult["response"]): boolean {
+  if (response.type === "MESSAGE") return true;
+  if (response.type !== "CHAT") return false;
+  return (
+    response.topic === "FAREWELL" ||
+    response.topic === "SMALL_TALK" ||
+    response.topic === "GREETING"
+  );
+}
+
+/** Wording-only presenter for when no model is configured: onboarding and funding still work, in fixed words. */
+const FIXED_WORDING = new ConversationPresenter({ writer: null, flags: NO_CAPABILITIES });
 
 const GENERIC_TROUBLE = "Something went wrong on my side. Please try again in a moment.";
 
@@ -157,10 +205,21 @@ export class ChannelMessageService {
 
     if (content.kind === "ACTION") await adapter.acknowledge(message).catch(() => undefined);
 
-    const { userId } = await this.deps.identities.resolve(message.sender);
+    const { userId, created } = await this.deps.identities.resolve(message.sender);
+
+    if (
+      this.deps.onboarding &&
+      (created || (content.kind === "COMMAND" && content.command === "START"))
+    ) {
+      await this.deps.onboarding.track(userId);
+    }
 
     if (content.kind === "COMMAND" && content.command === "START") {
-      await adapter.send(target, await this.welcome(userId));
+      if (this.deps.onboarding) {
+        await this.startReply(adapter, message, userId);
+      } else {
+        await adapter.send(target, await this.welcome(userId));
+      }
       return;
     }
     if (content.kind === "COMMAND" && content.command === "HELP") {
@@ -220,7 +279,193 @@ export class ChannelMessageService {
     // A turn the agent already answered is still delivered. A redelivery of a PROCESSED update never gets this far (the
     // channel claim answers DUPLICATE first), so reaching here means an earlier attempt stored the answer but failed to send
     // it. Skipping would drop the person's reply for good; at worst this repeats a message after a crash.
+    if (await this.answerFromOnboardingState(adapter, message, userId, turn)) return;
     await this.deliver(adapter, message, userId, turn);
+  }
+
+  // ───────────────────────────────── onboarding awareness ─────────────────────────────────
+
+  /**
+   * /start for someone the application already knows. What they are told comes from their CURRENT state: a returning person is
+   * welcomed back (no setup prompt), someone mid-setup is taken to the exact step they stopped at, and only a person with no
+   * wallet gets the setup link. Any announcement that was waiting is moot (this message says where things stand), so it is
+   * settled here and cannot arrive a moment later as a duplicate.
+   */
+  private async startReply(
+    adapter: ChannelAdapter,
+    message: InboundChannelMessage,
+    userId: string,
+  ): Promise<void> {
+    const onboarding = this.deps.onboarding;
+    if (!onboarding) return;
+    await onboarding.observe(userId);
+    const claimed = await onboarding.claimAnnouncements(userId);
+    const state = await onboarding.stateOf(userId);
+    try {
+      await this.sendOnboardingStep(adapter, message, userId, state.step, {
+        context: "RESUMING",
+        complete: "RETURNING_USER",
+        userMessage: userMessageOf(message),
+        seed: message.externalEventId,
+        firstName: message.sender.displayName?.split(" ")[0],
+        facts: state.facts,
+      });
+    } catch (error) {
+      await onboarding.release(claimed.flatMap((a) => a.ids));
+      throw error;
+    }
+    for (const announcement of claimed) await onboarding.markDelivered(announcement.ids);
+  }
+
+  /**
+   * "Done", "thanks", "hello" or a message the interpreter could not place, from someone who is still setting up (or who has
+   * just finished): the answer is the person's real onboarding state, never a guess from the word. The same announcement the
+   * background delivery would send is claimed first, so the two paths cannot both speak: whichever claims it tells the person.
+   */
+  private async answerFromOnboardingState(
+    adapter: ChannelAdapter,
+    message: InboundChannelMessage,
+    userId: string,
+    turn: AgentTurnResult,
+  ): Promise<boolean> {
+    const onboarding = this.deps.onboarding;
+    if (!onboarding || message.content.kind !== "TEXT" || !canAnswerWithOnboarding(turn.response)) {
+      return false;
+    }
+    if (!(await onboarding.isTracked(userId))) return false;
+
+    await onboarding.observe(userId);
+    const state = await onboarding.stateOf(userId);
+    const claimed = (await onboarding.claimAnnouncements(userId)).filter(
+      (a) => a.userId === userId,
+    );
+    const ids = claimed.flatMap((a) => a.ids);
+
+    if (state.step === "COMPLETE" && claimed.length === 0) return false; // nothing new to say: an ordinary reply
+    if (state.step !== "COMPLETE" && claimed.length === 0) {
+      // The background delivery already holds the news for this person and is sending it now: stay quiet rather than repeat it.
+      if (await onboarding.hasAnnouncementInFlight(userId)) return true;
+      // Or it has already arrived since the person typed: it answers them, so answering again would repeat it.
+      if (await onboarding.announcedSince(userId, message.timestamp)) return true;
+    }
+    try {
+      await this.sendOnboardingStep(adapter, message, userId, state.step, {
+        context: "CHECK_IN",
+        complete: "ONBOARDING_COMPLETE",
+        userMessage: userMessageOf(message),
+        seed: turn.messageId,
+        firstName: message.sender.displayName?.split(" ")[0],
+        facts: state.facts,
+      });
+    } catch (error) {
+      await onboarding.release(ids);
+      throw error;
+    }
+    await onboarding.markDelivered(ids);
+    return true;
+  }
+
+  private async sendOnboardingStep(
+    adapter: ChannelAdapter,
+    message: InboundChannelMessage,
+    userId: string,
+    step: OnboardingStep,
+    options: {
+      context: "JUST_CREATED" | "RESUMING" | "CHECK_IN";
+      complete: "ONBOARDING_COMPLETE" | "RETURNING_USER";
+      userMessage: string;
+      seed: string;
+      firstName: string | undefined;
+      facts: OnboardingFacts;
+    },
+  ): Promise<void> {
+    const presented = await this.presentOnboardingStep(step, options);
+    if (step === "WALLET" && presented.link && !(await this.deps.links.setupLink(userId))) {
+      // Wallet setup is not switched on here: say so rather than offering a button that does nothing.
+      await adapter.send(
+        { externalConversationId: message.externalConversationId },
+        { text: "Welcome to Kaada. Wallet setup isn't available yet, please check back soon." },
+      );
+      return;
+    }
+    const outbound = await this.compose(
+      { channel: message.channel, externalUserId: message.sender.externalUserId },
+      userId,
+      createId(),
+      presented,
+    );
+    await adapter.send({ externalConversationId: message.externalConversationId }, outbound);
+  }
+
+  private presentOnboardingStep(
+    step: OnboardingStep,
+    options: {
+      context: "JUST_CREATED" | "RESUMING" | "CHECK_IN";
+      complete: "ONBOARDING_COMPLETE" | "RETURNING_USER";
+      userMessage: string;
+      seed: string;
+      firstName: string | undefined;
+      facts: OnboardingFacts;
+    },
+  ): Promise<PresentedMessage> {
+    const presenter = this.deps.conversation ?? FIXED_WORDING;
+    return presenter.presentOnboarding({
+      state:
+        step === "WALLET"
+          ? "ONBOARDING_WALLET_NEEDED"
+          : step === "PIN"
+            ? "ONBOARDING_PIN_NEEDED"
+            : step === "RECOVERY"
+              ? "ONBOARDING_RECOVERY_NEEDED"
+              : options.complete,
+      context: options.context,
+      facts: options.facts,
+      userMessage: options.userMessage,
+      history: [],
+      seed: options.seed,
+      firstName: options.firstName,
+    });
+  }
+
+  /**
+   * Tells a person, on every chat they have linked, that their setup moved on. Called by the notification dispatcher, never from
+   * an inbound message. The words come from their CURRENT state, so this can never contradict what an inbound "Done" says.
+   */
+  async announceOnboarding(
+    announcement: Announcement,
+  ): Promise<{ delivered: number; failed: number }> {
+    const result = { delivered: 0, failed: 0 };
+    const { userId, state } = announcement;
+    if (state.step === "WALLET") return result; // nothing the person could act on yet
+    const accounts = (await this.deps.linked?.listForUser(userId)) ?? [];
+    for (const account of accounts) {
+      const channel = CHANNEL_OF_IDENTITY[account.type];
+      const adapter = channel ? this.deps.adapters.get(channel) : undefined;
+      if (!channel || !adapter) continue;
+      try {
+        const presented = await this.presentOnboardingStep(state.step, {
+          context: "JUST_CREATED",
+          complete: "ONBOARDING_COMPLETE",
+          userMessage: "",
+          seed: announcement.ids[0] ?? userId,
+          firstName: undefined,
+          facts: state.facts,
+        });
+        const outbound = await this.compose(
+          { channel, externalUserId: account.externalId },
+          userId,
+          announcement.ids[0] ?? userId,
+          presented,
+        );
+        // In a one-to-one chat the provider's account id is also the chat id.
+        await adapter.send({ externalConversationId: account.externalId }, outbound);
+        result.delivered += 1;
+      } catch (error) {
+        result.failed += 1;
+        this.log("warn", "onboarding.announce_failed", { channel, ...errorDetails(error) });
+      }
+    }
+    return result;
   }
 
   /** A pressed button. Claimed atomically first, so a replay, a wrong account or an expired button does nothing. */
@@ -283,6 +528,15 @@ export class ChannelMessageService {
       case "SUGGESTION": {
         const id = action.payload["suggestion"];
         if (!id || !isSuggestionId(id)) return null;
+        if (
+          id === "FUND_WALLET" ||
+          id === "FUND_FROM_WALLET" ||
+          id === "VIEW_WALLET_ADDRESS" ||
+          id === "FUND_LOCAL_CURRENCY"
+        ) {
+          await this.handleFunding(adapter, message, userId, id, action.conversationId);
+          return null;
+        }
         // No model is involved in a button press: a balance is read by the Agent Core, the rest are fixed prompts.
         if (id === "CHECK_BALANCE") {
           return this.deps.agent!.handle({
@@ -309,6 +563,44 @@ export class ChannelMessageService {
     }
   }
 
+  /** Funding buttons. Only methods the capability registry says exist are ever answered; the details come from trusted state. */
+  private async handleFunding(
+    adapter: ChannelAdapter,
+    message: InboundChannelMessage,
+    userId: string,
+    id: "FUND_WALLET" | "FUND_FROM_WALLET" | "VIEW_WALLET_ADDRESS" | "FUND_LOCAL_CURRENCY",
+    conversationId: string,
+  ): Promise<void> {
+    const target = { externalConversationId: message.externalConversationId };
+    const presenter = this.deps.conversation ?? FIXED_WORDING;
+    if (id === "FUND_WALLET") {
+      const presented = presenter.presentFundingOptions(message.externalEventId);
+      await adapter.send(
+        target,
+        await this.compose(
+          { channel: message.channel, externalUserId: message.sender.externalUserId },
+          userId,
+          conversationId,
+          presented,
+        ),
+      );
+      return;
+    }
+    const offered = availableFundingMethods(presenter.flags).some((method) => method.id === id);
+    if (!offered) {
+      await adapter.send(target, { text: FUNDING_UNAVAILABLE });
+      return;
+    }
+    const info = (await this.deps.funding?.info(userId)) ?? null;
+    if (!info) {
+      await adapter.send(target, { text: FUNDING_NOT_READY });
+      return;
+    }
+    await adapter.send(target, {
+      text: id === "VIEW_WALLET_ADDRESS" ? walletAddressMessage(info) : fundingInstructions(info),
+    });
+  }
+
   /** Renders an agent turn as a neutral message (with stored actions and secure links) and sends it. */
   private async deliver(
     adapter: ChannelAdapter,
@@ -316,8 +608,13 @@ export class ChannelMessageService {
     userId: string,
     turn: AgentTurnResult,
   ): Promise<void> {
-    const presented = await this.present(inbound, turn);
-    const outbound = await this.compose(inbound, userId, turn.conversationId, presented);
+    const presented = await this.present(inbound, userId, turn);
+    const outbound = await this.compose(
+      { channel: inbound.channel, externalUserId: inbound.sender.externalUserId },
+      userId,
+      turn.conversationId,
+      presented,
+    );
     const sent = await adapter.send(
       { externalConversationId: inbound.externalConversationId },
       outbound,
@@ -339,6 +636,7 @@ export class ChannelMessageService {
   /** The conversational presentation of a turn; any failure there falls back to the plain deterministic text. */
   private async present(
     inbound: InboundChannelMessage,
+    userId: string,
     turn: AgentTurnResult,
   ): Promise<PresentedMessage> {
     const plain = presentAgentResponse(turn.response, this.now());
@@ -347,7 +645,14 @@ export class ChannelMessageService {
     try {
       const history =
         (await this.deps.agent?.recentTurns?.(turn.conversationId, turn.messageId)) ?? [];
+      // The conversation knows where setup stands (a trusted fact), so until it is complete nothing that needs a wallet and a
+      // PIN is suggested or described as available, whatever the person said earlier.
+      const onboardingStep = await this.deps.onboarding
+        ?.stateOf(userId)
+        .then((state) => state.step)
+        .catch(() => undefined);
       return await presenter.present({
+        onboardingStep,
         response: turn.response,
         corrected: turn.corrected,
         userMessage: userMessageOf(inbound),
@@ -363,7 +668,7 @@ export class ChannelMessageService {
   }
 
   private async compose(
-    inbound: InboundChannelMessage,
+    inbound: { channel: ChannelType; externalUserId: string },
     userId: string,
     conversationId: string,
     presented: PresentedMessage,
@@ -377,7 +682,7 @@ export class ChannelMessageService {
       this.deps.actions.issue({
         userId,
         channel: inbound.channel,
-        externalUserId: inbound.sender.externalUserId,
+        externalUserId: inbound.externalUserId,
         conversationId,
         kind,
         ...(payload && { payload }),
@@ -408,6 +713,20 @@ export class ChannelMessageService {
       });
     }
 
+    if (presented.link) {
+      const url = await this.deps.links.setupLink(userId, {
+        existingWallet: presented.link.kind === "PIN_SETUP",
+      });
+      if (url) {
+        actions.push({
+          type: "OPEN_URL",
+          semantic: "OPEN_SETUP",
+          label: presented.link.label,
+          url,
+        });
+      }
+    }
+
     if (presented.setup) {
       const url = await this.deps.links.setupLink(userId);
       if (url)
@@ -419,7 +738,7 @@ export class ChannelMessageService {
       actions.push({
         type: "ACTION",
         semantic: "SUGGESTION",
-        label: capabilityById(id).label,
+        label: labelOf(id),
         handle: await issue("SUGGESTION", { suggestion: id }, true),
       });
     }

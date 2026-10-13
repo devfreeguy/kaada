@@ -27,6 +27,22 @@ const MAX_EMOJI = 2;
 const OUTCOME_CLAIM =
   /\b(succeed(?:ed|s)?|successful(?:ly)?|completed?|went through|(?:has|have|had|was|were|been|is) sent|sent (?:it|your|the|him|her|them)|authori[sz]ed|approved|confirmed|failed|failure|refunded|declined)\b/i;
 const SECRETS = /\b(pin|passcode|password|recovery code|private key|seed phrase|secret key)\b/i;
+/** The one place the model may say "PIN": to point at where it is set up. It still may not ask for one. */
+const MAY_NAME_PIN: ReadonlySet<ResponseState> = new Set([
+  "ONBOARDING_PIN_NEEDED",
+  "ONBOARDING_RECOVERY_NEEDED",
+]);
+/**
+ * Onboarding replies must actually name the step the application says is next, so a model cannot skip or swap a step (it may
+ * only phrase it). Anything that does not is replaced by the fixed wording.
+ */
+const MUST_MENTION: Partial<Record<ResponseState, RegExp>> = {
+  ONBOARDING_PIN_NEEDED: /\bPIN\b/i,
+  ONBOARDING_RECOVERY_NEEDED: /\brecovery\b/i,
+};
+
+/** Where a trusted "all done" is true, so the model may say so. */
+const MAY_CELEBRATE: ReadonlySet<ResponseState> = new Set(["ONBOARDING_COMPLETE"]);
 const MARKUP = /https?:\/\/|www\.|\]\(|`|<\/?[a-z]|\{\{|\}\}/i;
 const LEAKS = /\b(system prompt|trusted[_ ]state|user[_ ]message|my instructions|json)\b/i;
 /** Features Kaada does not have: never to be promised, whatever the model "remembers" from elsewhere. */
@@ -113,10 +129,17 @@ export function validateReply(raw: unknown, context: ValidateContext): Validatio
   if (text.length === 0) return fail("EMPTY");
   if (text.length > MAX_TOTAL) return fail("TOO_LONG");
   if (MARKUP.test(text)) return fail("MARKUP");
-  if (SECRETS.test(text)) return fail("SECRET_WORDS");
+  if (
+    SECRETS.test(text) &&
+    !(MAY_NAME_PIN.has(context.state) && !/\b(enter|type|send|share|tell)\b/i.test(text))
+  ) {
+    return fail("SECRET_WORDS");
+  }
   if (LEAKS.test(text)) return fail("LEAK");
   if (context.mode === "MODEL_FULL" && PHANTOM_BLOCK.test(text)) return fail("PHANTOM_BLOCK");
-  if (OUTCOME_CLAIM.test(text) || text.includes("✅")) return fail("OUTCOME_CLAIM");
+  if (OUTCOME_CLAIM.test(text) || (text.includes("✅") && !MAY_CELEBRATE.has(context.state))) {
+    return fail("OUTCOME_CLAIM");
+  }
   if (UNBUILT.test(text)) return fail("UNBUILT_FEATURE");
   if (!context.flags.rates && /\b(rates?|quotes?)\b/i.test(text)) return fail("UNAVAILABLE_RATES");
   if (!context.flags.balance && /\bbalances?\b/i.test(text)) return fail("UNAVAILABLE_BALANCE");
@@ -129,6 +152,8 @@ export function validateReply(raw: unknown, context: ValidateContext): Validatio
   if (numbersIn(text).some((value) => !trusted.has(value))) return fail("UNTRUSTED_NUMBER");
 
   if (context.needsQuestion && !text.includes("?")) return fail("NO_QUESTION");
+  const required = MUST_MENTION[context.state];
+  if (required && !required.test(text)) return fail("MISSING_STEP");
 
   const allowed = new Set<string>(context.allowedSuggestions);
   const suggestions = reply.suggestedActionIds.filter(

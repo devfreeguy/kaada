@@ -6,6 +6,8 @@ import type {
   ChannelPaymentStatus,
   ChannelPaymentStatusRepository,
   ChannelType,
+  UserNotification,
+  UserNotificationRepository,
 } from "@kaada/domain";
 
 import type {
@@ -207,6 +209,8 @@ export function inbound(input: {
   chatId?: string;
   messageId?: string;
   isPrivate?: boolean;
+  /** When the person sent it (default: a fixed past date). */
+  at?: Date;
 }): InboundChannelMessage {
   const userId = input.telegramUserId ?? "424242";
   return {
@@ -226,8 +230,70 @@ export function inbound(input: {
       : input.command
         ? { kind: "COMMAND", command: input.command }
         : { kind: "TEXT", text: input.text ?? "" },
-    timestamp: new Date("2026-10-22T12:00:00Z"),
+    timestamp: input.at ?? new Date("2026-10-22T12:00:00Z"),
   };
 }
 
 export const newId = createId;
+
+/** The same contract as the Prisma outbox: one row per (user, kind), and a claim that gives each row to exactly one caller. */
+export function createMemoryUserNotifications(
+  now: () => Date = () => new Date(),
+): UserNotificationRepository & { rows: UserNotification[] } {
+  const rows: UserNotification[] = [];
+  return {
+    rows,
+    record: (input) => {
+      if (rows.some((row) => row.userId === input.userId && row.kind === input.kind)) {
+        return Promise.resolve({ created: false });
+      }
+      rows.push({
+        id: input.id,
+        userId: input.userId,
+        kind: input.kind,
+        createdAt: input.now,
+        attempts: 0,
+        ...(input.silent && { deliveredAt: input.now }),
+      });
+      return Promise.resolve({ created: true });
+    },
+    listForUser: (userId) =>
+      Promise.resolve(rows.filter((row) => row.userId === userId).map((row) => ({ ...row }))),
+    listUsersInOnboarding: (limit) => {
+      const done = new Set(
+        rows.filter((row) => row.kind === "ONBOARDING_COMPLETED").map((row) => row.userId),
+      );
+      const started = rows.filter(
+        (row) => row.kind === "ONBOARDING_STARTED" && !done.has(row.userId),
+      );
+      return Promise.resolve(started.slice(0, limit).map((row) => row.userId));
+    },
+    claim: (input) => {
+      const stale = new Date(input.now.getTime() - input.staleMs);
+      const claimed: UserNotification[] = [];
+      for (const row of rows) {
+        if (claimed.length >= input.limit) break;
+        if (row.deliveredAt || row.attempts >= input.maxAttempts) continue;
+        if (input.userId && row.userId !== input.userId) continue;
+        if (row.claimedAt && row.claimedAt >= stale) continue;
+        row.claimedAt = input.now;
+        claimed.push({ ...row });
+      }
+      void now;
+      return Promise.resolve(claimed);
+    },
+    markDelivered: (ids, at) => {
+      for (const row of rows) if (ids.includes(row.id) && !row.deliveredAt) row.deliveredAt = at;
+      return Promise.resolve();
+    },
+    release: (ids) => {
+      for (const row of rows) {
+        if (ids.includes(row.id) && !row.deliveredAt) {
+          delete row.claimedAt;
+          row.attempts += 1;
+        }
+      }
+      return Promise.resolve();
+    },
+  };
+}

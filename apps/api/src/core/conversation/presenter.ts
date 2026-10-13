@@ -1,5 +1,8 @@
 import type { ConversationTurn } from "@kaada/domain";
 
+import type { OnboardingFacts, OnboardingStep } from "../onboarding/state.js";
+import { FUNDING_NONE } from "./funding.js";
+
 import type { AgentLog } from "../agent/ports.js";
 import { noopLog } from "../agent/ports.js";
 import { presentAgentResponse } from "../channels/presenter.js";
@@ -37,6 +40,34 @@ export interface PresentationInput {
   seed: string;
   firstName?: string | undefined;
   now: Date;
+  /** Where the person is in onboarding, when known: while incomplete, payments are not offered or suggested. */
+  onboardingStep?: OnboardingStep | undefined;
+}
+
+/** What the person is being told about their setup, and why now. */
+export interface OnboardingPresentationInput {
+  state:
+    | "ONBOARDING_WALLET_NEEDED"
+    | "ONBOARDING_PIN_NEEDED"
+    | "ONBOARDING_RECOVERY_NEEDED"
+    | "ONBOARDING_COMPLETE"
+    | "RETURNING_USER";
+  /** JUST_CREATED (it just happened), RESUMING (they came back mid-setup), CHECK_IN (they asked if they are done). */
+  context: "JUST_CREATED" | "RESUMING" | "CHECK_IN";
+  facts: OnboardingFacts;
+  userMessage: string;
+  history: readonly ConversationTurn[];
+  seed: string;
+  firstName?: string | undefined;
+}
+
+/** The slice of a request the model-phrasing step needs. */
+interface PhraseInput {
+  userMessage: string;
+  history: readonly ConversationTurn[];
+  seed: string;
+  firstName?: string | undefined;
+  missingFields?: string[];
 }
 
 export interface ConversationPresenterDeps {
@@ -75,25 +106,112 @@ export class ConversationPresenter {
     this.timeoutMs = deps.timeoutMs ?? 4_000;
   }
 
+  /** The deployment's capability flags (what Kaada can really do here). */
+  get flags(): CapabilityFlags {
+    return this.deps.flags;
+  }
+
+  /**
+   * Until onboarding is complete nothing that needs a wallet and a PIN is offered, suggested or described as available:
+   * the flags are narrowed from the trusted onboarding step, never from what the person said.
+   */
+  private effectiveFlags(step: OnboardingStep | undefined): CapabilityFlags {
+    if (!step || step === "COMPLETE") return this.deps.flags;
+    return {
+      ...this.deps.flags,
+      send: false,
+      balance: false,
+      funding: { walletTransfer: false, localCurrency: false },
+    };
+  }
+
+  /** "How would you like to fund your wallet?" with exactly the funding methods that exist (none: an honest "not yet"). */
+  presentFundingOptions(seed: string): PresentedMessage {
+    const suggestions = suggestionPolicy("FUNDING_OPTIONS", this.deps.flags);
+    if (suggestions.length === 0) return { text: FUNDING_NONE };
+    const parts = fallbackParts("FUNDING_OPTIONS", { capabilities: this.deps.flags }, seed);
+    return { text: joinParts(parts ?? {}, ORDER), suggestions };
+  }
+
+  /** A message about the person's setup. The facts are trusted application state; the model only phrases them. */
+  async presentOnboarding(input: OnboardingPresentationInput): Promise<PresentedMessage> {
+    const { state } = input;
+    const step: OnboardingStep =
+      state === "ONBOARDING_COMPLETE" || state === "RETURNING_USER"
+        ? "COMPLETE"
+        : state === "ONBOARDING_WALLET_NEEDED"
+          ? "WALLET"
+          : state === "ONBOARDING_PIN_NEEDED"
+            ? "PIN"
+            : "RECOVERY";
+    const flags = this.effectiveFlags(step);
+    const known: Record<string, string> = {
+      context: input.context,
+      walletReady: input.facts.walletReady ? "yes" : "no",
+      pinConfigured: input.facts.pinConfigured ? "yes" : "no",
+      pinLength: "6",
+    };
+    const facts: FallbackFacts = { capabilities: flags, context: input.context };
+    const policy = suggestionPolicy(state, flags);
+    const link: PresentedMessage["link"] =
+      state === "ONBOARDING_WALLET_NEEDED"
+        ? { kind: "WALLET_SETUP", label: "Set up Kaada" }
+        : state === "ONBOARDING_PIN_NEEDED"
+          ? {
+              kind: "PIN_SETUP",
+              label: input.context === "RESUMING" ? "Continue setup" : "Set up PIN",
+            }
+          : undefined;
+
+    const phrased =
+      STATE_MODE[state] === "DETERMINISTIC"
+        ? { parts: fallbackParts(state, facts, input.seed) ?? {}, suggestions: policy }
+        : await this.phrase(input, state, "MODEL_FULL", known, policy, facts, flags);
+    const chosen = phrased.suggestions.slice(0, MAX_SUGGESTIONS);
+    return {
+      text: joinParts(phrased.parts, ORDER),
+      ...(link && { link }),
+      ...(chosen.length > 0 && { suggestions: [...chosen] }),
+    };
+  }
+
   async present(input: PresentationInput): Promise<PresentedMessage> {
     const { response } = input;
+    const flags = this.effectiveFlags(input.onboardingStep);
     const state = deriveResponseState({ response, corrected: input.corrected });
     const base = presentAgentResponse(response, input.now);
     const mode: PresentationMode = response.type === "CHAT" ? "MODEL_FULL" : STATE_MODE[state];
-    const known = response.type === "CLARIFICATION_REQUIRED" ? (response.known ?? {}) : {};
+    const known: Record<string, string> = {
+      ...(response.type === "CLARIFICATION_REQUIRED" ? (response.known ?? {}) : {}),
+      ...(input.onboardingStep && { onboardingStep: input.onboardingStep }),
+    };
     const facts: FallbackFacts = {
-      capabilities: this.deps.flags,
+      capabilities: flags,
       recipient: known["recipient"],
       amount: known["amount"],
     };
-    const policy = suggestionPolicy(state, this.deps.flags);
+    const policy = suggestionPolicy(state, flags);
 
     if (mode === "DETERMINISTIC") {
       const parts = fallbackParts(state, facts, input.seed);
       return this.finish(base, parts ? joinParts(parts, ORDER) : base.text, policy);
     }
 
-    const phrased = await this.phrase(input, state, mode, known, policy, facts);
+    const phrased = await this.phrase(
+      {
+        userMessage: input.userMessage,
+        history: input.history,
+        seed: input.seed,
+        firstName: input.firstName,
+        ...(response.type === "CLARIFICATION_REQUIRED" && { missingFields: [response.field] }),
+      },
+      state,
+      mode,
+      known,
+      policy,
+      facts,
+      flags,
+    );
     if (mode === "MODEL_FULL") {
       const text = joinParts(phrased.parts, ORDER);
       return this.finish(base, text.length > 0 ? text : base.text, phrased.suggestions);
@@ -115,12 +233,13 @@ export class ConversationPresenter {
 
   /** The parts of the reply: the model's if it produced a valid one, the deterministic wording otherwise. */
   private async phrase(
-    input: PresentationInput,
+    input: PhraseInput,
     state: ResponseState,
     mode: Exclude<PresentationMode, "DETERMINISTIC">,
     known: Record<string, string>,
     policy: SuggestionId[],
     facts: FallbackFacts,
+    flags: CapabilityFlags,
   ): Promise<Phrased> {
     const fallback = (): Phrased => ({
       parts:
@@ -145,12 +264,10 @@ export class ConversationPresenter {
         state,
         userMessage: input.userMessage,
         history: input.history,
-        flags: this.deps.flags,
+        flags,
         allowedSuggestions: policy,
         knownFacts: known,
-        ...(input.response.type === "CLARIFICATION_REQUIRED" && {
-          missingFields: [input.response.field],
-        }),
+        ...(input.missingFields && { missingFields: input.missingFields }),
         firstName: input.firstName,
         hasFinancialBlock: mode === "MODEL_WRAPPED",
       });
@@ -158,7 +275,7 @@ export class ConversationPresenter {
       const checked = validateReply(raw, {
         mode,
         state,
-        flags: this.deps.flags,
+        flags,
         allowedSuggestions: policy,
         knownFactValues: Object.values(known),
         needsQuestion: instruction.needsQuestion,

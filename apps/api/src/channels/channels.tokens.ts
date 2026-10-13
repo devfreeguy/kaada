@@ -6,5 +6,9 @@ export const TELEGRAM_ADAPTER = Symbol("TELEGRAM_ADAPTER");
 export const PAYMENT_STATUS_DISPATCHER = Symbol("PAYMENT_STATUS_DISPATCHER");
 /** Kaada's conversational voice (channel-neutral). Always present: without Groq it uses the fixed wording. */
 export const CONVERSATION_PRESENTER = Symbol("CONVERSATION_PRESENTER");
+/** Observes onboarding progress and tells people about it. Null when no chat channel is configured. */
+export const ONBOARDING_ANNOUNCER = Symbol("ONBOARDING_ANNOUNCER");
+/** The onboarding lifecycle service (state, tracking, the notification outbox). Null when no chat channel is configured. */
+export const ONBOARDING_LIFECYCLE = Symbol("ONBOARDING_LIFECYCLE");
 /** Repositories for the channel edge. */
 export const CHANNEL_REPOSITORIES = Symbol("CHANNEL_REPOSITORIES");
