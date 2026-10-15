@@ -155,7 +155,7 @@ export function describeProgress(progress: PaymentProgress, seed = ""): string {
     case "PROCESSING":
       return "Processing your payment…";
     case "PENDING":
-      return "Your payment has been submitted and is still confirming. You don't need to do anything, and please don't send it again.";
+      return "Confirming your payment… It has been submitted and is still confirming. You don't need to do anything, and please don't send it again.";
     case "COMPLETED": {
       const parts = fallbackParts("PAYMENT_COMPLETED", { capabilities: NO_CAPABILITIES }, seed);
       return parts

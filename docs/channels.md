@@ -229,11 +229,24 @@ token symbol, `RPC_UNAVAILABLE`, `BALANCE_UNAVAILABLE`); the person only sees "I
 
 What a person sees while Kaada works, without ever faking progress:
 
-1. **Typing, immediately.** As soon as an inbound message is claimed (a duplicate delivery never gets this far), the adapter's
-   activity signal starts (Telegram `sendChatAction: typing`) and is renewed every ~4 s. It does not wait for the agent or the model,
-   and it stops when the work ends, including on failure. A PIN-looking message gets no activity (it is deleted at once).
-2. **One temporary status, only if slow.** After ~2.5 s without an answer, ONE status ("Checking that for you 👀" / "Let me work that
-   out.") is sent. It is removed when the answer arrives or the work fails. A fast answer never shows it; statuses never cycle.
+0. **Classify first** (`core/channels/latency.ts`). Before anything is shown, an interaction is classed by what Kaada is doing:
+   `INSTANT_DETERMINISTIC` (commands other than /balance, button presses answered from stored state, onboarding replies, wallet
+   address, validation errors), `FAST_CONVERSATIONAL` / `MODEL_GENERATED` (casual chat), `PROVIDER_LOOKUP` (rates, balance),
+   `ROUTING_OR_FINANCIAL_COMPUTATION` (preparing a payment), `PAYMENT_EXECUTION` and `BACKGROUND_STATUS`. Classification only
+   chooses whether to show anything and which words; the answer itself always comes from the Agent Core's typed response. When
+   unsure a message is conversational (typing only), never a loader. A pressed button is instant until it is resolved; the kinds
+   that start real work (Continue, a payment option, Balance) refine it.
+1. **Typing for anything that is not instant.** As soon as an inbound message is claimed (a duplicate never gets this far), the
+   channel's activity signal starts (Telegram `sendChatAction: typing`) and is renewed every ~4 s, whatever the model or provider
+   is doing. Instant interactions (/start, /cancel, buttons, onboarding, wallet address) show nothing: they reply at once.
+   /start never waits on a model (`instant` presentation uses the fixed wording); /cancel needs none.
+2. **A status only for real work, only if slow, and it names the work.** After `statusAfterMs` (default 1.5 s, configurable) with
+   no answer, ONE temporary status is shown: "Let me check that rate for you 👀" (rate), "Checking your wallet…" (balance),
+   "Let me find them." (recipient), "Got you. Let me work that out." (preparing a payment), "Let me work out the best route."
+   (continuing one). Casual chat never gets a status: there is nothing to "work on". There is no generic loader anywhere
+   (a test scans the source). The status is removed BEFORE the answer is shown, and also on failure, so none is left behind.
+   The operations are channel-neutral (`ActivityChannel`: `setActivity`, `showTransientStatus`, `clearTransientStatus`) and a
+   no-op on a channel that cannot do them.
 3. **Live drafts for conversational wording only.** Channels may implement the optional `ChannelAdapter.openDraft(target)`
    (Telegram: `sendMessageDraft`, one `draft_id` per reply, so updates animate one bubble; the final `sendMessage` replaces it).
    Channels without it (e.g. a future WhatsApp adapter) simply return nothing and the reply appears whole.
@@ -245,8 +258,9 @@ What a person sees while Kaada works, without ever faking progress:
    - Every chunk is screened by the same checks as a final reply (markup, secrets, outcome claims, numbers the application did not
      supply, unbuilt features, emoji cap) before it is shown. A refused chunk stops the stream and the fixed wording is used.
    - Drafts are throttled locally (default ≥250 ms apart, ≤24 updates) and stop quietly on any error such as a flood-wait.
-4. **Payments are not streamed.** Execution progress stays the persistent, edited status message ("Processing your payment…") and
-   success is only announced after confirmation.
+4. **Payments are not streamed.** Execution progress stays the persistent, edited status message ("Processing your payment…",
+   then "Confirming your payment…", then the completed message) and success is only announced after confirmation. It comes only
+   from stored state, never from a model.
 
 ## Balances, networks and deposit detection
 

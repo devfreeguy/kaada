@@ -78,6 +78,8 @@ export interface OnboardingPresentationInput {
   history: readonly ConversationTurn[];
   seed: string;
   firstName?: string | undefined;
+  /** Fixed wording only: no model call, however the state is normally worded. /start uses it so it is always instant. */
+  instant?: boolean;
 }
 
 /** The slice of a request the model-phrasing step needs. */
@@ -193,7 +195,7 @@ export class ConversationPresenter {
           : undefined;
 
     const phrased =
-      STATE_MODE[state] === "DETERMINISTIC"
+      STATE_MODE[state] === "DETERMINISTIC" || input.instant === true
         ? { parts: fallbackParts(state, facts, input.seed) ?? {}, suggestions: policy }
         : await this.phrase(input, state, "MODEL_FULL", known, policy, facts, flags);
     const chosen = phrased.suggestions.slice(0, MAX_SUGGESTIONS);

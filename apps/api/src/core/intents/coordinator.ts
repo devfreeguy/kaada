@@ -366,7 +366,11 @@ export class IntentCoordinator {
     });
     const request = buildRoutingRequest({ ...state, createdAt: now, updatedAt: now });
     if (!request) return askForPair;
-    return answer({ type: "SIDE_QUOTE_REQUIRED", text: "Checking that for you 👀", request });
+    return answer({
+      type: "SIDE_QUOTE_REQUIRED",
+      text: "Let me check that rate for you 👀",
+      request,
+    });
   }
 
   /**
@@ -678,7 +682,7 @@ export class IntentCoordinator {
           return {
             response: {
               type: "BALANCE_REQUIRED",
-              text: "Checking your balance…",
+              text: "Checking your wallet…",
               ...(intent.asset && { asset: intent.asset }),
             },
             mergeKind,

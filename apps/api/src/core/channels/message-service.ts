@@ -36,6 +36,10 @@ import type { FundingInfo } from "../conversation/funding.js";
 import type { OnboardingLifecycleService, Announcement } from "../onboarding/lifecycle-service.js";
 import type { OnboardingFacts, OnboardingStep } from "../onboarding/state.js";
 import type { ChannelActionService } from "./action-service.js";
+import { beginActivity } from "./activity.js";
+import type { Activity } from "./activity.js";
+import { classifyAction } from "./latency.js";
+import type { LatencyTimings } from "./latency.js";
 import { helpText } from "./commands.js";
 import { errorDetails } from "./error-details.js";
 import type { ChannelIdentityService } from "./identity-service.js";
@@ -124,21 +128,11 @@ export interface ChannelMessageServiceDeps {
   /** How long a RECEIVED event may sit before a retry may take it over. */
   staleClaimMs?: number;
   /**
-   * Perceived-latency timings. "Typing" is shown from the moment a message is ours and renewed every `typingEveryMs` (Telegram
-   * clears it after about five seconds). If the answer takes longer than `slowAfterMs`, ONE temporary status appears and is
-   * removed when the answer arrives. A fast answer never shows it.
+   * Perceived-latency timings (see LatencyTimings). Typing is shown at once for anything that is not instant and renewed while it
+   * lasts; a contextual status appears only for real work that is still unanswered after `statusAfterMs`.
    */
-  activity?: { typingEveryMs?: number; slowAfterMs?: number };
+  activity?: Partial<LatencyTimings> | undefined;
 }
-
-/** What a person sees while their message is being worked on. Always ended, whatever happens, so nothing is left in the chat. */
-interface Activity {
-  /** Text is now appearing as it is written: a temporary status would only get in its way. */
-  markStreaming(): void;
-  end(): Promise<void>;
-}
-
-const SLOW_STATUS = ["Checking that for you 👀", "Let me work that out."] as const;
 
 export type InboundResult = "PROCESSED" | "DUPLICATE" | "IN_PROGRESS" | "IGNORED";
 
@@ -227,7 +221,12 @@ export class ChannelMessageService {
     if (claim === "IN_PROGRESS") return "IN_PROGRESS";
 
     // From here the message is ours (a duplicate delivery never gets this far), so the person sees Kaada is on it right away.
-    const activity = this.beginActivity(adapter, message);
+    const activity = beginActivity({
+      adapter,
+      message,
+      timings: this.deps.activity,
+      quiet: message.content.kind === "TEXT" && LOOKS_LIKE_PIN.test(message.content.text),
+    });
     try {
       await this.process(adapter, message, activity);
     } catch (error) {
@@ -250,56 +249,6 @@ export class ChannelMessageService {
   }
 
   // ───────────────────────────────── processing ─────────────────────────────────
-
-  /**
-   * Shows that Kaada is working, without ever faking progress: the channel's own "typing" signal immediately (renewed while the
-   * work lasts), and, only if the work is genuinely slow, ONE temporary status that is removed when the answer arrives. Nothing
-   * here depends on what the answer will be.
-   */
-  private beginActivity(adapter: ChannelAdapter, message: InboundChannelMessage): Activity {
-    const quiet: Activity = { markStreaming: () => undefined, end: () => Promise.resolve() };
-    // A message that looks like a PIN is deleted and answered with a warning at once: nothing to wait for.
-    if (message.content.kind === "TEXT" && LOOKS_LIKE_PIN.test(message.content.text)) return quiet;
-
-    const target = { externalConversationId: message.externalConversationId };
-    const typing = (): void => {
-      void adapter.indicateTyping?.(target).catch(() => undefined);
-    };
-    typing();
-    const renew = setInterval(typing, this.deps.activity?.typingEveryMs ?? 4_000);
-    renew.unref();
-
-    let ended = false;
-    let bubble: string | undefined;
-    const slow = setTimeout(() => {
-      void (async () => {
-        if (ended) return;
-        try {
-          const sent = await adapter.send(target, {
-            text: pick(message.externalEventId, SLOW_STATUS),
-          });
-          if (ended) await adapter.remove?.(target, sent.externalMessageId).catch(() => undefined);
-          else bubble = sent.externalMessageId;
-        } catch {
-          // The status is a courtesy; the answer is what matters.
-        }
-      })();
-    }, this.deps.activity?.slowAfterMs ?? 2_500);
-    slow.unref();
-
-    return {
-      markStreaming: () => clearTimeout(slow),
-      end: async () => {
-        ended = true;
-        clearInterval(renew);
-        clearTimeout(slow);
-        if (bubble) {
-          await adapter.remove?.(target, bubble).catch(() => undefined);
-          bubble = undefined;
-        }
-      },
-    };
-  }
 
   private async process(
     adapter: ChannelAdapter,
@@ -377,7 +326,7 @@ export class ChannelMessageService {
           externalMessageId: `cmd:${message.externalEventId}`,
         });
       } else {
-        turn = await this.handleAction(adapter, message, userId, content.handle, base);
+        turn = await this.handleAction(adapter, message, userId, content.handle, base, activity);
         if (!turn) return;
       }
     } catch (error) {
@@ -387,6 +336,9 @@ export class ChannelMessageService {
       }
       throw error;
     }
+
+    // The work is done: take any temporary status away BEFORE the answer is shown (typing carries on while it is worded).
+    await activity.clearStatus();
 
     // A turn the agent already answered is still delivered. A redelivery of a PROCESSED update never gets this far (the
     // channel claim answers DUPLICATE first), so reaching here means an earlier attempt stored the answer but failed to send
@@ -422,6 +374,7 @@ export class ChannelMessageService {
       await this.sendOnboardingStep(adapter, message, userId, state.step, {
         context: "RESUMING",
         complete: "RETURNING_USER",
+        instant: true,
         userMessage: userMessageOf(message),
         seed: message.externalEventId,
         firstName: message.sender.displayName?.split(" ")[0],
@@ -490,6 +443,8 @@ export class ChannelMessageService {
     options: {
       context: "JUST_CREATED" | "RESUMING" | "CHECK_IN";
       complete: "ONBOARDING_COMPLETE" | "RETURNING_USER";
+      /** Fixed wording, never a model call (the first impression must not wait on one). */
+      instant?: boolean;
       userMessage: string;
       seed: string;
       firstName: string | undefined;
@@ -519,6 +474,7 @@ export class ChannelMessageService {
     options: {
       context: "JUST_CREATED" | "RESUMING" | "CHECK_IN";
       complete: "ONBOARDING_COMPLETE" | "RETURNING_USER";
+      instant?: boolean;
       userMessage: string;
       seed: string;
       firstName: string | undefined;
@@ -541,6 +497,7 @@ export class ChannelMessageService {
       history: [],
       seed: options.seed,
       firstName: options.firstName,
+      ...(options.instant && { instant: true }),
     });
   }
 
@@ -685,6 +642,7 @@ You're ready to use it.`,
     userId: string,
     handle: string,
     base: { userId: string; channel: ChannelType; externalConversationId: string },
+    activity: Activity,
   ): Promise<AgentTurnResult | null> {
     const target = { externalConversationId: message.externalConversationId };
     const claimed = await this.deps.actions.claim({
@@ -706,6 +664,10 @@ You're ready to use it.`,
       await adapter.send(target, { text: "That button is no longer available." });
       return null;
     }
+
+    // Now that the button is known: one that answers from stored state shows nothing; one that starts real work shows typing, and a
+    // task-specific status if it is slow.
+    activity.refine(classifyAction(action.kind, action.payload["suggestion"]));
 
     switch (action.kind) {
       case "SELECT_OPTION": {

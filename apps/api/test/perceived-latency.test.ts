@@ -78,7 +78,7 @@ function build(options: Options = {}) {
     wallets: { hasActiveWallet: () => Promise.resolve(true) },
     facts: { read: () => Promise.reject(new Error("unused")) },
     // Short timings: the behaviour is the same, the test does not wait for real seconds.
-    activity: { typingEveryMs: 20, slowAfterMs: options.slowAfterMs ?? 80 },
+    activity: { typingEveryMs: 20, statusAfterMs: options.slowAfterMs ?? 80 },
   });
   return { adapter, service, agentCalls: () => agentCalls };
 }
@@ -125,22 +125,25 @@ describe("immediate feedback", () => {
 
   it("a slow reply gets ONE temporary status, which is removed when the answer arrives", async () => {
     const { adapter, service } = build({ agentDelayMs: 300 });
-    await service.handleInbound(say());
+    await service.handleInbound(say("what's the USDT to NGN rate?"));
     const sends = adapter.log.filter((entry) => entry.kind === "send");
     assert.equal(sends.length, 2, "the status, then the answer (never a cycle of statuses)");
-    assert.match(sends[0]?.message?.text ?? "", /Checking that for you 👀|Let me work that out\./);
+    assert.match(sends[0]?.message?.text ?? "", /Let me check that rate for you 👀/);
     const removed = adapter.log.find((entry) => entry.kind === "remove");
     assert.equal(
       removed?.externalMessageId,
       sends[0]?.externalMessageId,
       "the status is cleaned up",
     );
-    assert.ok((removed?.at ?? 0) >= (sends[1]?.at ?? Infinity), "after the answer is in");
+    assert.ok((removed?.at ?? Infinity) <= (sends[1]?.at ?? 0), "gone before the answer is shown");
   });
 
   it("typing stops when the work ends, even if it failed, and no status is left behind", async () => {
     const { adapter, service } = build({ agentDelayMs: 150, agentFails: true });
-    await assert.rejects(service.handleInbound(say()), /the agent failed/);
+    await assert.rejects(
+      service.handleInbound(say("what's the USDT to NGN rate?")),
+      /the agent failed/,
+    );
     const sends = adapter.log.filter((entry) => entry.kind === "send");
     assert.equal(sends.length, 1, "the slow-status appeared once");
     assert.ok(
