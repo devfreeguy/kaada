@@ -50,6 +50,34 @@ export const USER_CURRENCIES: readonly UserCurrency[] = [
     aliases: ["idr", "rupiah", "rupiahs", "indonesian rupiah", "indonesian rupiahs", "rp"],
   },
   {
+    code: "MXN",
+    name: "Mexican Peso",
+    symbol: "MX$",
+    flag: "🇲🇽",
+    aliases: ["mxn", "mexican peso", "mexican pesos", "mx$"],
+  },
+  {
+    code: "COP",
+    name: "Colombian Peso",
+    symbol: "COL$",
+    flag: "🇨🇴",
+    aliases: ["cop", "colombian peso", "colombian pesos", "col$"],
+  },
+  {
+    code: "CLP",
+    name: "Chilean Peso",
+    symbol: "CLP$",
+    flag: "🇨🇱",
+    aliases: ["clp", "chilean peso", "chilean pesos", "clp$"],
+  },
+  {
+    code: "PEN",
+    name: "Peruvian Sol",
+    symbol: "S/",
+    flag: "🇵🇪",
+    aliases: ["pen", "sol", "soles", "peruvian sol", "peruvian soles", "s/"],
+  },
+  {
     code: "USD",
     name: "US Dollar",
     symbol: "$",
@@ -190,4 +218,50 @@ export function describeSupportedCurrencies(assets: readonly AssetLike[]): strin
     ...new Set(assets.filter((asset) => !currencyOfAsset(asset)).map((asset) => asset.symbol)),
   ];
   return [...lines, ...others];
+}
+
+/** Where a person may say they mainly use Kaada, and the default currency that follows. */
+export interface HomeCountry {
+  /** ISO 3166 alpha-2. */
+  code: string;
+  name: string;
+  flag: string;
+  /** The default currency (ISO 4217), one of USER_CURRENCIES. */
+  currency: string;
+}
+
+export const HOME_COUNTRIES: readonly HomeCountry[] = [
+  { code: "NG", name: "Nigeria", flag: "🇳🇬", currency: "NGN" },
+  { code: "BR", name: "Brazil", flag: "🇧🇷", currency: "BRL" },
+  { code: "AR", name: "Argentina", flag: "🇦🇷", currency: "ARS" },
+  { code: "ID", name: "Indonesia", flag: "🇮🇩", currency: "IDR" },
+];
+
+/** "Other": the person chose not to name one of the supported countries. No default currency follows. */
+export const OTHER_COUNTRY = "ZZ";
+
+export function homeCountryByCode(code: string | undefined): HomeCountry | undefined {
+  return code === undefined ? undefined : HOME_COUNTRIES.find((c) => c.code === code.toUpperCase());
+}
+
+/** What choosing a country means: the country to record and the default currency that goes with it (none for Other). */
+export function homeFor(code: string): { country: string; currency: string | null } | undefined {
+  if (code.toUpperCase() === OTHER_COUNTRY) return { country: OTHER_COUNTRY, currency: null };
+  const country = homeCountryByCode(code);
+  return country ? { country: country.code, currency: country.currency } : undefined;
+}
+
+/** The sentence that confirms a choice: "Nigeria 🇳🇬\nYour default currency will be Nigerian Naira (₦)." */
+export function describeHome(home: { country: string; currency: string | null }): string {
+  const country = homeCountryByCode(home.country);
+  const currency = currencyByCode(home.currency ?? undefined);
+  if (!country || !currency) {
+    return "Okay. I won't assume a currency for you: just tell me which one when you send money.";
+  }
+  return `${country.name} ${country.flag}\nYour default currency will be ${currency.name} (${currency.symbol}).`;
+}
+
+/** An exact human amount with no grouping, for building a request ("500", "1234.5"). Not for display. */
+export function plainAmount(amount: string, decimals: number): string {
+  return trimmed(formatSmallestUnit(amount, decimals));
 }

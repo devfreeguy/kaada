@@ -24,6 +24,7 @@ export function commandMenu(flags: CapabilityFlags): CommandSpec[] {
     menu.push({ command: "wallet", description: "Your wallet address" });
   }
   if (flags.rates) menu.push({ command: "rates", description: "Check today's rates" });
+  menu.push({ command: "country", description: "Choose your country and default currency" });
   menu.push({ command: "cancel", description: "Cancel what we're doing" });
   return menu;
 }

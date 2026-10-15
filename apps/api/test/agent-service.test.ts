@@ -249,7 +249,7 @@ describe("amount modes and assets", () => {
       mode: "EXACT_INPUT",
     });
     assert.equal(stored?.sourceAssetId, h.assets.USD.id);
-    assert.match(turn.response.text, /you send \$20\.5 to Daniel/);
+    assert.match(turn.response.text, /You're sending \$20\.5 to Daniel/);
   });
 
   it("puts an explicit EXACT_OUTPUT amount on the destination side", async () => {
@@ -284,7 +284,7 @@ describe("amount modes and assets", () => {
       "the funding token is chosen later, not guessed",
     );
     assert.equal(stored?.destinationCountry, "BR");
-    assert.match(turn.response.text, /João Silva receives R\$500/);
+    assert.match(turn.response.text, /João Silva will receive R\$500/);
   });
 
   it("derives EXACT_OUTPUT when the amount is in the recipient's local currency", async () => {

@@ -49,6 +49,10 @@ export const defaultCountryDirectory: CountryDirectory = createCountryDirectory(
   { code: "AR", name: "Argentina", currency: "ARS", names: ["argentina"] },
   { code: "NG", name: "Nigeria", currency: "NGN", names: ["nigeria"] },
   { code: "ID", name: "Indonesia", currency: "IDR", names: ["indonesia"] },
+  { code: "MX", name: "Mexico", currency: "MXN", names: ["mexico", "méxico"] },
+  { code: "CO", name: "Colombia", currency: "COP", names: ["colombia"] },
+  { code: "CL", name: "Chile", currency: "CLP", names: ["chile"] },
+  { code: "PE", name: "Peru", currency: "PEN", names: ["peru", "perú"] },
   {
     code: "US",
     name: "United States",

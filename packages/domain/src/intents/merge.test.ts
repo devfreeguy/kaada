@@ -185,6 +185,12 @@ describe("defaultCountryDirectory", () => {
   it("maps corridor countries to their currency", () => {
     assert.equal(defaultCountryDirectory.currencyOf("BR"), "BRL");
     assert.equal(defaultCountryDirectory.currencyOf("ng"), "NGN");
-    assert.equal(defaultCountryDirectory.currencyOf("PE"), undefined);
+    assert.equal(defaultCountryDirectory.currencyOf("PE"), "PEN");
+    assert.equal(defaultCountryDirectory.currencyOf("MX"), "MXN");
+    assert.equal(
+      defaultCountryDirectory.currencyOf("FR"),
+      undefined,
+      "a country Kaada does not serve is not invented",
+    );
   });
 });

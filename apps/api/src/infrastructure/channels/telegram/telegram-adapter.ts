@@ -87,6 +87,8 @@ function commandOf(text: string): ChannelCommand | null {
       return "RATES";
     case "wallet":
       return "WALLET";
+    case "country":
+      return "COUNTRY";
     case "cancel":
       return "CANCEL";
     default:

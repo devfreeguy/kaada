@@ -72,9 +72,13 @@ export interface CommandInput extends IncomingBase {
     | "SHOW_BALANCE"
     | "CONTINUE_PAYMENT"
     /** "Today's rates" pressed (or /rates): Kaada asks which pair, and the answer is then read as a pair. */
-    | "ASK_RATE_PAIR";
+    | "ASK_RATE_PAIR"
+    /** "Convert to Naira" pressed on money that arrived in another currency. */
+    | "CONVERT_CURRENCY";
   /** CONTINUE_PAYMENT: the payment the pressed button belonged to. */
   resumeIntentId?: string;
+  /** CONVERT_CURRENCY: what to convert (currency codes and the human amount), from the button's stored payload. */
+  conversion?: { from: string; to: string; amount: string };
 }
 
 /**
@@ -274,7 +278,7 @@ export class AgentService {
 
   /** A deterministic command: stored like a message (so it is idempotent), applied without the interpreter. */
   async handleCommand(input: CommandInput): Promise<AgentTurnResult> {
-    const { kind: _kind, command, resumeIntentId: _resume, ...base } = input;
+    const { kind: _kind, command, resumeIntentId: _resume, conversion, ...base } = input;
     const accepted = await this.accept({
       ...base,
       content:
@@ -286,7 +290,9 @@ export class AgentService {
               ? "Continue"
               : command === "ASK_RATE_PAIR"
                 ? "Check a rate"
-                : "Start over",
+                : command === "CONVERT_CURRENCY"
+                  ? "Convert"
+                  : "Start over",
     });
     if ("reply" in accepted) {
       return this.duplicateResult(accepted.conversation, accepted.message, accepted.reply);
@@ -298,7 +304,26 @@ export class AgentService {
           ? { kind: "INTENT", intent: { type: "HELP", topic: "RATE_GENERAL" } }
           : command === "CONTINUE_PAYMENT"
             ? { kind: "RESUME", ...(input.resumeIntentId && { intentId: input.resumeIntentId }) }
-            : { kind: "COMMAND", command };
+            : command === "CONVERT_CURRENCY" && conversion
+              ? {
+                  // The same request as "convert 500 BRL to NGN", built from stored values, so it is priced, summarised and
+                  // authorized by the normal path. No model reads it.
+                  kind: "INTENT",
+                  intent: {
+                    type: "CONVERT",
+                    amount: {
+                      value: conversion.amount,
+                      currencyOrAsset: conversion.from,
+                      mode: "EXACT_INPUT",
+                    },
+                    fromAsset: conversion.from,
+                    toAsset: conversion.to,
+                  },
+                }
+              : {
+                  kind: "COMMAND",
+                  command: command === "CONVERT_CURRENCY" ? "START_OVER" : command,
+                };
     return this.route(
       await this.complete(accepted.conversation, accepted.message, interpretation, accepted.fresh),
       input.userId,
@@ -852,6 +877,11 @@ export class AgentService {
     });
     if (conversation.userId !== input.userId) return undefined;
     return this.coordinator.openPaymentResume(repositories, conversation.userId, conversation.id);
+  }
+
+  /** Whether a conversion between two currencies can be offered at all (a route exists). Discovery only; nothing is priced. */
+  async canConvert(from: string, to: string): Promise<boolean> {
+    return (await this.routing?.canConvert(from, to)) ?? false;
   }
 
   /** The open payment and what it needs from the wallet, for deposit matching. Read only. */

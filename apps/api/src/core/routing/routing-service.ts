@@ -2,6 +2,7 @@ import {
   aggregateFees,
   assertRouteUsable,
   createId,
+  createMoney,
   isKaadaError,
   validatePaymentRoute,
 } from "@kaada/domain";
@@ -67,6 +68,8 @@ export interface RoutingServiceDeps {
    * step checks again. Gas is the sender's to pay in this MVP; nothing is sponsored.
    */
   gas?: { enoughForFees(address: string): Promise<boolean | undefined> };
+  /** The person's own default currency (their home currency), when they have chosen one. */
+  profile?: { homeCurrency(userId: string): Promise<string | undefined> };
   /**
    * Payment authorization. When present, a priced PAYMENT for a user with a wallet is answered with
    * AUTHORIZATION_REQUIRED (a session reference, never a link) instead of PAYMENT_READY, and a replaced
@@ -156,8 +159,10 @@ export class RoutingService {
     }
 
     // With a wallet check ahead, the recipient's own currency is also a candidate source: held, it is a direct transfer.
+    const home = funding && wallet !== null ? await this.homeCurrencyOf(request.userId) : undefined;
     const discovery = await this.deps.candidates.resolve(request, {
       sameCurrencySource: Boolean(funding && wallet !== null),
+      ...(home && { homeCurrency: home }),
     });
     if (discovery.status === "UNSUPPORTED") {
       return {
@@ -198,7 +203,11 @@ export class RoutingService {
       case "SUCCESS": {
         if (funding && balances) {
           // Priced routes arrive best first; take the best one the wallet can afford.
-          const picked = await funding.pick(request, result.routes, balances);
+          const picked = await funding.pick(
+            request,
+            await this.homeFirst(result.routes, home),
+            balances,
+          );
           if (picked.status === "REJECTED") {
             return { status: "FAILED", request, response: picked.response };
           }
@@ -244,6 +253,29 @@ export class RoutingService {
           "I couldn't get a usable price right now. Please try again in a moment.",
         );
     }
+  }
+
+  /**
+   * Whether money in currency `from` can really be converted to currency `to` here: some provider serves a pair between their
+   * settlement assets. Discovery only: nothing is priced and no provider is called. Used to decide whether a conversion may be
+   * OFFERED at all; whether it settles is still decided by pricing and authorization when it is asked for.
+   */
+  async canConvert(from: string, to: string): Promise<boolean> {
+    const [source] = await this.deps.assets.findByFiatCode(from);
+    const [destination] = await this.deps.assets.findByFiatCode(to);
+    if (!source || !destination || source.id === destination.id) return false;
+    const found = await this.deps.candidates.resolve({
+      intentId: createId(),
+      intentRevision: 1,
+      userId: createId(),
+      operation: "CONVERT",
+      purpose: "PAYMENT",
+      amount: createMoney("100", source.id),
+      amountMode: "EXACT_INPUT",
+      sourceAssetId: source.id,
+      destinationAssetId: destination.id,
+    });
+    return found.status === "READY";
   }
 
   /**
@@ -303,6 +335,36 @@ export class RoutingService {
       ...(indicative && { indicative }),
     };
     return response;
+  }
+
+  private async homeCurrencyOf(userId: string): Promise<string | undefined> {
+    try {
+      return await this.deps.profile?.homeCurrency(userId);
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Routes arrive ranked by cost, but money in different currencies cannot be compared, so among the affordable ones the
+   * person's own home currency is tried first (a stable partition: the order inside each group is unchanged). The default way
+   * to pay is what they hold at home; a conversion from dollars is the alternative, not the default.
+   */
+  private async homeFirst(
+    routes: PlannedRoute[],
+    home: string | undefined,
+  ): Promise<PlannedRoute[]> {
+    if (!home) return routes;
+    const isHome = new Map<string, boolean>();
+    for (const route of routes) {
+      if (isHome.has(route.sourceAssetId)) continue;
+      const asset = await this.deps.assets.getById(route.sourceAssetId);
+      isHome.set(route.sourceAssetId, asset?.fiatCode === home);
+    }
+    return [
+      ...routes.filter((route) => isHome.get(route.sourceAssetId)),
+      ...routes.filter((route) => !isHome.get(route.sourceAssetId)),
+    ];
   }
 
   /** The wallet or the chain could not be read. Not a balance verdict, so nothing is claimed. */

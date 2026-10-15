@@ -38,6 +38,11 @@ export interface ResolveOptions {
    * (a direct transfer when the wallet holds it). Without a wallet check that would be a guess, so it is off by default.
    */
   sameCurrencySource?: boolean;
+  /**
+   * The person's home currency (ISO 4217). With no source named, what they hold in it is the default way to pay, so its
+   * settlement assets are candidates too (the wallet layer keeps what is held and prefers it).
+   */
+  homeCurrency?: string;
 }
 
 export interface RoutingCandidateResolver {
@@ -206,7 +211,14 @@ export function createRoutingCandidateResolver(
       request.amountMode === "EXACT_OUTPUT"
         ? await deps.settlement.resolveAsset({ chainId, assetId: request.amount.assetId })
         : undefined;
-    const extra = sameCurrency && sameCurrency.status !== "UNSUPPORTED" ? sameCurrency.assets : [];
+    const homeResolution =
+      options.homeCurrency && request.purpose === "PAYMENT" && request.operation === "SEND"
+        ? await deps.settlement.resolveCurrency({ chainId, fiatCode: options.homeCurrency })
+        : undefined;
+    const extra = [
+      ...(sameCurrency && sameCurrency.status !== "UNSUPPORTED" ? sameCurrency.assets : []),
+      ...(homeResolution && homeResolution.status !== "UNSUPPORTED" ? homeResolution.assets : []),
+    ].filter((asset, index, all) => all.findIndex((other) => other.id === asset.id) === index);
 
     if (funding.status === "UNSUPPORTED") {
       if (extra.length === 0) return unsupportedAsset("SOURCE", funding);

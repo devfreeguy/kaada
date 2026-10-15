@@ -12,6 +12,13 @@ export interface User {
   username?: string;
   displayName?: string;
   avatarUrl?: string;
+  /**
+   * Where the person mainly uses Kaada (ISO 3166 alpha-2; "ZZ" = chose "Other"), chosen by them, never inferred from a chat
+   * account. Absent until they choose: nothing assumes a country for them.
+   */
+  homeCountry?: string;
+  /** Their default currency (ISO 4217), from the home country. Absent for "Other" and until a country is chosen. */
+  homeCurrency?: string;
   createdAt: Date;
   updatedAt: Date;
 }

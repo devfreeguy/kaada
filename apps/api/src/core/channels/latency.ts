@@ -104,13 +104,23 @@ export function classifyInbound(content: InboundChannelMessage["content"]): Late
 
 /** What a pressed button turns out to be doing, once it is resolved. */
 export function classifyAction(
-  kind: "SELECT_OPTION" | "CANCEL" | "SUGGESTION" | "CONTINUE_PAYMENT" | "VIEW_STATUS" | "RETRY",
+  kind:
+    | "SELECT_OPTION"
+    | "CANCEL"
+    | "SUGGESTION"
+    | "CONTINUE_PAYMENT"
+    | "VIEW_STATUS"
+    | "RETRY"
+    | "SET_COUNTRY"
+    | "CONVERT_CURRENCY"
+    | "KEEP_CURRENCY",
   suggestion?: string,
 ): LatencyPlan {
   switch (kind) {
     case "SELECT_OPTION":
       return computing("ROUTE");
     case "CONTINUE_PAYMENT":
+    case "CONVERT_CURRENCY":
       return computing("ROUTE");
     case "SUGGESTION":
       if (suggestion === "CHECK_BALANCE") return lookup("BALANCE");

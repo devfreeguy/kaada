@@ -274,3 +274,25 @@ that cannot be read never blocks (execution checks again). No gas sponsorship or
 A deployment sees one network's tokens at a time (`scopeAssetsToChain`): fiat assets plus the tokens of `WALLET_NETWORK`'s chain.
 A test network's tokens live in the same table keyed by chain id + contract, added by `pnpm --filter @kaada/api seed:test-network`
 (development only), so on Celo Sepolia "Naira" resolves to the test cNGN and a mainnet contract is invisible there.
+
+## Home country and home currency
+
+Each person says where they mainly use Kaada (onboarding asks once after the welcome, `/country` changes it later). The choice is
+stored on the user (`homeCountry`, `homeCurrency`): Nigeria → NGN, Brazil → BRL, Argentina → ARS, Indonesia → IDR, "Other" → no
+default currency. It is never inferred from a Telegram or WhatsApp account, and people who have not chosen are not assumed to be
+anywhere (they are asked which currency, as before). Existing users simply have no home yet; setting one is their own choice.
+
+- **Default currency.** An amount with no currency in a payment ("Send 300 to Daniel") is in the home currency. Order: (1) a
+  currency named in this message ("$20", "R$100"), (2) the currency already established by the payment being changed ("make it
+  500" stays reais), (3) the home currency, (4) ask. Only payments are defaulted.
+- **Who pays in what.** The receiver's country never changes what the sender pays in. "Send ₦5,000 to João" fixes ₦5,000 and the
+  route decides what João receives; "send João exactly R$500" fixes what he receives, and the sender's home currency is the
+  default way to pay (their held Naira is tried before a conversion from dollars).
+- **Money that arrives.** Same currency as home: "You received ₦5,000 💰", no buttons. Another currency: "You received R$500 🇧🇷",
+  and an offer to convert it ONLY when a conversion route really exists (`canConvert`: discovery, nothing priced); otherwise it is
+  simply in their balance. Nothing is converted automatically. "Keep as Brazilian Real" leaves it where it is; the balance view
+  lists every currency held. "Convert to Nigerian Naira" runs the normal path: a convert request for exactly that amount, priced
+  by the routing layer, summarised from its numbers, and authorized like any payment. (A balance change does not reveal who sent
+  it, so no sender is named.)
+- **Assets.** wMXN, wCOP, wCLP and wPEN are in the asset list with their verified Celo contracts (18 decimals, same deployer as wARS
+  and wBRL) and the matching currencies, but no provider capability is seeded for them, so they can be held and shown, not priced.

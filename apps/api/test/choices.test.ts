@@ -213,7 +213,7 @@ describe("corrections and the resolved-intent summary", () => {
     const h = createHarness();
     const ready = await readyToJoao(h);
     assert.equal(ready.purpose, "PAYMENT");
-    assert.match(ready.text, /you send \$20 to João Silva in Brazil/);
+    assert.match(ready.text, /You're sending \$20 to João Silva in Brazil/);
     const keys = Object.keys(ready.request).join(" ").toLowerCase();
     for (const forbidden of ["rate", "fee", "route", "provider", "wbrl", "quote", "fx"]) {
       assert.equal(keys.includes(forbidden), false, forbidden);

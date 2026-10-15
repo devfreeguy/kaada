@@ -23,7 +23,16 @@ import type { CapabilityFlags } from "../conversation/capabilities.js";
 import { ConversationPresenter } from "../conversation/presenter.js";
 import type { OpenPaymentNeeds } from "../intents/coordinator.js";
 import type { ResumeInfo } from "../responses/agent-response.js";
-import { describeAsset, describeMoney } from "../currency/catalog.js";
+import {
+  HOME_COUNTRIES,
+  plainAmount,
+  OTHER_COUNTRY,
+  currencyByCode,
+  describeAsset,
+  describeHome,
+  describeMoney,
+  homeFor,
+} from "../currency/catalog.js";
 import { pick } from "../conversation/fallbacks.js";
 import {
   FUNDING_NONE,
@@ -107,6 +116,19 @@ export interface ChannelMessageServiceDeps {
       userId: string,
     ): Promise<{ symbol: string; assetId: string; amount: string }[] | null>;
   } | null;
+  /**
+   * The person's own home country and default currency (their choice, never guessed from a chat account). Absent: the feature is
+   * off and nothing asks about a country.
+   */
+  profile?: {
+    get(userId: string): Promise<{ country?: string; currency?: string }>;
+    set(userId: string, home: { country: string; currency: string | null }): Promise<void>;
+  } | null;
+  /**
+   * Whether money in one currency can really be converted to another here (a route exists). A conversion is only ever offered
+   * when this says yes. Absent: conversions are never offered.
+   */
+  conversions?: { available(from: string, to: string): Promise<boolean> } | null;
   /** How long ago a payment may have last moved and still be offered back after a deposit. Default one hour. */
   resumeWindowMs?: number;
   /** Whether symbols alone may tie an open payment's token to a held one (test networks only; see funding announcements). */
@@ -276,6 +298,7 @@ export class ChannelMessageService {
       } else {
         await adapter.send(target, await this.welcome(userId));
       }
+      await this.offerCountryIfNeeded(adapter, message, userId);
       return;
     }
     if (
@@ -557,6 +580,7 @@ export class ChannelMessageService {
       received.length <= 1
         ? (received[0] ?? "funds")
         : `${received.slice(0, -1).join(", ")} and ${received[received.length - 1] ?? ""}`;
+    const home = await this.deps.profile?.get(event.userId).catch(() => undefined);
     for (const account of accounts) {
       const channel = CHANNEL_OF_IDENTITY[account.type];
       const adapter = channel ? this.deps.adapters.get(channel) : undefined;
@@ -571,15 +595,7 @@ You now have enough to continue your payment${resume.recipient ? ` to ${resume.r
               resume: { intentId: resume.intentId, revision: resume.revision },
               cancellable: true,
             }
-          : {
-              text: `Nice, your wallet just received ${list} 💰
-
-You're ready to use it.`,
-              suggestions: [
-                ...(this.flags().send ? (["SEND_MONEY"] as const) : []),
-                ...(this.flags().balance ? (["CHECK_BALANCE"] as const) : []),
-              ],
-            };
+          : await this.receivedMessage(event, list, home?.currency);
         const outbound = await this.compose(
           { channel, externalUserId: account.externalId },
           event.userId,
@@ -595,6 +611,85 @@ You're ready to use it.`,
       }
     }
     return result;
+  }
+
+  /**
+   * What a deposit says, by what the person's home currency is.
+   *  - Their own currency: just that it arrived. No conversion, no buttons.
+   *  - Another currency: that it arrived, in that currency (it stays in their balance as it is, nothing is converted for them), and
+   *    an offer to convert it to their own currency ONLY if a conversion route really exists, with the choice to keep it.
+   *  - No home currency chosen (nobody to compare with): the plain welcome-style message.
+   * The sender is not known from a balance change, so none is claimed.
+   */
+  private async receivedMessage(
+    event: WalletFundingEvent,
+    list: string,
+    homeCurrency: string | undefined,
+  ): Promise<PresentedMessage> {
+    if (!homeCurrency) {
+      return {
+        text: `Nice, your wallet just received ${list} 💰
+
+You're ready to use it.`,
+        suggestions: [
+          ...(this.flags().send ? (["SEND_MONEY"] as const) : []),
+          ...(this.flags().balance ? (["CHECK_BALANCE"] as const) : []),
+        ],
+      };
+    }
+    const foreign = event.items.find((item) => item.fiatCode && item.fiatCode !== homeCurrency);
+    const from = currencyByCode(foreign?.fiatCode);
+    const to = currencyByCode(homeCurrency);
+    if (!foreign || !from || !to) return { text: `You received ${list} 💰` };
+
+    const offered = Boolean(
+      await this.deps.conversions?.available(from.code, to.code).catch(() => false),
+    );
+    return {
+      text: offered
+        ? `You received ${list} ${from.flag}
+
+Would you like to convert it to ${to.name}?`
+        : `You received ${list} ${from.flag}
+
+It's in your ${from.name} balance.`,
+      ...(offered && {
+        conversionOffer: {
+          from: from.code,
+          to: to.code,
+          amount: plainAmount(foreign.delta, foreign.decimals),
+          fromName: from.name,
+          toName: to.name,
+        },
+      }),
+    };
+  }
+
+  /** "Where will you mainly use Kaada?": a button per supported country. The answer sets the default currency. */
+  private async sendCountryPrompt(
+    adapter: ChannelAdapter,
+    message: InboundChannelMessage,
+    userId: string,
+  ): Promise<void> {
+    const outbound = await this.compose(
+      { channel: message.channel, externalUserId: message.sender.externalUserId },
+      userId,
+      createId(),
+      { text: "Where will you mainly use Kaada?", countryChoice: true },
+    );
+    await adapter.send({ externalConversationId: message.externalConversationId }, outbound);
+  }
+
+  /** A person who has not said where they use Kaada is asked once, lightly, after the welcome. Never guessed from their chat account. */
+  private async offerCountryIfNeeded(
+    adapter: ChannelAdapter,
+    message: InboundChannelMessage,
+    userId: string,
+  ): Promise<void> {
+    if (!this.deps.profile) return;
+    const home = await this.deps.profile.get(userId);
+    if (home.country) return;
+    await this.sendCountryPrompt(adapter, message, userId);
   }
 
   /** The recent open payment this deposit made affordable, if any. Read only; never starts, resumes or changes anything. */
@@ -708,6 +803,36 @@ You're ready to use it.`,
           externalMessageId: `cb:${message.externalEventId}`,
         });
       }
+      case "SET_COUNTRY": {
+        const home = homeFor(action.payload["country"] ?? "");
+        if (!home || !this.deps.profile) {
+          await adapter.send(target, { text: "That choice isn't available." });
+          return null;
+        }
+        await this.deps.profile.set(userId, home);
+        await adapter.send(target, { text: describeHome(home) });
+        return null;
+      }
+      case "KEEP_CURRENCY": {
+        // Nothing to do: the balance stays as it is, in its own currency, and shows in the balance view.
+        const name = action.payload["name"];
+        await adapter.send(target, {
+          text: name ? `Okay, I'll keep that in ${name}.` : "Okay, I'll keep it as it is.",
+        });
+        return null;
+      }
+      case "CONVERT_CURRENCY": {
+        const { from, to, amount } = action.payload;
+        if (!from || !to || !amount) return null;
+        // The normal path from here: priced by the routing layer, summarised, and authorized like any payment.
+        return this.deps.agent!.handle({
+          kind: "COMMAND",
+          ...base,
+          command: "CONVERT_CURRENCY",
+          conversion: { from, to, amount },
+          externalMessageId: `cb:${message.externalEventId}`,
+        });
+      }
       case "SUGGESTION": {
         const id = action.payload["suggestion"];
         if (!id || !isSuggestionId(id)) return null;
@@ -777,6 +902,10 @@ You're ready to use it.`,
         return true;
       case "WALLET":
         await this.sendWalletDetails(adapter, message, userId, "ADDRESS");
+        return true;
+      case "COUNTRY":
+        if (!this.deps.profile) return false;
+        await this.sendCountryPrompt(adapter, message, userId);
         return true;
       case "RATES":
         // Available: the Agent Core asks which pair (and remembers it asked), so the answer is read as a pair.
@@ -1009,7 +1138,14 @@ You're ready to use it.`,
   ): Promise<OutboundChannelMessage> {
     const actions: OutboundAction[] = [];
     const issue = (
-      kind: "SELECT_OPTION" | "CANCEL" | "SUGGESTION" | "CONTINUE_PAYMENT",
+      kind:
+        | "SELECT_OPTION"
+        | "CANCEL"
+        | "SUGGESTION"
+        | "CONTINUE_PAYMENT"
+        | "SET_COUNTRY"
+        | "CONVERT_CURRENCY"
+        | "KEEP_CURRENCY",
       payload?: Record<string, string>,
       reusable = false,
     ) =>
@@ -1077,6 +1213,45 @@ You're ready to use it.`,
           intentId: presented.resume.intentId,
           revision: String(presented.resume.revision),
         }),
+      });
+    }
+
+    // Where the person mainly uses Kaada: one button per supported country, and Other.
+    if (presented.countryChoice) {
+      for (const country of HOME_COUNTRIES) {
+        actions.push({
+          type: "ACTION",
+          semantic: "SET_COUNTRY",
+          label: `${country.flag} ${country.name}`,
+          handle: await issue("SET_COUNTRY", { country: country.code }),
+        });
+      }
+      actions.push({
+        type: "ACTION",
+        semantic: "SET_COUNTRY",
+        label: "🌍 Other",
+        handle: await issue("SET_COUNTRY", { country: OTHER_COUNTRY }),
+      });
+    }
+
+    // Money that arrived in another currency, with a conversion that really exists: convert it, or keep it as it is.
+    if (presented.conversionOffer) {
+      const offer = presented.conversionOffer;
+      actions.push({
+        type: "ACTION",
+        semantic: "CONVERT_CURRENCY",
+        label: `🔄 Convert to ${offer.toName}`,
+        handle: await issue("CONVERT_CURRENCY", {
+          from: offer.from,
+          to: offer.to,
+          amount: offer.amount,
+        }),
+      });
+      actions.push({
+        type: "ACTION",
+        semantic: "KEEP_CURRENCY",
+        label: `Keep as ${offer.fromName}`,
+        handle: await issue("KEEP_CURRENCY", { from: offer.from, name: offer.fromName }),
       });
     }
 

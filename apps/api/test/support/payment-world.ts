@@ -38,6 +38,8 @@ export class FakePort implements WalletFundingPort {
   failReads = false;
   /** Whether the wallet holds the little CELO a transfer needs for its fee. */
   feeBalance: boolean | undefined = true;
+  /** The home currency of everyone in this world (ISO 4217), when they have chosen one. */
+  home: string | undefined;
 
   activeWallet(): Promise<{ id: string; address: string } | null> {
     this.lookups += 1;
@@ -129,6 +131,7 @@ export function setup(options: { noMakersFrom?: "USDC"; authorize?: boolean } = 
   const r = createRoutingHarness({
     funding: (registry) => new WalletFundingResolver({ wallet: port, assets: registry }),
     gas: { enoughForFees: () => Promise.resolve(port.feeBalance) },
+    profile: { homeCurrency: () => Promise.resolve(port.home) },
     ...(options.authorize && {
       authorization: (world, registry, now) => {
         const wallets = new Map<string, Wallet>([

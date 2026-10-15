@@ -154,6 +154,10 @@ function createInterpreter(config: AppConfig, log: AgentLog): IntentInterpreter 
           read: repositories,
           chainId: config.wallet.balances.chainId,
           ...(balances && { gas: balances }),
+          profile: {
+            homeCurrency: async (userId) =>
+              (await repositories.users.findById(userId))?.homeCurrency,
+          },
           ...(funding && { funding }),
           // Payments end in AUTHORIZATION_REQUIRED (a PIN step) only when a wallet and PIN service exist.
           ...(funding && authorization && { authorization }),

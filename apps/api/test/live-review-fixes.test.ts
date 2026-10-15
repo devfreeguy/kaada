@@ -204,12 +204,21 @@ describe("a failed balance read is explained in the logs, not swallowed", () => 
 describe("commands", () => {
   it("the menu lists only what exists, and nothing for features that do not", () => {
     const all = commandMenu(FLAGS).map((entry) => entry.command);
-    assert.deepEqual(all, ["start", "help", "balance", "fund", "wallet", "rates", "cancel"]);
+    assert.deepEqual(all, [
+      "start",
+      "help",
+      "balance",
+      "fund",
+      "wallet",
+      "rates",
+      "country",
+      "cancel",
+    ]);
     assert.ok(!all.includes("send"), "sending stays natural");
     assert.ok(!all.includes("history") && !all.includes("status"), "not built, so not offered");
     assert.deepEqual(
       commandMenu({ send: false, rates: false, balance: false }).map((entry) => entry.command),
-      ["start", "help", "cancel"],
+      ["start", "help", "country", "cancel"],
     );
   });
 
@@ -218,7 +227,10 @@ describe("commands", () => {
     await service.handleInbound(command("HELP"));
     assert.equal(adapter.last?.text, helpText(FLAGS));
     assert.match(adapter.last?.text ?? "", /💸 Send money/);
-    assert.match(adapter.last?.text ?? "", /Shortcuts: \/balance \/fund \/wallet \/rates \/cancel/);
+    assert.match(
+      adapter.last?.text ?? "",
+      /Shortcuts: \/balance \/fund \/wallet \/rates \/country \/cancel/,
+    );
     assert.doesNotMatch(adapter.last?.text ?? "", /history|status/i);
   });
 
@@ -428,7 +440,7 @@ describe("Telegram: commands, copy button, monospace address", () => {
     const { adapter, calls } = telegram();
     await adapter.registerCommands(commandMenu(FLAGS));
     assert.equal(calls[0]?.method, "setMyCommands");
-    assert.equal((calls[0]?.body["commands"] as unknown[]).length, 7);
+    assert.equal((calls[0]?.body["commands"] as unknown[]).length, 8);
   });
 
   it("icon labels still pair two to a row, and a long label does not", async () => {

@@ -205,6 +205,22 @@ function nestLog(): AgentLog {
           conversation,
           onboarding,
           linked: repositories.identities,
+          // The person's own choice of country and default currency; nothing here guesses it.
+          profile: {
+            async get(userId) {
+              const user = await repositories.users.findById(userId);
+              return {
+                ...(user?.homeCountry && { country: user.homeCountry }),
+                ...(user?.homeCurrency && { currency: user.homeCurrency }),
+              };
+            },
+            async set(userId, home) {
+              await repositories.users.setHome(userId, home);
+            },
+          },
+          conversions: {
+            available: (from, to) => agent?.canConvert(from, to) ?? Promise.resolve(false),
+          },
           funding: balances
             ? {
                 // The trusted details for "fund my wallet": the person's own address, the network and the tokens Kaada supports.

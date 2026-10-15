@@ -333,12 +333,16 @@ enum RecoveryTerminator {
 // ─────────────────────── Users & identity ───────────────────────
 
 model User {
-  id          String   @id @db.Uuid
-  username    String?  @unique
-  displayName String?
-  avatarUrl   String?
-  createdAt   DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+  id           String   @id @db.Uuid
+  username     String?  @unique
+  displayName  String?
+  avatarUrl    String?
+  /// Where the person mainly uses Kaada (their own choice; "ZZ" = Other). Never inferred from a chat account.
+  homeCountry  String?  @db.Char(2)
+  /// Their default currency (ISO 4217), from the home country. Null for Other and until chosen.
+  homeCurrency String?  @db.Char(3)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
 
   identities       Identity[]
   sessions         Session[]
@@ -1453,6 +1457,9 @@ enum ChannelActionKind {
   RETRY
   SUGGESTION
   CONTINUE_PAYMENT
+  SET_COUNTRY
+  CONVERT_CURRENCY
+  KEEP_CURRENCY
 }
 
 /// One webhook delivery from a chat provider (a Telegram update id, ...). The unique key is what makes a redelivery harmless:

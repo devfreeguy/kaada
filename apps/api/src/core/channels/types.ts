@@ -19,7 +19,8 @@ export interface ChannelIdentity {
 }
 
 /** Syntax-level commands a provider has (Telegram's /start). They are not payment language. */
-export type ChannelCommand = "START" | "HELP" | "CANCEL" | "BALANCE" | "FUND" | "RATES" | "WALLET";
+export type ChannelCommand =
+  "START" | "HELP" | "CANCEL" | "BALANCE" | "FUND" | "RATES" | "WALLET" | "COUNTRY";
 
 export type InboundContent =
   | { kind: "TEXT"; text: string }
@@ -60,7 +61,15 @@ export type OutboundAction =
   | {
       type: "ACTION";
       semantic:
-        "SELECT_OPTION" | "CANCEL" | "RETRY" | "VIEW_STATUS" | "SUGGESTION" | "CONTINUE_PAYMENT";
+        | "SELECT_OPTION"
+        | "CANCEL"
+        | "RETRY"
+        | "VIEW_STATUS"
+        | "SUGGESTION"
+        | "CONTINUE_PAYMENT"
+        | "SET_COUNTRY"
+        | "CONVERT_CURRENCY"
+        | "KEEP_CURRENCY";
       label: string;
       description?: string;
       handle: string;

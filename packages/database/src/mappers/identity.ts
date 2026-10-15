@@ -14,6 +14,8 @@ export function toUser(row: UserRow): User {
     ...maybe("username", row.username),
     ...maybe("displayName", row.displayName),
     ...maybe("avatarUrl", row.avatarUrl),
+    ...maybe("homeCountry", row.homeCountry),
+    ...maybe("homeCurrency", row.homeCurrency),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -25,6 +27,8 @@ export function userCreateData(user: NewUser): Prisma.UserUncheckedCreateInput {
     username: user.username ?? null,
     displayName: user.displayName ?? null,
     avatarUrl: user.avatarUrl ?? null,
+    homeCountry: user.homeCountry ?? null,
+    homeCurrency: user.homeCurrency ?? null,
   };
 }
 

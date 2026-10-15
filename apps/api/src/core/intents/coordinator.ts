@@ -299,6 +299,22 @@ export class IntentCoordinator {
     };
   }
 
+  /**
+   * The currency of an amount nobody named: the person's home currency. Order of precedence is (1) the current message, (2) the
+   * payment in progress, (3) home, (4) ask: steps 1 and 2 have already filled `currencyOrAsset`, so only a still-empty one is
+   * defaulted, and with no home currency it stays empty and the usual question is asked. Only a payment is defaulted.
+   */
+  private async withHomeCurrency(
+    repositories: AgentRepositories,
+    userId: string,
+    parsed: TransactionalIntent,
+  ): Promise<TransactionalIntent> {
+    if (parsed.type !== "SEND" || !parsed.amount || parsed.amount.currencyOrAsset) return parsed;
+    const home = (await repositories.users.findById(userId))?.homeCurrency;
+    if (!home) return parsed;
+    return { ...parsed, amount: { ...parsed.amount, currencyOrAsset: home } };
+  }
+
   /** Greetings, help and balance questions answered while a payment is open say which payment is still waiting. */
   private async withResume(
     repositories: AgentRepositories,
@@ -483,7 +499,10 @@ export class IntentCoordinator {
     const recipientOverride =
       args.recipientOverride ?? (await this.reusableRecipient(repositories, parsed, target));
     const resolvers = this.deps.createResolvers(repositories);
-    const assessment = await assessIntent(parsed, {
+    // An amount with no currency is in the person's home currency, unless a currency was named in this message or already
+    // established by the payment being changed (both are already in `parsed` by now, so they win).
+    const parsedWithHome = await this.withHomeCurrency(repositories, conversation.userId, parsed);
+    const assessment = await assessIntent(parsedWithHome, {
       userId: conversation.userId,
       assets: resolvers.assets,
       recipients: resolvers.recipients,
@@ -504,7 +523,7 @@ export class IntentCoordinator {
                 id: target?.id ?? createId(),
                 userId: conversation.userId,
                 conversationId: conversation.id,
-                parsed,
+                parsed: parsedWithHome,
                 assessment,
                 recipientId,
               }),
@@ -530,7 +549,7 @@ export class IntentCoordinator {
       };
     }
 
-    const summary = summarizeIntent(parsed, assessment.facts);
+    const summary = summarizeIntent(parsedWithHome, assessment.facts);
     const recipient = assessment.facts.recipient;
     const request = buildRoutingRequest(
       saved,

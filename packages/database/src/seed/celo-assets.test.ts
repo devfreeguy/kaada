@@ -102,6 +102,42 @@ describe("seedCeloAssets", () => {
           "0xd76f5faf6888e24d9f04bf92a0c8b921fe4390e0",
         ],
         [
+          "wMXN",
+          18,
+          42220,
+          "MXN",
+          "MX",
+          "LOCAL_STABLECOIN",
+          "0x337e7456b420bd3481e7fa61fa9850343d610d34",
+        ],
+        [
+          "wCOP",
+          18,
+          42220,
+          "COP",
+          "CO",
+          "LOCAL_STABLECOIN",
+          "0x8a1d45e102e886510e891d2ec656a708991e2d76",
+        ],
+        [
+          "wCLP",
+          18,
+          42220,
+          "CLP",
+          "CL",
+          "LOCAL_STABLECOIN",
+          "0x61d450a098b6a7f69fc4b98ce68198fe59768651",
+        ],
+        [
+          "wPEN",
+          18,
+          42220,
+          "PEN",
+          "PE",
+          "LOCAL_STABLECOIN",
+          "0x4f34c8b3b5fb6d98da888f0fea543d4d9c9f2ebe",
+        ],
+        [
           "IDRX",
           2,
           42220,
@@ -134,11 +170,45 @@ describe("seedCeloAssets", () => {
 
   it("does not seed unverified assets, or the Mento naira token", () => {
     const symbols = celoAssets.map((asset) => asset.symbol as string);
-    for (const unverified of ["wMXN", "wCOP", "wPEN", "wCLP", "USA₮", "NGNm"]) {
+    for (const unverified of ["USA₮", "NGNm"]) {
       assert.equal(symbols.includes(unverified), false, unverified);
     }
     const addresses = celoAssets.map((asset) => asset.contractAddress.toLowerCase());
     assert.equal(addresses.includes("0xe2702bd97ee33c88c8f6f92da3b733608aa76f71"), false);
+  });
+});
+
+describe("the peso and sol tokens", () => {
+  it("are the verified contracts of the same family as wARS and wBRL, with 18 decimals and their own currency", () => {
+    const expected: Record<string, [string, string, string]> = {
+      wMXN: ["0x337E7456B420bD3481e7FA61fA9850343d610d34", "MXN", "Peso Mexicano"],
+      wCOP: ["0x8a1D45e102e886510e891d2Ec656a708991e2D76", "COP", "Peso Colombiano"],
+      wCLP: ["0x61D450a098b6a7f69fC4b98CE68198fe59768651", "CLP", "Peso Chileno"],
+      wPEN: ["0x4F34c8b3b5FB6D98Da888F0feA543d4d9C9F2eBE", "PEN", "Sol Peruano"],
+    };
+    for (const [symbol, [address, fiat, name]] of Object.entries(expected)) {
+      const asset = celoAssets.find((entry) => entry.symbol === symbol);
+      assert.ok(asset, symbol);
+      assert.equal(asset.contractAddress, address, symbol);
+      assert.equal(asset.decimals, 18, symbol);
+      assert.equal(asset.fiatCode, fiat, symbol);
+      assert.equal(asset.name, name, symbol);
+      assert.equal(asset.kind, "LOCAL_STABLECOIN", symbol);
+    }
+  });
+
+  it("have no provider capability yet: they can be held and shown, never priced", () => {
+    const referenced = new Set(
+      verifiedCapabilities.flatMap((capability) =>
+        [capability.input, capability.output].flatMap((ref) =>
+          ref && "contractAddress" in ref ? [ref.contractAddress.toLowerCase()] : [],
+        ),
+      ),
+    );
+    for (const symbol of ["wMXN", "wCOP", "wCLP", "wPEN"]) {
+      const asset = celoAssets.find((entry) => entry.symbol === symbol);
+      assert.equal(referenced.has((asset?.contractAddress ?? "").toLowerCase()), false, symbol);
+    }
   });
 });
 

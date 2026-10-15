@@ -8,6 +8,8 @@ export interface UserRepository {
   findById(id: string): Promise<User | null>;
   findByUsername(username: string): Promise<User | null>;
   create(user: NewUser): Promise<User>;
+  /** Records the person's own choice of home country and the default currency that follows from it (null: none, "Other"). */
+  setHome(userId: string, home: { country: string; currency: string | null }): Promise<User>;
   /** Creates a user together with its first identity, atomically. */
   createWithIdentity(input: { user: NewUser; identity: NewIdentity }): Promise<{
     user: User;

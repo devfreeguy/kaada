@@ -24,7 +24,13 @@ export type CeloSeedClient = Pick<PrismaClient, "asset">;
  * Nigerian Naira token (on-chain symbol NGNm, 0xE2702Bd97ee33c88c8f6f92DA3B733608aa76F71) is a
  * different asset and is deliberately NOT seeded.
  *
- * Still not seeded (not verified): wMXN, wCOP, wPEN, wCLP, USA₮.
+ * wMXN, wCOP, wCLP and wPEN (the same "W" family as wARS and wBRL, listed by Textile for Celo) were added after being checked on
+ * chain (celo.blockscout.com, 2026-10): each is a verified ERC-20 proxy created by the SAME deployer as wARS and wBRL
+ * (0xDf202429911C19a517Cbf2ff6afc37d3836208DC), with 18 decimals and the names on the issuer's list (Peso Mexicano, Peso
+ * Colombiano, Peso Chileno, Sol Peruano). They are assets only: no provider capability is seeded for them, so nothing can be
+ * priced or routed through them until one is verified (see capabilities.ts).
+ *
+ * Still not seeded (not verified): USA₮.
  */
 export const celoAssets = [
   {
@@ -68,6 +74,42 @@ export const celoAssets = [
     fiatCode: "BRL",
     countryCode: "BR",
     contractAddress: "0xD76f5Faf6888e24D9F04Bf92a0c8B921FE4390e0",
+    decimals: 18,
+  },
+  {
+    symbol: "wMXN",
+    name: "Peso Mexicano",
+    kind: "LOCAL_STABLECOIN",
+    fiatCode: "MXN",
+    countryCode: "MX",
+    contractAddress: "0x337E7456B420bD3481e7FA61fA9850343d610d34",
+    decimals: 18,
+  },
+  {
+    symbol: "wCOP",
+    name: "Peso Colombiano",
+    kind: "LOCAL_STABLECOIN",
+    fiatCode: "COP",
+    countryCode: "CO",
+    contractAddress: "0x8a1D45e102e886510e891d2Ec656a708991e2D76",
+    decimals: 18,
+  },
+  {
+    symbol: "wCLP",
+    name: "Peso Chileno",
+    kind: "LOCAL_STABLECOIN",
+    fiatCode: "CLP",
+    countryCode: "CL",
+    contractAddress: "0x61D450a098b6a7f69fC4b98CE68198fe59768651",
+    decimals: 18,
+  },
+  {
+    symbol: "wPEN",
+    name: "Sol Peruano",
+    kind: "LOCAL_STABLECOIN",
+    fiatCode: "PEN",
+    countryCode: "PE",
+    contractAddress: "0x4F34c8b3b5FB6D98Da888F0feA543d4d9C9F2eBE",
     decimals: 18,
   },
   {

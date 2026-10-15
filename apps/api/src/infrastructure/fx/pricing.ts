@@ -34,6 +34,8 @@ export function createRoutingService(
     chainId?: number;
     /** Network-fee check for direct transfers; omit when it is not configured. */
     gas?: { enoughForFees(address: string): Promise<boolean | undefined> };
+    /** The person's home currency, for the default way to pay. */
+    profile?: { homeCurrency(userId: string): Promise<string | undefined> };
     /** Balance-aware funding for payments; omit when no wallet provider is configured. */
     funding?: WalletFundingResolver;
     /** Payment authorization (PIN step); omit when no wallet provider is configured. */
@@ -90,6 +92,7 @@ export function createRoutingService(
     now,
     ...(deps.funding && { funding: deps.funding }),
     ...(deps.gas && { gas: deps.gas }),
+    ...(deps.profile && { profile: deps.profile }),
     ...(deps.authorization && { authorization: deps.authorization }),
     ...(deps.log && { log: deps.log }),
   });

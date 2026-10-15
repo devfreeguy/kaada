@@ -41,9 +41,9 @@ export function routingRequiredResponse(
   switch (summary.operation) {
     case "SEND": {
       const what = exactOutput
-        ? `${recipient} receives ${amount}${where}`
-        : `you send ${amount} to ${recipient}${where}`;
-      return build(`Got it: ${what}${funding}. I'll find the best route next.`);
+        ? `${recipient} will receive ${amount}${where}`
+        : `You're sending ${amount} to ${recipient}${where}`;
+      return build(`${what}${funding}. I'll find the best route next.`);
     }
     case "CONVERT":
       return build(

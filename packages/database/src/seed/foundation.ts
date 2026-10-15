@@ -21,6 +21,11 @@ export const fiatAssets = [
   { fiatCode: "ARS", name: "Argentine Peso", countryCode: "AR", decimals: 2 },
   { fiatCode: "BRL", name: "Brazilian Real", countryCode: "BR", decimals: 2 },
   { fiatCode: "IDR", name: "Indonesian Rupiah", countryCode: "ID", decimals: 2 },
+  { fiatCode: "MXN", name: "Mexican Peso", countryCode: "MX", decimals: 2 },
+  { fiatCode: "COP", name: "Colombian Peso", countryCode: "CO", decimals: 2 },
+  // The Chilean peso has no minor unit (ISO 4217).
+  { fiatCode: "CLP", name: "Chilean Peso", countryCode: "CL", decimals: 0 },
+  { fiatCode: "PEN", name: "Peruvian Sol", countryCode: "PE", decimals: 2 },
 ] as const;
 
 /** Idempotent: safe to run any number of times. Never changes an existing asset's decimals. */

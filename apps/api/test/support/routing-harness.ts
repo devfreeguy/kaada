@@ -86,6 +86,8 @@ export function createRoutingHarness(
     funding?: (registry: AssetRegistry) => WalletFundingResolver;
     /** The network-fee check for direct transfers. */
     gas?: { enoughForFees(address: string): Promise<boolean | undefined> };
+    /** The person's home currency. */
+    profile?: { homeCurrency(userId: string): Promise<string | undefined> };
     /** Payment authorization (PIN step), built from the world and the clock. */
     authorization?: (
       world: InMemoryWorld,
@@ -156,6 +158,7 @@ export function createRoutingHarness(
         now: () => clock.now,
         ...(options.funding && { funding: options.funding(registry) }),
         ...(options.gas && { gas: options.gas }),
+        ...(options.profile && { profile: options.profile }),
         ...(options.authorization && {
           authorization: options.authorization(world, registry, () => clock.now),
         }),

@@ -22,6 +22,13 @@ export interface PresentedMessage {
   copy?: { label: string; text: string };
   /** A payment is still open behind this answer: offer to carry on with it (or cancel it). The ids are trusted state. */
   resume?: { intentId: string; revision: number };
+  /** Ask where the person mainly uses Kaada (their default currency follows from it): one button per supported country. */
+  countryChoice?: true;
+  /**
+   * Money that arrived in a currency other than the person's own: offer to convert it, or keep it as it is. Only ever set when a
+   * conversion route really exists. `amount` is the human amount (for the conversion request), the names are for the buttons.
+   */
+  conversionOffer?: { from: string; to: string; amount: string; fromName: string; toName: string };
   /** Things worth offering next, from the server's allowlist (see conversation/suggestions). Rendered as buttons by the channel. */
   suggestions?: SuggestionId[];
 }

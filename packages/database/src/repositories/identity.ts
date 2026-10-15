@@ -20,6 +20,15 @@ export function createUserRepository(db: Db): UserRepository {
       return toUser(await db.user.create({ data: userCreateData(user) }));
     },
 
+    async setHome(userId, home) {
+      return toUser(
+        await db.user.update({
+          where: { id: userId },
+          data: { homeCountry: home.country, homeCurrency: home.currency },
+        }),
+      );
+    },
+
     /**
      * One atomic write. A unique conflict on (type, externalId) or username rejects the whole call
      * with Prisma error P2002; callers racing on the same account should re-read the identity.

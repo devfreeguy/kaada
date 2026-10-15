@@ -116,6 +116,19 @@ export function createInMemoryWorld(): InMemoryWorld {
         users.set(user.id, user);
         return Promise.resolve(user);
       },
+      setHome: (userId, home) => {
+        const current = users.get(userId);
+        if (!current) return Promise.reject(new Error("no such user"));
+        const { homeCurrency: _previous, ...rest } = current;
+        const updated: User = {
+          ...rest,
+          homeCountry: home.country,
+          ...(home.currency && { homeCurrency: home.currency }),
+          updatedAt: stamp(),
+        };
+        users.set(userId, updated);
+        return Promise.resolve(updated);
+      },
       createWithIdentity: ({ user, identity }) => {
         // Like the database: one account per (type, externalId). The loser of a race gets a unique violation (P2002).
         if (

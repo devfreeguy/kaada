@@ -29,6 +29,8 @@ export type UserMinAggregateOutputType = {
   username: string | null
   displayName: string | null
   avatarUrl: string | null
+  homeCountry: string | null
+  homeCurrency: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -38,6 +40,8 @@ export type UserMaxAggregateOutputType = {
   username: string | null
   displayName: string | null
   avatarUrl: string | null
+  homeCountry: string | null
+  homeCurrency: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -47,6 +51,8 @@ export type UserCountAggregateOutputType = {
   username: number
   displayName: number
   avatarUrl: number
+  homeCountry: number
+  homeCurrency: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -58,6 +64,8 @@ export type UserMinAggregateInputType = {
   username?: true
   displayName?: true
   avatarUrl?: true
+  homeCountry?: true
+  homeCurrency?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -67,6 +75,8 @@ export type UserMaxAggregateInputType = {
   username?: true
   displayName?: true
   avatarUrl?: true
+  homeCountry?: true
+  homeCurrency?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -76,6 +86,8 @@ export type UserCountAggregateInputType = {
   username?: true
   displayName?: true
   avatarUrl?: true
+  homeCountry?: true
+  homeCurrency?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -158,6 +170,8 @@ export type UserGroupByOutputType = {
   username: string | null
   displayName: string | null
   avatarUrl: string | null
+  homeCountry: string | null
+  homeCurrency: string | null
   createdAt: Date
   updatedAt: Date
   _count: UserCountAggregateOutputType | null
@@ -188,6 +202,8 @@ export type UserWhereInput = {
   username?: Prisma.StringNullableFilter<"User"> | string | null
   displayName?: Prisma.StringNullableFilter<"User"> | string | null
   avatarUrl?: Prisma.StringNullableFilter<"User"> | string | null
+  homeCountry?: Prisma.StringNullableFilter<"User"> | string | null
+  homeCurrency?: Prisma.StringNullableFilter<"User"> | string | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   identities?: Prisma.IdentityListRelationFilter
@@ -227,6 +243,8 @@ export type UserOrderByWithRelationInput = {
   username?: Prisma.SortOrderInput | Prisma.SortOrder
   displayName?: Prisma.SortOrderInput | Prisma.SortOrder
   avatarUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  homeCountry?: Prisma.SortOrderInput | Prisma.SortOrder
+  homeCurrency?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   identities?: Prisma.IdentityOrderByRelationAggregateInput
@@ -269,6 +287,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.UserWhereInput | Prisma.UserWhereInput[]
   displayName?: Prisma.StringNullableFilter<"User"> | string | null
   avatarUrl?: Prisma.StringNullableFilter<"User"> | string | null
+  homeCountry?: Prisma.StringNullableFilter<"User"> | string | null
+  homeCurrency?: Prisma.StringNullableFilter<"User"> | string | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   identities?: Prisma.IdentityListRelationFilter
@@ -308,6 +328,8 @@ export type UserOrderByWithAggregationInput = {
   username?: Prisma.SortOrderInput | Prisma.SortOrder
   displayName?: Prisma.SortOrderInput | Prisma.SortOrder
   avatarUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  homeCountry?: Prisma.SortOrderInput | Prisma.SortOrder
+  homeCurrency?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
@@ -323,6 +345,8 @@ export type UserScalarWhereWithAggregatesInput = {
   username?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   displayName?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   avatarUrl?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  homeCountry?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  homeCurrency?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
 }
@@ -332,6 +356,8 @@ export type UserCreateInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -371,6 +397,8 @@ export type UserUncheckedCreateInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -410,6 +438,8 @@ export type UserUpdateInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -449,6 +479,8 @@ export type UserUncheckedUpdateInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -488,6 +520,8 @@ export type UserCreateManyInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -497,6 +531,8 @@ export type UserUpdateManyMutationInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -506,6 +542,8 @@ export type UserUncheckedUpdateManyInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -515,6 +553,8 @@ export type UserCountOrderByAggregateInput = {
   username?: Prisma.SortOrder
   displayName?: Prisma.SortOrder
   avatarUrl?: Prisma.SortOrder
+  homeCountry?: Prisma.SortOrder
+  homeCurrency?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -524,6 +564,8 @@ export type UserMaxOrderByAggregateInput = {
   username?: Prisma.SortOrder
   displayName?: Prisma.SortOrder
   avatarUrl?: Prisma.SortOrder
+  homeCountry?: Prisma.SortOrder
+  homeCurrency?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -533,6 +575,8 @@ export type UserMinOrderByAggregateInput = {
   username?: Prisma.SortOrder
   displayName?: Prisma.SortOrder
   avatarUrl?: Prisma.SortOrder
+  homeCountry?: Prisma.SortOrder
+  homeCurrency?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -990,6 +1034,8 @@ export type UserCreateWithoutIdentitiesInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
@@ -1028,6 +1074,8 @@ export type UserUncheckedCreateWithoutIdentitiesInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
@@ -1082,6 +1130,8 @@ export type UserUpdateWithoutIdentitiesInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
@@ -1120,6 +1170,8 @@ export type UserUncheckedUpdateWithoutIdentitiesInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
@@ -1158,6 +1210,8 @@ export type UserCreateWithoutSessionsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -1196,6 +1250,8 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -1250,6 +1306,8 @@ export type UserUpdateWithoutSessionsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -1288,6 +1346,8 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -1326,6 +1386,8 @@ export type UserCreateWithoutWalletsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -1364,6 +1426,8 @@ export type UserUncheckedCreateWithoutWalletsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -1418,6 +1482,8 @@ export type UserUpdateWithoutWalletsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -1456,6 +1522,8 @@ export type UserUncheckedUpdateWithoutWalletsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -1494,6 +1562,8 @@ export type UserCreateWithoutPasskeyCredentialsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -1532,6 +1602,8 @@ export type UserUncheckedCreateWithoutPasskeyCredentialsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -1586,6 +1658,8 @@ export type UserUpdateWithoutPasskeyCredentialsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -1624,6 +1698,8 @@ export type UserUncheckedUpdateWithoutPasskeyCredentialsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -1662,6 +1738,8 @@ export type UserCreateWithoutWalletSetupSessionsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -1700,6 +1778,8 @@ export type UserUncheckedCreateWithoutWalletSetupSessionsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -1754,6 +1834,8 @@ export type UserUpdateWithoutWalletSetupSessionsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -1792,6 +1874,8 @@ export type UserUncheckedUpdateWithoutWalletSetupSessionsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -1830,6 +1914,8 @@ export type UserCreateWithoutTransactionPinInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -1868,6 +1954,8 @@ export type UserUncheckedCreateWithoutTransactionPinInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -1922,6 +2010,8 @@ export type UserUpdateWithoutTransactionPinInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -1960,6 +2050,8 @@ export type UserUncheckedUpdateWithoutTransactionPinInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -1998,6 +2090,8 @@ export type UserCreateWithoutAuthorizationSessionsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -2036,6 +2130,8 @@ export type UserUncheckedCreateWithoutAuthorizationSessionsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -2090,6 +2186,8 @@ export type UserUpdateWithoutAuthorizationSessionsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -2128,6 +2226,8 @@ export type UserUncheckedUpdateWithoutAuthorizationSessionsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -2166,6 +2266,8 @@ export type UserCreateWithoutPaymentAuthorizationsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -2204,6 +2306,8 @@ export type UserUncheckedCreateWithoutPaymentAuthorizationsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -2258,6 +2362,8 @@ export type UserUpdateWithoutPaymentAuthorizationsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -2296,6 +2402,8 @@ export type UserUncheckedUpdateWithoutPaymentAuthorizationsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -2334,6 +2442,8 @@ export type UserCreateWithoutFirmQuoteAttemptsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -2372,6 +2482,8 @@ export type UserUncheckedCreateWithoutFirmQuoteAttemptsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -2426,6 +2538,8 @@ export type UserUpdateWithoutFirmQuoteAttemptsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -2464,6 +2578,8 @@ export type UserUncheckedUpdateWithoutFirmQuoteAttemptsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -2502,6 +2618,8 @@ export type UserCreateWithoutRootActionSessionsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -2540,6 +2658,8 @@ export type UserUncheckedCreateWithoutRootActionSessionsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -2594,6 +2714,8 @@ export type UserUpdateWithoutRootActionSessionsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -2632,6 +2754,8 @@ export type UserUncheckedUpdateWithoutRootActionSessionsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -2670,6 +2794,8 @@ export type UserCreateWithoutPasskeyChallengesInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -2708,6 +2834,8 @@ export type UserUncheckedCreateWithoutPasskeyChallengesInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -2762,6 +2890,8 @@ export type UserUpdateWithoutPasskeyChallengesInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -2800,6 +2930,8 @@ export type UserUncheckedUpdateWithoutPasskeyChallengesInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -2838,6 +2970,8 @@ export type UserCreateWithoutDelegatedPermissionsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -2876,6 +3010,8 @@ export type UserUncheckedCreateWithoutDelegatedPermissionsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -2930,6 +3066,8 @@ export type UserUpdateWithoutDelegatedPermissionsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -2968,6 +3106,8 @@ export type UserUncheckedUpdateWithoutDelegatedPermissionsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -3006,6 +3146,8 @@ export type UserCreateWithoutConversationsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -3044,6 +3186,8 @@ export type UserUncheckedCreateWithoutConversationsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -3098,6 +3242,8 @@ export type UserUpdateWithoutConversationsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -3136,6 +3282,8 @@ export type UserUncheckedUpdateWithoutConversationsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -3174,6 +3322,8 @@ export type UserCreateWithoutIntentsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -3212,6 +3362,8 @@ export type UserUncheckedCreateWithoutIntentsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -3266,6 +3418,8 @@ export type UserUpdateWithoutIntentsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -3304,6 +3458,8 @@ export type UserUncheckedUpdateWithoutIntentsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -3342,6 +3498,8 @@ export type UserCreateWithoutOwnedRecipientsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -3380,6 +3538,8 @@ export type UserUncheckedCreateWithoutOwnedRecipientsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -3423,6 +3583,8 @@ export type UserCreateWithoutLinkedRecipientsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -3461,6 +3623,8 @@ export type UserUncheckedCreateWithoutLinkedRecipientsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -3515,6 +3679,8 @@ export type UserUpdateWithoutOwnedRecipientsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -3553,6 +3719,8 @@ export type UserUncheckedUpdateWithoutOwnedRecipientsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -3602,6 +3770,8 @@ export type UserUpdateWithoutLinkedRecipientsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -3640,6 +3810,8 @@ export type UserUncheckedUpdateWithoutLinkedRecipientsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -3678,6 +3850,8 @@ export type UserCreateWithoutExecutionsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -3716,6 +3890,8 @@ export type UserUncheckedCreateWithoutExecutionsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -3770,6 +3946,8 @@ export type UserUpdateWithoutExecutionsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -3808,6 +3986,8 @@ export type UserUncheckedUpdateWithoutExecutionsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -3846,6 +4026,8 @@ export type UserCreateWithoutRampSessionsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -3884,6 +4066,8 @@ export type UserUncheckedCreateWithoutRampSessionsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -3938,6 +4122,8 @@ export type UserUpdateWithoutRampSessionsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -3976,6 +4162,8 @@ export type UserUncheckedUpdateWithoutRampSessionsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -4014,6 +4202,8 @@ export type UserCreateWithoutAuditEventsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -4052,6 +4242,8 @@ export type UserUncheckedCreateWithoutAuditEventsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -4106,6 +4298,8 @@ export type UserUpdateWithoutAuditEventsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -4144,6 +4338,8 @@ export type UserUncheckedUpdateWithoutAuditEventsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -4182,6 +4378,8 @@ export type UserCreateWithoutWalletCredentialsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -4220,6 +4418,8 @@ export type UserUncheckedCreateWithoutWalletCredentialsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -4274,6 +4474,8 @@ export type UserUpdateWithoutWalletCredentialsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -4312,6 +4514,8 @@ export type UserUncheckedUpdateWithoutWalletCredentialsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -4350,6 +4554,8 @@ export type UserCreateWithoutRootChangesInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -4388,6 +4594,8 @@ export type UserUncheckedCreateWithoutRootChangesInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -4442,6 +4650,8 @@ export type UserUpdateWithoutRootChangesInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -4480,6 +4690,8 @@ export type UserUncheckedUpdateWithoutRootChangesInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -4518,6 +4730,8 @@ export type UserCreateWithoutRecoveryConfigurationsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -4556,6 +4770,8 @@ export type UserUncheckedCreateWithoutRecoveryConfigurationsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -4610,6 +4826,8 @@ export type UserUpdateWithoutRecoveryConfigurationsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -4648,6 +4866,8 @@ export type UserUncheckedUpdateWithoutRecoveryConfigurationsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -4686,6 +4906,8 @@ export type UserCreateWithoutRecoveryAttemptsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -4724,6 +4946,8 @@ export type UserUncheckedCreateWithoutRecoveryAttemptsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -4778,6 +5002,8 @@ export type UserUpdateWithoutRecoveryAttemptsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -4816,6 +5042,8 @@ export type UserUncheckedUpdateWithoutRecoveryAttemptsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -4854,6 +5082,8 @@ export type UserCreateWithoutAttestationChallengesInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -4892,6 +5122,8 @@ export type UserUncheckedCreateWithoutAttestationChallengesInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -4946,6 +5178,8 @@ export type UserUpdateWithoutAttestationChallengesInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -4984,6 +5218,8 @@ export type UserUncheckedUpdateWithoutAttestationChallengesInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -5022,6 +5258,8 @@ export type UserCreateWithoutDeviceAttestationsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -5060,6 +5298,8 @@ export type UserUncheckedCreateWithoutDeviceAttestationsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -5114,6 +5354,8 @@ export type UserUpdateWithoutDeviceAttestationsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -5152,6 +5394,8 @@ export type UserUncheckedUpdateWithoutDeviceAttestationsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -5190,6 +5434,8 @@ export type UserCreateWithoutChannelActionsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -5228,6 +5474,8 @@ export type UserUncheckedCreateWithoutChannelActionsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -5282,6 +5530,8 @@ export type UserUpdateWithoutChannelActionsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -5320,6 +5570,8 @@ export type UserUncheckedUpdateWithoutChannelActionsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -5358,6 +5610,8 @@ export type UserCreateWithoutChannelPaymentStatusesInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -5396,6 +5650,8 @@ export type UserUncheckedCreateWithoutChannelPaymentStatusesInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -5450,6 +5706,8 @@ export type UserUpdateWithoutChannelPaymentStatusesInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -5488,6 +5746,8 @@ export type UserUncheckedUpdateWithoutChannelPaymentStatusesInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -5526,6 +5786,8 @@ export type UserCreateWithoutUserNotificationsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -5564,6 +5826,8 @@ export type UserUncheckedCreateWithoutUserNotificationsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -5618,6 +5882,8 @@ export type UserUpdateWithoutUserNotificationsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -5656,6 +5922,8 @@ export type UserUncheckedUpdateWithoutUserNotificationsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -5694,6 +5962,8 @@ export type UserCreateWithoutWalletDepositCheckpointsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -5732,6 +6002,8 @@ export type UserUncheckedCreateWithoutWalletDepositCheckpointsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -5786,6 +6058,8 @@ export type UserUpdateWithoutWalletDepositCheckpointsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -5824,6 +6098,8 @@ export type UserUncheckedUpdateWithoutWalletDepositCheckpointsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -5862,6 +6138,8 @@ export type UserCreateWithoutWalletFundingEventsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
@@ -5900,6 +6178,8 @@ export type UserUncheckedCreateWithoutWalletFundingEventsInput = {
   username?: string | null
   displayName?: string | null
   avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
@@ -5954,6 +6234,8 @@ export type UserUpdateWithoutWalletFundingEventsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
@@ -5992,6 +6274,8 @@ export type UserUncheckedUpdateWithoutWalletFundingEventsInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
@@ -6313,6 +6597,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   username?: boolean
   displayName?: boolean
   avatarUrl?: boolean
+  homeCountry?: boolean
+  homeCurrency?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   identities?: boolean | Prisma.User$identitiesArgs<ExtArgs>
@@ -6353,6 +6639,8 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   username?: boolean
   displayName?: boolean
   avatarUrl?: boolean
+  homeCountry?: boolean
+  homeCurrency?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["user"]>
@@ -6362,6 +6650,8 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   username?: boolean
   displayName?: boolean
   avatarUrl?: boolean
+  homeCountry?: boolean
+  homeCurrency?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["user"]>
@@ -6371,11 +6661,13 @@ export type UserSelectScalar = {
   username?: boolean
   displayName?: boolean
   avatarUrl?: boolean
+  homeCountry?: boolean
+  homeCurrency?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "username" | "displayName" | "avatarUrl" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "username" | "displayName" | "avatarUrl" | "homeCountry" | "homeCurrency" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   identities?: boolean | Prisma.User$identitiesArgs<ExtArgs>
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
@@ -6451,6 +6743,14 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     username: string | null
     displayName: string | null
     avatarUrl: string | null
+    /**
+     * Where the person mainly uses Kaada (their own choice; "ZZ" = Other). Never inferred from a chat account.
+     */
+    homeCountry: string | null
+    /**
+     * Their default currency (ISO 4217), from the home country. Null for Other and until chosen.
+     */
+    homeCurrency: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["user"]>
@@ -6910,6 +7210,8 @@ export interface UserFieldRefs {
   readonly username: Prisma.FieldRef<"User", 'String'>
   readonly displayName: Prisma.FieldRef<"User", 'String'>
   readonly avatarUrl: Prisma.FieldRef<"User", 'String'>
+  readonly homeCountry: Prisma.FieldRef<"User", 'String'>
+  readonly homeCurrency: Prisma.FieldRef<"User", 'String'>
   readonly createdAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"User", 'DateTime'>
 }
