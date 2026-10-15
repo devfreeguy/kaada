@@ -103,7 +103,7 @@ describe("collecting details", () => {
       intentId: turn.intentId,
       field: "RECIPIENT",
       reason: "MISSING",
-      known: { amount: "20.00 USD" },
+      known: { amount: "$20" },
     });
     const stored = h.world.intents.get(turn.intentId ?? "");
     assert.equal(stored?.status, "AWAITING_DETAILS");
@@ -180,7 +180,7 @@ describe("collecting details", () => {
     assert.equal(stored?.recipientId, recipientId);
     assert.equal(stored?.status, "RESOLVED");
     assert.equal(second.response.type, "ROUTING_REQUIRED");
-    assert.match(second.response.text, /40\.00 USD/);
+    assert.match(second.response.text, /\$40/);
     assert.equal(h.world.recipients.size, 1, "the recipient record is reused, not duplicated");
   });
 
@@ -249,7 +249,7 @@ describe("amount modes and assets", () => {
       mode: "EXACT_INPUT",
     });
     assert.equal(stored?.sourceAssetId, h.assets.USD.id);
-    assert.match(turn.response.text, /you send 20\.50 USD to Daniel/);
+    assert.match(turn.response.text, /you send \$20\.5 to Daniel/);
   });
 
   it("puts an explicit EXACT_OUTPUT amount on the destination side", async () => {
@@ -284,7 +284,7 @@ describe("amount modes and assets", () => {
       "the funding token is chosen later, not guessed",
     );
     assert.equal(stored?.destinationCountry, "BR");
-    assert.match(turn.response.text, /João Silva receives 500\.00 BRL/);
+    assert.match(turn.response.text, /João Silva receives R\$500/);
   });
 
   it("derives EXACT_OUTPUT when the amount is in the recipient's local currency", async () => {

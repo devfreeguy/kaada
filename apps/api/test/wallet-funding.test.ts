@@ -62,7 +62,7 @@ describe("exact input affordability", () => {
     const w = setup();
     w.fund("USDT", 20n);
     const response = ready((await w.r.h.say("spend 20 usdt")).response);
-    assert.equal(response.senderSpends.expected.display, "20 USDT");
+    assert.equal(response.senderSpends.expected.display, "$20");
     assert.equal(w.port.reads, 1);
   });
 
@@ -72,7 +72,7 @@ describe("exact input affordability", () => {
     const error = errorOf((await w.r.h.say("spend 20 usdt")).response);
     assert.equal(error.code, "INSUFFICIENT_BALANCE");
     assert.match(error.text, /^You don't currently have enough USDT for this payment\./);
-    assert.match(error.text, /You need 20 USDT and have 19.999999\./);
+    assert.match(error.text, /You need 20 USDT and have 19\.999999 USDT\./);
     assert.deepEqual(w.priced, [], "no provider was asked for a price");
   });
 
@@ -109,7 +109,7 @@ describe("exact output affordability", () => {
     w.fund("USDT", 50n); // positive, but 92.26 is needed
     const error = errorOf((await w.r.h.say("pay 500 brl with usdt")).response);
     assert.equal(error.code, "INSUFFICIENT_BALANCE");
-    assert.match(error.text, /up to 92.306281 USDT, but your wallet has 50 USDT/);
+    assert.match(error.text, /up to \$92\.306281, but your wallet has \$50/);
     assert.equal(w.priced.length > 0, true, "the unknown amount needed a preview");
     assert.equal(w.r.world.routes.size, 0, "nothing was stored for an unaffordable route");
   });
@@ -128,7 +128,7 @@ describe("exact output affordability", () => {
     w.fund("USDC", 1000n); // enough, though the route via USDC is dearer
     const response = ready((await w.r.h.say("pay 500 brl")).response);
     assert.equal(response.senderSpends.expected.symbol, "USDC");
-    assert.equal(response.recipientReceives.expected.display, "500 wBRL");
+    assert.equal(response.recipientReceives.expected.display, "R$500");
   });
 
   it("does not pick by balance size: the cheaper route wins when both are funded", async () => {

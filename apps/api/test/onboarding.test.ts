@@ -86,7 +86,7 @@ function world(options: Options = {}) {
         funding.reads += 1;
         return Promise.resolve(
           facts.walletReady
-            ? { address: ADDRESS, network: "Celo", assets: ["USDT", "USDC", "cNGN"] }
+            ? { address: ADDRESS, network: "Celo", assets: ["🇳🇬 Nigerian Naira", "🇺🇸 US Dollar"] }
             : null,
         );
       },
@@ -503,10 +503,13 @@ describe("funding", () => {
     assert.match(text, /^Sure 👍 You can fund your Kaada wallet from another wallet\./);
     assert.match(text, /Network: Celo/);
     assert.ok(text.includes(`Wallet: ${ADDRESS}`));
-    assert.match(text, /Supported assets: USDT, USDC, cNGN/);
+    assert.match(text, /Your Kaada wallet currently supports:/);
+    assert.match(text, /🇳🇬 Nigerian Naira/);
+    assert.match(text, /🇺🇸 US Dollar/);
+    assert.doesNotMatch(text, /cNGN|USDT|USDC/, "tickers are not the primary view");
     assert.match(
       text,
-      /Only send supported assets on the Celo network to this address\. Funds sent on another network, or unsupported assets, may not appear in Kaada and may be difficult or impossible to recover\./,
+      /Only send supported currencies on the Celo network to this address\. Funds sent on another network, or unsupported assets, may not appear in Kaada and may be difficult or impossible to recover\./,
     );
     assert.deepEqual(w.adapter.last?.code, [ADDRESS], "the address is shown monospace");
     assert.deepEqual(

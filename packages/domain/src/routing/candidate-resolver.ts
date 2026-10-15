@@ -32,8 +32,16 @@ export interface RoutingCandidateResolverDeps {
  * assumes the user holds any asset. Deterministic; the database (via the registries) is the only
  * input.
  */
+export interface ResolveOptions {
+  /**
+   * The caller will keep only the funding assets the wallet actually holds, so the recipient's own currency may also be a source
+   * (a direct transfer when the wallet holds it). Without a wallet check that would be a guess, so it is off by default.
+   */
+  sameCurrencySource?: boolean;
+}
+
 export interface RoutingCandidateResolver {
-  resolve(request: RoutingRequest): Promise<CandidateResult>;
+  resolve(request: RoutingRequest, options?: ResolveOptions): Promise<CandidateResult>;
 }
 
 /** True while a candidate set still describes the intent: same intent, same revision. */
@@ -116,7 +124,10 @@ export function createRoutingCandidateResolver(
     };
   }
 
-  async function sourceSide(request: RoutingRequest): Promise<SideOutcome> {
+  async function sourceSide(
+    request: RoutingRequest,
+    options: ResolveOptions,
+  ): Promise<SideOutcome> {
     const reference =
       request.sourceAssetId ??
       (request.amountMode === "EXACT_INPUT" ? request.amount.assetId : undefined);
@@ -184,8 +195,28 @@ export function createRoutingCandidateResolver(
     // Nothing named: the supported USD settlement assets. Whether the user holds them is for the
     // wallet layer to filter later.
     const funding = await deps.settlement.resolveCurrency({ chainId, fiatCode: "USD" });
-    if (funding.status === "UNSUPPORTED") return unsupportedAsset("SOURCE", funding);
-    return describeSide(funding.denomination, "DEFAULT_FUNDING", funding.assets);
+
+    // Sending someone an amount in THEIR currency: the sender may already hold that same currency, and then it is a direct
+    // transfer (no conversion, no provider). So that currency's own settlement assets are candidates too; the wallet layer keeps
+    // the ones that are actually held and prefers the direct one. Never for a quote ("what would it cost") or a conversion.
+    const sameCurrency =
+      options.sameCurrencySource === true &&
+      request.operation === "SEND" &&
+      request.purpose === "PAYMENT" &&
+      request.amountMode === "EXACT_OUTPUT"
+        ? await deps.settlement.resolveAsset({ chainId, assetId: request.amount.assetId })
+        : undefined;
+    const extra = sameCurrency && sameCurrency.status !== "UNSUPPORTED" ? sameCurrency.assets : [];
+
+    if (funding.status === "UNSUPPORTED") {
+      if (extra.length === 0) return unsupportedAsset("SOURCE", funding);
+      return describeSide(extra[0]?.fiatCode ?? funding.denomination, "DEFAULT_FUNDING", extra);
+    }
+    const merged = [
+      ...funding.assets,
+      ...extra.filter((a) => !funding.assets.some((f) => f.id === a.id)),
+    ];
+    return describeSide(funding.denomination, "DEFAULT_FUNDING", merged);
   }
 
   async function destinationSide(request: RoutingRequest): Promise<SideOutcome> {
@@ -224,7 +255,7 @@ export function createRoutingCandidateResolver(
   }
 
   return {
-    async resolve(request) {
+    async resolve(request, options = {}) {
       const amountAsset = await deps.assets.getById(request.amount.assetId);
       if (!amountAsset) {
         const side = request.amountMode === "EXACT_INPUT" ? "SOURCE" : "DESTINATION";
@@ -235,7 +266,7 @@ export function createRoutingCandidateResolver(
         }).failure;
       }
 
-      const source = await sourceSide(request);
+      const source = await sourceSide(request, options);
       if (!source.ok) return source.failure;
       const destination = await destinationSide(request);
       if (!destination.ok) return destination.failure;

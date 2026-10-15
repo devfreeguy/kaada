@@ -19,7 +19,8 @@
     "smoke:setup": "node --import tsx scripts/setup-smoke.ts",
     "demo:authorize": "node --import tsx scripts/authorize-demo.ts",
     "conversation:review": "node --import tsx scripts/conversation-review.ts",
-    "dev:tunnels": "node --import tsx scripts/dev-tunnels.ts"
+    "dev:tunnels": "node --import tsx scripts/dev-tunnels.ts",
+    "seed:test-network": "node --import tsx scripts/seed-test-network.ts"
   },
   "dependencies": {
     "@kaada/attestation": "workspace:*",

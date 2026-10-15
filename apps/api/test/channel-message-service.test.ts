@@ -490,7 +490,7 @@ describe("the secure authorization flow", () => {
           code: "INSUFFICIENT_BALANCE",
           text: "You don't have enough USDT for this payment.",
         },
-        /You're short on funds for this payment/,
+        /You don't have enough USDT for this payment/,
       ],
       [
         { type: "ERROR", code: "WALLET_NEEDS_FUNDING", text: "internal" },

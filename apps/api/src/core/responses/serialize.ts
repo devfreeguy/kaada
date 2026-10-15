@@ -90,6 +90,7 @@ const storedResponseSchema = z.discriminatedUnion("type", [
       "WALLET_SETUP_REQUIRED",
       "WALLET_NEEDS_FUNDING",
       "BALANCE_UNAVAILABLE",
+      "GAS_FUNDING_REQUIRED",
       "INSUFFICIENT_BALANCE",
     ]),
     text: z.string(),

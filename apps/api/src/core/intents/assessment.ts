@@ -1,4 +1,4 @@
-import { findMissingFields, formatSmallestUnit, isKaadaError, moneyFromHuman } from "@kaada/domain";
+import { findMissingFields, isKaadaError, moneyFromHuman } from "@kaada/domain";
 import type {
   Asset,
   CountryDirectory,
@@ -15,6 +15,7 @@ import type { RecipientResolver } from "../recipients/recipient-resolver.js";
 import { MAX_OPTIONS } from "../responses/clarifications.js";
 import type { Clarification } from "../responses/clarifications.js";
 import type { AssetTarget, ChoiceDraft } from "./choices.js";
+import { describeMoney } from "../currency/catalog.js";
 
 export type { TransactionalIntent };
 
@@ -225,7 +226,7 @@ export async function assessIntent(
       try {
         const money = moneyFromHuman(amount.value, amountAsset);
         facts.amount = { money, mode };
-        facts.display.amount = `${formatSmallestUnit(money.amount, amountAsset.decimals)} ${amountAsset.symbol}`;
+        facts.display.amount = describeMoney(amountAsset, money.amount);
       } catch (error) {
         if (!isKaadaError(error, "INVALID_AMOUNT")) throw error;
         raise({

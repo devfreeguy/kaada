@@ -133,15 +133,15 @@ describe("exact input", () => {
     assert.equal(ready.senderSpends.max.amount, ready.senderSpends.expected.amount, "never more");
     // net 19.998 USDT at 5.42 = 108.38916 wBRL; with 5 bps slippage at least 108.33496542.
     assert.equal(ready.recipientReceives.expected.amount, "108389160000000000000");
-    assert.equal(ready.recipientReceives.min.display, "108.33496542 wBRL");
-    assert.equal(ready.senderSpends.expected.display, "20 USDT");
+    assert.equal(ready.recipientReceives.min.display, "R$108.33496542");
+    assert.equal(ready.senderSpends.expected.display, "$20");
     assert.deepEqual(
       ready.fees.map((f) => f.display),
-      ["0.002 USDT"],
+      ["$0.002"],
     );
     assert.equal(ready.revision, 1);
     assert.equal(ready.route.hops.length, 1);
-    assert.match(ready.text, /You spend exactly 20 USDT; João Silva receives about 108.38916 wBRL/);
+    assert.match(ready.text, /You spend exactly \$20; João Silva receives about R\$108\.38916/);
     assert.equal(ready.mock, true);
     assert.match(ready.text, /mock pricing/);
   });
@@ -150,7 +150,7 @@ describe("exact input", () => {
     const r = setup();
     const turn = await r.h.say("exact input using usdc");
     const ready = paymentReady(turn.response);
-    assert.equal(ready.senderSpends.expected.display, "20 USDC");
+    assert.equal(ready.senderSpends.expected.display, "$20");
     assert.deepEqual(
       ready.route.hops.map((h) => `${h.from}>${h.to}`),
       ["USDC>USDT", "USDT>wBRL"],
@@ -158,7 +158,7 @@ describe("exact input", () => {
     // USDC->USDT: fee 4000 (2 bps), 19.996 USDT; USDT->wBRL: fee 2000, net 19.994 * 5.42 = 108.36748.
     assert.equal(ready.recipientReceives.expected.amount, "108367480000000000000");
     assert.equal(ready.slippageBps, 10, "slippage adds up over the two steps");
-    assert.deepEqual(ready.fees.map((f) => f.display).sort(), ["0.002 USDT", "0.004 USDC"].sort());
+    assert.deepEqual(ready.fees.map((f) => f.display).sort(), ["$0.002", "$0.004"].sort());
   });
 
   it("with no preference it maximises the output and picks the direct USDT route", async () => {
@@ -174,17 +174,17 @@ describe("exact output", () => {
   it("delivers exactly the output and rounds the required input up (USDT -> wBRL)", async () => {
     const r = setup();
     const ready = paymentReady((await r.h.say("exact output using usdt")).response);
-    assert.equal(ready.recipientReceives.expected.display, "500 wBRL");
+    assert.equal(ready.recipientReceives.expected.display, "R$500");
     assert.equal(ready.recipientReceives.min.amount, ready.recipientReceives.expected.amount);
     assert.equal(ready.senderSpends.expected.amount, "92260150");
-    assert.equal(ready.senderSpends.expected.display, "92.26015 USDT");
+    assert.equal(ready.senderSpends.expected.display, "$92.26015");
     // 5 bps above the estimate, rounded up: 92260150 + 46131.
     assert.equal(ready.senderSpends.max.amount, "92306281");
     assert.deepEqual(
       ready.fees.map((f) => f.display),
-      ["0.009227 USDT"],
+      ["$0.009227"],
     );
-    assert.match(ready.text, /João Silva receives exactly 500 wBRL; estimated spend 92.26015 USDT/);
+    assert.match(ready.text, /João Silva receives exactly R\$500; estimated spend \$92\.26015/);
   });
 
   it("USDC -> USDT -> wBRL: discovers the two-hop route, exact at the end, minimal at each step", async () => {
@@ -575,10 +575,10 @@ describe("quote versus payment", () => {
     const r = setup();
     const turn = await r.h.say("quote");
     const quote = quoteResult(turn.response);
-    assert.equal(quote.source.display, "50 USDT");
+    assert.equal(quote.source.display, "$50");
     // net 49.995 USDT at 5.42 = 270.97290 wBRL
-    assert.equal(quote.destination.display, "270.9729 wBRL");
-    assert.match(quote.text, /50 USDT currently gives approximately 270.9729 wBRL/);
+    assert.equal(quote.destination.display, "R$270.9729");
+    assert.match(quote.text, /\$50 currently gives approximately R\$270\.9729/);
     assert.doesNotMatch(quote.text, /Nothing was sent|expire/, "no infrastructure narration");
     for (const message of r.world.messages) {
       const type = (message.structuredData as { type?: string } | undefined)?.type;
@@ -674,7 +674,7 @@ describe("persistence, reuse and revisions", () => {
     assert.equal(first.revision, 1);
     assert.equal(second.revision, 2);
     assert.notEqual(second.routeId, first.routeId);
-    assert.equal(second.senderSpends.expected.display, "40 USDT");
+    assert.equal(second.senderSpends.expected.display, "$40");
 
     const old = r.world.routes.get(first.routeId);
     assert.equal(old?.status, "INVALID", "the old route is retired, not deleted");

@@ -70,7 +70,7 @@ describe("authorization HTTP edge", () => {
   it("shows the summary without any internal id", async () => {
     const { controller, bearer, token } = await ready();
     const view = await controller.view(bearer);
-    assert.equal(view.summary.maximumSpend.display, "92.306281 USDT");
+    assert.equal(view.summary.maximumSpend.display, "$92.306281");
     assert.equal(view.indicative, true);
     assert.equal(view.pin.isSet, true);
     const text = JSON.stringify(view);

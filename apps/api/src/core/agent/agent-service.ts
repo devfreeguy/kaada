@@ -12,6 +12,7 @@ import type {
 import { interpretationSchema } from "@kaada/schemas";
 
 import { loadConversationContext, toHistory } from "../conversations/context.js";
+import { balanceBlock, currencyForLabel } from "../currency/catalog.js";
 import { IntentCoordinator } from "../intents/coordinator.js";
 import type { Applied, OpenPaymentNeeds, ResumeTurn } from "../intents/coordinator.js";
 import {
@@ -95,9 +96,40 @@ export class BalanceReadError extends Error {
   }
 }
 
+/**
+ * What the balance says. Where the lines carry exact amounts (the wallet read), it is by CURRENCY, as people think of money
+ * ("₦1,000 Nigerian Naira"; several: "🇳🇬 Nigerian Naira: ₦1,000"), with tokens of one currency added together and no ticker
+ * or contract shown. A line without exact amounts keeps the plain "• 12.5 USDT" form.
+ */
+function balanceText(lines: Extract<AgentResponse, { type: "BALANCE_RESULT" }>["lines"]): string {
+  const exact = lines.every((line) => line.amount !== undefined && line.decimals !== undefined);
+  if (!exact) {
+    return `Your balance:\n${lines.map((line) => `• ${line.display} ${line.symbol}`).join("\n")}`;
+  }
+  return balanceBlock(
+    lines.map((line) => ({
+      symbol: line.symbol,
+      fiatCode: line.fiatCode,
+      decimals: line.decimals ?? 0,
+      amount: line.amount ?? "0",
+    })),
+  );
+}
+
 /** What the agent needs to answer "what's my balance?": a fresh read of the wallet, or "no wallet yet". */
 export interface AgentBalanceReader {
-  read(userId: string): Promise<{ lines: { symbol: string; display: string }[] } | "NO_WALLET">;
+  read(userId: string): Promise<
+    | {
+        lines: {
+          symbol: string;
+          display: string;
+          fiatCode?: string;
+          decimals?: number;
+          amount?: string;
+        }[];
+      }
+    | "NO_WALLET"
+  >;
 }
 
 /** What every channel is normalised to before it reaches the agent. */
@@ -692,8 +724,14 @@ export class AgentService {
       } else {
         // The balances are what the wallet service returned (zero balances are not listed). Nothing is estimated or filled in.
         const wanted = request.asset?.trim();
+        // "my Naira balance", "my NGN", "my cNGN": a currency word or a token symbol both find the same line.
+        const wantedCurrency = wanted ? currencyForLabel(wanted) : undefined;
         const held = wanted
-          ? read.lines.filter((line) => line.symbol.toLowerCase() === wanted.toLowerCase())
+          ? read.lines.filter(
+              (line) =>
+                line.symbol.toLowerCase() === wanted.toLowerCase() ||
+                (wantedCurrency !== undefined && line.fiatCode === wantedCurrency.code),
+            )
           : read.lines;
         if (read.lines.length === 0) {
           response = {
@@ -707,13 +745,13 @@ export class AgentService {
             type: "BALANCE_RESULT",
             lines: [],
             missingAsset: wanted.toUpperCase(),
-            text: `You don't have any ${wanted.toUpperCase()} in your Kaada wallet yet.\n\nWant to fund it?`,
+            text: `You don't have any ${wantedCurrency?.name ?? wanted.toUpperCase()} in your Kaada wallet yet.\n\nWant to fund it?`,
           };
         } else {
           response = {
             type: "BALANCE_RESULT",
             lines: held,
-            text: `Your balance:\n${held.map((line) => `• ${line.display} ${line.symbol}`).join("\n")}`,
+            text: balanceText(held),
           };
         }
       }

@@ -17,6 +17,8 @@ export function createViemChainReader(
   const client = createPublicClient({ chain, transport: http(options.rpcUrl) });
 
   return {
+    getNativeBalance: (owner) => client.getBalance({ address: owner as Address }),
+
     async getErc20Balances(owner, tokens) {
       const results = await client.multicall({
         allowFailure: false,

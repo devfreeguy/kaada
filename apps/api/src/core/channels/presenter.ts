@@ -139,9 +139,12 @@ function presentError(response: Extract<AgentResponse, { type: "ERROR" }>): Pres
         suggestions: ["FUND_WALLET"],
         cancellable: true,
       };
+    // Only the network fee is missing: say that and nothing else (the money itself is fine).
+    case "GAS_FUNDING_REQUIRED":
+      return { text: response.text, suggestions: ["FUND_CELO"], cancellable: true };
     case "INSUFFICIENT_BALANCE":
       return {
-        text: `You're short on ${response.asset ?? "funds"} for this payment.\n\nWant to fund your wallet and come back to it?`,
+        text: `${response.text}\n\nWant to fund your wallet and come back to it?`,
         suggestions: ["FUND_WALLET"],
         cancellable: true,
       };

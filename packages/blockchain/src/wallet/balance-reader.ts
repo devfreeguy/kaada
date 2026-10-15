@@ -13,6 +13,8 @@ export interface ChainReader {
   getErc20Balances(owner: string, tokens: string[]): Promise<bigint[]>;
   /** `decimals()` for each token, in order. */
   getErc20Decimals(tokens: string[]): Promise<number[]>;
+  /** The coin balance (wei) of an address: what pays the network fee. */
+  getNativeBalance?(owner: string): Promise<bigint>;
 }
 
 export interface BalanceReaderOptions {
@@ -94,6 +96,17 @@ export class ChainBalanceReader implements WalletBalanceReader {
       createMoney((balances[index] ?? 0n).toString(), asset.id),
     );
     return { chainId: input.chainId, address, tokens: money };
+  }
+
+  async readNativeBalance(input: { chainId: number; address: string }): Promise<bigint> {
+    const chain =
+      input.chainId === CELO_CHAIN_ID ? this.options.chain : this.options.networks?.[input.chainId];
+    if (!chain?.getNativeBalance) {
+      throw new KaadaError("ASSET_NOT_SUPPORTED", "the network fee balance cannot be read here", {
+        details: { chainId: input.chainId },
+      });
+    }
+    return chain.getNativeBalance(evmAddressCodec.normalize(input.address));
   }
 
   /**

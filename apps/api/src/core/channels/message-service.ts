@@ -23,13 +23,14 @@ import type { CapabilityFlags } from "../conversation/capabilities.js";
 import { ConversationPresenter } from "../conversation/presenter.js";
 import type { OpenPaymentNeeds } from "../intents/coordinator.js";
 import type { ResumeInfo } from "../responses/agent-response.js";
-import { formatTokenAmount } from "../wallets/balance-service.js";
+import { describeAsset, describeMoney } from "../currency/catalog.js";
 import { pick } from "../conversation/fallbacks.js";
 import {
   FUNDING_NONE,
   FUNDING_NOT_READY,
   FUNDING_UNAVAILABLE,
   fundingInstructions,
+  networkFeeFundingMessage,
   walletAddressMessage,
 } from "../conversation/funding.js";
 import type { FundingInfo } from "../conversation/funding.js";
@@ -551,9 +552,7 @@ export class ChannelMessageService {
   async announceFunding(event: WalletFundingEvent): Promise<{ delivered: number; failed: number }> {
     const result = { delivered: 0, failed: 0 };
     const accounts = (await this.deps.linked?.listForUser(event.userId)) ?? [];
-    const received = event.items.map(
-      (item) => `${formatTokenAmount(item.delta, item.decimals)} ${item.symbol}`,
-    );
+    const received = event.items.map((item) => describeMoney(item, item.delta));
     const list =
       received.length <= 1
         ? (received[0] ?? "funds")
@@ -631,7 +630,7 @@ You're ready to use it.`,
       intentId: needs.resume.intentId,
       revision: needs.resume.revision,
       recipient: needs.resume.recipient,
-      token: item.symbol,
+      token: describeAsset(item),
     };
   }
 
@@ -716,6 +715,7 @@ You're ready to use it.`,
           id === "FUND_WALLET" ||
           id === "FUND_FROM_WALLET" ||
           id === "VIEW_WALLET_ADDRESS" ||
+          id === "FUND_CELO" ||
           id === "FUND_LOCAL_CURRENCY"
         ) {
           await this.handleFunding(adapter, message, userId, id);
@@ -828,7 +828,7 @@ You're ready to use it.`,
     adapter: ChannelAdapter,
     message: InboundChannelMessage,
     userId: string,
-    kind: "INSTRUCTIONS" | "ADDRESS",
+    kind: "INSTRUCTIONS" | "ADDRESS" | "NETWORK_FEE",
   ): Promise<void> {
     const target = { externalConversationId: message.externalConversationId };
     const info = (await this.deps.funding?.info(userId)) ?? null;
@@ -862,7 +862,9 @@ You're ready to use it.`,
       text:
         kind === "ADDRESS"
           ? walletAddressMessage(info)
-          : `${fundingInstructions(info)}${resume ? "\n\nWhen the funds arrive, tap Continue and I'll check your payment again." : ""}`,
+          : kind === "NETWORK_FEE"
+            ? networkFeeFundingMessage(info)
+            : `${fundingInstructions(info)}${resume ? "\n\nWhen the funds arrive, tap Continue and I'll check your payment again." : ""}`,
       code: [info.address],
       copy: { label: "📋 Copy address", text: info.address },
       ...(this.flags().balance && { suggestions: ["CHECK_BALANCE" as const] }),
@@ -884,7 +886,12 @@ You're ready to use it.`,
     adapter: ChannelAdapter,
     message: InboundChannelMessage,
     userId: string,
-    id: "FUND_WALLET" | "FUND_FROM_WALLET" | "VIEW_WALLET_ADDRESS" | "FUND_LOCAL_CURRENCY",
+    id:
+      | "FUND_WALLET"
+      | "FUND_FROM_WALLET"
+      | "VIEW_WALLET_ADDRESS"
+      | "FUND_CELO"
+      | "FUND_LOCAL_CURRENCY",
   ): Promise<void> {
     if (id === "FUND_WALLET") {
       await this.fundWallet(adapter, message, userId);
@@ -902,7 +909,11 @@ You're ready to use it.`,
       adapter,
       message,
       userId,
-      id === "VIEW_WALLET_ADDRESS" ? "ADDRESS" : "INSTRUCTIONS",
+      id === "VIEW_WALLET_ADDRESS"
+        ? "ADDRESS"
+        : id === "FUND_CELO"
+          ? "NETWORK_FEE"
+          : "INSTRUCTIONS",
     );
   }
 

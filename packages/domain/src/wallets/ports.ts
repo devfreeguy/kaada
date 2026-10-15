@@ -102,6 +102,11 @@ export interface WalletBalanceReader {
     address: string;
     assetIds: string[];
   }): Promise<WalletBalances>;
+  /**
+   * The wallet's balance of the network's own coin (CELO), in wei. It is the network-fee balance, not one of the currencies a
+   * person holds. Optional: a reader that cannot answer simply does not offer it.
+   */
+  readNativeBalance?(input: { chainId: number; address: string }): Promise<bigint>;
 }
 
 /**

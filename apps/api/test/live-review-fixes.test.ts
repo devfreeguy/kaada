@@ -256,7 +256,7 @@ describe("errors that help you carry on", () => {
     await service.handleInbound(say("send"));
     assert.equal(
       adapter.last?.text,
-      "You're short on USDT for this payment.\n\nWant to fund your wallet and come back to it?",
+      "You don't currently have enough USDT for this payment.\n\nWant to fund your wallet and come back to it?",
     );
     assert.deepEqual(labels(adapter.last), ["💰 Fund wallet", "❌ Cancel"]);
     assert.doesNotMatch(adapter.last?.text ?? "", /Nothing was sent|No money/);

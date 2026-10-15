@@ -12,6 +12,8 @@ export const SUGGESTION_IDS = [
   "FUND_FROM_WALLET",
   "VIEW_WALLET_ADDRESS",
   "FUND_LOCAL_CURRENCY",
+  /** The little CELO that pays the network fee. Offered only where a transfer cannot go ahead for want of it. */
+  "FUND_CELO",
 ] as const;
 export type SuggestionId = (typeof SUGGESTION_IDS)[number];
 
@@ -72,6 +74,12 @@ const FUNDING_METHODS: readonly FundingMethod[] = [
   {
     id: "VIEW_WALLET_ADDRESS",
     label: "View wallet address",
+    choice: false,
+    available: (f) => f.walletTransfer,
+  },
+  {
+    id: "FUND_CELO",
+    label: "⛽ Fund CELO",
     choice: false,
     available: (f) => f.walletTransfer,
   },

@@ -119,14 +119,14 @@ describe("a question beside an open payment", () => {
     assert.equal(turn.response.type, "QUOTE_RESULT");
     if (turn.response.type !== "QUOTE_RESULT") return;
     assert.equal(turn.response.side, true);
-    assert.match(turn.response.text, /1 USDT currently gives approximately 1499.85 cNGN/);
+    assert.match(turn.response.text, /\$1 currently gives approximately ₦1,499\.85/);
     assert.equal(turn.response.destination.symbol, "cNGN");
     assert.deepEqual(turn.resume, {
       intentId,
       revision: 1,
       operation: "SEND",
       recipient: "João Silva",
-      amount: "20.00 USD",
+      amount: "$20",
       pending: false,
     });
 
@@ -350,8 +350,8 @@ describe("in the chat", () => {
     await service.handleInbound(say("send"));
     await service.handleInbound(say("rate"));
     const text = adapter.last?.text ?? "";
-    assert.match(text, /1 USDT currently gives approximately 1499.85 cNGN/);
-    assert.match(text, /You were sending 20\.00 USD to João Silva\. Want to continue\?/);
+    assert.match(text, /\$1 currently gives approximately ₦1,499\.85/);
+    assert.match(text, /You were sending \$20 to João Silva\. Want to continue\?/);
     assert.deepEqual(
       buttons(adapter.last).map((a) => [a.semantic, a.label]),
       [

@@ -17,10 +17,11 @@ import { createDefaultResolvers } from "../core/agent/resolvers.js";
 import { GroqIntentInterpreter, createGroqSdkTransport } from "../infrastructure/llm/index.js";
 import { AgentController } from "./agent.controller.js";
 import { createRoutingService } from "../infrastructure/fx/pricing.js";
+import { scopeAssetsToChain } from "../wallet/network-tokens.js";
 import { createCandidateServices } from "../core/routing/candidate-services.js";
 import type { CandidateServices } from "../core/routing/candidate-services.js";
 import { WalletFundingResolver } from "../core/routing/funding-resolver.js";
-import { groupThousands } from "../core/wallets/balance-service.js";
+import { groupThousands } from "../core/currency/catalog.js";
 import type { WalletBalanceService } from "../core/wallets/balance-service.js";
 import { WalletServiceFundingPort } from "../core/wallets/funding-port.js";
 import type { WalletService } from "../core/wallets/wallet-service.js";
@@ -50,7 +51,13 @@ function walletBalanceReader(balances: WalletBalanceService): AgentBalanceReader
         return {
           lines: view.balances
             .filter((line) => line.money.amount !== "0")
-            .map((line) => ({ symbol: line.symbol, display: groupThousands(line.formatted) })),
+            .map((line) => ({
+              symbol: line.symbol,
+              display: groupThousands(line.formatted),
+              ...(line.fiatCode && { fiatCode: line.fiatCode }),
+              decimals: line.decimals,
+              amount: line.money.amount,
+            })),
         };
       } catch (error) {
         if (error instanceof KaadaError && error.code === "WALLET_NOT_ACTIVE") return "NO_WALLET";
@@ -95,11 +102,14 @@ function createInterpreter(config: AppConfig, log: AgentLog): IntentInterpreter 
       // Asset resolution and provider capabilities for the router (Build 8 injects this). It reads
       // data only: no provider is called and nothing is quoted.
       provide: CANDIDATE_SERVICES,
-      inject: [AGENT_REPOSITORIES],
-      useFactory: (repositories: Repositories): CandidateServices =>
+      inject: [AGENT_REPOSITORIES, APP_CONFIG],
+      useFactory: (repositories: Repositories, config: AppConfig): CandidateServices =>
         createCandidateServices({
-          assets: createCachedAssetRepository(repositories.assets),
+          assets: createCachedAssetRepository(
+            scopeAssetsToChain(repositories.assets, config.wallet.balances.chainId),
+          ),
           providers: repositories.providers,
+          chainId: config.wallet.balances.chainId,
         }),
     },
     {
@@ -125,7 +135,10 @@ function createInterpreter(config: AppConfig, log: AgentLog): IntentInterpreter 
         if (!interpreter) return null;
 
         // Assets change rarely, so lookups for interpretation share one short-lived snapshot.
-        const assets = createCachedAssetRepository(repositories.assets);
+        // One network at a time: on a test network that network's tokens are the only tokens (see scopeAssetsToNetwork).
+        const assets = createCachedAssetRepository(
+          scopeAssetsToChain(repositories.assets, config.wallet.balances.chainId),
+        );
         // Payments are balance-aware only when a wallet provider is configured; otherwise they are
         // routed without a wallet check, as before wallets existed. Quotes never use it.
         const funding =
@@ -139,6 +152,8 @@ function createInterpreter(config: AppConfig, log: AgentLog): IntentInterpreter 
           assets,
           providers: repositories.providers,
           read: repositories,
+          chainId: config.wallet.balances.chainId,
+          ...(balances && { gas: balances }),
           ...(funding && { funding }),
           // Payments end in AUTHORIZATION_REQUIRED (a PIN step) only when a wallet and PIN service exist.
           ...(funding && authorization && { authorization }),

@@ -1,6 +1,8 @@
 import { isUuid } from "@kaada/domain";
 import type { Asset, AssetRegistry } from "@kaada/domain";
 
+import { currencyForLabel } from "../currency/catalog.js";
+
 export type AssetResolution =
   | { status: "RESOLVED"; asset: Asset }
   | { status: "AMBIGUOUS"; candidates: Asset[] }
@@ -30,9 +32,12 @@ export function createAssetResolver(registry: AssetRegistry): AssetResolver {
       }
 
       // A label can name a fiat currency (by ISO code) or a token / coin (by symbol).
+      // Everyday words and symbols ("Naira", "₦", "R$", "rupiah", "US dollars") name a CURRENCY first; the currency's own code is
+      // then looked up like any other label. A token symbol ("cNGN", "USDT") is not a currency alias and resolves as before.
+      const lookup = currencyForLabel(normalized)?.code ?? normalized;
       const [byFiat, bySymbol] = await Promise.all([
-        registry.findByFiatCode(normalized),
-        registry.findBySymbol(normalized),
+        registry.findByFiatCode(lookup),
+        registry.findBySymbol(lookup),
       ]);
       const unique = new Map<string, Asset>();
       for (const asset of [...byFiat, ...bySymbol]) unique.set(asset.id, asset);

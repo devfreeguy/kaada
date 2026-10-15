@@ -30,6 +30,10 @@ export function createRoutingService(
     assets: AssetRepository;
     providers: ProviderRepository;
     read: Pick<AgentRepositories, "routes" | "quotes">;
+    /** The network routes are planned on (default: Celo mainnet). */
+    chainId?: number;
+    /** Network-fee check for direct transfers; omit when it is not configured. */
+    gas?: { enoughForFees(address: string): Promise<boolean | undefined> };
     /** Balance-aware funding for payments; omit when no wallet provider is configured. */
     funding?: WalletFundingResolver;
     /** Payment authorization (PIN step); omit when no wallet provider is configured. */
@@ -72,17 +76,20 @@ export function createRoutingService(
       capabilities,
       countries: defaultCountryDirectory,
       maxHops: 2,
+      ...(deps.chainId !== undefined && { chainId: deps.chainId }),
     }),
     planner: createRoutePlanner({
       assets: registry,
       capabilities,
       fx: createFxProviderDirectory([{ capabilityProvider: "textile", provider: pricing }]),
       now,
+      ...(deps.chainId !== undefined && { chainId: deps.chainId }),
     }),
     assets: registry,
     read: deps.read,
     now,
     ...(deps.funding && { funding: deps.funding }),
+    ...(deps.gas && { gas: deps.gas }),
     ...(deps.authorization && { authorization: deps.authorization }),
     ...(deps.log && { log: deps.log }),
   });

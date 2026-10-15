@@ -515,6 +515,7 @@ describe("Groq interpretation: a number without a currency", () => {
     assert.equal(waiting?.amount, undefined, "no amount is invented without a currency");
     assert.ok(waiting?.recipientId, "the rest of the intent is kept");
 
+    // "dollars" is a currency word Kaada understands itself, so the answer needs no model call at all.
     const second = await h.say("dollars");
     assert.equal(second.intentId, first.intentId);
     assert.equal(second.response.type, "ROUTING_REQUIRED");
@@ -522,8 +523,7 @@ describe("Groq interpretation: a number without a currency", () => {
       h.world.intents.get(first.intentId ?? "")?.amount?.money,
       createMoney("2000", h.assets.USD.id),
     );
-    assert.match(transport.calls[1]?.user ?? "", /Pending question: CURRENCY/);
-    assert.match(transport.calls[1]?.user ?? "", /"amount":\{"value":"20"\}/);
+    assert.equal(transport.calls.length, 1, "only the first message needed the model");
   });
 });
 

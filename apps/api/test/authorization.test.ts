@@ -13,7 +13,7 @@ import { SENDER } from "./support/harness.js";
 import { WALLET_ID, setup } from "./support/payment-world.js";
 
 /*
- * Payment authorization against MOCK / TEST fixtures. 500 wBRL costs 92.26015 USDT (max 92.306281);
+ * Payment authorization against MOCK / TEST fixtures. R$500 costs 92.26015 USDT (max 92.306281);
  * spending exactly 20 USDT gives 108.38916 wBRL (at least 108.33496542 with slippage). No provider is
  * called, nothing is signed and nothing executes.
  */
@@ -51,10 +51,10 @@ describe("AUTHORIZATION_REQUIRED replaces PAYMENT_READY for payments", () => {
     const { w, response, turn } = await pending();
     assert.equal(response.summary.amountMode, "EXACT_OUTPUT");
     assert.equal(response.summary.recipient, "João Silva");
-    assert.equal(response.summary.recipientReceives.display, "500 wBRL");
-    assert.equal(response.summary.minimumReceive.display, "500 wBRL");
-    assert.equal(response.summary.senderSpends.display, "92.26015 USDT");
-    assert.equal(response.summary.maximumSpend.display, "92.306281 USDT");
+    assert.equal(response.summary.recipientReceives.display, "R$500");
+    assert.equal(response.summary.minimumReceive.display, "R$500");
+    assert.equal(response.summary.senderSpends.display, "$92.26015");
+    assert.equal(response.summary.maximumSpend.display, "$92.306281");
     assert.match(response.text, /Confirm with your PIN/);
     assert.match(response.text, /final price is confirmed just before it is sent/);
     assert.ok(response.authorizationSessionId);
@@ -192,7 +192,7 @@ describe("authorization sessions", () => {
     const view = await w.auth.sessions.view(token);
     assert.equal(view.indicative, true);
     assert.equal(view.pin.isSet, true);
-    assert.equal(view.summary.maximumSpend.display, "92.306281 USDT");
+    assert.equal(view.summary.maximumSpend.display, "$92.306281");
     const text = JSON.stringify(view);
     for (const secret of [SENDER, WALLET_ID, token]) assert.equal(text.includes(secret), false);
   });

@@ -9,6 +9,7 @@ import type {
 
 import type { AgentResponse } from "../responses/agent-response.js";
 import { maxSpend } from "../authorization/bounds.js";
+import { describeAsset, describeMoney } from "../currency/catalog.js";
 import { formatAmount } from "./format.js";
 
 /**
@@ -86,6 +87,12 @@ export class WalletFundingResolver {
     const balances = await this.deps.wallet.balancesOf(address, sourceIds);
     const amountAsset = await this.deps.assets.getById(request.amount.assetId);
 
+    // A source that is also the destination is a direct transfer: what it takes is exactly the fixed amount, in either mode, so
+    // it can be judged now and needs no price.
+    const directSources = new Set(
+      set.pairs.filter((pair) => pair.kind === "DIRECT").map((pair) => pair.sourceAssetId),
+    );
+
     const status = new Map<string, FundingStatus>();
     const needed = new Map<string, Money>();
     for (const id of sourceIds) {
@@ -94,7 +101,7 @@ export class WalletFundingResolver {
         status.set(id, "NO_BALANCE");
         continue;
       }
-      if (request.amountMode === "EXACT_OUTPUT") {
+      if (request.amountMode === "EXACT_OUTPUT" && !directSources.has(id)) {
         status.set(id, "POTENTIALLY_FUNDED");
         continue;
       }
@@ -116,16 +123,25 @@ export class WalletFundingResolver {
       ),
     );
     if (usable.size > 0) {
+      // When the wallet can pay the recipient's own currency directly, that is the payment: nothing is converted, so nothing is
+      // priced and no provider is asked. Conversions are only considered when no direct transfer is affordable.
+      const direct = new Set(
+        [...usable].filter((id) => directSources.has(id) && status.get(id) === "FUNDED"),
+      );
+      const chosen = direct.size > 0 ? direct : usable;
       return {
         status: "OK",
         address,
         balances,
         set: {
           ...set,
-          pairs: set.pairs.filter((pair) => usable.has(pair.sourceAssetId)),
+          pairs: set.pairs.filter(
+            (pair) =>
+              chosen.has(pair.sourceAssetId) && (direct.size === 0 || pair.kind === "DIRECT"),
+          ),
           source: {
             ...set.source,
-            candidates: set.source.candidates.filter((candidate) => usable.has(candidate.assetId)),
+            candidates: set.source.candidates.filter((candidate) => chosen.has(candidate.assetId)),
           },
         },
       };
@@ -167,14 +183,15 @@ export class WalletFundingResolver {
     const symbol = asset?.symbol ?? "that asset";
     const spend = maxSpend(best, best.slippageBps, request.amountMode);
     const have = balances.get(best.sourceAssetId) ?? 0n;
-    const decimals = asset?.decimals ?? 0;
     return {
       status: "REJECTED",
       response: {
         type: "ERROR",
         code: "INSUFFICIENT_BALANCE",
         asset: symbol,
-        text: `This would take up to ${formatAmount(spend.amount, decimals)} ${symbol}, but your wallet has ${formatAmount(have.toString(), decimals)} ${symbol}.`,
+        text: asset
+          ? `This would take up to ${describeMoney(asset, spend.amount)}, but your wallet has ${describeMoney(asset, have.toString())}.`
+          : "You don't currently have enough in your wallet for this payment.",
       },
     };
   }
@@ -196,7 +213,7 @@ export class WalletFundingResolver {
       type: "ERROR",
       code: "INSUFFICIENT_BALANCE",
       ...(asset && { asset: asset.symbol }),
-      text: `You don't currently have enough ${asset?.symbol ?? "funds"} for this payment.`,
+      text: `You don't currently have enough ${asset ? describeAsset(asset) : "funds"} for this payment.`,
     };
   }
 
@@ -210,19 +227,34 @@ export class WalletFundingResolver {
     const explicit = set.explicitSourceAssetId;
     const allEmpty = sourceIds.every((id) => status.get(id) === "NO_BALANCE");
 
-    if (explicit !== null) {
+    // Named by the person, or the one thing the wallet holds but not enough of (a direct transfer short by some Naira): say which.
+    const short = sourceIds.filter((id) => status.get(id) === "INSUFFICIENT" && needed.has(id));
+    const named = explicit ?? (short.length === 1 ? (short[0] ?? null) : null);
+    if (named !== null) {
+      const explicit = named;
       const asset = await this.deps.assets.getById(explicit);
-      const symbol = asset?.symbol ?? "that asset";
       const required = needed.get(explicit);
+      // A token the person named themselves ("use USDT") is spoken of as that token; otherwise it is a currency.
+      const say = (amount: string): string =>
+        !asset
+          ? amount
+          : set.explicitSourceAssetId !== null
+            ? `${formatAmount(amount, asset.decimals)} ${asset.symbol}`
+            : describeMoney(asset, amount);
       const detail =
         required && asset
-          ? ` You need ${formatAmount(required.amount, asset.decimals)} ${symbol} and have ${formatAmount((balances.get(explicit) ?? 0n).toString(), asset.decimals)}.`
+          ? ` You need ${say(required.amount)} and have ${say((balances.get(explicit) ?? 0n).toString())}.`
           : "";
+      const name = !asset
+        ? "of that"
+        : set.explicitSourceAssetId !== null
+          ? asset.symbol
+          : describeAsset(asset);
       return {
         type: "ERROR",
         code: "INSUFFICIENT_BALANCE",
-        ...(asset && { asset: symbol }),
-        text: `You don't currently have enough ${symbol} for this payment.${detail}`,
+        ...(asset && { asset: asset.symbol }),
+        text: `You don't currently have enough ${name} for this payment.${detail}`,
       };
     }
     if (allEmpty) {

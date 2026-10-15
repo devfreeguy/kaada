@@ -649,7 +649,7 @@ describe("through the RoutingService (offline)", () => {
     const turn = await r.h.say("pay exact usdc");
     assert.equal(turn.response.type, "PAYMENT_READY", JSON.stringify(turn.response));
     if (turn.response.type !== "PAYMENT_READY") return;
-    assert.equal(turn.response.recipientReceives.expected.display, "10 wBRL");
+    assert.equal(turn.response.recipientReceives.expected.display, "R$10");
     assert.equal(turn.response.indicative, true);
     assert.deepEqual(
       turn.response.route.hops.map((h) => h.provider),

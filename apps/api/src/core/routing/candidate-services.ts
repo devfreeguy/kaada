@@ -32,6 +32,8 @@ export function createCandidateServices(deps: {
   assets: AssetRepository;
   providers: ProviderRepository;
   countries?: CountryDirectory;
+  /** The network candidates are found on (default: Celo mainnet). */
+  chainId?: number;
   capabilityCache?: CapabilityCacheOptions;
 }): CandidateServices {
   const registry = createAssetRegistry(deps.assets);
@@ -45,6 +47,7 @@ export function createCandidateServices(deps: {
       settlement,
       capabilities,
       countries: deps.countries ?? defaultCountryDirectory,
+      ...(deps.chainId !== undefined && { chainId: deps.chainId }),
     }),
     invalidate: () => capabilities.invalidate(),
   };

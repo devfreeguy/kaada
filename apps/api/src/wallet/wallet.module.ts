@@ -22,7 +22,7 @@ import { DATABASE } from "../database/database.module.js";
 import { PasskeyService } from "../core/wallets/passkey-service.js";
 import type { WalletUnitOfWork } from "../core/wallets/ports.js";
 import { WalletService } from "../core/wallets/wallet-service.js";
-import { testNetworkAssets, withNetworkTokens } from "./network-tokens.js";
+import { scopeAssetsToChain } from "./network-tokens.js";
 import { SimpleWebAuthnVerifier } from "../infrastructure/wallet/simplewebauthn-verifier.js";
 import { WalletBalanceService } from "../core/wallets/balance-service.js";
 import { WalletFundingWatcher } from "../core/wallets/funding-watcher.js";
@@ -212,13 +212,12 @@ function unitOfWork(database: Database): WalletUnitOfWork {
         config: AppConfig,
       ): WalletBalanceService | null => {
         if (!wallets || !reader) return null;
-        const testTokens = testNetworkAssets(config);
         return new WalletBalanceService({
           assets: createCachedAssetRepository(createRepositories(database).assets),
           reader,
           wallets,
           network: config.wallet.balances,
-          ...(testTokens && { networkTokens: () => Promise.resolve(testTokens) }),
+          minNativeWei: config.execution.minNativeWei,
         });
       },
     },
@@ -228,9 +227,12 @@ function unitOfWork(database: Database): WalletUnitOfWork {
       inject: [DATABASE, APP_CONFIG],
       useFactory: (database: Database, config: AppConfig): WalletBalanceReader | null => {
         if (config.wallet.provider !== "kernel") return null;
-        const assets = withNetworkTokens(
-          createAssetRegistry(createCachedAssetRepository(createRepositories(database).assets)),
-          testNetworkAssets(config),
+        // This network's tokens (the database holds each network's by chain id + contract; see scopeAssetsToChain).
+        const assets = createAssetRegistry(
+          scopeAssetsToChain(
+            createCachedAssetRepository(createRepositories(database).assets),
+            config.wallet.balances.chainId,
+          ),
         );
         const { chainId, network, rpcUrl, testnet } = config.wallet.balances;
         return new ChainBalanceReader({

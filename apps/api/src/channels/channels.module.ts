@@ -38,6 +38,7 @@ import {
 import type { WalletBalanceService } from "../core/wallets/balance-service.js";
 import type { WalletService } from "../core/wallets/wallet-service.js";
 import { labelOf } from "../core/conversation/capabilities.js";
+import { describeSupportedCurrencies } from "../core/currency/catalog.js";
 import type { CapabilityFlags } from "../core/conversation/capabilities.js";
 import { suggestionPolicy } from "../core/conversation/suggestions.js";
 import { ConversationPresenter } from "../core/conversation/presenter.js";
@@ -214,7 +215,7 @@ function nestLog(): AgentLog {
                     return {
                       address: wallet.address,
                       network: balances.networkLabel,
-                      assets: tokens.map((token) => token.symbol),
+                      assets: describeSupportedCurrencies(tokens),
                     };
                   } catch (error) {
                     if (error instanceof KaadaError && error.code === "WALLET_NOT_ACTIVE")

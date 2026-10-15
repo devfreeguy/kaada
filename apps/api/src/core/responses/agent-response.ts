@@ -194,7 +194,13 @@ export interface BalanceRequiredResponse {
 export interface BalanceResultResponse {
   type: "BALANCE_RESULT";
   text: string;
-  lines: { symbol: string; display: string }[];
+  lines: {
+    symbol: string;
+    display: string;
+    fiatCode?: string;
+    decimals?: number;
+    amount?: string;
+  }[];
   /** The wallet holds none of the supported tokens: the answer leads to funding, not to a dead end. */
   empty?: boolean;
   /** The person asked about this token and holds none of it. */
@@ -252,6 +258,8 @@ export type AgentErrorCode =
   | "WALLET_NEEDS_FUNDING"
   /** The balance could not be read right now. */
   | "BALANCE_UNAVAILABLE"
+  /** The money is there but the wallet lacks the little CELO that pays the network fee for this transfer. */
+  | "GAS_FUNDING_REQUIRED"
   /** The wallet holds some of the funding asset, but not enough for this payment. */
   | "INSUFFICIENT_BALANCE";
 

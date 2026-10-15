@@ -1,6 +1,7 @@
 import { CELO_CHAIN_ID, KaadaError, formatSmallestUnit, isWalletActive } from "@kaada/domain";
 import type { Asset, AssetRepository, Money, Wallet, WalletBalanceReader } from "@kaada/domain";
 
+import { formatHuman } from "../currency/catalog.js";
 import type { WalletService } from "./wallet-service.js";
 
 /** One supported token's balance. `money` is canonical; `formatted` is for people only. */
@@ -10,6 +11,8 @@ export interface BalanceLine {
   decimals: number;
   money: Money;
   formatted: string;
+  /** The currency the token represents (its own metadata), for presenting it as one. */
+  fiatCode?: string;
 }
 
 export interface WalletBalancesView {
@@ -23,15 +26,8 @@ function display(amount: string, decimals: number): string {
   return exact.includes(".") ? exact.replace(/\.?0+$/, "") : exact;
 }
 
-/** "1234.5" -> "1,234.5": thousands grouped for people. Presentation only. */
-export function groupThousands(value: string): string {
-  const [whole = "0", fraction] = value.split(".");
-  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return fraction ? `${grouped}.${fraction}` : grouped;
-}
-
 export const formatTokenAmount = (amount: string, decimals: number): string =>
-  groupThousands(display(amount, decimals));
+  formatHuman(amount, decimals);
 
 /**
  * Reads what a user's wallet holds of the tokens Kaada supports, fresh from the chain every time.
@@ -54,6 +50,8 @@ export class WalletBalanceService {
        * tokens of the network in the registry.
        */
       networkTokens?: () => Promise<Asset[]>;
+      /** The least CELO (wei) a transfer needs for its fee. Absent: the fee balance is not checked here. */
+      minNativeWei?: bigint;
     },
   ) {}
 
@@ -89,6 +87,17 @@ export class WalletBalanceService {
       .sort((a, b) => (a.symbol < b.symbol ? -1 : a.symbol > b.symbol ? 1 : 0));
   }
 
+  /**
+   * Whether the wallet holds enough CELO to pay a transfer's network fee (the network-fee balance, which is not one of the
+   * currencies a person holds). `undefined` when it cannot be read or no limit is set: nothing is claimed either way.
+   */
+  async enoughForFees(address: string): Promise<boolean | undefined> {
+    const minimum = this.deps.minNativeWei;
+    if (minimum === undefined || !this.deps.reader.readNativeBalance) return undefined;
+    const have = await this.deps.reader.readNativeBalance({ chainId: this.chainId, address });
+    return have >= minimum;
+  }
+
   /** The user's ACTIVE wallet, or WALLET_NOT_ACTIVE. */
   async activeWallet(userId: string): Promise<Wallet & { address: string }> {
     const wallet = await this.deps.wallets.getWallet(userId);
@@ -117,6 +126,7 @@ export class WalletBalanceService {
           decimals: token.decimals,
           money,
           formatted: display(money.amount, token.decimals),
+          ...(token.fiatCode && { fiatCode: token.fiatCode }),
         };
       }),
     };

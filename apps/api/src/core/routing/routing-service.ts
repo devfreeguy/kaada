@@ -30,6 +30,7 @@ import type {
   QuoteResultResponse,
   RouteSummary,
 } from "../responses/agent-response.js";
+import { describeMoney } from "../currency/catalog.js";
 
 /**
  * What planning a RoutingRequest produced, before anything is written.
@@ -60,6 +61,12 @@ export interface RoutingServiceDeps {
    * use it.
    */
   funding?: WalletFundingResolver;
+  /**
+   * The network-fee check for a DIRECT transfer (the only payment that needs no pricing provider, so the only one nothing else
+   * looks at before it is offered for authorization). `undefined` means "could not tell", which never blocks: the execution
+   * step checks again. Gas is the sender's to pay in this MVP; nothing is sponsored.
+   */
+  gas?: { enoughForFees(address: string): Promise<boolean | undefined> };
   /**
    * Payment authorization. When present, a priced PAYMENT for a user with a wallet is answered with
    * AUTHORIZATION_REQUIRED (a session reference, never a link) instead of PAYMENT_READY, and a replaced
@@ -148,7 +155,10 @@ export class RoutingService {
       return { status: "REUSED", request, ...reused, ...(wallet && { walletId: wallet.id }) };
     }
 
-    const discovery = await this.deps.candidates.resolve(request);
+    // With a wallet check ahead, the recipient's own currency is also a candidate source: held, it is a direct transfer.
+    const discovery = await this.deps.candidates.resolve(request, {
+      sameCurrencySource: Boolean(funding && wallet !== null),
+    });
     if (discovery.status === "UNSUPPORTED") {
       return {
         status: "FAILED",
@@ -191,6 +201,22 @@ export class RoutingService {
           const picked = await funding.pick(request, result.routes, balances);
           if (picked.status === "REJECTED") {
             return { status: "FAILED", request, response: picked.response };
+          }
+          // The money is there. A direct transfer also needs a little CELO for the network fee; if only THAT is missing, say so
+          // (and not that the person lacks the currency).
+          if (picked.route.kind === "TRANSFER" && this.deps.gas && wallet) {
+            const enough = await this.deps.gas.enoughForFees(wallet.address).catch(() => undefined);
+            if (enough === false) {
+              return {
+                status: "FAILED",
+                request,
+                response: {
+                  type: "ERROR",
+                  code: "GAS_FUNDING_REQUIRED",
+                  text: "You need a small amount of CELO to cover the network fee for this transfer.",
+                },
+              };
+            }
           }
           return {
             status: "PLANNED",
@@ -453,7 +479,7 @@ export class RoutingService {
       amount: money.amount,
       assetId: money.assetId,
       symbol: asset.symbol,
-      display: `${formatAmount(money.amount, asset.decimals)} ${asset.symbol}`,
+      display: describeMoney(asset, money.amount),
     };
   }
 

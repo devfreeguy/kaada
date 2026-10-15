@@ -121,6 +121,7 @@ export class WalletFundingWatcher {
           items.push({
             assetId: token.id,
             symbol: token.symbol,
+            ...(token.fiatCode && { fiatCode: token.fiatCode }),
             decimals: token.decimals,
             previous: before.toString(),
             current: after.toString(),

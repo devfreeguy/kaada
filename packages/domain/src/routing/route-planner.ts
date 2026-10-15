@@ -385,8 +385,10 @@ export function validatePlannedRoute(
   const problems: string[] = [];
   const { request, candidates, assets, now } = context;
 
-  if (context.chainId !== CELO_CHAIN_ID || candidates.chainId !== CELO_CHAIN_ID) {
-    problems.push("not on Celo");
+  // The route must live on the one network the candidates were found on (Celo mainnet in production; a test network when a
+  // deployment says so). A route may never mix networks.
+  if (context.chainId !== candidates.chainId) {
+    problems.push("not on the candidates' network");
   }
   if (candidates.intentRevision !== request.intentRevision) problems.push("revision mismatch");
   if (route.hops.length > MAX_ROUTE_HOPS) problems.push("too many hops");

@@ -87,7 +87,7 @@ describe("a rate question is remembered, and its answer is read as the answer", 
     const before = r.h.interpreterCalls;
     const answer = await r.h.say("wARS to USDT");
     assert.equal(answer.response.type, "QUOTE_RESULT");
-    assert.match(answer.response.text, /^1 wARS currently gives approximately [\d.]+ USDT/);
+    assert.match(answer.response.text, /^AR\$1 currently gives approximately \$[\d.]+/);
     assert.equal(r.h.interpreterCalls, before, "no language-model call for a plain pair");
     assert.ok(
       intentsOf(r).every((i) => i.type === "QUOTE"),
@@ -305,7 +305,7 @@ describe("in the chat: Today's rates, then the pair", () => {
     await service.handleInbound(inbound({ eventId: `fc-${randomUUID()}`, command: "RATES" }));
     assert.match(adapter.last?.text ?? "", /Which rate/i);
     await service.handleInbound(inbound({ eventId: `fc-${randomUUID()}`, text: "wARS to USDT" }));
-    assert.match(adapter.last?.text ?? "", /1 wARS currently gives approximately [\d.]+ USDT/);
+    assert.match(adapter.last?.text ?? "", /AR\$1 currently gives approximately \$[\d.]+/);
     assert.ok(intentsOf(r).every((i) => i.type === "QUOTE"));
     assert.equal(r.h.interpreterCalls, 0, "no model call anywhere in this exchange");
   });

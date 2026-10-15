@@ -84,6 +84,8 @@ export function createRoutingHarness(
     interpreter?: IntentInterpreter;
     /** Balance-aware funding for payments, built from the asset registry. */
     funding?: (registry: AssetRegistry) => WalletFundingResolver;
+    /** The network-fee check for direct transfers. */
+    gas?: { enoughForFees(address: string): Promise<boolean | undefined> };
     /** Payment authorization (PIN step), built from the world and the clock. */
     authorization?: (
       world: InMemoryWorld,
@@ -153,6 +155,7 @@ export function createRoutingHarness(
         read: world.repositories,
         now: () => clock.now,
         ...(options.funding && { funding: options.funding(registry) }),
+        ...(options.gas && { gas: options.gas }),
         ...(options.authorization && {
           authorization: options.authorization(world, registry, () => clock.now),
         }),

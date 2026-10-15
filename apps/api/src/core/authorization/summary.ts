@@ -2,8 +2,8 @@ import { aggregateFees } from "@kaada/domain";
 import type { Asset, AssetRegistry, AmountMode, Money, PaymentRoute, Quote } from "@kaada/domain";
 
 import type { AuthorizationSummary, MoneyView } from "../responses/agent-response.js";
-import { formatAmount } from "../routing/format.js";
 import { maxSpend, minReceive, totalSlippageBps } from "./bounds.js";
+import { describeMoney } from "../currency/catalog.js";
 
 export interface PricedSummary {
   summary: AuthorizationSummary;
@@ -38,7 +38,7 @@ export async function buildPricedSummary(input: {
       amount: money.amount,
       assetId: money.assetId,
       symbol: asset.symbol,
-      display: `${formatAmount(money.amount, asset.decimals)} ${asset.symbol}`,
+      display: describeMoney(asset, money.amount),
     };
   };
 

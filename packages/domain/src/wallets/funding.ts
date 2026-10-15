@@ -13,6 +13,8 @@ export type BalanceSnapshot = Readonly<Record<string, string>>;
 export interface WalletFundingItem {
   assetId: string;
   symbol: string;
+  /** The currency the token represents (its own metadata), so a deposit can be worded as one. */
+  fiatCode?: string;
   decimals: number;
   previous: string;
   current: string;

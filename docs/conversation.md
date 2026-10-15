@@ -225,3 +225,52 @@ wording of an earlier message.
   cancelled, replaced or revised (the focus records that payment's id and revision). A redelivered answer is consumed once (the agent
   is idempotent per message id).
 - **Not for PINs:** a PIN is never a valid answer to anything in chat; six digits typed into Telegram are still deleted and warned about.
+
+## Currencies first, tokens hidden
+
+Kaada should feel like a money app, not a crypto wallet. People think in Naira, Real, Peso, Rupiah and Dollars; Kaada settles in
+tokens (cNGN, wBRL, wARS, IDRX, USDC/USDT) on a chain, each with an exact contract address, decimals and smallest-unit amounts.
+The two are kept apart (`core/currency/catalog.ts`):
+
+- **UserCurrency** (NGN ₦ Nigerian Naira, BRL R$ Brazilian Real, ARS AR$ Argentine Peso, IDR Rp Indonesian Rupiah, USD $ US Dollar)
+  is what people say and read. Everyday words and symbols ("Naira", "₦", "R$", "reais", "pesos", "rupiah", "dollars") resolve
+  to a currency FIRST (`AssetResolver`), and only then is the currency's own code looked up. A token symbol (cNGN, wBRL, USDT) is
+  not an alias: it still names exactly that asset, so "send 300 cNGN" works, and is worded as Naira.
+- **Settlement asset** is the token that settles a currency on the active network, chosen by the asset's own `fiatCode`
+  metadata through the settlement resolver. Nothing financial is ever done with a display string: routing, balances,
+  authorization and execution use asset ids, chain ids, contract addresses and smallest-unit integers.
+- **Words only.** `describeMoney` ("₦300", "R$50", "$15"), `balanceBlock` and `describeSupportedCurrencies` turn tokens into
+  currency wording. Tokens of one currency are added (USDT + USDC = one US Dollar line); a token that is not a familiar currency
+  keeps its symbol. A token the person NAMED themselves ("use USDT") is still spoken of as that token in a shortfall message.
+- **US Dollar** can be USDC or USDT. Kaada never treats the word as one specific contract: both are candidates, and the cheapest
+  affordable route decides.
+
+Balance: one currency reads "₦1,000 Nigerian Naira"; several read one line each ("🇳🇬 Nigerian Naira: ₦1,000").
+Funding lists the currencies the wallet supports, then the network ("Network: Celo"), never the tickers.
+
+### Same-currency payments are direct transfers
+
+When the amount fixes what the recipient gets and the sender named no source, the sender may already hold that currency. With a
+wallet check ahead, the recipient's own currency is therefore a candidate source too (`sameCurrencySource`); if the wallet holds
+enough of it, the payment is a direct transfer (one TRANSFER step, no conversion), the conversion candidates are dropped before
+anything is priced, and no provider is called. Conversions are only considered when no direct transfer is affordable. Before this,
+such a payment had only the USD settlement assets as sources, so a USDT to cNGN conversion was priced even though the wallet held
+Naira (and with only Naira in the wallet it failed with "no supported asset to fund this payment").
+
+A direct transfer is currently refused at the execution step ("This payment route can't be executed yet. Nothing was sent."):
+execution only knows how to run a swap with a firm quote followed by a transfer. A plain-transfer execution path is a separate,
+security-reviewed piece of work and is not part of this pass.
+
+### Network fee (gas) policy for the MVP
+
+People pay their own network fee. It is not mentioned unless a transfer cannot go ahead for want of it. For a direct transfer the
+route is checked against the wallet's CELO (network-fee balance, `EXECUTION_MIN_NATIVE_WEI`): if the money is there but the CELO is
+not, the answer is only "You need a small amount of CELO to cover the network fee for this transfer." with a Fund CELO button
+(never "insufficient Naira"). CELO is not one of the currencies a person holds and never appears in the balance. A fee balance
+that cannot be read never blocks (execution checks again). No gas sponsorship or paymaster exists or is implied.
+
+### Networks and the asset table
+
+A deployment sees one network's tokens at a time (`scopeAssetsToChain`): fiat assets plus the tokens of `WALLET_NETWORK`'s chain.
+A test network's tokens live in the same table keyed by chain id + contract, added by `pnpm --filter @kaada/api seed:test-network`
+(development only), so on Celo Sepolia "Naira" resolves to the test cNGN and a mainnet contract is invisible there.
