@@ -44,6 +44,7 @@
     "pino-http": "^11.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
+    "viem": "2.57.4",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -55,7 +56,6 @@
     "@types/nodemailer": "7.0.2",
     "eslint": "catalog:",
     "tsx": "catalog:",
-    "typescript": "catalog:",
-    "viem": "2.57.4"
+    "typescript": "catalog:"
   }
 }

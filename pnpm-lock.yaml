@@ -104,6 +104,9 @@ importers:
       rxjs:
         specifier: ^7.8.2
         version: 7.8.2
+      viem:
+        specifier: 2.57.4
+        version: 2.57.4(typescript@6.0.3)(zod@4.6.5)
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -135,9 +138,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
-      viem:
-        specifier: 2.57.4
-        version: 2.57.4(typescript@6.0.3)(zod@4.6.5)
 
   apps/web:
     dependencies:
