@@ -7,6 +7,7 @@ import {
   RECOVERY_NETWORKS,
 } from "./deployments.js";
 import type { RecoveryContracts, RecoveryNetwork } from "./deployments.js";
+import { DEFAULT_CELO_SEPOLIA_RPC_URL, NETWORK_PROFILES, WALLET_NETWORKS } from "./networks.js";
 import { SETTINGS } from "./settings.js";
 
 export const logLevels = ["fatal", "error", "warn", "info", "debug", "trace", "silent"] as const;
@@ -77,6 +78,10 @@ const envShape = {
   // ── wallets and payment authorization ──
   WALLET_PROVIDER: z.enum(["none", "kernel"]).default("none"),
   CELO_RPC_URL: z.url().default("https://forno.celo.org"),
+  // Which network a person's balance (and deposit detection) is read on. Mainnet unless a development setup says otherwise;
+  // a test network is refused in production. Payments and everything else stay on Celo mainnet.
+  WALLET_NETWORK: z.enum(WALLET_NETWORKS).default("celo-mainnet"),
+  CELO_SEPOLIA_RPC_URL: z.url().default(DEFAULT_CELO_SEPOLIA_RPC_URL),
   PASSKEY_RP_ID: optionalSecret,
   PASSKEY_ORIGIN: z.url().optional(),
   // A server-side secret mixed into every PIN hash. Required in production wallets.
@@ -212,6 +217,11 @@ function buildConfig(
     wallet: {
       provider: env.WALLET_PROVIDER,
       rpcUrl: env.CELO_RPC_URL,
+      // Where balances are read: the network, its chain id, and the RPC to read it through.
+      balances: {
+        ...NETWORK_PROFILES[env.WALLET_NETWORK],
+        rpcUrl: env.WALLET_NETWORK === "celo-sepolia" ? env.CELO_SEPOLIA_RPC_URL : env.CELO_RPC_URL,
+      },
       // The chain the validators run on (what a device key's signed payload is bound to).
       onChainId: chainId,
       ...(deviceKeyContracts && { deviceKeyRoots: deviceKeyContracts }),
@@ -378,6 +388,8 @@ function crossChecks(
       "PASSKEY_ORIGIN",
       "production wallets need an https PASSKEY_ORIGIN and an https CELO_RPC_URL",
     );
+  if (production && env.WALLET_NETWORK !== "celo-mainnet")
+    add("WALLET_NETWORK", "production reads balances on celo-mainnet only");
   if (production && kernel && (env.PIN_PEPPER === undefined || env.PIN_PEPPER.length < 32))
     add("PIN_PEPPER", "production wallets need a PIN_PEPPER of at least 32 characters");
   if (production && (env.RECOVERY_ENABLED || kernel) && env.REDIS_URL === undefined)

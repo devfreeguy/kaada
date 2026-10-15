@@ -12,3 +12,7 @@ export const WALLET_BALANCE_SERVICE = Symbol("WALLET_BALANCE_SERVICE");
 export const WALLET_REPOSITORIES = Symbol("WALLET_REPOSITORIES");
 /** The DeviceTierService (verifies platform key attestation and derives device-key tiers), or null when it is not enabled. */
 export const DEVICE_TIER_SERVICE = Symbol("DEVICE_TIER_SERVICE");
+/** The persisted checkpoints and funding-event outbox for deposit detection. */
+export const WALLET_FUNDING_STORE = Symbol("WALLET_FUNDING_STORE");
+/** The supported-deposit watcher (channel-neutral), or null when wallets are not configured. */
+export const WALLET_FUNDING_WATCHER = Symbol("WALLET_FUNDING_WATCHER");

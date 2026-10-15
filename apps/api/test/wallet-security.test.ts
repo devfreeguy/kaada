@@ -304,6 +304,28 @@ describe("Build 10.1 boundaries (source scan)", () => {
     );
   });
 
+  it("the one stored observation (deposit detection) is never read as a balance", () => {
+    // WalletDepositCheckpoint remembers what the last deposit check saw, only to tell a new deposit from one already announced.
+    // Nothing that answers "what do I have" or authorizes/executes a payment may touch it: the chain is the only authority.
+    const files = [
+      join(dir("apps/api/src/core/wallets"), "balance-service.ts"),
+      ...["authorization", "execution", "agent"].flatMap((folder) =>
+        readdirSync(dir(`apps/api/src/core/${folder}`))
+          .filter((name) => name.endsWith(".ts"))
+          .map((name) => join(dir(`apps/api/src/core/${folder}`), name)),
+      ),
+    ];
+    for (const file of files) {
+      assert.equal(
+        /WalletDepositCheckpoint|walletDepositCheckpoint|WalletFundingStore/.test(
+          readFileSync(file, "utf8"),
+        ),
+        false,
+        file,
+      );
+    }
+  });
+
   it("setup tokens are random and compared only through their hash", () => {
     const service = code(join(dir("apps/api/src/core/wallets"), "setup-service.ts"));
     assert.equal(/randomBytes\(32\)/.test(service), true);

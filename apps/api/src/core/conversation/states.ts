@@ -105,6 +105,22 @@ export const STATE_MODE: Record<ResponseState, PresentationMode> = {
   FUNDING_INFO: "DETERMINISTIC",
 };
 
+/**
+ * States whose reply is conversational wording only (no figure, status or financial fact), so it may be shown as it is being
+ * written. Everything else (summaries, rates, balances, payment progress) appears only once the application has the real values.
+ */
+export const STREAMABLE_STATES: ReadonlySet<ResponseState> = new Set([
+  "CASUAL_GREETING",
+  "CASUAL_FINANCE_CHAT",
+  "CAPABILITY_DISCOVERY",
+  "FINANCIAL_QUESTION",
+  "OUT_OF_SCOPE",
+  "RATE_PAIR_NEEDED",
+  "MISSING_RECIPIENT",
+  "MISSING_AMOUNT",
+  "MISSING_CURRENCY",
+]);
+
 /** States where money may be at risk or an outcome is being reported: no jokes, no lightness. */
 export const SERIOUS_STATES: ReadonlySet<ResponseState> = new Set([
   "ONBOARDING_WALLET_NEEDED",

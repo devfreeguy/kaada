@@ -12,3 +12,5 @@ export const ONBOARDING_ANNOUNCER = Symbol("ONBOARDING_ANNOUNCER");
 export const ONBOARDING_LIFECYCLE = Symbol("ONBOARDING_LIFECYCLE");
 /** Repositories for the channel edge. */
 export const CHANNEL_REPOSITORIES = Symbol("CHANNEL_REPOSITORIES");
+/** Looks for deposits and tells people about them. Null when no chat channel or no wallets are configured. */
+export const FUNDING_ANNOUNCER = Symbol("FUNDING_ANNOUNCER");

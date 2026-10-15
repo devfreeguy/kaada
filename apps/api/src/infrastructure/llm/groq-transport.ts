@@ -27,6 +27,11 @@ export interface GroqChatResult {
 
 export interface GroqTransport {
   chat(request: GroqChatRequest): Promise<GroqChatResult>;
+  /**
+   * The reply as plain text, chunk by chunk (no JSON schema: Groq returns a schema-constrained reply as ONE chunk, so a
+   * structured reply cannot be shown as it is written). Optional.
+   */
+  chatStream?(request: GroqChatRequest): AsyncIterable<string>;
 }
 
 export type GroqTransportErrorKind =

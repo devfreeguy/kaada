@@ -159,6 +159,15 @@ interface AdvanceArgs {
   mergeKind: string;
 }
 
+/** What a still-open payment needs, for matching a deposit against it. Display and comparison only. */
+export interface OpenPaymentNeeds {
+  resume: ResumeInfo;
+  /** When the payment last moved. Progress older than the conversation window is never picked back up. */
+  lastActiveAt: Date;
+  /** The token the wallet pays with and how much (smallest units), when the payment fixes it. */
+  required?: { symbol: string; assetId: string; amount: string };
+}
+
 /**
  * Everything that changes an intent goes through `advance`: assess, commit (the one place the
  * revision moves), then answer with either the next question or the routing handoff. Interpreted
@@ -230,6 +239,35 @@ export class IntentCoordinator {
   ): Promise<ResumeInfo | undefined> {
     const active = await repositories.intents.findOpenByConversation(conversationId);
     return this.resumeOf(repositories, { userId }, active);
+  }
+
+  /**
+   * The payment still open in a chat, with what it needs from the wallet, so a deposit can be matched against it. Only a
+   * payment that is ready to price counts (one still missing a detail was never "short of funds"), and only when the amount is
+   * fixed on the side the wallet pays (EXACT_INPUT). Read only; nothing is resurrected, advanced or priced.
+   */
+  async openPaymentNeeds(
+    repositories: AgentRepositories,
+    userId: string,
+    conversationId: string,
+  ): Promise<OpenPaymentNeeds | undefined> {
+    const active = await repositories.intents.findOpenByConversation(conversationId);
+    const resume = await this.resumeOf(repositories, { userId }, active);
+    if (!active || !resume || resume.pending) return undefined;
+    const needs: OpenPaymentNeeds = { resume, lastActiveAt: active.updatedAt };
+    if (active.amount?.mode === "EXACT_INPUT" && active.sourceAssetId) {
+      const resolved = await this.deps
+        .createResolvers(repositories)
+        .assets.resolve(active.sourceAssetId);
+      if (resolved.status === "RESOLVED") {
+        needs.required = {
+          symbol: resolved.asset.symbol,
+          assetId: resolved.asset.id,
+          amount: active.amount.money.amount,
+        };
+      }
+    }
+    return needs;
   }
 
   private async resumeOf(

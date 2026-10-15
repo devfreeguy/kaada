@@ -78,3 +78,12 @@ export type {
   RootChangeRepository,
   RootChangeStatus,
 } from "./root-change.js";
+export type {
+  BalanceSnapshot,
+  FundingCommit,
+  WalletBalanceCheckpoint,
+  WalletFundingEvent,
+  WalletFundingItem,
+  WalletFundingStore,
+  WalletToWatch,
+} from "./funding.js";

@@ -16,8 +16,8 @@ import { fallbackParts, joinParts, resultFallback } from "./fallbacks.js";
 import type { FallbackFacts, ReplyParts } from "./fallbacks.js";
 import { buildConversationPrompt } from "./prompt.js";
 import type { ConversationPrompt } from "./prompt.js";
-import { validateReply } from "./reply.js";
-import { STATE_MODE, deriveResponseState } from "./states.js";
+import { screenText, validateReply, validateStreamedText } from "./reply.js";
+import { STATE_MODE, STREAMABLE_STATES, deriveResponseState } from "./states.js";
 import type { PresentationMode, ResponseState } from "./states.js";
 import { STATE_INSTRUCTIONS } from "./instructions.js";
 import { MAX_SUGGESTIONS, suggestionPolicy } from "./suggestions.js";
@@ -28,6 +28,19 @@ import { MAX_SUGGESTIONS, suggestionPolicy } from "./suggestions.js";
  */
 export interface ConversationWriter {
   write(prompt: ConversationPrompt, allowedSuggestions: readonly SuggestionId[]): Promise<unknown>;
+  /**
+   * Optional: the same reply as plain text, as it is generated. Used only for conversational states, and every chunk is screened
+   * before anything is shown. Absent: the reply is generated whole, as before.
+   */
+  stream?(
+    prompt: ConversationPrompt,
+    allowedSuggestions: readonly SuggestionId[],
+  ): AsyncIterable<string>;
+}
+
+/** Where a partly written reply is shown while the rest is still being generated. The channel decides how (and how often). */
+export interface DraftSink {
+  push(text: string): void;
 }
 
 export interface PresentationInput {
@@ -46,6 +59,8 @@ export interface PresentationInput {
   onboardingStep?: OnboardingStep | undefined;
   /** A payment is still open behind this answer (a side question): the reply ends by offering to carry on with it. */
   resume?: ResumeInfo | undefined;
+  /** If given, conversational wording is shown here as it is generated (see STREAMABLE_STATES). Never for facts. */
+  draft?: DraftSink | undefined;
 }
 
 /** What the person is being told about their setup, and why now. */
@@ -90,6 +105,14 @@ interface Phrased {
 }
 
 const CACHE_LIMIT = 256;
+
+/** A streamed chunk failed the same screen the finished reply faces: the draft stops and the fixed wording is used. */
+class StreamRefused extends Error {
+  override readonly name = "StreamRefused";
+  constructor(readonly reason: string) {
+    super(`streamed text refused: ${reason}`);
+  }
+}
 
 /**
  * The conversational presentation of an agent turn. Channel-neutral: it returns words and semantic suggestions, and never
@@ -204,7 +227,16 @@ export class ConversationPresenter {
       return this.finish(base, parts ? joinParts(parts, ORDER) : base.text, policy, resume);
     }
 
-    const phrased = await this.phrase(
+    const streams =
+      mode === "MODEL_FULL" &&
+      !resume &&
+      STREAMABLE_STATES.has(state) &&
+      input.draft !== undefined &&
+      this.deps.writer?.stream !== undefined;
+    const phrase = streams
+      ? this.phraseStreaming.bind(this, input.draft as DraftSink)
+      : this.phrase.bind(this);
+    const phrased = await phrase(
       {
         userMessage: input.userMessage,
         history: input.history,
@@ -316,6 +348,89 @@ export class ConversationPresenter {
       );
     } catch (error) {
       return this.remember(key, fallback(), state, error instanceof Error ? error.name : "ERROR");
+    }
+  }
+
+  /**
+   * The reply, shown while it is written. The text is plain (no JSON), and each chunk is screened up to its last complete word
+   * with the same checks as the finished reply, so nothing the final check would refuse is ever shown. On any refusal, error or
+   * timeout the draft stops and the fixed wording is used. Suggestions come from the server's policy, never from the stream.
+   */
+  private async phraseStreaming(
+    draft: DraftSink,
+    input: PhraseInput,
+    state: ResponseState,
+    mode: Exclude<PresentationMode, "DETERMINISTIC">,
+    known: Record<string, string>,
+    policy: SuggestionId[],
+    facts: FallbackFacts,
+    flags: CapabilityFlags,
+  ): Promise<Phrased> {
+    const fallback = (): Phrased => ({
+      parts: fallbackParts(state, facts, input.seed) ?? {},
+      suggestions: policy,
+    });
+    const key = `${input.seed}:${state}:plain`;
+    const cached = this.cache.get(key);
+    if (cached) return cached;
+
+    const instruction = STATE_INSTRUCTIONS[state];
+    const writer = this.deps.writer;
+    if (!writer?.stream || !instruction) return this.remember(key, fallback(), state, "NO_MODEL");
+
+    const context = {
+      mode,
+      state,
+      flags,
+      allowedSuggestions: policy,
+      knownFactValues: Object.values(known),
+      needsQuestion: instruction.needsQuestion,
+    };
+    const stop = { requested: false };
+    const consume = async (): Promise<string> => {
+      const prompt = buildConversationPrompt(
+        buildResponseContext({
+          state,
+          userMessage: input.userMessage,
+          history: input.history,
+          flags,
+          allowedSuggestions: policy,
+          knownFacts: known,
+          ...(input.missingFields && { missingFields: input.missingFields }),
+          firstName: input.firstName,
+          hasFinancialBlock: false,
+        }),
+        "TEXT",
+      );
+      let text = "";
+      for await (const delta of writer.stream?.(prompt, policy) ?? []) {
+        if (stop.requested) break;
+        text += delta;
+        // Only whole words are screened and shown: "2" is not yet "20", and a half-written word proves nothing.
+        const safe = text
+          .slice(0, Math.max(text.lastIndexOf(" "), text.lastIndexOf("\n")) + 1)
+          .trimEnd();
+        if (safe.length === 0) continue;
+        const refused = screenText(safe, context);
+        if (refused) throw new StreamRefused(refused);
+        draft.push(safe);
+      }
+      return text;
+    };
+    try {
+      const text = await this.withTimeout(consume());
+      const checked = validateStreamedText(text.trim(), context);
+      if (!checked.ok) return this.remember(key, fallback(), state, checked.reason);
+      return this.remember(key, { parts: checked.parts, suggestions: policy }, state, undefined);
+    } catch (error) {
+      stop.requested = true;
+      const reason =
+        error instanceof StreamRefused
+          ? error.reason
+          : error instanceof Error
+            ? error.name
+            : "ERROR";
+      return this.remember(key, fallback(), state, reason);
     }
   }
 

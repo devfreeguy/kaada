@@ -93,7 +93,7 @@ describe("an empty wallet leads to funding, never to a dead end", () => {
     const { r, adapter, service } = chat({ lines: [] });
     r.h.script.set("balance", intent({ type: "BALANCE" }));
     await service.handleInbound(say("balance"));
-    assert.equal(adapter.last?.text, "Your wallet is empty right now. Want to add some funds?");
+    assert.equal(adapter.last?.text, "Your wallet is empty right now. Want to fund it?");
     assert.deepEqual(labels(adapter.last), ["💰 Fund wallet"]);
     // and the button does what it says
     await service.handleInbound(press(buttons(adapter.last)[0]?.handle ?? ""));
@@ -123,7 +123,7 @@ describe("an empty wallet leads to funding, never to a dead end", () => {
   it("/balance is a shortcut to the same answer", async () => {
     const { adapter, service } = chat({ lines: [] });
     await service.handleInbound(command("BALANCE"));
-    assert.equal(adapter.last?.text, "Your wallet is empty right now. Want to add some funds?");
+    assert.equal(adapter.last?.text, "Your wallet is empty right now. Want to fund it?");
   });
 });
 

@@ -128,28 +128,8 @@ export function validateReply(raw: unknown, context: ValidateContext): Validatio
   const text = Object.values(parts).join(" ");
   if (text.length === 0) return fail("EMPTY");
   if (text.length > MAX_TOTAL) return fail("TOO_LONG");
-  if (MARKUP.test(text)) return fail("MARKUP");
-  if (
-    SECRETS.test(text) &&
-    !(MAY_NAME_PIN.has(context.state) && !/\b(enter|type|send|share|tell)\b/i.test(text))
-  ) {
-    return fail("SECRET_WORDS");
-  }
-  if (LEAKS.test(text)) return fail("LEAK");
-  if (context.mode === "MODEL_FULL" && PHANTOM_BLOCK.test(text)) return fail("PHANTOM_BLOCK");
-  if (OUTCOME_CLAIM.test(text) || (text.includes("✅") && !MAY_CELEBRATE.has(context.state))) {
-    return fail("OUTCOME_CLAIM");
-  }
-  if (UNBUILT.test(text)) return fail("UNBUILT_FEATURE");
-  if (!context.flags.rates && /\b(rates?|quotes?)\b/i.test(text)) return fail("UNAVAILABLE_RATES");
-  if (!context.flags.balance && /\bbalances?\b/i.test(text)) return fail("UNAVAILABLE_BALANCE");
-  if (!context.flags.send && /\b(send|sending|payments?)\b/i.test(text)) {
-    return fail("UNAVAILABLE_SEND");
-  }
-  if ((text.match(/\p{Extended_Pictographic}/gu) ?? []).length > MAX_EMOJI) return fail("EMOJI");
-
-  const trusted = new Set(context.knownFactValues.flatMap(numbersIn));
-  if (numbersIn(text).some((value) => !trusted.has(value))) return fail("UNTRUSTED_NUMBER");
+  const refused = screenText(text, context);
+  if (refused) return fail(refused);
 
   if (context.needsQuestion && !text.includes("?")) return fail("NO_QUESTION");
   const required = MUST_MENTION[context.state];
@@ -160,4 +140,49 @@ export function validateReply(raw: unknown, context: ValidateContext): Validatio
     (id): id is SuggestionId => isSuggestionId(id) && allowed.has(id),
   );
   return { ok: true, parts, suggestions: [...new Set(suggestions)] };
+}
+
+/**
+ * The checks every piece of generated text must pass, in one place. They run on the FINISHED reply, and they also run on the
+ * text streamed so far (up to the last complete word), so a draft never shows what the final reply would have been refused for:
+ * markup, secrets, claims of an outcome, a figure that is not a trusted fact, a feature that does not exist, an emoji flood.
+ * Returns the reason it is refused, or undefined when the text is acceptable.
+ */
+export function screenText(
+  text: string,
+  context: Pick<ValidateContext, "mode" | "state" | "flags" | "knownFactValues">,
+): string | undefined {
+  if (text.length > MAX_TOTAL) return "TOO_LONG";
+  if (MARKUP.test(text)) return "MARKUP";
+  if (
+    SECRETS.test(text) &&
+    !(MAY_NAME_PIN.has(context.state) && !/\b(enter|type|send|share|tell)\b/i.test(text))
+  ) {
+    return "SECRET_WORDS";
+  }
+  if (LEAKS.test(text)) return "LEAK";
+  if (context.mode === "MODEL_FULL" && PHANTOM_BLOCK.test(text)) return "PHANTOM_BLOCK";
+  if (OUTCOME_CLAIM.test(text) || (text.includes("✅") && !MAY_CELEBRATE.has(context.state))) {
+    return "OUTCOME_CLAIM";
+  }
+  if (UNBUILT.test(text)) return "UNBUILT_FEATURE";
+  if (!context.flags.rates && /\b(rates?|quotes?)\b/i.test(text)) return "UNAVAILABLE_RATES";
+  if (!context.flags.balance && /\bbalances?\b/i.test(text)) return "UNAVAILABLE_BALANCE";
+  if (!context.flags.send && /\b(send|sending|payments?)\b/i.test(text)) {
+    return "UNAVAILABLE_SEND";
+  }
+  if ((text.match(/\p{Extended_Pictographic}/gu) ?? []).length > MAX_EMOJI) return "EMOJI";
+
+  const trusted = new Set(context.knownFactValues.flatMap(numbersIn));
+  if (numbersIn(text).some((value) => !trusted.has(value))) return "UNTRUSTED_NUMBER";
+
+  return undefined;
+}
+
+/** A reply that arrived as plain streamed text rather than as the structured object, checked exactly like one. */
+export function validateStreamedText(text: string, context: ValidateContext): Validation {
+  return validateReply(
+    { acknowledgement: null, body: text, question: null, closing: null, suggestedActionIds: [] },
+    context,
+  );
 }

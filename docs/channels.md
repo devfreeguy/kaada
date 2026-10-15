@@ -224,3 +224,71 @@ for one token the wallet lacks says "You don't have any USDT in your Kaada walle
 funds says "You're short on USDT for this payment. Want to fund your wallet and come back to it?" with **Fund wallet** and
 **Cancel**, and the payment stays open. A failed read is logged with its reason (`WALLET_NOT_READY`, `ASSET_UNSUPPORTED` with the
 token symbol, `RPC_UNAVAILABLE`, `BALANCE_UNAVAILABLE`); the person only sees "I couldn't read your balance right now."
+
+## Perceived latency
+
+What a person sees while Kaada works, without ever faking progress:
+
+1. **Typing, immediately.** As soon as an inbound message is claimed (a duplicate delivery never gets this far), the adapter's
+   activity signal starts (Telegram `sendChatAction: typing`) and is renewed every ~4 s. It does not wait for the agent or the model,
+   and it stops when the work ends, including on failure. A PIN-looking message gets no activity (it is deleted at once).
+2. **One temporary status, only if slow.** After ~2.5 s without an answer, ONE status ("Checking that for you 👀" / "Let me work that
+   out.") is sent. It is removed when the answer arrives or the work fails. A fast answer never shows it; statuses never cycle.
+3. **Live drafts for conversational wording only.** Channels may implement the optional `ChannelAdapter.openDraft(target)`
+   (Telegram: `sendMessageDraft`, one `draft_id` per reply, so updates animate one bubble; the final `sendMessage` replaces it).
+   Channels without it (e.g. a future WhatsApp adapter) simply return nothing and the reply appears whole.
+   - Only `STREAMABLE_STATES` stream (greetings, casual chat, capability questions, general finance questions, out-of-scope, and
+     "which currency/amount/recipient" clarifications) and only in `MODEL_FULL` mode. Rates, balances, summaries, payment progress
+     and results are never streamed: they are shown once the application has them.
+   - Groq strict `json_schema` output cannot stream (it arrives as one chunk), so streaming uses a separate plain-text prompt.
+     Quick-reply suggestions come from server policy, not from the stream.
+   - Every chunk is screened by the same checks as a final reply (markup, secrets, outcome claims, numbers the application did not
+     supply, unbuilt features, emoji cap) before it is shown. A refused chunk stops the stream and the fixed wording is used.
+   - Drafts are throttled locally (default ≥250 ms apart, ≤24 updates) and stop quietly on any error such as a flood-wait.
+4. **Payments are not streamed.** Execution progress stays the persistent, edited status message ("Processing your payment…") and
+   success is only announced after confirmation.
+
+## Balances, networks and deposit detection
+
+### Which network a balance is read on
+
+`WALLET_NETWORK` (`celo-mainnet` by default, `celo-sepolia` for development; a test network is refused in production) selects the
+network on which a person's balance, the funding instructions and deposit detection are read. A wallet's address is the same on
+every network, so the SAME address is read on the selected one. Payments, quotes and everything else stay on Celo mainnet.
+
+A token is identified by **chain id + contract address**, never by symbol. Mainnet's supported tokens are the active assets of the
+asset registry (unchanged). A test network's supported tokens are public, reviewed data in code
+(`packages/config/src/networks.ts`, verified on the network), NOT rows in the shared registry: a second `cNGN` there would make the
+symbol ambiguous for every payment request. Their ids are derived from chain id + address, so the test cNGN and the mainnet cNGN
+can never be mistaken for each other, and the balance reader refuses to read a token on a chain other than its own.
+
+Only registry tokens are ever read. Arbitrary ERC-20 holdings are never scanned or shown; zero balances are left out of the
+answer, and an empty wallet says so and offers to fund it.
+
+### Deposit detection
+
+```
+poll (every 30 s) -> WalletFundingWatcher -> checkpoint compare-and-set + WalletFundingEvent (one transaction)
+                  -> FundingAnnouncer claims events -> ChannelMessageService.announceFunding -> every linked chat
+```
+
+- **Application-level polling.** One pass for all watched wallets (active embedded wallets of people with a linked chat); each
+  wallet is one batched chain call covering all of its tokens. Nothing polls per conversation, and nothing lives in the Telegram
+  adapter: a future WhatsApp adapter receives the same events.
+- **Checkpoints.** `WalletBalanceCheckpoint` stores the last balances (smallest units, by asset id) and a `version`. A change is
+  committed only if the version still matches what the observer read, in the same transaction that inserts the
+  `WalletFundingEvent`. So two instances, a restart, a retried read or the same block seen twice yield at most one event; a
+  balance that did not change writes nothing; a failed read changes nothing.
+- **What counts.** A rise of at least a hundredth of a token (dust is recorded silently); falls update the checkpoint silently, and
+  the next rise counts from the lower balance. Tokens that rise in the same pass are one event and one message. A wallet with no
+  checkpoint that is more than 24 hours old is only baselined, so switching the feature on never announces money that was already
+  there; a freshly made wallet is compared against zero, so its first deposit is news.
+- **Delivery** reuses the outbox pattern of the onboarding notifications (claim, deliver, mark delivered or release for retry).
+- **Wording** is fixed, built from the stored event: "Nice, your wallet just received 1,000 cNGN 💰 / You're ready to use it."
+  with at most Send money and Balance buttons.
+- **An open payment.** If a payment in that chat was last active within the progress window (1 hour), its amount is fixed in a
+  token the wallet pays with, and this deposit is what makes it affordable (it was not before), the message offers
+  Continue / Cancel for that payment instead. Nothing is executed or authorized by a deposit; Continue re-checks the payment from
+  stored state and the person authorizes normally. A payment older than the window is not brought back. The underlying payment
+  records are never touched. (On a test network the payment's registry token and the held test token are tied by symbol, and only
+  there.)

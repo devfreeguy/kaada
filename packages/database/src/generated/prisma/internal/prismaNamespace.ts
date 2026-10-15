@@ -436,7 +436,9 @@ export const ModelName = {
   ChannelInboundEvent: 'ChannelInboundEvent',
   ChannelAction: 'ChannelAction',
   ChannelPaymentStatus: 'ChannelPaymentStatus',
-  UserNotification: 'UserNotification'
+  UserNotification: 'UserNotification',
+  WalletDepositCheckpoint: 'WalletDepositCheckpoint',
+  WalletFundingEvent: 'WalletFundingEvent'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -452,7 +454,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "transactionPinSecurity" | "authorizationSession" | "paymentAuthorization" | "executionSecret" | "firmQuoteAttempt" | "rootActionSession" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent" | "walletCredential" | "rootChange" | "recoveryConfiguration" | "recoveryAttempt" | "recoveryEmailChallenge" | "deviceAttestationChallenge" | "deviceAttestation" | "channelInboundEvent" | "channelAction" | "channelPaymentStatus" | "userNotification"
+    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "transactionPinSecurity" | "authorizationSession" | "paymentAuthorization" | "executionSecret" | "firmQuoteAttempt" | "rootActionSession" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent" | "walletCredential" | "rootChange" | "recoveryConfiguration" | "recoveryAttempt" | "recoveryEmailChallenge" | "deviceAttestationChallenge" | "deviceAttestation" | "channelInboundEvent" | "channelAction" | "channelPaymentStatus" | "userNotification" | "walletDepositCheckpoint" | "walletFundingEvent"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -3416,6 +3418,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    WalletDepositCheckpoint: {
+      payload: Prisma.$WalletDepositCheckpointPayload<ExtArgs>
+      fields: Prisma.WalletDepositCheckpointFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.WalletDepositCheckpointFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletDepositCheckpointPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.WalletDepositCheckpointFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletDepositCheckpointPayload>
+        }
+        findFirst: {
+          args: Prisma.WalletDepositCheckpointFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletDepositCheckpointPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.WalletDepositCheckpointFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletDepositCheckpointPayload>
+        }
+        findMany: {
+          args: Prisma.WalletDepositCheckpointFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletDepositCheckpointPayload>[]
+        }
+        create: {
+          args: Prisma.WalletDepositCheckpointCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletDepositCheckpointPayload>
+        }
+        createMany: {
+          args: Prisma.WalletDepositCheckpointCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.WalletDepositCheckpointCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletDepositCheckpointPayload>[]
+        }
+        delete: {
+          args: Prisma.WalletDepositCheckpointDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletDepositCheckpointPayload>
+        }
+        update: {
+          args: Prisma.WalletDepositCheckpointUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletDepositCheckpointPayload>
+        }
+        deleteMany: {
+          args: Prisma.WalletDepositCheckpointDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.WalletDepositCheckpointUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.WalletDepositCheckpointUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletDepositCheckpointPayload>[]
+        }
+        upsert: {
+          args: Prisma.WalletDepositCheckpointUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletDepositCheckpointPayload>
+        }
+        aggregate: {
+          args: Prisma.WalletDepositCheckpointAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateWalletDepositCheckpoint>
+        }
+        groupBy: {
+          args: Prisma.WalletDepositCheckpointGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.WalletDepositCheckpointGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.WalletDepositCheckpointCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.WalletDepositCheckpointCountAggregateOutputType> | number
+        }
+      }
+    }
+    WalletFundingEvent: {
+      payload: Prisma.$WalletFundingEventPayload<ExtArgs>
+      fields: Prisma.WalletFundingEventFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.WalletFundingEventFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletFundingEventPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.WalletFundingEventFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletFundingEventPayload>
+        }
+        findFirst: {
+          args: Prisma.WalletFundingEventFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletFundingEventPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.WalletFundingEventFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletFundingEventPayload>
+        }
+        findMany: {
+          args: Prisma.WalletFundingEventFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletFundingEventPayload>[]
+        }
+        create: {
+          args: Prisma.WalletFundingEventCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletFundingEventPayload>
+        }
+        createMany: {
+          args: Prisma.WalletFundingEventCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.WalletFundingEventCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletFundingEventPayload>[]
+        }
+        delete: {
+          args: Prisma.WalletFundingEventDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletFundingEventPayload>
+        }
+        update: {
+          args: Prisma.WalletFundingEventUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletFundingEventPayload>
+        }
+        deleteMany: {
+          args: Prisma.WalletFundingEventDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.WalletFundingEventUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.WalletFundingEventUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletFundingEventPayload>[]
+        }
+        upsert: {
+          args: Prisma.WalletFundingEventUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WalletFundingEventPayload>
+        }
+        aggregate: {
+          args: Prisma.WalletFundingEventAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateWalletFundingEvent>
+        }
+        groupBy: {
+          args: Prisma.WalletFundingEventGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.WalletFundingEventGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.WalletFundingEventCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.WalletFundingEventCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -4245,6 +4395,36 @@ export const UserNotificationScalarFieldEnum = {
 } as const
 
 export type UserNotificationScalarFieldEnum = (typeof UserNotificationScalarFieldEnum)[keyof typeof UserNotificationScalarFieldEnum]
+
+
+export const WalletDepositCheckpointScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  chainId: 'chainId',
+  address: 'address',
+  observed: 'observed',
+  version: 'version',
+  observedAt: 'observedAt'
+} as const
+
+export type WalletDepositCheckpointScalarFieldEnum = (typeof WalletDepositCheckpointScalarFieldEnum)[keyof typeof WalletDepositCheckpointScalarFieldEnum]
+
+
+export const WalletFundingEventScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  checkpointId: 'checkpointId',
+  version: 'version',
+  chainId: 'chainId',
+  address: 'address',
+  items: 'items',
+  createdAt: 'createdAt',
+  claimedAt: 'claimedAt',
+  deliveredAt: 'deliveredAt',
+  attempts: 'attempts'
+} as const
+
+export type WalletFundingEventScalarFieldEnum = (typeof WalletFundingEventScalarFieldEnum)[keyof typeof WalletFundingEventScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -5184,6 +5364,8 @@ export type GlobalOmitConfig = {
   channelAction?: Prisma.ChannelActionOmit
   channelPaymentStatus?: Prisma.ChannelPaymentStatusOmit
   userNotification?: Prisma.UserNotificationOmit
+  walletDepositCheckpoint?: Prisma.WalletDepositCheckpointOmit
+  walletFundingEvent?: Prisma.WalletFundingEventOmit
 }
 
 /* Types for Logging */

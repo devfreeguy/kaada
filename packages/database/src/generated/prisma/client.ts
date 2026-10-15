@@ -289,3 +289,16 @@ export type ChannelPaymentStatus = Prisma.ChannelPaymentStatusModel
  * releases it for a retry; deliveredAt is set when the person was told, or when no telling was needed (silent, superseded).
  */
 export type UserNotification = Prisma.UserNotificationModel
+/**
+ * Model WalletDepositCheckpoint
+ * What a deposit check last saw for a wallet on a network (smallest units, by asset id), kept ONLY to tell a new deposit from one
+ * already announced. It is never shown or used as a balance (the chain is the only authority). `version` is the compare-and-set key:
+ * of any number of observers that read the same version, exactly one commits, and that one records the funding event.
+ */
+export type WalletDepositCheckpoint = Prisma.WalletDepositCheckpointModel
+/**
+ * Model WalletFundingEvent
+ * A supported deposit, as an outbox row. One per observation that moved a checkpoint upwards (several tokens that arrived
+ * together are the items of one event); delivered to the person's linked chats and then marked delivered.
+ */
+export type WalletFundingEvent = Prisma.WalletFundingEventModel

@@ -13,6 +13,7 @@ import type {
 import type {
   ChannelAdapter,
   ChannelCommand,
+  ChannelDraft,
   ChannelTarget,
   InboundChannelMessage,
   OutboundChannelMessage,
@@ -136,6 +137,8 @@ export function createMemoryChannelStores(now: () => Date = () => new Date()) {
 
 export interface SentRecord {
   kind: "send" | "update" | "remove" | "typing" | "ack";
+  /** When the adapter was called (ms), so tests can say what happened first and how soon. */
+  at?: number;
   target?: ChannelTarget;
   externalMessageId?: string;
   message?: OutboundChannelMessage;
@@ -147,6 +150,10 @@ export class FakeAdapter implements ChannelAdapter {
   readonly log: SentRecord[] = [];
   private counter = 100;
   failNextSend = false;
+  /** Whether this adapter can show a live draft (set false to behave like a channel without drafts). */
+  draftsEnabled = false;
+  /** Every draft that was opened: the texts shown, and whether it was closed. */
+  readonly drafts: { updates: string[]; closed: boolean; closedAt?: number }[] = [];
 
   constructor(channel: ChannelType = "TELEGRAM") {
     this.channel = channel;
@@ -165,7 +172,7 @@ export class FakeAdapter implements ChannelAdapter {
     }
     this.counter += 1;
     const externalMessageId = String(this.counter);
-    this.log.push({ kind: "send", target, message, externalMessageId });
+    this.log.push({ kind: "send", target, message, externalMessageId, at: Date.now() });
     return Promise.resolve({ externalMessageId });
   }
   update(
@@ -181,11 +188,30 @@ export class FakeAdapter implements ChannelAdapter {
     return Promise.resolve();
   }
   indicateTyping(): Promise<void> {
-    this.log.push({ kind: "typing" });
+    this.log.push({ kind: "typing", at: Date.now() });
     return Promise.resolve();
   }
+  openDraft(): ChannelDraft | null {
+    if (!this.draftsEnabled) return null;
+    const record = { updates: [] as string[], closed: false } as {
+      updates: string[];
+      closed: boolean;
+      closedAt?: number;
+    };
+    this.drafts.push(record);
+    return {
+      update: (text) => {
+        if (!record.closed) record.updates.push(text);
+      },
+      close: () => {
+        record.closed = true;
+        record.closedAt = Date.now();
+        return Promise.resolve();
+      },
+    };
+  }
   remove(target: ChannelTarget, externalMessageId: string): Promise<void> {
-    this.log.push({ kind: "remove", target, externalMessageId });
+    this.log.push({ kind: "remove", target, externalMessageId, at: Date.now() });
     return Promise.resolve();
   }
 

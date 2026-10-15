@@ -64,6 +64,21 @@ export const SETTINGS = {
    */
   onboarding: { requireRecovery: false },
 
+  /** Deposit detection. Polling, at the application level (one pass for every wallet, never one timer per chat). */
+  funding: {
+    /** How often supported balances are re-read. Each wallet is one batched call covering all of its tokens. */
+    pollSeconds: 30,
+    /** A deposit smaller than 1/100 of a token is recorded silently (dust never pings anyone). */
+    dustDecimalsBelow: 2,
+    /**
+     * A payment left open this long ago is not brought back by a deposit: the person gets the plain funding message. The
+     * payment records themselves are untouched.
+     */
+    resumeWindowMs: 60 * 60 * 1000,
+    /** A wallet with no checkpoint yet counts as "just created" (a first deposit is news) only within this long of activation. */
+    newWalletMs: 24 * 60 * 60 * 1000,
+  },
+
   recovery: {
     sweepIntervalSeconds: 30,
   },

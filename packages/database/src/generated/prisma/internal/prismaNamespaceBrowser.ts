@@ -90,7 +90,9 @@ export const ModelName = {
   ChannelInboundEvent: 'ChannelInboundEvent',
   ChannelAction: 'ChannelAction',
   ChannelPaymentStatus: 'ChannelPaymentStatus',
-  UserNotification: 'UserNotification'
+  UserNotification: 'UserNotification',
+  WalletDepositCheckpoint: 'WalletDepositCheckpoint',
+  WalletFundingEvent: 'WalletFundingEvent'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -899,6 +901,36 @@ export const UserNotificationScalarFieldEnum = {
 } as const
 
 export type UserNotificationScalarFieldEnum = (typeof UserNotificationScalarFieldEnum)[keyof typeof UserNotificationScalarFieldEnum]
+
+
+export const WalletDepositCheckpointScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  chainId: 'chainId',
+  address: 'address',
+  observed: 'observed',
+  version: 'version',
+  observedAt: 'observedAt'
+} as const
+
+export type WalletDepositCheckpointScalarFieldEnum = (typeof WalletDepositCheckpointScalarFieldEnum)[keyof typeof WalletDepositCheckpointScalarFieldEnum]
+
+
+export const WalletFundingEventScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  checkpointId: 'checkpointId',
+  version: 'version',
+  chainId: 'chainId',
+  address: 'address',
+  items: 'items',
+  createdAt: 'createdAt',
+  claimedAt: 'claimedAt',
+  deliveredAt: 'deliveredAt',
+  attempts: 'attempts'
+} as const
+
+export type WalletFundingEventScalarFieldEnum = (typeof WalletFundingEventScalarFieldEnum)[keyof typeof WalletFundingEventScalarFieldEnum]
 
 
 export const SortOrder = {

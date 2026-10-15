@@ -16,7 +16,16 @@ const OUTPUT_CONTRACT = [
   "Plain text only, in the person's language when they clearly use another, otherwise English.",
 ].join("\n");
 
-export function buildConversationPrompt(context: ConversationResponseContext): ConversationPrompt {
+const TEXT_CONTRACT = [
+  "Reply with ONLY the message the person will read: plain text, one to three short sentences.",
+  "No JSON, no labels, no markdown, no links. End with the one short question the task asks for, if it asks for one.",
+].join("\n");
+
+/** `JSON` is the structured reply; `TEXT` is the plain reply that can be streamed (the same rules, checked the same way). */
+export function buildConversationPrompt(
+  context: ConversationResponseContext,
+  format: "JSON" | "TEXT" = "JSON",
+): ConversationPrompt {
   const { responseObjective: instruction } = context;
   const system = [
     "POLICY",
@@ -30,7 +39,7 @@ export function buildConversationPrompt(context: ConversationResponseContext): C
     `Humor: ${context.tonePolicy.humor === "ALLOWED" ? "allowed, lightly" : "FORBIDDEN"}.`,
     ...context.responseConstraints.map((rule) => `- ${rule}`),
     "",
-    OUTPUT_CONTRACT,
+    format === "TEXT" ? TEXT_CONTRACT : OUTPUT_CONTRACT,
   ].join("\n");
 
   const trusted = {

@@ -52,6 +52,48 @@ export class GroqConversationWriter implements ConversationWriter {
     this.now = options.now ?? Date.now;
   }
 
+  /** The same reply as plain text, as it is generated. Metadata only is logged: when the first words arrived, and how long it took. */
+  stream(prompt: ConversationPrompt, _allowed: readonly SuggestionId[]): AsyncIterable<string> {
+    const { transport, options } = this;
+    const log = this.log;
+    const clock = this.now;
+    return {
+      async *[Symbol.asyncIterator]() {
+        if (!transport.chatStream) throw new Error("this transport cannot stream");
+        const started = clock();
+        let firstMs: number | undefined;
+        try {
+          for await (const delta of transport.chatStream({
+            model: options.model,
+            system: prompt.system,
+            user: prompt.user,
+            schemaName: SCHEMA_NAME,
+            schema: {},
+            maxCompletionTokens: options.maxCompletionTokens ?? 600,
+            timeoutMs: options.timeoutMs,
+            temperature: options.temperature,
+          })) {
+            firstMs ??= clock() - started;
+            yield delta;
+          }
+          log("info", "llm.present.stream", {
+            provider: "groq",
+            firstTokenMs: firstMs,
+            latencyMs: clock() - started,
+          });
+        } catch (error) {
+          log("warn", "llm.present.stream_failed", {
+            provider: "groq",
+            firstTokenMs: firstMs,
+            latencyMs: clock() - started,
+            errorKind: error instanceof GroqTransportError ? error.kind : (error as Error).name,
+          });
+          throw error;
+        }
+      },
+    };
+  }
+
   async write(prompt: ConversationPrompt, _allowed: readonly SuggestionId[]): Promise<unknown> {
     const started = this.now();
     try {

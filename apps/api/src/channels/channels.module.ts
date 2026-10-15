@@ -4,7 +4,7 @@ import type { Database, Repositories } from "@kaada/database";
 import type { AppConfig } from "@kaada/config";
 import { SETTINGS } from "@kaada/config";
 import { CELO_CHAIN_ID, KaadaError } from "@kaada/domain";
-import type { ChannelType } from "@kaada/domain";
+import type { ChannelType, WalletFundingStore } from "@kaada/domain";
 
 import { AgentModule } from "../agent/agent.module.js";
 import { AGENT_SERVICE } from "../agent/agent.tokens.js";
@@ -30,6 +30,8 @@ import { TelegramAdapter } from "../infrastructure/channels/telegram/telegram-ad
 import { WalletModule } from "../wallet/wallet.module.js";
 import {
   WALLET_BALANCE_SERVICE,
+  WALLET_FUNDING_STORE,
+  WALLET_FUNDING_WATCHER,
   WALLET_SERVICE,
   WALLET_SETUP_SERVICE,
 } from "../wallet/wallet.tokens.js";
@@ -39,7 +41,9 @@ import { labelOf } from "../core/conversation/capabilities.js";
 import type { CapabilityFlags } from "../core/conversation/capabilities.js";
 import { suggestionPolicy } from "../core/conversation/suggestions.js";
 import { ConversationPresenter } from "../core/conversation/presenter.js";
+import { FundingAnnouncer } from "../core/channels/funding-announcer.js";
 import { OnboardingAnnouncer } from "../core/channels/onboarding-announcer.js";
+import type { WalletFundingWatcher } from "../core/wallets/funding-watcher.js";
 import { OnboardingLifecycleService } from "../core/onboarding/lifecycle-service.js";
 import type { OnboardingStateReader } from "../core/onboarding/state.js";
 import { GroqConversationWriter } from "../infrastructure/llm/groq-conversation-writer.js";
@@ -49,6 +53,7 @@ import {
   CHANNEL_MESSAGE_SERVICE,
   CHANNEL_REPOSITORIES,
   CONVERSATION_PRESENTER,
+  FUNDING_ANNOUNCER,
   ONBOARDING_ANNOUNCER,
   ONBOARDING_LIFECYCLE,
   PAYMENT_STATUS_DISPATCHER,
@@ -208,7 +213,7 @@ function nestLog(): AgentLog {
                     const tokens = await balances.supportedTokens();
                     return {
                       address: wallet.address,
-                      network: SETTINGS.celo.network === "mainnet" ? "Celo" : "Celo (test network)",
+                      network: balances.networkLabel,
                       assets: tokens.map((token) => token.symbol),
                     };
                   } catch (error) {
@@ -217,8 +222,24 @@ function nestLog(): AgentLog {
                     throw error;
                   }
                 },
+                // What the wallet holds right now, so a deposit can be matched against an open payment.
+                async holdings(userId) {
+                  try {
+                    const view = await balances.forUser(userId);
+                    return view.balances.map((line) => ({
+                      symbol: line.symbol,
+                      assetId: line.assetId,
+                      amount: line.money.amount,
+                    }));
+                  } catch {
+                    return null;
+                  }
+                },
               }
             : null,
+          resumeWindowMs: SETTINGS.funding.resumeWindowMs,
+          // On a test network the open payment's token (a registry asset) and the held test token are tied by symbol only.
+          matchBySymbol: balances?.isTestNetwork === true,
           links: {
             setupLink: async (userId, options) => {
               if (!setup) return null;
@@ -256,6 +277,24 @@ function nestLog(): AgentLog {
         return new OnboardingAnnouncer({
           lifecycle,
           announce: (announcement) => messages.announceOnboarding(announcement),
+          log: nestLog(),
+        });
+      },
+    },
+    {
+      // Looks for supported deposits (polled by the sweeper) and tells people on every chat they have linked.
+      provide: FUNDING_ANNOUNCER,
+      inject: [WALLET_FUNDING_WATCHER, WALLET_FUNDING_STORE, CHANNEL_MESSAGE_SERVICE],
+      useFactory: (
+        watcher: WalletFundingWatcher | null,
+        store: WalletFundingStore,
+        messages: ChannelMessageService | null,
+      ): FundingAnnouncer | null => {
+        if (!watcher || !messages) return null;
+        return new FundingAnnouncer({
+          watcher,
+          store,
+          announce: (event) => messages.announceFunding(event),
           log: nestLog(),
         });
       },
@@ -328,6 +367,7 @@ function nestLog(): AgentLog {
     },
   ],
   exports: [
+    FUNDING_ANNOUNCER,
     CHANNEL_MESSAGE_SERVICE,
     PAYMENT_STATUS_DISPATCHER,
     TELEGRAM_ADAPTER,

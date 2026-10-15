@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import type {
   ChannelAdapter,
+  ChannelDraft,
   ChannelCommand,
   ChannelTarget,
   InboundChannelMessage,
@@ -100,6 +101,10 @@ export interface TelegramAdapterOptions {
   fetch?: typeof fetch;
   /** Override for tests or a local Bot API server. */
   apiBase?: string;
+  /** The least time between two updates of one live draft. Default 250 ms: a few updates a second, never one per token. */
+  draftIntervalMs?: number;
+  /** The most updates one draft may make. Default 24, so a long reply cannot flood the chat. */
+  draftMaxUpdates?: number;
 }
 
 /**
@@ -226,6 +231,27 @@ export class TelegramAdapter implements ChannelAdapter {
     await this.call("setMyCommands", { commands });
   }
 
+  /**
+   * A live draft (Bot API sendMessageDraft): the reply appears to be typed out in the chat, then the finished message replaces it.
+   * Private chats only. Updates are coalesced and rate-limited here, and any error or flood-wait stops the draft quietly: a draft
+   * is a nicety, never something the reply depends on.
+   */
+  openDraft(target: ChannelTarget): ChannelDraft | null {
+    const draftId = 1 + Math.floor(Math.random() * 2_000_000_000);
+    return new TelegramDraft(
+      (text) =>
+        this.call("sendMessageDraft", {
+          chat_id: target.externalConversationId,
+          draft_id: draftId,
+          text: clip(text, MAX_TEXT),
+        }).then(() => undefined),
+      {
+        minIntervalMs: this.options.draftIntervalMs ?? 250,
+        maxUpdates: this.options.draftMaxUpdates ?? 24,
+      },
+    );
+  }
+
   async acknowledge(message: InboundChannelMessage): Promise<void> {
     if (message.content.kind !== "ACTION" || !message.content.ackToken) return;
     await this.call("answerCallbackQuery", { callback_query_id: message.content.ackToken });
@@ -299,6 +325,73 @@ export class TelegramAdapter implements ChannelAdapter {
       );
     }
     return payload.result as T;
+  }
+}
+
+/**
+ * Shows a reply as it is written, without ever flooding Telegram. Only the LATEST text matters, so updates that arrive faster than
+ * the interval are merged into one; nothing is sent while a send is in flight; and after `maxUpdates`, a flood-wait (429) or any
+ * error, it stops for good. `close()` cancels the pending update and waits for the one in flight.
+ */
+export class TelegramDraft implements ChannelDraft {
+  private latest = "";
+  private shown = "";
+  private lastSentAt = 0;
+  private sends = 0;
+  private timer: NodeJS.Timeout | undefined;
+  private inFlight: Promise<void> | undefined;
+  private stopped = false;
+
+  constructor(
+    private readonly send: (text: string) => Promise<void>,
+    private readonly options: { minIntervalMs: number; maxUpdates: number },
+  ) {}
+
+  update(text: string): void {
+    if (this.stopped) return;
+    this.latest = text;
+    this.schedule();
+  }
+
+  async close(): Promise<void> {
+    this.stopped = true;
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = undefined;
+    await this.inFlight;
+  }
+
+  private schedule(): void {
+    if (this.timer || this.inFlight || this.stopped) return;
+    const wait = Math.max(0, this.lastSentAt + this.options.minIntervalMs - Date.now());
+    this.timer = setTimeout(() => {
+      this.timer = undefined;
+      void this.flush();
+    }, wait);
+    this.timer.unref();
+  }
+
+  private flush(): Promise<void> {
+    if (this.stopped || this.latest === this.shown) return Promise.resolve();
+    if (this.sends >= this.options.maxUpdates) {
+      this.stopped = true;
+      return Promise.resolve();
+    }
+    const text = this.latest;
+    this.sends += 1;
+    this.lastSentAt = Date.now();
+    this.inFlight = this.send(text)
+      .then(() => {
+        this.shown = text;
+      })
+      .catch(() => {
+        // A flood-wait, a closed chat, a network blip: stop showing the draft. The finished message is unaffected.
+        this.stopped = true;
+      })
+      .finally(() => {
+        this.inFlight = undefined;
+        if (!this.stopped && this.latest !== this.shown) this.schedule();
+      });
+    return this.inFlight;
   }
 }
 

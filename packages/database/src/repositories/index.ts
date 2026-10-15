@@ -194,3 +194,5 @@ export function withTransaction<T>(
 export function createDatabaseAssetRegistry(database: Database): AssetRegistry {
   return createAssetRegistry(createAssetRepository(database.client));
 }
+
+export { createWalletFundingStore } from "./wallet-funding.js";

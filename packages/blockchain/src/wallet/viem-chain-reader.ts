@@ -1,6 +1,6 @@
 import { createPublicClient, http, parseAbi } from "viem";
 import type { Address } from "viem";
-import { celo } from "viem/chains";
+import { celo, celoSepolia } from "viem/chains";
 
 import type { ChainReader } from "./balance-reader.js";
 
@@ -10,8 +10,11 @@ const erc20 = parseAbi([
 ]);
 
 /** A read-only Celo reader over viem. Batches token reads through Multicall3 (deployed on Celo). */
-export function createViemChainReader(options: { rpcUrl?: string } = {}): ChainReader {
-  const client = createPublicClient({ chain: celo, transport: http(options.rpcUrl) });
+export function createViemChainReader(
+  options: { rpcUrl?: string; network?: "celo-mainnet" | "celo-sepolia" } = {},
+): ChainReader {
+  const chain = options.network === "celo-sepolia" ? celoSepolia : celo;
+  const client = createPublicClient({ chain, transport: http(options.rpcUrl) });
 
   return {
     async getErc20Balances(owner, tokens) {

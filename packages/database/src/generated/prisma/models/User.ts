@@ -216,6 +216,8 @@ export type UserWhereInput = {
   channelActions?: Prisma.ChannelActionListRelationFilter
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusListRelationFilter
   userNotifications?: Prisma.UserNotificationListRelationFilter
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointListRelationFilter
+  walletFundingEvents?: Prisma.WalletFundingEventListRelationFilter
   attestationChallenges?: Prisma.DeviceAttestationChallengeListRelationFilter
   deviceAttestations?: Prisma.DeviceAttestationListRelationFilter
 }
@@ -253,6 +255,8 @@ export type UserOrderByWithRelationInput = {
   channelActions?: Prisma.ChannelActionOrderByRelationAggregateInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusOrderByRelationAggregateInput
   userNotifications?: Prisma.UserNotificationOrderByRelationAggregateInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointOrderByRelationAggregateInput
+  walletFundingEvents?: Prisma.WalletFundingEventOrderByRelationAggregateInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeOrderByRelationAggregateInput
   deviceAttestations?: Prisma.DeviceAttestationOrderByRelationAggregateInput
 }
@@ -293,6 +297,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   channelActions?: Prisma.ChannelActionListRelationFilter
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusListRelationFilter
   userNotifications?: Prisma.UserNotificationListRelationFilter
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointListRelationFilter
+  walletFundingEvents?: Prisma.WalletFundingEventListRelationFilter
   attestationChallenges?: Prisma.DeviceAttestationChallengeListRelationFilter
   deviceAttestations?: Prisma.DeviceAttestationListRelationFilter
 }, "id" | "username">
@@ -354,6 +360,8 @@ export type UserCreateInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -391,6 +399,8 @@ export type UserUncheckedCreateInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -428,6 +438,8 @@ export type UserUpdateInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -465,6 +477,8 @@ export type UserUncheckedUpdateInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -943,6 +957,34 @@ export type UserUpdateOneRequiredWithoutUserNotificationsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutUserNotificationsInput, Prisma.UserUpdateWithoutUserNotificationsInput>, Prisma.UserUncheckedUpdateWithoutUserNotificationsInput>
 }
 
+export type UserCreateNestedOneWithoutWalletDepositCheckpointsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutWalletDepositCheckpointsInput, Prisma.UserUncheckedCreateWithoutWalletDepositCheckpointsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutWalletDepositCheckpointsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutWalletDepositCheckpointsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutWalletDepositCheckpointsInput, Prisma.UserUncheckedCreateWithoutWalletDepositCheckpointsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutWalletDepositCheckpointsInput
+  upsert?: Prisma.UserUpsertWithoutWalletDepositCheckpointsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutWalletDepositCheckpointsInput, Prisma.UserUpdateWithoutWalletDepositCheckpointsInput>, Prisma.UserUncheckedUpdateWithoutWalletDepositCheckpointsInput>
+}
+
+export type UserCreateNestedOneWithoutWalletFundingEventsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutWalletFundingEventsInput, Prisma.UserUncheckedCreateWithoutWalletFundingEventsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutWalletFundingEventsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutWalletFundingEventsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutWalletFundingEventsInput, Prisma.UserUncheckedCreateWithoutWalletFundingEventsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutWalletFundingEventsInput
+  upsert?: Prisma.UserUpsertWithoutWalletFundingEventsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutWalletFundingEventsInput, Prisma.UserUpdateWithoutWalletFundingEventsInput>, Prisma.UserUncheckedUpdateWithoutWalletFundingEventsInput>
+}
+
 export type UserCreateWithoutIdentitiesInput = {
   id: string
   username?: string | null
@@ -975,6 +1017,8 @@ export type UserCreateWithoutIdentitiesInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -1011,6 +1055,8 @@ export type UserUncheckedCreateWithoutIdentitiesInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -1063,6 +1109,8 @@ export type UserUpdateWithoutIdentitiesInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -1099,6 +1147,8 @@ export type UserUncheckedUpdateWithoutIdentitiesInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -1135,6 +1185,8 @@ export type UserCreateWithoutSessionsInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -1171,6 +1223,8 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -1223,6 +1277,8 @@ export type UserUpdateWithoutSessionsInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -1259,6 +1315,8 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -1295,6 +1353,8 @@ export type UserCreateWithoutWalletsInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -1331,6 +1391,8 @@ export type UserUncheckedCreateWithoutWalletsInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -1383,6 +1445,8 @@ export type UserUpdateWithoutWalletsInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -1419,6 +1483,8 @@ export type UserUncheckedUpdateWithoutWalletsInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -1455,6 +1521,8 @@ export type UserCreateWithoutPasskeyCredentialsInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -1491,6 +1559,8 @@ export type UserUncheckedCreateWithoutPasskeyCredentialsInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -1543,6 +1613,8 @@ export type UserUpdateWithoutPasskeyCredentialsInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -1579,6 +1651,8 @@ export type UserUncheckedUpdateWithoutPasskeyCredentialsInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -1615,6 +1689,8 @@ export type UserCreateWithoutWalletSetupSessionsInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -1651,6 +1727,8 @@ export type UserUncheckedCreateWithoutWalletSetupSessionsInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -1703,6 +1781,8 @@ export type UserUpdateWithoutWalletSetupSessionsInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -1739,6 +1819,8 @@ export type UserUncheckedUpdateWithoutWalletSetupSessionsInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -1775,6 +1857,8 @@ export type UserCreateWithoutTransactionPinInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -1811,6 +1895,8 @@ export type UserUncheckedCreateWithoutTransactionPinInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -1863,6 +1949,8 @@ export type UserUpdateWithoutTransactionPinInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -1899,6 +1987,8 @@ export type UserUncheckedUpdateWithoutTransactionPinInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -1935,6 +2025,8 @@ export type UserCreateWithoutAuthorizationSessionsInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -1971,6 +2063,8 @@ export type UserUncheckedCreateWithoutAuthorizationSessionsInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -2023,6 +2117,8 @@ export type UserUpdateWithoutAuthorizationSessionsInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -2059,6 +2155,8 @@ export type UserUncheckedUpdateWithoutAuthorizationSessionsInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -2095,6 +2193,8 @@ export type UserCreateWithoutPaymentAuthorizationsInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -2131,6 +2231,8 @@ export type UserUncheckedCreateWithoutPaymentAuthorizationsInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -2183,6 +2285,8 @@ export type UserUpdateWithoutPaymentAuthorizationsInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -2219,6 +2323,8 @@ export type UserUncheckedUpdateWithoutPaymentAuthorizationsInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -2255,6 +2361,8 @@ export type UserCreateWithoutFirmQuoteAttemptsInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -2291,6 +2399,8 @@ export type UserUncheckedCreateWithoutFirmQuoteAttemptsInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -2343,6 +2453,8 @@ export type UserUpdateWithoutFirmQuoteAttemptsInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -2379,6 +2491,8 @@ export type UserUncheckedUpdateWithoutFirmQuoteAttemptsInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -2415,6 +2529,8 @@ export type UserCreateWithoutRootActionSessionsInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -2451,6 +2567,8 @@ export type UserUncheckedCreateWithoutRootActionSessionsInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -2503,6 +2621,8 @@ export type UserUpdateWithoutRootActionSessionsInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -2539,6 +2659,8 @@ export type UserUncheckedUpdateWithoutRootActionSessionsInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -2575,6 +2697,8 @@ export type UserCreateWithoutPasskeyChallengesInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -2611,6 +2735,8 @@ export type UserUncheckedCreateWithoutPasskeyChallengesInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -2663,6 +2789,8 @@ export type UserUpdateWithoutPasskeyChallengesInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -2699,6 +2827,8 @@ export type UserUncheckedUpdateWithoutPasskeyChallengesInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -2735,6 +2865,8 @@ export type UserCreateWithoutDelegatedPermissionsInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -2771,6 +2903,8 @@ export type UserUncheckedCreateWithoutDelegatedPermissionsInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -2823,6 +2957,8 @@ export type UserUpdateWithoutDelegatedPermissionsInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -2859,6 +2995,8 @@ export type UserUncheckedUpdateWithoutDelegatedPermissionsInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -2895,6 +3033,8 @@ export type UserCreateWithoutConversationsInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -2931,6 +3071,8 @@ export type UserUncheckedCreateWithoutConversationsInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -2983,6 +3125,8 @@ export type UserUpdateWithoutConversationsInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -3019,6 +3163,8 @@ export type UserUncheckedUpdateWithoutConversationsInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -3055,6 +3201,8 @@ export type UserCreateWithoutIntentsInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -3091,6 +3239,8 @@ export type UserUncheckedCreateWithoutIntentsInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -3143,6 +3293,8 @@ export type UserUpdateWithoutIntentsInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -3179,6 +3331,8 @@ export type UserUncheckedUpdateWithoutIntentsInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -3215,6 +3369,8 @@ export type UserCreateWithoutOwnedRecipientsInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -3251,6 +3407,8 @@ export type UserUncheckedCreateWithoutOwnedRecipientsInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -3292,6 +3450,8 @@ export type UserCreateWithoutLinkedRecipientsInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -3328,6 +3488,8 @@ export type UserUncheckedCreateWithoutLinkedRecipientsInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -3380,6 +3542,8 @@ export type UserUpdateWithoutOwnedRecipientsInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -3416,6 +3580,8 @@ export type UserUncheckedUpdateWithoutOwnedRecipientsInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -3463,6 +3629,8 @@ export type UserUpdateWithoutLinkedRecipientsInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -3499,6 +3667,8 @@ export type UserUncheckedUpdateWithoutLinkedRecipientsInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -3535,6 +3705,8 @@ export type UserCreateWithoutExecutionsInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -3571,6 +3743,8 @@ export type UserUncheckedCreateWithoutExecutionsInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -3623,6 +3797,8 @@ export type UserUpdateWithoutExecutionsInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -3659,6 +3835,8 @@ export type UserUncheckedUpdateWithoutExecutionsInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -3695,6 +3873,8 @@ export type UserCreateWithoutRampSessionsInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -3731,6 +3911,8 @@ export type UserUncheckedCreateWithoutRampSessionsInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -3783,6 +3965,8 @@ export type UserUpdateWithoutRampSessionsInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -3819,6 +4003,8 @@ export type UserUncheckedUpdateWithoutRampSessionsInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -3855,6 +4041,8 @@ export type UserCreateWithoutAuditEventsInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -3891,6 +4079,8 @@ export type UserUncheckedCreateWithoutAuditEventsInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -3943,6 +4133,8 @@ export type UserUpdateWithoutAuditEventsInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -3979,6 +4171,8 @@ export type UserUncheckedUpdateWithoutAuditEventsInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -4015,6 +4209,8 @@ export type UserCreateWithoutWalletCredentialsInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -4051,6 +4247,8 @@ export type UserUncheckedCreateWithoutWalletCredentialsInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -4103,6 +4301,8 @@ export type UserUpdateWithoutWalletCredentialsInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -4139,6 +4339,8 @@ export type UserUncheckedUpdateWithoutWalletCredentialsInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -4175,6 +4377,8 @@ export type UserCreateWithoutRootChangesInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -4211,6 +4415,8 @@ export type UserUncheckedCreateWithoutRootChangesInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -4263,6 +4469,8 @@ export type UserUpdateWithoutRootChangesInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -4299,6 +4507,8 @@ export type UserUncheckedUpdateWithoutRootChangesInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -4335,6 +4545,8 @@ export type UserCreateWithoutRecoveryConfigurationsInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -4371,6 +4583,8 @@ export type UserUncheckedCreateWithoutRecoveryConfigurationsInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -4423,6 +4637,8 @@ export type UserUpdateWithoutRecoveryConfigurationsInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -4459,6 +4675,8 @@ export type UserUncheckedUpdateWithoutRecoveryConfigurationsInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -4495,6 +4713,8 @@ export type UserCreateWithoutRecoveryAttemptsInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -4531,6 +4751,8 @@ export type UserUncheckedCreateWithoutRecoveryAttemptsInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -4583,6 +4805,8 @@ export type UserUpdateWithoutRecoveryAttemptsInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -4619,6 +4843,8 @@ export type UserUncheckedUpdateWithoutRecoveryAttemptsInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -4656,6 +4882,8 @@ export type UserCreateWithoutAttestationChallengesInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
 
@@ -4692,6 +4920,8 @@ export type UserUncheckedCreateWithoutAttestationChallengesInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -4744,6 +4974,8 @@ export type UserUpdateWithoutAttestationChallengesInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
 
@@ -4780,6 +5012,8 @@ export type UserUncheckedUpdateWithoutAttestationChallengesInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -4816,6 +5050,8 @@ export type UserCreateWithoutDeviceAttestationsInput = {
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
 }
 
@@ -4852,6 +5088,8 @@ export type UserUncheckedCreateWithoutDeviceAttestationsInput = {
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -4904,6 +5142,8 @@ export type UserUpdateWithoutDeviceAttestationsInput = {
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
 }
 
@@ -4940,6 +5180,8 @@ export type UserUncheckedUpdateWithoutDeviceAttestationsInput = {
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -4975,6 +5217,8 @@ export type UserCreateWithoutChannelActionsInput = {
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -5011,6 +5255,8 @@ export type UserUncheckedCreateWithoutChannelActionsInput = {
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -5063,6 +5309,8 @@ export type UserUpdateWithoutChannelActionsInput = {
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -5099,6 +5347,8 @@ export type UserUncheckedUpdateWithoutChannelActionsInput = {
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -5135,6 +5385,8 @@ export type UserCreateWithoutChannelPaymentStatusesInput = {
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -5171,6 +5423,8 @@ export type UserUncheckedCreateWithoutChannelPaymentStatusesInput = {
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -5223,6 +5477,8 @@ export type UserUpdateWithoutChannelPaymentStatusesInput = {
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -5259,6 +5515,8 @@ export type UserUncheckedUpdateWithoutChannelPaymentStatusesInput = {
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -5295,6 +5553,8 @@ export type UserCreateWithoutUserNotificationsInput = {
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
   channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
 }
@@ -5331,6 +5591,8 @@ export type UserUncheckedCreateWithoutUserNotificationsInput = {
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
   channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
 }
@@ -5383,6 +5645,8 @@ export type UserUpdateWithoutUserNotificationsInput = {
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
   channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
 }
@@ -5419,6 +5683,344 @@ export type UserUncheckedUpdateWithoutUserNotificationsInput = {
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
   channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
   channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutWalletDepositCheckpointsInput = {
+  id: string
+  username?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
+  conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
+  ownedRecipients?: Prisma.RecipientCreateNestedManyWithoutOwnerInput
+  linkedRecipients?: Prisma.RecipientCreateNestedManyWithoutLinkedUserInput
+  intents?: Prisma.IntentCreateNestedManyWithoutUserInput
+  executions?: Prisma.ExecutionCreateNestedManyWithoutUserInput
+  rampSessions?: Prisma.RampSessionCreateNestedManyWithoutUserInput
+  auditEvents?: Prisma.AuditEventCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutUserInput
+  walletSetupSessions?: Prisma.WalletSetupSessionCreateNestedManyWithoutUserInput
+  transactionPin?: Prisma.TransactionPinSecurityCreateNestedOneWithoutUserInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutUserInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
+  rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
+  channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
+  userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutWalletDepositCheckpointsInput = {
+  id: string
+  username?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
+  conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
+  ownedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutOwnerInput
+  linkedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutLinkedUserInput
+  intents?: Prisma.IntentUncheckedCreateNestedManyWithoutUserInput
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutUserInput
+  rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutUserInput
+  auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutUserInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUncheckedCreateNestedManyWithoutUserInput
+  transactionPin?: Prisma.TransactionPinSecurityUncheckedCreateNestedOneWithoutUserInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutUserInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
+  channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
+  userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutWalletDepositCheckpointsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutWalletDepositCheckpointsInput, Prisma.UserUncheckedCreateWithoutWalletDepositCheckpointsInput>
+}
+
+export type UserUpsertWithoutWalletDepositCheckpointsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutWalletDepositCheckpointsInput, Prisma.UserUncheckedUpdateWithoutWalletDepositCheckpointsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutWalletDepositCheckpointsInput, Prisma.UserUncheckedCreateWithoutWalletDepositCheckpointsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutWalletDepositCheckpointsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutWalletDepositCheckpointsInput, Prisma.UserUncheckedUpdateWithoutWalletDepositCheckpointsInput>
+}
+
+export type UserUpdateWithoutWalletDepositCheckpointsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
+  conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
+  ownedRecipients?: Prisma.RecipientUpdateManyWithoutOwnerNestedInput
+  linkedRecipients?: Prisma.RecipientUpdateManyWithoutLinkedUserNestedInput
+  intents?: Prisma.IntentUpdateManyWithoutUserNestedInput
+  executions?: Prisma.ExecutionUpdateManyWithoutUserNestedInput
+  rampSessions?: Prisma.RampSessionUpdateManyWithoutUserNestedInput
+  auditEvents?: Prisma.AuditEventUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutUserNestedInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUpdateManyWithoutUserNestedInput
+  transactionPin?: Prisma.TransactionPinSecurityUpdateOneWithoutUserNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutUserNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
+  channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
+  userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutWalletDepositCheckpointsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
+  conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
+  ownedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutOwnerNestedInput
+  linkedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutLinkedUserNestedInput
+  intents?: Prisma.IntentUncheckedUpdateManyWithoutUserNestedInput
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutUserNestedInput
+  rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutUserNestedInput
+  auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutUserNestedInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUncheckedUpdateManyWithoutUserNestedInput
+  transactionPin?: Prisma.TransactionPinSecurityUncheckedUpdateOneWithoutUserNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutUserNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
+  channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
+  userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutWalletFundingEventsInput = {
+  id: string
+  username?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
+  conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
+  ownedRecipients?: Prisma.RecipientCreateNestedManyWithoutOwnerInput
+  linkedRecipients?: Prisma.RecipientCreateNestedManyWithoutLinkedUserInput
+  intents?: Prisma.IntentCreateNestedManyWithoutUserInput
+  executions?: Prisma.ExecutionCreateNestedManyWithoutUserInput
+  rampSessions?: Prisma.RampSessionCreateNestedManyWithoutUserInput
+  auditEvents?: Prisma.AuditEventCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutUserInput
+  walletSetupSessions?: Prisma.WalletSetupSessionCreateNestedManyWithoutUserInput
+  transactionPin?: Prisma.TransactionPinSecurityCreateNestedOneWithoutUserInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutUserInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
+  rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
+  channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
+  userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutWalletFundingEventsInput = {
+  id: string
+  username?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
+  conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
+  ownedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutOwnerInput
+  linkedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutLinkedUserInput
+  intents?: Prisma.IntentUncheckedCreateNestedManyWithoutUserInput
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutUserInput
+  rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutUserInput
+  auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutUserInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUncheckedCreateNestedManyWithoutUserInput
+  transactionPin?: Prisma.TransactionPinSecurityUncheckedCreateNestedOneWithoutUserInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutUserInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
+  channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
+  userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutWalletFundingEventsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutWalletFundingEventsInput, Prisma.UserUncheckedCreateWithoutWalletFundingEventsInput>
+}
+
+export type UserUpsertWithoutWalletFundingEventsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutWalletFundingEventsInput, Prisma.UserUncheckedUpdateWithoutWalletFundingEventsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutWalletFundingEventsInput, Prisma.UserUncheckedCreateWithoutWalletFundingEventsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutWalletFundingEventsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutWalletFundingEventsInput, Prisma.UserUncheckedUpdateWithoutWalletFundingEventsInput>
+}
+
+export type UserUpdateWithoutWalletFundingEventsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
+  conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
+  ownedRecipients?: Prisma.RecipientUpdateManyWithoutOwnerNestedInput
+  linkedRecipients?: Prisma.RecipientUpdateManyWithoutLinkedUserNestedInput
+  intents?: Prisma.IntentUpdateManyWithoutUserNestedInput
+  executions?: Prisma.ExecutionUpdateManyWithoutUserNestedInput
+  rampSessions?: Prisma.RampSessionUpdateManyWithoutUserNestedInput
+  auditEvents?: Prisma.AuditEventUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutUserNestedInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUpdateManyWithoutUserNestedInput
+  transactionPin?: Prisma.TransactionPinSecurityUpdateOneWithoutUserNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutUserNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
+  channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
+  userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutWalletFundingEventsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
+  conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
+  ownedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutOwnerNestedInput
+  linkedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutLinkedUserNestedInput
+  intents?: Prisma.IntentUncheckedUpdateManyWithoutUserNestedInput
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutUserNestedInput
+  rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutUserNestedInput
+  auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutUserNestedInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUncheckedUpdateManyWithoutUserNestedInput
+  transactionPin?: Prisma.TransactionPinSecurityUncheckedUpdateOneWithoutUserNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutUserNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
+  channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
+  userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -5454,6 +6056,8 @@ export type UserCountOutputType = {
   channelActions: number
   channelPaymentStatuses: number
   userNotifications: number
+  walletDepositCheckpoints: number
+  walletFundingEvents: number
   attestationChallenges: number
   deviceAttestations: number
 }
@@ -5484,6 +6088,8 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   channelActions?: boolean | UserCountOutputTypeCountChannelActionsArgs
   channelPaymentStatuses?: boolean | UserCountOutputTypeCountChannelPaymentStatusesArgs
   userNotifications?: boolean | UserCountOutputTypeCountUserNotificationsArgs
+  walletDepositCheckpoints?: boolean | UserCountOutputTypeCountWalletDepositCheckpointsArgs
+  walletFundingEvents?: boolean | UserCountOutputTypeCountWalletFundingEventsArgs
   attestationChallenges?: boolean | UserCountOutputTypeCountAttestationChallengesArgs
   deviceAttestations?: boolean | UserCountOutputTypeCountDeviceAttestationsArgs
 }
@@ -5676,6 +6282,20 @@ export type UserCountOutputTypeCountUserNotificationsArgs<ExtArgs extends runtim
 /**
  * UserCountOutputType without action
  */
+export type UserCountOutputTypeCountWalletDepositCheckpointsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.WalletDepositCheckpointWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountWalletFundingEventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.WalletFundingEventWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
 export type UserCountOutputTypeCountAttestationChallengesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.DeviceAttestationChallengeWhereInput
 }
@@ -5721,6 +6341,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   channelActions?: boolean | Prisma.User$channelActionsArgs<ExtArgs>
   channelPaymentStatuses?: boolean | Prisma.User$channelPaymentStatusesArgs<ExtArgs>
   userNotifications?: boolean | Prisma.User$userNotificationsArgs<ExtArgs>
+  walletDepositCheckpoints?: boolean | Prisma.User$walletDepositCheckpointsArgs<ExtArgs>
+  walletFundingEvents?: boolean | Prisma.User$walletFundingEventsArgs<ExtArgs>
   attestationChallenges?: boolean | Prisma.User$attestationChallengesArgs<ExtArgs>
   deviceAttestations?: boolean | Prisma.User$deviceAttestationsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -5781,6 +6403,8 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   channelActions?: boolean | Prisma.User$channelActionsArgs<ExtArgs>
   channelPaymentStatuses?: boolean | Prisma.User$channelPaymentStatusesArgs<ExtArgs>
   userNotifications?: boolean | Prisma.User$userNotificationsArgs<ExtArgs>
+  walletDepositCheckpoints?: boolean | Prisma.User$walletDepositCheckpointsArgs<ExtArgs>
+  walletFundingEvents?: boolean | Prisma.User$walletFundingEventsArgs<ExtArgs>
   attestationChallenges?: boolean | Prisma.User$attestationChallengesArgs<ExtArgs>
   deviceAttestations?: boolean | Prisma.User$deviceAttestationsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -5817,6 +6441,8 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     channelActions: Prisma.$ChannelActionPayload<ExtArgs>[]
     channelPaymentStatuses: Prisma.$ChannelPaymentStatusPayload<ExtArgs>[]
     userNotifications: Prisma.$UserNotificationPayload<ExtArgs>[]
+    walletDepositCheckpoints: Prisma.$WalletDepositCheckpointPayload<ExtArgs>[]
+    walletFundingEvents: Prisma.$WalletFundingEventPayload<ExtArgs>[]
     attestationChallenges: Prisma.$DeviceAttestationChallengePayload<ExtArgs>[]
     deviceAttestations: Prisma.$DeviceAttestationPayload<ExtArgs>[]
   }
@@ -6247,6 +6873,8 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   channelActions<T extends Prisma.User$channelActionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$channelActionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ChannelActionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   channelPaymentStatuses<T extends Prisma.User$channelPaymentStatusesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$channelPaymentStatusesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ChannelPaymentStatusPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   userNotifications<T extends Prisma.User$userNotificationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$userNotificationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserNotificationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  walletDepositCheckpoints<T extends Prisma.User$walletDepositCheckpointsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$walletDepositCheckpointsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WalletDepositCheckpointPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  walletFundingEvents<T extends Prisma.User$walletFundingEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$walletFundingEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WalletFundingEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   attestationChallenges<T extends Prisma.User$attestationChallengesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$attestationChallengesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DeviceAttestationChallengePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   deviceAttestations<T extends Prisma.User$deviceAttestationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$deviceAttestationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DeviceAttestationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -7293,6 +7921,54 @@ export type User$userNotificationsArgs<ExtArgs extends runtime.Types.Extensions.
   take?: number
   skip?: number
   distinct?: Prisma.UserNotificationScalarFieldEnum | Prisma.UserNotificationScalarFieldEnum[]
+}
+
+/**
+ * User.walletDepositCheckpoints
+ */
+export type User$walletDepositCheckpointsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the WalletDepositCheckpoint
+   */
+  select?: Prisma.WalletDepositCheckpointSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the WalletDepositCheckpoint
+   */
+  omit?: Prisma.WalletDepositCheckpointOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.WalletDepositCheckpointInclude<ExtArgs> | null
+  where?: Prisma.WalletDepositCheckpointWhereInput
+  orderBy?: Prisma.WalletDepositCheckpointOrderByWithRelationInput | Prisma.WalletDepositCheckpointOrderByWithRelationInput[]
+  cursor?: Prisma.WalletDepositCheckpointWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.WalletDepositCheckpointScalarFieldEnum | Prisma.WalletDepositCheckpointScalarFieldEnum[]
+}
+
+/**
+ * User.walletFundingEvents
+ */
+export type User$walletFundingEventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the WalletFundingEvent
+   */
+  select?: Prisma.WalletFundingEventSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the WalletFundingEvent
+   */
+  omit?: Prisma.WalletFundingEventOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.WalletFundingEventInclude<ExtArgs> | null
+  where?: Prisma.WalletFundingEventWhereInput
+  orderBy?: Prisma.WalletFundingEventOrderByWithRelationInput | Prisma.WalletFundingEventOrderByWithRelationInput[]
+  cursor?: Prisma.WalletFundingEventWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.WalletFundingEventScalarFieldEnum | Prisma.WalletFundingEventScalarFieldEnum[]
 }
 
 /**

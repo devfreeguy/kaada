@@ -85,6 +85,16 @@ export interface SentMessage {
   externalMessageId: string;
 }
 
+/**
+ * A reply being shown while it is still being written. Optional on an adapter: one that cannot (or need not) simply has no
+ * drafts and the reply appears whole. `update` never blocks and is rate-limited by the adapter, so a fast generator cannot flood
+ * the channel; `close` stops any pending update and waits for one in flight. The finished message is always sent separately.
+ */
+export interface ChannelDraft {
+  update(text: string): void;
+  close(): Promise<void>;
+}
+
 export interface ChannelAdapter {
   readonly channel: ChannelType;
 
@@ -114,6 +124,9 @@ export interface ChannelAdapter {
 
   /** "typing..." while the agent thinks. Best effort. */
   indicateTyping?(target: ChannelTarget): Promise<void>;
+
+  /** Begins showing a partly written reply, where the channel supports it. null when it cannot. */
+  openDraft?(target: ChannelTarget): ChannelDraft | null;
 
   /** Removes a message from the chat (used for anything that looks like a secret that must not stay there). Best effort. */
   remove?(target: ChannelTarget, externalMessageId: string): Promise<void>;

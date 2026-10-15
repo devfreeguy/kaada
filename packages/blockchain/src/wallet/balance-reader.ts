@@ -18,6 +18,11 @@ export interface ChainReader {
 export interface BalanceReaderOptions {
   assets: AssetRegistry;
   chain: ChainReader;
+  /**
+   * Readers for other networks, by chain id (a test network, in development). Celo mainnet is `chain`. A chain without a reader
+   * is refused: a balance is never read from a different network than the one asked for.
+   */
+  networks?: Readonly<Record<number, ChainReader>>;
   /** Also compare each token's on-chain `decimals()` with the registry, and refuse a mismatch. */
   verifyDecimals?: boolean;
 }
@@ -36,8 +41,12 @@ export class ChainBalanceReader implements WalletBalanceReader {
     address: string;
     assetIds: string[];
   }): Promise<WalletBalances> {
-    if (input.chainId !== CELO_CHAIN_ID) {
-      throw new KaadaError("ASSET_NOT_SUPPORTED", "balances are read on Celo mainnet only");
+    const chain =
+      input.chainId === CELO_CHAIN_ID ? this.options.chain : this.options.networks?.[input.chainId];
+    if (!chain) {
+      throw new KaadaError("ASSET_NOT_SUPPORTED", "balances cannot be read on this network", {
+        details: { chainId: input.chainId },
+      });
     }
     const address = evmAddressCodec.normalize(input.address);
 
@@ -49,17 +58,22 @@ export class ChainBalanceReader implements WalletBalanceReader {
           details: { assetId: id },
         });
       }
-      if (asset.chainId !== CELO_CHAIN_ID || asset.contractAddress === undefined) {
-        throw new KaadaError("ASSET_NOT_SUPPORTED", "only Celo ERC-20 tokens can be read", {
-          details: { assetId: id },
-        });
+      // Identity is chain + contract: a token of another network is never read here, whatever its symbol.
+      if (asset.chainId !== input.chainId || asset.contractAddress === undefined) {
+        throw new KaadaError(
+          "ASSET_NOT_SUPPORTED",
+          "only ERC-20 tokens of this network can be read",
+          {
+            details: { assetId: id },
+          },
+        );
       }
       assets.push(asset);
     }
 
     const tokens = assets.map((asset) => asset.contractAddress as string);
     if (this.options.verifyDecimals && tokens.length > 0) {
-      const onChain = await this.options.chain.getErc20Decimals(tokens);
+      const onChain = await chain.getErc20Decimals(tokens);
       assets.forEach((asset, index) => {
         if (onChain[index] !== asset.decimals) {
           throw new KaadaError("ASSET_MISMATCH", "token decimals differ from the asset registry", {
@@ -69,7 +83,7 @@ export class ChainBalanceReader implements WalletBalanceReader {
       });
     }
 
-    const balances = tokens.length === 0 ? [] : await this.readAll(address, tokens, assets);
+    const balances = tokens.length === 0 ? [] : await this.readAll(chain, address, tokens, assets);
     if (balances.length !== assets.length) {
       throw new KaadaError(
         "PROVIDER_UNAVAILABLE",
@@ -88,13 +102,18 @@ export class ChainBalanceReader implements WalletBalanceReader {
    * collapsing every balance into one anonymous error. A token that answers alone means the failure was elsewhere (the RPC),
    * and the original error stands. Nothing is skipped or guessed.
    */
-  private async readAll(address: string, tokens: string[], assets: Asset[]): Promise<bigint[]> {
+  private async readAll(
+    chain: ChainReader,
+    address: string,
+    tokens: string[],
+    assets: Asset[],
+  ): Promise<bigint[]> {
     try {
-      return await this.options.chain.getErc20Balances(address, tokens);
+      return await chain.getErc20Balances(address, tokens);
     } catch (batchError) {
       for (const [index, token] of tokens.entries()) {
         try {
-          await this.options.chain.getErc20Balances(address, [token]);
+          await chain.getErc20Balances(address, [token]);
         } catch {
           const asset = assets[index];
           throw new KaadaError("ASSET_NOT_SUPPORTED", "this token cannot be read on this chain", {

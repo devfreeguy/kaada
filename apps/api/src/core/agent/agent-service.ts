@@ -13,7 +13,7 @@ import { interpretationSchema } from "@kaada/schemas";
 
 import { loadConversationContext, toHistory } from "../conversations/context.js";
 import { IntentCoordinator } from "../intents/coordinator.js";
-import type { Applied, ResumeTurn } from "../intents/coordinator.js";
+import type { Applied, OpenPaymentNeeds, ResumeTurn } from "../intents/coordinator.js";
 import {
   activeFocus,
   isExplicitIntent,
@@ -700,7 +700,7 @@ export class AgentService {
             type: "BALANCE_RESULT",
             lines: [],
             empty: true,
-            text: "Your wallet is empty right now. Want to add some funds?",
+            text: "Your wallet is empty right now. Want to fund it?",
           };
         } else if (wanted && held.length === 0) {
           response = {
@@ -814,6 +814,24 @@ export class AgentService {
     });
     if (conversation.userId !== input.userId) return undefined;
     return this.coordinator.openPaymentResume(repositories, conversation.userId, conversation.id);
+  }
+
+  /** The open payment and what it needs from the wallet, for deposit matching. Read only. */
+  async openPaymentNeeds(input: {
+    userId: string;
+    channel: ChannelType;
+    externalConversationId: string;
+  }): Promise<OpenPaymentNeeds | undefined> {
+    const repositories = this.unitOfWork.read;
+    const conversation = await repositories.conversations.getOrCreateByExternalId({
+      id: createId(),
+      userId: input.userId,
+      channel: input.channel,
+      status: "ACTIVE",
+      externalConversationId: input.externalConversationId,
+    });
+    if (conversation.userId !== input.userId) return undefined;
+    return this.coordinator.openPaymentNeeds(repositories, conversation.userId, conversation.id);
   }
 
   /** The last few turns of a conversation (oldest first), for the conversation layer's tone. Read only. */

@@ -362,15 +362,17 @@ model User {
   firmQuoteAttempts     FirmQuoteAttempt[]
   rootActionSessions    RootActionSession[]
 
-  walletCredentials      WalletCredential[]
-  rootChanges            RootChange[]
-  recoveryConfigurations RecoveryConfiguration[]
-  recoveryAttempts       RecoveryAttempt[]
-  channelActions         ChannelAction[]
-  channelPaymentStatuses ChannelPaymentStatus[]
-  userNotifications      UserNotification[]
-  attestationChallenges  DeviceAttestationChallenge[]
-  deviceAttestations     DeviceAttestation[]
+  walletCredentials        WalletCredential[]
+  rootChanges              RootChange[]
+  recoveryConfigurations   RecoveryConfiguration[]
+  recoveryAttempts         RecoveryAttempt[]
+  channelActions           ChannelAction[]
+  channelPaymentStatuses   ChannelPaymentStatus[]
+  userNotifications        UserNotification[]
+  walletDepositCheckpoints WalletDepositCheckpoint[]
+  walletFundingEvents      WalletFundingEvent[]
+  attestationChallenges    DeviceAttestationChallenge[]
+  deviceAttestations       DeviceAttestation[]
 }
 
 /// An external identity (Telegram account, phone, email, ...) attached to one Kaada user.
@@ -431,7 +433,7 @@ model Wallet {
   createdAt         DateTime         @default(now()) @db.Timestamptz(3)
   updatedAt         DateTime         @updatedAt @db.Timestamptz(3)
 
-  user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                   User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
   delegatedPermissions   DelegatedPermission[]
   authorizationSessions  AuthorizationSession[]
   paymentAuthorizations  PaymentAuthorization[]
@@ -1400,8 +1402,8 @@ model DeviceAttestationChallenge {
   consumedPublicKeyHash String?
   createdAt             DateTime                    @default(now()) @db.Timestamptz(3)
 
-  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  wallet      Wallet?             @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet      Wallet?            @relation(fields: [walletId], references: [id], onDelete: Cascade)
   attestation DeviceAttestation?
 
   @@index([userId, purpose])
@@ -1411,10 +1413,10 @@ model DeviceAttestationChallenge {
 /// The outcome of verifying platform evidence for ONE key and ONE challenge. Holds hashes and extracted facts, never the raw
 /// certificate chain or attestation object. One per challenge; at most one VERIFIED per key (manual migration).
 model DeviceAttestation {
-  id              String                   @id @db.Uuid
-  userId          String                   @db.Uuid
-  walletId        String?                  @db.Uuid
-  challengeId     String                   @unique @db.Uuid
+  id              String                    @id @db.Uuid
+  userId          String                    @db.Uuid
+  walletId        String?                   @db.Uuid
+  challengeId     String                    @unique @db.Uuid
   platform        AttestationPlatform
   attestationType String
   /// The keyId (0x + 64 hex) of the credential the evidence was presented for.
@@ -1429,8 +1431,8 @@ model DeviceAttestation {
   facts           Json
   chainHashes     String[]
   trustAnchor     String?
-  verifiedAt      DateTime                 @db.Timestamptz(3)
-  createdAt       DateTime                 @default(now()) @db.Timestamptz(3)
+  verifiedAt      DateTime                  @db.Timestamptz(3)
+  createdAt       DateTime                  @default(now()) @db.Timestamptz(3)
 
   user      User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
   wallet    Wallet?                    @relation(fields: [walletId], references: [id], onDelete: Cascade)
@@ -1498,17 +1500,17 @@ model ChannelAction {
 /// authorization session. `lastState` is what the person was last told; it is moved by compare-and-set so two instances
 /// cannot announce the same change twice.
 model ChannelPaymentStatus {
-  id                     String      @id @db.Uuid
-  userId                 String      @db.Uuid
-  channel                ChannelType
-  externalConversationId String
-  authorizationSessionId String      @unique @db.Uuid
+  id                       String      @id @db.Uuid
+  userId                   String      @db.Uuid
+  channel                  ChannelType
+  externalConversationId   String
+  authorizationSessionId   String      @unique @db.Uuid
   externalSummaryMessageId String?
   externalStatusMessageId  String?
-  lastState              String
-  terminal               Boolean     @default(false)
-  createdAt              DateTime    @default(now()) @db.Timestamptz(3)
-  updatedAt              DateTime    @updatedAt @db.Timestamptz(3)
+  lastState                String
+  terminal                 Boolean     @default(false)
+  createdAt                DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt                DateTime    @updatedAt @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1542,5 +1544,46 @@ model UserNotification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, kind])
+  @@index([deliveredAt, createdAt])
+}
+
+/// What a deposit check last saw for a wallet on a network (smallest units, by asset id), kept ONLY to tell a new deposit from one
+/// already announced. It is never shown or used as a balance (the chain is the only authority). `version` is the compare-and-set key:
+/// of any number of observers that read the same version, exactly one commits, and that one records the funding event.
+model WalletDepositCheckpoint {
+  id         String   @id @db.Uuid
+  userId     String   @db.Uuid
+  chainId    Int
+  address    String
+  observed   Json
+  version    Int      @default(0)
+  observedAt DateTime @db.Timestamptz(3)
+
+  user   User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events WalletFundingEvent[]
+
+  @@unique([chainId, address])
+  @@index([userId])
+}
+
+/// A supported deposit, as an outbox row. One per observation that moved a checkpoint upwards (several tokens that arrived
+/// together are the items of one event); delivered to the person's linked chats and then marked delivered.
+model WalletFundingEvent {
+  id           String    @id @db.Uuid
+  userId       String    @db.Uuid
+  checkpointId String    @db.Uuid
+  version      Int
+  chainId      Int
+  address      String
+  items        Json
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+  claimedAt    DateTime? @db.Timestamptz(3)
+  deliveredAt  DateTime? @db.Timestamptz(3)
+  attempts     Int       @default(0)
+
+  user       User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkpoint WalletDepositCheckpoint @relation(fields: [checkpointId], references: [id], onDelete: Cascade)
+
+  @@unique([checkpointId, version])
   @@index([deliveredAt, createdAt])
 }

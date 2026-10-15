@@ -20,6 +20,7 @@ import { createRoutingService } from "../infrastructure/fx/pricing.js";
 import { createCandidateServices } from "../core/routing/candidate-services.js";
 import type { CandidateServices } from "../core/routing/candidate-services.js";
 import { WalletFundingResolver } from "../core/routing/funding-resolver.js";
+import { groupThousands } from "../core/wallets/balance-service.js";
 import type { WalletBalanceService } from "../core/wallets/balance-service.js";
 import { WalletServiceFundingPort } from "../core/wallets/funding-port.js";
 import type { WalletService } from "../core/wallets/wallet-service.js";
@@ -49,7 +50,7 @@ function walletBalanceReader(balances: WalletBalanceService): AgentBalanceReader
         return {
           lines: view.balances
             .filter((line) => line.money.amount !== "0")
-            .map((line) => ({ symbol: line.symbol, display: line.formatted })),
+            .map((line) => ({ symbol: line.symbol, display: groupThousands(line.formatted) })),
         };
       } catch (error) {
         if (error instanceof KaadaError && error.code === "WALLET_NOT_ACTIVE") return "NO_WALLET";

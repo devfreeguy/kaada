@@ -79,6 +79,31 @@ export function createGroqSdkTransport(options: GroqSdkTransportOptions): GroqTr
   });
 
   return {
+    async *chatStream(request: GroqChatRequest): AsyncIterable<string> {
+      try {
+        const stream = await client.chat.completions.create(
+          {
+            model: request.model,
+            messages: [
+              { role: "system", content: request.system },
+              { role: "user", content: request.user },
+            ],
+            temperature: request.temperature ?? 0,
+            max_completion_tokens: request.maxCompletionTokens,
+            stream: true,
+            ...reasoningOptionsFor(request.model),
+          },
+          { timeout: request.timeoutMs },
+        );
+        for await (const part of stream) {
+          const delta = part.choices[0]?.delta?.content;
+          if (delta) yield delta;
+        }
+      } catch (error) {
+        throw toTransportError(error);
+      }
+    },
+
     async chat(request: GroqChatRequest): Promise<GroqChatResult> {
       try {
         const completion = await client.chat.completions.create(

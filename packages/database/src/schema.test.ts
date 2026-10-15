@@ -68,6 +68,8 @@ const modelNames = [
   "ChannelAction",
   "ChannelPaymentStatus",
   "UserNotification",
+  "WalletDepositCheckpoint",
+  "WalletFundingEvent",
   "RecoveryConfiguration",
   "RecoveryAttempt",
   "RecoveryEmailChallenge",

@@ -6,6 +6,7 @@ import type {
   ConversationTurn,
   IdentityRepository,
   IdentityType,
+  WalletFundingEvent,
 } from "@kaada/domain";
 
 import type { AgentTurnResult, IncomingAgentInput } from "../agent/agent-service.js";
@@ -20,7 +21,9 @@ import {
 } from "../conversation/capabilities.js";
 import type { CapabilityFlags } from "../conversation/capabilities.js";
 import { ConversationPresenter } from "../conversation/presenter.js";
+import type { OpenPaymentNeeds } from "../intents/coordinator.js";
 import type { ResumeInfo } from "../responses/agent-response.js";
+import { formatTokenAmount } from "../wallets/balance-service.js";
 import { pick } from "../conversation/fallbacks.js";
 import {
   FUNDING_NONE,
@@ -65,6 +68,12 @@ export interface ChannelMessageServiceDeps {
       channel: ChannelType;
       externalConversationId: string;
     }): Promise<ResumeInfo | undefined>;
+    /** The open payment and what it needs from the wallet, for matching a deposit. Optional: without it deposits are just announced. */
+    openPaymentNeeds?(input: {
+      userId: string;
+      channel: ChannelType;
+      externalConversationId: string;
+    }): Promise<OpenPaymentNeeds | undefined>;
     /** The last few turns, for the conversation layer's tone. Optional: without it the reply is phrased from the answer alone. */
     recentTurns?(
       conversationId: string,
@@ -83,7 +92,20 @@ export interface ChannelMessageServiceDeps {
    */
   onboarding?: OnboardingLifecycleService | null;
   /** Trusted funding details for the person's wallet; null while they have none. Absent: funding is not offered. */
-  funding?: { info(userId: string): Promise<FundingInfo | null> } | null;
+  funding?: {
+    info(userId: string): Promise<FundingInfo | null>;
+    /**
+     * What the wallet holds of a supported token right now (smallest units), read fresh. Used to tell whether a deposit makes an
+     * open payment affordable. Absent or null: the payment is simply not mentioned.
+     */
+    holdings?(
+      userId: string,
+    ): Promise<{ symbol: string; assetId: string; amount: string }[] | null>;
+  } | null;
+  /** How long ago a payment may have last moved and still be offered back after a deposit. Default one hour. */
+  resumeWindowMs?: number;
+  /** Whether symbols alone may tie an open payment's token to a held one (test networks only; see funding announcements). */
+  matchBySymbol?: boolean;
   /** The accounts a person has linked, so a proactive message can reach them without an inbound message. */
   linked?: Pick<IdentityRepository, "listForUser">;
   links: {
@@ -101,7 +123,22 @@ export interface ChannelMessageServiceDeps {
   now?: () => Date;
   /** How long a RECEIVED event may sit before a retry may take it over. */
   staleClaimMs?: number;
+  /**
+   * Perceived-latency timings. "Typing" is shown from the moment a message is ours and renewed every `typingEveryMs` (Telegram
+   * clears it after about five seconds). If the answer takes longer than `slowAfterMs`, ONE temporary status appears and is
+   * removed when the answer arrives. A fast answer never shows it.
+   */
+  activity?: { typingEveryMs?: number; slowAfterMs?: number };
 }
+
+/** What a person sees while their message is being worked on. Always ended, whatever happens, so nothing is left in the chat. */
+interface Activity {
+  /** Text is now appearing as it is written: a temporary status would only get in its way. */
+  markStreaming(): void;
+  end(): Promise<void>;
+}
+
+const SLOW_STATUS = ["Checking that for you 👀", "Let me work that out."] as const;
 
 export type InboundResult = "PROCESSED" | "DUPLICATE" | "IN_PROGRESS" | "IGNORED";
 
@@ -189,8 +226,10 @@ export class ChannelMessageService {
     }
     if (claim === "IN_PROGRESS") return "IN_PROGRESS";
 
+    // From here the message is ours (a duplicate delivery never gets this far), so the person sees Kaada is on it right away.
+    const activity = this.beginActivity(adapter, message);
     try {
-      await this.process(adapter, message);
+      await this.process(adapter, message, activity);
     } catch (error) {
       // Let the provider's retry be processed (the agent turn itself is idempotent by message id).
       await this.deps.inboundEvents.release(message.channel, message.externalEventId);
@@ -199,6 +238,8 @@ export class ChannelMessageService {
         ...errorDetails(error),
       });
       throw error;
+    } finally {
+      await activity.end();
     }
     await this.deps.inboundEvents.markProcessed(
       message.channel,
@@ -210,7 +251,61 @@ export class ChannelMessageService {
 
   // ───────────────────────────────── processing ─────────────────────────────────
 
-  private async process(adapter: ChannelAdapter, message: InboundChannelMessage): Promise<void> {
+  /**
+   * Shows that Kaada is working, without ever faking progress: the channel's own "typing" signal immediately (renewed while the
+   * work lasts), and, only if the work is genuinely slow, ONE temporary status that is removed when the answer arrives. Nothing
+   * here depends on what the answer will be.
+   */
+  private beginActivity(adapter: ChannelAdapter, message: InboundChannelMessage): Activity {
+    const quiet: Activity = { markStreaming: () => undefined, end: () => Promise.resolve() };
+    // A message that looks like a PIN is deleted and answered with a warning at once: nothing to wait for.
+    if (message.content.kind === "TEXT" && LOOKS_LIKE_PIN.test(message.content.text)) return quiet;
+
+    const target = { externalConversationId: message.externalConversationId };
+    const typing = (): void => {
+      void adapter.indicateTyping?.(target).catch(() => undefined);
+    };
+    typing();
+    const renew = setInterval(typing, this.deps.activity?.typingEveryMs ?? 4_000);
+    renew.unref();
+
+    let ended = false;
+    let bubble: string | undefined;
+    const slow = setTimeout(() => {
+      void (async () => {
+        if (ended) return;
+        try {
+          const sent = await adapter.send(target, {
+            text: pick(message.externalEventId, SLOW_STATUS),
+          });
+          if (ended) await adapter.remove?.(target, sent.externalMessageId).catch(() => undefined);
+          else bubble = sent.externalMessageId;
+        } catch {
+          // The status is a courtesy; the answer is what matters.
+        }
+      })();
+    }, this.deps.activity?.slowAfterMs ?? 2_500);
+    slow.unref();
+
+    return {
+      markStreaming: () => clearTimeout(slow),
+      end: async () => {
+        ended = true;
+        clearInterval(renew);
+        clearTimeout(slow);
+        if (bubble) {
+          await adapter.remove?.(target, bubble).catch(() => undefined);
+          bubble = undefined;
+        }
+      },
+    };
+  }
+
+  private async process(
+    adapter: ChannelAdapter,
+    message: InboundChannelMessage,
+    activity: Activity,
+  ): Promise<void> {
     const target = { externalConversationId: message.externalConversationId };
     const { content } = message;
 
@@ -263,7 +358,6 @@ export class ChannelMessageService {
     let turn: AgentTurnResult | null = null;
     try {
       if (content.kind === "TEXT") {
-        await adapter.indicateTyping?.(target).catch(() => undefined);
         turn = await this.deps.agent.handle({
           kind: "TEXT",
           ...base,
@@ -303,7 +397,7 @@ export class ChannelMessageService {
       return;
     }
     if (await this.answerFromOnboardingState(adapter, message, userId, turn)) return;
-    await this.deliver(adapter, message, userId, turn);
+    await this.deliver(adapter, message, userId, turn, activity);
   }
 
   // ───────────────────────────────── onboarding awareness ─────────────────────────────────
@@ -489,6 +583,99 @@ export class ChannelMessageService {
       }
     }
     return result;
+  }
+
+  /**
+   * Tells a person their wallet just received supported tokens, on every chat they have linked. The wording is fixed and built
+   * from the stored event (never a model). If a payment is still open and recent AND this deposit is what makes it affordable,
+   * it is offered back with Continue and Cancel: nothing is executed, and the person still authorizes normally. A payment older
+   * than the progress window is not brought back; the person just gets the plain message.
+   */
+  async announceFunding(event: WalletFundingEvent): Promise<{ delivered: number; failed: number }> {
+    const result = { delivered: 0, failed: 0 };
+    const accounts = (await this.deps.linked?.listForUser(event.userId)) ?? [];
+    const received = event.items.map(
+      (item) => `${formatTokenAmount(item.delta, item.decimals)} ${item.symbol}`,
+    );
+    const list =
+      received.length <= 1
+        ? (received[0] ?? "funds")
+        : `${received.slice(0, -1).join(", ")} and ${received[received.length - 1] ?? ""}`;
+    for (const account of accounts) {
+      const channel = CHANNEL_OF_IDENTITY[account.type];
+      const adapter = channel ? this.deps.adapters.get(channel) : undefined;
+      if (!channel || !adapter) continue;
+      try {
+        const resume = await this.paymentFundedBy(event, channel, account.externalId);
+        const presented: PresentedMessage = resume
+          ? {
+              text: `Your ${resume.token} just arrived 💰
+
+You now have enough to continue your payment${resume.recipient ? ` to ${resume.recipient}` : ""}.`,
+              resume: { intentId: resume.intentId, revision: resume.revision },
+              cancellable: true,
+            }
+          : {
+              text: `Nice, your wallet just received ${list} 💰
+
+You're ready to use it.`,
+              suggestions: [
+                ...(this.flags().send ? (["SEND_MONEY"] as const) : []),
+                ...(this.flags().balance ? (["CHECK_BALANCE"] as const) : []),
+              ],
+            };
+        const outbound = await this.compose(
+          { channel, externalUserId: account.externalId },
+          event.userId,
+          event.id,
+          presented,
+        );
+        // In a one-to-one chat the provider's account id is also the chat id.
+        await adapter.send({ externalConversationId: account.externalId }, outbound);
+        result.delivered += 1;
+      } catch (error) {
+        result.failed += 1;
+        this.log("warn", "funding.announce_failed", { channel, ...errorDetails(error) });
+      }
+    }
+    return result;
+  }
+
+  /** The recent open payment this deposit made affordable, if any. Read only; never starts, resumes or changes anything. */
+  private async paymentFundedBy(
+    event: WalletFundingEvent,
+    channel: ChannelType,
+    externalConversationId: string,
+  ): Promise<
+    { intentId: string; revision: number; recipient: string | undefined; token: string } | undefined
+  > {
+    const needs = await this.deps.agent?.openPaymentNeeds?.({
+      userId: event.userId,
+      channel,
+      externalConversationId,
+    });
+    const required = needs?.required;
+    if (!needs || !required) return undefined;
+    const window = this.deps.resumeWindowMs ?? 60 * 60 * 1000;
+    if (this.now().getTime() - needs.lastActiveAt.getTime() > window) return undefined;
+
+    const sameToken = (item: { assetId: string; symbol: string }): boolean =>
+      item.assetId === required.assetId ||
+      (this.deps.matchBySymbol === true && item.symbol === required.symbol);
+    const item = event.items.find(sameToken);
+    if (!item) return undefined;
+    const holdings = await this.deps.funding?.holdings?.(event.userId);
+    const held = holdings?.find(sameToken);
+    if (!held) return undefined;
+    const need = BigInt(required.amount);
+    // Affordable now, and it was this deposit that made it so (it was not before).
+    if (BigInt(held.amount) < need || BigInt(item.previous) >= need) return undefined;
+    return {
+      intentId: needs.resume.intentId,
+      revision: needs.resume.revision,
+      recipient: needs.resume.recipient,
+      token: item.symbol,
+    };
   }
 
   /** A pressed button. Claimed atomically first, so a replay, a wrong account or an expired button does nothing. */
@@ -763,8 +950,9 @@ export class ChannelMessageService {
     inbound: InboundChannelMessage,
     userId: string,
     turn: AgentTurnResult,
+    activity: Activity,
   ): Promise<void> {
-    const presented = await this.present(inbound, userId, turn);
+    const presented = await this.present(adapter, inbound, userId, turn, activity);
     const outbound = await this.compose(
       { channel: inbound.channel, externalUserId: inbound.sender.externalUserId },
       userId,
@@ -791,13 +979,18 @@ export class ChannelMessageService {
 
   /** The conversational presentation of a turn; any failure there falls back to the plain deterministic text. */
   private async present(
+    adapter: ChannelAdapter,
     inbound: InboundChannelMessage,
     userId: string,
     turn: AgentTurnResult,
+    activity: Activity,
   ): Promise<PresentedMessage> {
     const plain = presentAgentResponse(turn.response, this.now());
     const presenter = this.deps.conversation;
     if (!presenter) return plain;
+    // Conversational wording may be shown as it is written, where the channel can; facts never are (the presenter decides).
+    const draft =
+      adapter.openDraft?.({ externalConversationId: inbound.externalConversationId }) ?? null;
     try {
       const history =
         (await this.deps.agent?.recentTurns?.(turn.conversationId, turn.messageId)) ?? [];
@@ -817,10 +1010,21 @@ export class ChannelMessageService {
         seed: turn.messageId,
         firstName: inbound.sender.displayName?.split(" ")[0],
         now: this.now(),
+        ...(draft && {
+          draft: {
+            push: (text: string) => {
+              activity.markStreaming();
+              draft.update(text);
+            },
+          },
+        }),
       });
     } catch (error) {
       this.log("warn", "channel.presentation.failed", { ...errorDetails(error) });
       return plain;
+    } finally {
+      // Whatever happened, no half-written draft keeps updating after the reply is decided.
+      await draft?.close().catch(() => undefined);
     }
   }
 

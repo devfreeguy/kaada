@@ -11,17 +11,21 @@ import {
 import { createCachedAssetRepository, createAssetRegistry } from "@kaada/domain";
 import type { RootValidatorDeployer, WalletBalanceReader } from "@kaada/domain";
 import { celo, celoSepolia } from "viem/chains";
-import { createRepositories, withTransaction } from "@kaada/database";
+import { createRepositories, createWalletFundingStore, withTransaction } from "@kaada/database";
 import type { Database } from "@kaada/database";
+import { SETTINGS } from "@kaada/config";
 import type { AppConfig } from "@kaada/config";
+import type { WalletFundingStore } from "@kaada/domain";
 
 import { APP_CONFIG } from "../config/config.module.js";
 import { DATABASE } from "../database/database.module.js";
 import { PasskeyService } from "../core/wallets/passkey-service.js";
 import type { WalletUnitOfWork } from "../core/wallets/ports.js";
 import { WalletService } from "../core/wallets/wallet-service.js";
+import { testNetworkAssets, withNetworkTokens } from "./network-tokens.js";
 import { SimpleWebAuthnVerifier } from "../infrastructure/wallet/simplewebauthn-verifier.js";
 import { WalletBalanceService } from "../core/wallets/balance-service.js";
+import { WalletFundingWatcher } from "../core/wallets/funding-watcher.js";
 import { WalletSetupService } from "../core/wallets/setup-service.js";
 import { DeviceTierService } from "../core/attestation/device-tier-service.js";
 import { GoogleRevocationList } from "../infrastructure/attestation/google-revocation-list.js";
@@ -32,6 +36,8 @@ import {
   BALANCE_READER,
   PASSKEY_SERVICE,
   WALLET_BALANCE_SERVICE,
+  WALLET_FUNDING_STORE,
+  WALLET_FUNDING_WATCHER,
   WALLET_REPOSITORIES,
   WALLET_SERVICE,
   WALLET_SETUP_SERVICE,
@@ -198,17 +204,21 @@ function unitOfWork(database: Database): WalletUnitOfWork {
     },
     {
       provide: WALLET_BALANCE_SERVICE,
-      inject: [DATABASE, WALLET_SERVICE, BALANCE_READER],
+      inject: [DATABASE, WALLET_SERVICE, BALANCE_READER, APP_CONFIG],
       useFactory: (
         database: Database,
         wallets: WalletService | null,
         reader: WalletBalanceReader | null,
+        config: AppConfig,
       ): WalletBalanceService | null => {
         if (!wallets || !reader) return null;
+        const testTokens = testNetworkAssets(config);
         return new WalletBalanceService({
           assets: createCachedAssetRepository(createRepositories(database).assets),
           reader,
           wallets,
+          network: config.wallet.balances,
+          ...(testTokens && { networkTokens: () => Promise.resolve(testTokens) }),
         });
       },
     },
@@ -218,17 +228,47 @@ function unitOfWork(database: Database): WalletUnitOfWork {
       inject: [DATABASE, APP_CONFIG],
       useFactory: (database: Database, config: AppConfig): WalletBalanceReader | null => {
         if (config.wallet.provider !== "kernel") return null;
-        const assets = createAssetRegistry(
-          createCachedAssetRepository(createRepositories(database).assets),
+        const assets = withNetworkTokens(
+          createAssetRegistry(createCachedAssetRepository(createRepositories(database).assets)),
+          testNetworkAssets(config),
         );
+        const { chainId, network, rpcUrl, testnet } = config.wallet.balances;
         return new ChainBalanceReader({
           assets,
           chain: createViemChainReader({ rpcUrl: config.wallet.rpcUrl }),
+          ...(testnet && { networks: { [chainId]: createViemChainReader({ rpcUrl, network }) } }),
+        });
+      },
+    },
+    {
+      provide: WALLET_FUNDING_STORE,
+      inject: [DATABASE],
+      useFactory: (database: Database): WalletFundingStore => createWalletFundingStore(database),
+    },
+    {
+      // Looks for supported tokens arriving at Kaada wallets (polled by the channel sweeper; no timers here).
+      provide: WALLET_FUNDING_WATCHER,
+      inject: [WALLET_FUNDING_STORE, BALANCE_READER, WALLET_BALANCE_SERVICE],
+      useFactory: (
+        store: WalletFundingStore,
+        reader: WalletBalanceReader | null,
+        balances: WalletBalanceService | null,
+      ): WalletFundingWatcher | null => {
+        if (!reader || !balances) return null;
+        return new WalletFundingWatcher({
+          store,
+          reader,
+          tokens: () => balances.supportedTokens(),
+          chainId: balances.chainId,
+          dustDecimalsBelow: SETTINGS.funding.dustDecimalsBelow,
+          newWalletMs: SETTINGS.funding.newWalletMs,
         });
       },
     },
   ],
   exports: [
+    WALLET_FUNDING_STORE,
+    WALLET_FUNDING_WATCHER,
     WALLET_SERVICE,
     PASSKEY_SERVICE,
     BALANCE_READER,
