@@ -19,3 +19,8 @@ Thumbs.db
 AGENTS.md
 CLAUDE.md
 src/generated/
+
+# Key files and secret directories must never be committed.
+*.key
+*.pem
+secrets/

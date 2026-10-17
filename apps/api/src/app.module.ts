@@ -11,6 +11,7 @@ import { AppConfigModule, APP_CONFIG } from "./config/config.module.js";
 import { DatabaseModule } from "./database/database.module.js";
 import { HealthModule } from "./health/health.module.js";
 import { RateLimitModule } from "./rate-limit/rate-limit.module.js";
+import { PlatformModule } from "./platform/platform.module.js";
 import { RecoveryModule } from "./recovery/recovery.module.js";
 import { WalletModule } from "./wallet/wallet.module.js";
 
@@ -19,6 +20,7 @@ import { WalletModule } from "./wallet/wallet.module.js";
     AppConfigModule,
     DatabaseModule,
     RateLimitModule,
+    PlatformModule,
     LoggerModule.forRootAsync({
       inject: [APP_CONFIG],
       useFactory: (config: AppConfig) => ({

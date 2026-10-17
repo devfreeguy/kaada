@@ -1,5 +1,6 @@
 import { Logger, Module } from "@nestjs/common";
 import {
+  attributionSuffix,
   createViemAllowanceReader,
   createViemDeploymentChecker,
   createZeroDevKernelAdapter,
@@ -67,6 +68,19 @@ function unitOfWork(database: Database): ExecutionUnitOfWork {
  * provider, Textile pricing, and a secret key to encrypt the provider's claim token. Otherwise the
  * service is null and no firm quote can be requested. It plans only: nothing here signs or sends.
  */
+/**
+ * What the production Kernel adapter is built with. Every UserOperation it prepares (root and delegated) carries the Celo ERC-8021
+ * attribution suffix (celo_51c4a2ae2240) at the end of its callData, through the same encoder the platform wallet uses. Kept as one
+ * exported function so a test can pin that the production wiring supplies it.
+ */
+export function kernelAdapterConfig(config: AppConfig, bundlerUrl: string) {
+  return {
+    bundlerUrl,
+    rpcUrl: config.wallet.rpcUrl,
+    attributionSuffix: attributionSuffix(),
+  };
+}
+
 @Module({
   imports: [WalletModule, AuthorizationModule, RootsModule],
   controllers: [ExecutionController, RootActionController],
@@ -165,10 +179,7 @@ function unitOfWork(database: Database): ExecutionUnitOfWork {
       useFactory: (config: AppConfig): KernelExecutionPort | null => {
         // Off unless explicitly enabled (and the config schema has already required the bundler).
         if (!config.execution.enabled || !config.execution.bundlerUrl) return null;
-        return createZeroDevKernelAdapter({
-          bundlerUrl: config.execution.bundlerUrl,
-          rpcUrl: config.wallet.rpcUrl,
-        });
+        return createZeroDevKernelAdapter(kernelAdapterConfig(config, config.execution.bundlerUrl));
       },
     },
     {

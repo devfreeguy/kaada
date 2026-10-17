@@ -62,7 +62,7 @@ const isTestnetTool = (path: string): boolean =>
  * scan in recovery-security.test.ts. Nothing else is exempted.
  */
 const isRecoverySigner = (path: string): boolean =>
-  path.replaceAll("\\", "/").includes("packages/blockchain/src/recovery/");
+  /packages\/blockchain\/src\/(recovery|platform)\//.test(path.replaceAll("\\", "/"));
 const walletSources = walletSourcesAll.filter(
   (path) => !isTestnetTool(path) && !isRecoverySigner(path),
 );

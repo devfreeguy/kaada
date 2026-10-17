@@ -100,6 +100,16 @@ const envShape = {
   EXECUTION_SECRET_KEY_VERSION: z.coerce.number().int().min(1).max(1_000_000).default(1),
   EXECUTION_SECRET_KEY_PREVIOUS: optionalSecret,
 
+  // ── Kaada's platform / agent wallet ──
+  // One dedicated EOA: Kaada's public identity on Celo (hackathon agent, future service-fee recipient, platform-owned transactions).
+  // NOT a user wallet, a Kernel, the recovery relayer or a paymaster. The key is a FILE (in production a read-only mount), the
+  // address is public. At startup the key must derive to exactly this address.
+  PLATFORM_WALLET_KEY_FILE: optionalSecret,
+  PLATFORM_WALLET_ADDRESS: z
+    .string()
+    .trim()
+    .regex(/^0x[0-9a-fA-F]{40}$/, "must be a 0x-prefixed 20-byte address")
+    .optional(),
   // ── account recovery and device keys ──
   RECOVERY_ENABLED: flag,
   // Which network's contracts and delays apply (see deployments.ts).
@@ -299,6 +309,14 @@ function buildConfig(
           },
         }),
     },
+    // Server-side only: this object is never sent to a client. The address is public; the key is only ever a file path.
+    ...(env.PLATFORM_WALLET_KEY_FILE !== undefined &&
+      env.PLATFORM_WALLET_ADDRESS !== undefined && {
+        platformWallet: {
+          keyFile: env.PLATFORM_WALLET_KEY_FILE,
+          address: env.PLATFORM_WALLET_ADDRESS,
+        },
+      }),
     recovery: {
       enabled: env.RECOVERY_ENABLED,
       network: env.RECOVERY_NETWORK,
@@ -399,6 +417,23 @@ function crossChecks(
     add("WALLET_NETWORK", "production reads balances on celo-mainnet only");
   if (production && kernel && (env.PIN_PEPPER === undefined || env.PIN_PEPPER.length < 32))
     add("PIN_PEPPER", "production wallets need a PIN_PEPPER of at least 32 characters");
+  // The platform wallet: both settings together or neither; production wallets need it (no silent generation of a new wallet).
+  if ((env.PLATFORM_WALLET_KEY_FILE === undefined) !== (env.PLATFORM_WALLET_ADDRESS === undefined))
+    add(
+      "PLATFORM_WALLET_KEY_FILE",
+      "PLATFORM_WALLET_KEY_FILE and PLATFORM_WALLET_ADDRESS are set together or not at all",
+    );
+  if (env.PLATFORM_WALLET_ADDRESS !== undefined && /^0x0{40}$/.test(env.PLATFORM_WALLET_ADDRESS))
+    add("PLATFORM_WALLET_ADDRESS", "PLATFORM_WALLET_ADDRESS cannot be the zero address");
+  if (
+    production &&
+    kernel &&
+    (env.PLATFORM_WALLET_KEY_FILE === undefined || env.PLATFORM_WALLET_ADDRESS === undefined)
+  )
+    add(
+      "PLATFORM_WALLET_KEY_FILE",
+      "production needs PLATFORM_WALLET_KEY_FILE and PLATFORM_WALLET_ADDRESS (the Kaada platform / agent wallet)",
+    );
   if (production && (env.RECOVERY_ENABLED || kernel) && env.REDIS_URL === undefined)
     add("REDIS_URL", "production wallets and recovery need REDIS_URL for the shared rate limits");
 

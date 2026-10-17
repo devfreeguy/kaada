@@ -46,6 +46,14 @@ openssl rand -hex 32      # PIN_PEPPER, TELEGRAM_WEBHOOK_SECRET
 openssl rand -base64 32   # EXECUTION_SECRET_KEY, RECOVERY_CHALLENGE_SECRET, RECOVERY_TOTP_SECRET_KEY (three different values)
 ```
 
+### Platform / agent wallet key (required in production)
+
+Kaada's one platform wallet is a dedicated EOA: its public identity on Celo and the future recipient of service fees. It is not a user
+wallet and user payments never use it. Host file `/opt/apps/kaada/secrets/platform-agent.key` (one `0x` 32-byte hex key, owner 1000:1000,
+mode 400), mounted read-only by `compose.yml` as `/run/secrets/kaada-platform-agent.key`. Print its public address (and nothing else) with
+`deploy/scripts/platform-address.mjs` (usage in the file header), put that in `PLATFORM_WALLET_ADDRESS`, and the API will refuse to start if
+the key ever derives to a different address.
+
 ### Recovery relayer key (only when recovery is enabled)
 
 The recovery relayer is a hot operational key: it submits recovery initiation and pays that gas. It does not have anyone's Recovery Code,

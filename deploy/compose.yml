@@ -20,6 +20,8 @@ services:
     # Host: /opt/apps/kaada/secrets/recovery-relayer.key (owner 1000:1000, mode 400, in a 500 directory).
     volumes:
       - /opt/apps/kaada/secrets/recovery-relayer.key:/run/secrets/kaada-recovery-relayer.key:ro
+      # Kaada's platform / agent wallet key: one file, read-only (host: owner 1000:1000, mode 400). Not a user wallet.
+      - /opt/apps/kaada/secrets/platform-agent.key:/run/secrets/kaada-platform-agent.key:ro
     # These two must agree with the port mapping above, whatever .env says.
     environment:
       PORT: "3005"

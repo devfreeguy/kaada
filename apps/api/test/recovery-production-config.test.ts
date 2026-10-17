@@ -133,6 +133,7 @@ describe("the production deployment files", () => {
     const mounts = [...compose.matchAll(/^\s*-\s*(\/\S+:\/\S+)\s*$/gm)].map((m) => m[1]);
     assert.deepEqual(mounts, [
       "/opt/apps/kaada/secrets/recovery-relayer.key:/run/secrets/kaada-recovery-relayer.key:ro",
+      "/opt/apps/kaada/secrets/platform-agent.key:/run/secrets/kaada-platform-agent.key:ro",
     ]);
     // not the whole secrets directory, and the key is never an environment variable
     assert.equal(/\/opt\/apps\/kaada\/secrets:/.test(compose), false);

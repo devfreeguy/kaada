@@ -38,6 +38,8 @@ const production = {
   NODE_ENV: "production",
   PIN_PEPPER: "p".repeat(32),
   REDIS_URL: "rediss://redis.example:6380",
+  PLATFORM_WALLET_KEY_FILE: "/run/secrets/kaada-platform-agent.key",
+  PLATFORM_WALLET_ADDRESS: `0x${"ab".repeat(20)}`,
 };
 
 describe("loadConfig", () => {
@@ -592,6 +594,34 @@ describe("account recovery", () => {
         ),
       /PIN_PEPPER|its own key/,
     );
+  });
+
+  it("the platform wallet: production needs both settings, they come together, and the config is a path plus a public address only", () => {
+    const prod = { ...dev, ...production, RECOVERY_NETWORK: "celo-sepolia" };
+    const { RECOVERY_EMAIL_OUTBOX_FILE: _o, RECOVERY_ENABLED: _e, ...base3 } = prod;
+    const ok = { ...base3, RECOVERY_ENABLED: "false" };
+    const config = loadConfig(ok);
+    assert.deepEqual(config.platformWallet, {
+      keyFile: "/run/secrets/kaada-platform-agent.key",
+      address: `0x${"ab".repeat(20)}`,
+    });
+    const { PLATFORM_WALLET_KEY_FILE: _k, ...noKey } = ok;
+    const { PLATFORM_WALLET_ADDRESS: _a, ...noAddress } = ok;
+    assert.throws(() => loadConfig(noKey), /PLATFORM_WALLET/);
+    assert.throws(() => loadConfig(noAddress), /PLATFORM_WALLET/);
+    const { PLATFORM_WALLET_KEY_FILE: _k2, PLATFORM_WALLET_ADDRESS: _a2, ...neither } = ok;
+    assert.throws(() => loadConfig(neither), /production needs PLATFORM_WALLET_KEY_FILE/);
+    for (const bad of ["0x123", "nope", `0x${"0".repeat(40)}`, `0x${"g".repeat(40)}`]) {
+      assert.throws(() => loadConfig({ ...ok, PLATFORM_WALLET_ADDRESS: bad }), ConfigError, bad);
+    }
+    // Development may run without one; half a setting is still refused.
+    assert.equal(loadConfig(base).platformWallet, undefined);
+    assert.throws(
+      () => loadConfig({ ...base, PLATFORM_WALLET_ADDRESS: `0x${"ab".repeat(20)}` }),
+      /together/,
+    );
+    // No private key setting exists: nothing in the config can carry one.
+    assert.equal(JSON.stringify(config.platformWallet).includes("PRIVATE"), false);
   });
 
   it("validates SMTP and Redis URLs", () => {
