@@ -2,7 +2,7 @@
 //
 // On the server (the image already contains viem; mount the key read-only exactly as compose.yml does):
 //   docker run --rm -i \
-//     -v /opt/apps/kaada/secrets/platform-agent.key:/run/secrets/kaada-platform-agent.key:ro \
+//     -v /opt/apps/kaada/secrets/platform-agent.key:/run/secrets/platform-agent.key:ro \
 //     --entrypoint node ghcr.io/<owner>/<repo>-api:<tag> --input-type=module - \
 //     < deploy/scripts/platform-address.mjs
 // or, with Node + viem installed:  node deploy/scripts/platform-address.mjs /path/to/platform-agent.key
@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 
 import { privateKeyToAccount } from "viem/accounts";
 
-const path = process.argv[2] ?? "/run/secrets/kaada-platform-agent.key";
+const path = process.argv[2] ?? "/run/secrets/platform-agent.key";
 let text;
 try {
   text = readFileSync(path, "utf8").trim();

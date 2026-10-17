@@ -213,3 +213,25 @@ See [security-architecture](security-architecture.md) for the frozen architectur
 changing it: Redis-backed rate limits (fail closed), SMTP email and Telegram delivery of the three recovery alerts (started, cancelled,
 completed), the `/recovery`, `/recovery/cancel` and `/security/[token]` pages, and `device.keyId` / `device.payload` in every root signing request so a browser
 can sign for a device-key root without re-deriving the payload.
+
+## Recovery email (SMTP) configuration
+
+Production sends recovery email over SMTP with the discrete settings (no URL, so no percent-encoding of the password):
+
+```
+RECOVERY_SMTP_HOST=smtp.example.com
+RECOVERY_SMTP_PORT=587                      # default 587
+RECOVERY_SMTP_USER=...
+RECOVERY_SMTP_PASSWORD_FILE=/run/secrets/recovery-smtp-password
+RECOVERY_SMTP_SECURITY=starttls             # starttls (default) | tls
+RECOVERY_EMAIL_FROM=Kaada Security <security@kaada.xyz>
+```
+
+- Exactly one of `RECOVERY_SMTP_PASSWORD_FILE` (preferred; a read-only mount, read server-side, only the trailing line break removed) and
+  `RECOVERY_SMTP_PASSWORD`. The password is never trimmed otherwise and never logged; send errors are scrubbed of it.
+- `starttls`: a non-implicit-TLS connection with `requireTLS`, so a server that will not upgrade fails the send. `tls`: implicit TLS. The
+  timeouts (`connectionTimeout`, `greetingTimeout`, `socketTimeout`) are transport options.
+- `RECOVERY_SMTP_URL` is a deprecated fallback, mutually exclusive with the discrete settings (both together stop startup). `requireTLS` is
+  forced for it as well.
+- Key files (`RECOVERY_RELAYER_KEY_FILE=/run/secrets/recovery-relayer.key`, `PLATFORM_WALLET_KEY_FILE=/run/secrets/platform-agent.key`)
+  must each hold exactly one `0x`-prefixed 32-byte hex key and are never committed.

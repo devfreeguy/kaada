@@ -1,5 +1,5 @@
 export { loadConfig, loadTextileCredentials, ConfigError, logLevels } from "./env.js";
-export type { AppConfig, LoadOptions, LogLevel, TextileCredentials } from "./env.js";
+export type { AppConfig, LoadOptions, LogLevel, SmtpSettings, TextileCredentials } from "./env.js";
 export { SETTINGS } from "./settings.js";
 export {
   NETWORK_CHAIN_IDS,

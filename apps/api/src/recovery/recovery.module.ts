@@ -11,7 +11,7 @@ import { AuthorizationModule } from "../authorization/authorization.module.js";
 import { TRANSACTION_PIN_SERVICE } from "../authorization/authorization.tokens.js";
 import type { TransactionPinService } from "../core/authorization/pin-service.js";
 import { EmailChannelMessenger, FileOutboxEmailSender } from "../infrastructure/recovery/email.js";
-import { SmtpEmailSender } from "../infrastructure/recovery/smtp-email.js";
+import { SmtpEmailSender, resolveSmtpConnection } from "../infrastructure/recovery/smtp-email.js";
 import { TelegramAdapter } from "../infrastructure/channels/telegram/telegram-adapter.js";
 import { TelegramChannelMessenger } from "../infrastructure/recovery/telegram.js";
 import { RATE_LIMIT_FACTORY } from "../rate-limit/rate-limit.tokens.js";
@@ -75,7 +75,9 @@ import { AesGcmSecretCipher } from "../infrastructure/security/aes-gcm-cipher.js
         if (!recovery.enabled || !recovery.setup || !passkey || !pins || !bundlerUrl) return null;
         let email: RecoveryEmailSender;
         if (recovery.emailProvider === "smtp" && recovery.smtp) {
-          email = new SmtpEmailSender({ from: recovery.smtp.from, url: recovery.smtp.url });
+          // The password file (if used) is read here, server-side, once. Nothing about the connection is logged.
+          const { from, ...settings } = recovery.smtp;
+          email = new SmtpEmailSender({ from, connection: resolveSmtpConnection(settings) });
         } else if (recovery.emailProvider === "outbox" && recovery.emailOutboxFile) {
           email = new FileOutboxEmailSender(recovery.emailOutboxFile);
         } else {

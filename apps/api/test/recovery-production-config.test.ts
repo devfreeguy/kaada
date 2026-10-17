@@ -129,18 +129,40 @@ describe("the relayer address must match the deployment", () => {
 describe("the production deployment files", () => {
   const compose = read("deploy/compose.yml");
 
-  it("compose mounts exactly the one relayer key file, read-only, at the path the env names", () => {
+  it("compose mounts exactly the three secret files, individually and read-only, at the paths the env names", () => {
     const mounts = [...compose.matchAll(/^\s*-\s*(\/\S+:\/\S+)\s*$/gm)].map((m) => m[1]);
     assert.deepEqual(mounts, [
-      "/opt/apps/kaada/secrets/recovery-relayer.key:/run/secrets/kaada-recovery-relayer.key:ro",
-      "/opt/apps/kaada/secrets/platform-agent.key:/run/secrets/kaada-platform-agent.key:ro",
+      "/opt/apps/kaada/secrets/recovery-relayer.key:/run/secrets/recovery-relayer.key:ro",
+      "/opt/apps/kaada/secrets/platform-agent.key:/run/secrets/platform-agent.key:ro",
+      "/opt/apps/kaada/secrets/recovery-smtp-password:/run/secrets/recovery-smtp-password:ro",
     ]);
-    // not the whole secrets directory, and the key is never an environment variable
-    assert.equal(/\/opt\/apps\/kaada\/secrets:/.test(compose), false);
+    // every mount is read-only, and no mount takes the secrets DIRECTORY (or /run/secrets itself) as its source or target
+    assert.ok(mounts.every((m) => m?.endsWith(":ro")));
+    assert.equal(/\/opt\/apps\/kaada\/secrets\/?:/.test(compose), false);
+    assert.equal(/:\/run\/secrets\/?(:|\s)/.test(compose), false);
+    // the existing hardening is intact
+    for (const kept of [
+      /^\s*init: true$/m,
+      /no-new-privileges:true/,
+      /cap_drop:\s*\n\s*-\s*ALL/,
+      /"127\.0\.0\.1:3005:3005"/,
+      /max-size: "10m"/,
+      /max-file: "5"/,
+    ])
+      assert.match(compose, kept);
+    // the key is never an environment variable
+    assert.match(
+      read("deploy/.env.example"),
+      /^PLATFORM_WALLET_KEY_FILE=\/run\/secrets\/platform-agent\.key$/m,
+    );
+    assert.match(
+      read("deploy/.env.example"),
+      /^RECOVERY_SMTP_PASSWORD_FILE=\/run\/secrets\/recovery-smtp-password$/m,
+    );
     assert.equal(/RELAYER_KEY\b|RELAYER_PRIVATE|PRIVATE_KEY/i.test(compose), false);
     assert.match(
       read("deploy/.env.example"),
-      /^RECOVERY_RELAYER_KEY_FILE=\/run\/secrets\/kaada-recovery-relayer\.key$/m,
+      /^RECOVERY_RELAYER_KEY_FILE=\/run\/secrets\/recovery-relayer.key$/m,
     );
   });
 
@@ -163,8 +185,12 @@ describe("the production deployment files", () => {
       /^RECOVERY_CHALLENGE_SECRET=/m,
       /^RECOVERY_TOTP_SECRET_KEY=/m,
       /^RECOVERY_TOTP_SECRET_KEY_VERSION=1$/m,
-      /^RECOVERY_SMTP_URL=/m,
-      /^RECOVERY_EMAIL_FROM=/m,
+      /^RECOVERY_SMTP_HOST=/m,
+      /^RECOVERY_SMTP_PORT=587$/m,
+      /^RECOVERY_SMTP_USER=/m,
+      /^RECOVERY_SMTP_PASSWORD_FILE=\/run\/secrets\/recovery-smtp-password$/m,
+      /^RECOVERY_SMTP_SECURITY=starttls$/m,
+      /^RECOVERY_EMAIL_FROM=Kaada Security <security@kaada\.xyz>$/m,
       /^RECOVERY_GAS_TOPUP_MAX_WEI=0$/m,
     ]) {
       assert.match(text, required);

@@ -148,7 +148,7 @@ export function assertRelayerMatchesDeployment(
 
 /**
  * Builds the chain adapter. The relayer's gas key is read from a FILE outside the repository (in production a read-only mounted
- * secret, /run/secrets/kaada-recovery-relayer.key). The relayer is a hot operational key: it submits recovery initiation and pays
+ * secret, /run/secrets/recovery-relayer.key). The relayer is a hot operational key: it submits recovery initiation and pays
  * gas, it does not have the Recovery Code, cannot forge a recovery, cannot cancel one and controls no user funds.
  */
 export function createRecoveryChain(input: {

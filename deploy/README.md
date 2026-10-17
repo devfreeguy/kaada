@@ -49,8 +49,9 @@ openssl rand -base64 32   # EXECUTION_SECRET_KEY, RECOVERY_CHALLENGE_SECRET, REC
 ### Platform / agent wallet key (required in production)
 
 Kaada's one platform wallet is a dedicated EOA: its public identity on Celo and the future recipient of service fees. It is not a user
-wallet and user payments never use it. Host file `/opt/apps/kaada/secrets/platform-agent.key` (one `0x` 32-byte hex key, owner 1000:1000,
-mode 400), mounted read-only by `compose.yml` as `/run/secrets/kaada-platform-agent.key`. Print its public address (and nothing else) with
+wallet and user payments never use it. Host file `/opt/apps/kaada/secrets/platform-agent.key` (**must start with `0x`, then exactly 64 hex
+characters: one 32-byte private key and nothing else**; owner 1000:1000, mode 400; never commit it), mounted read-only by `compose.yml`
+as `/run/secrets/platform-agent.key` (`PLATFORM_WALLET_KEY_FILE`). Print its public address (and nothing else) with
 `deploy/scripts/platform-address.mjs` (usage in the file header), put that in `PLATFORM_WALLET_ADDRESS`, and the API will refuse to start if
 the key ever derives to a different address.
 
@@ -61,14 +62,39 @@ cannot forge or cancel a recovery and controls no user funds. It is a file, neve
 
 ```bash
 # host:  /opt/apps/kaada/secrets/recovery-relayer.key  (directory 1000:1000 mode 500, file 1000:1000 mode 400)
-# one line, a 0x-prefixed 32-byte hex private key
+# exactly one 32-byte private key: "0x" followed by 64 hex characters (the 0x is required), one line; never commit it
 ```
 
-`compose.yml` mounts exactly that one file read-only as `/run/secrets/kaada-recovery-relayer.key`, and `.env` points
+`compose.yml` mounts exactly that one file read-only as `/run/secrets/recovery-relayer.key`, and `.env` points
 `RECOVERY_RELAYER_KEY_FILE` at it. At startup the API derives the key's address and refuses to start unless it equals the relayer recorded
 for `RECOVERY_NETWORK` in `packages/config/src/deployments.ts` (the validator only accepts `initiate` from the address it was deployed with).
 Fund that address with a little CELO and watch its balance: if it is empty or the key is lost, nobody can start a recovery.
 No server key can approve a recovery. `RECOVERY_ENABLED=true` also refuses to start while `celo-mainnet` has no deployed addresses.
+
+### Recovery email (SMTP)
+
+Use the discrete settings; there is no URL, so a password with `# $ & ^ { } @ : / %` needs no encoding:
+
+```ini
+RECOVERY_SMTP_HOST=smtp.example.com
+RECOVERY_SMTP_PORT=587
+RECOVERY_SMTP_USER=...
+RECOVERY_SMTP_PASSWORD_FILE=/run/secrets/recovery-smtp-password
+RECOVERY_SMTP_SECURITY=starttls
+RECOVERY_EMAIL_FROM=Kaada Security <security@kaada.xyz>
+```
+
+- **The password file is preferred over putting the password in `.env`.** Host file `/opt/apps/kaada/secrets/recovery-smtp-password`
+  (owner 1000:1000, mode 400), mounted read-only by `compose.yml`. The whole file is the password; only the trailing newline is removed.
+  Create it with `printf '%s' 'the-password' > ...` (or an editor: a trailing newline is fine). It must exist before `docker compose up`,
+  or Docker creates a directory at that path.
+  `RECOVERY_SMTP_PASSWORD` is the alternative; set exactly one of the two.
+- `starttls` (default, port 587) makes the connection upgrade to TLS and **fails the send if the server will not**. `tls` (usually
+  port 465) is implicit TLS. There is no plaintext mode.
+- `RECOVERY_EMAIL_FROM` must be **unquoted** in `.env`: Docker's `env_file` keeps quotes as part of the value.
+- `RECOVERY_SMTP_URL` still works but is **deprecated**; it is mutually exclusive with the settings above (both together stop startup).
+- Only the three secret files above are mounted into the container, each individually and read-only. The host `secrets` directory is
+  never mounted as a whole.
 
 > **Do not rotate `PIN_PEPPER` or `EXECUTION_SECRET_KEY` casually.** Changing `PIN_PEPPER` makes every existing PIN unverifiable.
 > Changing `EXECUTION_SECRET_KEY` makes everything already encrypted with it unreadable. To rotate the key, raise

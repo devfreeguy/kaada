@@ -16,12 +16,16 @@ services:
     ports:
       - "127.0.0.1:3005:3005"
     env_file: .env
-    # The recovery relayer key: ONE file, read-only, outside the image. Never the whole secrets directory, never an environment variable.
-    # Host: /opt/apps/kaada/secrets/recovery-relayer.key (owner 1000:1000, mode 400, in a 500 directory).
+    # Secrets are mounted ONE FILE AT A TIME, read-only, outside the image. Never the whole secrets directory (unrelated host files
+    # must not be visible in the container), never an environment variable. Host files: owner 1000:1000, mode 400, in a 500 directory.
+    # Each must exist on the host before `up`: Docker would otherwise create a DIRECTORY at the missing source path.
     volumes:
-      - /opt/apps/kaada/secrets/recovery-relayer.key:/run/secrets/kaada-recovery-relayer.key:ro
-      # Kaada's platform / agent wallet key: one file, read-only (host: owner 1000:1000, mode 400). Not a user wallet.
-      - /opt/apps/kaada/secrets/platform-agent.key:/run/secrets/kaada-platform-agent.key:ro
+      # The recovery relayer key (0x + 64 hex).
+      - /opt/apps/kaada/secrets/recovery-relayer.key:/run/secrets/recovery-relayer.key:ro
+      # Kaada's platform / agent wallet key (0x + 64 hex). Not a user wallet.
+      - /opt/apps/kaada/secrets/platform-agent.key:/run/secrets/platform-agent.key:ro
+      # The recovery SMTP password (RECOVERY_SMTP_PASSWORD_FILE): the whole file is the password, minus its trailing newline.
+      - /opt/apps/kaada/secrets/recovery-smtp-password:/run/secrets/recovery-smtp-password:ro
     # These two must agree with the port mapping above, whatever .env says.
     environment:
       PORT: "3005"

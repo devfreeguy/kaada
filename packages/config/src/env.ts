@@ -125,7 +125,20 @@ const envShape = {
   RECOVERY_CHALLENGE_SECRET: optionalSecret,
   // Email delivery is chosen by what is set: RECOVERY_SMTP_URL (+ FROM) = smtp, else RECOVERY_EMAIL_OUTBOX_FILE = a
   // development file outbox (refused in production), else none (recovery cannot start).
+  // Discrete SMTP settings (preferred): no URL, so a password with # $ & ^ { } @ : / % needs no encoding. The password is the one
+  // value that is NOT trimmed. RECOVERY_SMTP_PASSWORD_FILE (a read-only secret mount) is preferred over RECOVERY_SMTP_PASSWORD.
+  RECOVERY_SMTP_HOST: optionalSecret,
+  RECOVERY_SMTP_PORT: optionalSecret,
+  RECOVERY_SMTP_USER: optionalSecret,
+  RECOVERY_SMTP_PASSWORD: z
+    .string()
+    .optional()
+    .transform((value) => (value === "" ? undefined : value)),
+  RECOVERY_SMTP_PASSWORD_FILE: optionalSecret,
+  RECOVERY_SMTP_SECURITY: optionalSecret,
+  // Legacy single-URL form, kept for compatibility. Mutually exclusive with the discrete settings above.
   RECOVERY_SMTP_URL: optionalSecret,
+  // Written WITHOUT quotes in the env file: Docker's env_file keeps quotes as part of the value.
   RECOVERY_EMAIL_FROM: z.string().trim().min(3).max(200).optional(),
   RECOVERY_EMAIL_OUTBOX_FILE: optionalSecret,
   // The most native CELO (wei) the platform may send an account so a recovery or cancel is not stopped by an empty wallet.
@@ -156,6 +169,48 @@ export interface LoadOptions {
   deployments?: Readonly<Record<RecoveryNetwork, RecoveryContracts | null>>;
 }
 
+/** True when any discrete RECOVERY_SMTP_* setting is present (the legacy URL is separate). */
+function hasDiscreteSmtp(env: Env): boolean {
+  return [
+    env.RECOVERY_SMTP_HOST,
+    env.RECOVERY_SMTP_PORT,
+    env.RECOVERY_SMTP_USER,
+    env.RECOVERY_SMTP_PASSWORD,
+    env.RECOVERY_SMTP_PASSWORD_FILE,
+    env.RECOVERY_SMTP_SECURITY,
+  ].some((value) => value !== undefined);
+}
+
+/** The SMTP transport settings without the sender. Validated by crossChecks before this is used. */
+export type SmtpSettings =
+  | { url: string }
+  | {
+      host: string;
+      port: number;
+      user: string;
+      security: "starttls" | "tls";
+      password?: string;
+      passwordFile?: string;
+    };
+
+function smtpSettings(env: Env): SmtpSettings | undefined {
+  if (hasDiscreteSmtp(env)) {
+    if (env.RECOVERY_SMTP_HOST === undefined || env.RECOVERY_SMTP_USER === undefined)
+      return undefined;
+    return {
+      host: env.RECOVERY_SMTP_HOST,
+      port: env.RECOVERY_SMTP_PORT === undefined ? 587 : Number(env.RECOVERY_SMTP_PORT),
+      user: env.RECOVERY_SMTP_USER,
+      security: env.RECOVERY_SMTP_SECURITY === "tls" ? "tls" : "starttls",
+      ...(env.RECOVERY_SMTP_PASSWORD !== undefined && { password: env.RECOVERY_SMTP_PASSWORD }),
+      ...(env.RECOVERY_SMTP_PASSWORD_FILE !== undefined && {
+        passwordFile: env.RECOVERY_SMTP_PASSWORD_FILE,
+      }),
+    };
+  }
+  return env.RECOVERY_SMTP_URL === undefined ? undefined : { url: env.RECOVERY_SMTP_URL };
+}
+
 function buildConfig(
   env: Env,
   deployments: Readonly<Record<RecoveryNetwork, RecoveryContracts | null>>,
@@ -165,7 +220,8 @@ function buildConfig(
   const contracts = deployments[env.RECOVERY_NETWORK];
   const delays = RECOVERY_DELAYS[env.RECOVERY_NETWORK];
 
-  const emailProvider: "none" | "outbox" | "smtp" = env.RECOVERY_SMTP_URL
+  const smtp = smtpSettings(env);
+  const emailProvider: "none" | "outbox" | "smtp" = smtp
     ? "smtp"
     : env.RECOVERY_EMAIL_OUTBOX_FILE
       ? "outbox"
@@ -326,9 +382,9 @@ function buildConfig(
       gasTopUpMaxWei: BigInt(env.RECOVERY_GAS_TOPUP_MAX_WEI),
       sweepIntervalMs: SETTINGS.recovery.sweepIntervalSeconds * 1000,
       emailProvider,
-      ...(env.RECOVERY_SMTP_URL !== undefined &&
+      ...(smtp !== undefined &&
         env.RECOVERY_EMAIL_FROM !== undefined && {
-          smtp: { url: env.RECOVERY_SMTP_URL, from: env.RECOVERY_EMAIL_FROM },
+          smtp: { ...smtp, from: env.RECOVERY_EMAIL_FROM },
         }),
       ...(env.TELEGRAM_BOT_TOKEN !== undefined && { telegramBotToken: env.TELEGRAM_BOT_TOKEN }),
       ...(env.RECOVERY_EMAIL_OUTBOX_FILE !== undefined && {
@@ -375,11 +431,13 @@ function crossChecks(
   const production = env.NODE_ENV === "production";
   const kernel = env.WALLET_PROVIDER === "kernel";
   const contracts = deployments[env.RECOVERY_NETWORK];
-  const emailProvider = env.RECOVERY_SMTP_URL
-    ? "smtp"
-    : env.RECOVERY_EMAIL_OUTBOX_FILE
-      ? "outbox"
-      : "none";
+  const discreteSmtp = hasDiscreteSmtp(env);
+  const emailProvider =
+    env.RECOVERY_SMTP_URL || discreteSmtp
+      ? "smtp"
+      : env.RECOVERY_EMAIL_OUTBOX_FILE
+        ? "outbox"
+        : "none";
 
   if (production && env.AGENT_INTERPRETER === "mock")
     add("AGENT_INTERPRETER", "the mock interpreter cannot be used in production");
@@ -508,12 +566,54 @@ function crossChecks(
     );
   if (env.RECOVERY_SMTP_URL !== undefined && !/^smtps?:\/\/\S+$/.test(env.RECOVERY_SMTP_URL))
     add("RECOVERY_SMTP_URL", "RECOVERY_SMTP_URL must be an smtp:// or smtps:// URL");
-  if (env.RECOVERY_SMTP_URL !== undefined && env.RECOVERY_EMAIL_FROM === undefined)
-    add("RECOVERY_EMAIL_FROM", "RECOVERY_EMAIL_FROM is required with RECOVERY_SMTP_URL");
+  if (env.RECOVERY_SMTP_URL !== undefined && discreteSmtp)
+    add(
+      "RECOVERY_SMTP_URL",
+      "RECOVERY_SMTP_URL and the discrete RECOVERY_SMTP_HOST/PORT/USER/PASSWORD/PASSWORD_FILE/SECURITY settings are mutually exclusive: configure one form",
+    );
+  if (discreteSmtp) {
+    if (env.RECOVERY_SMTP_HOST === undefined)
+      add("RECOVERY_SMTP_HOST", "RECOVERY_SMTP_HOST is required for the discrete SMTP settings");
+    else if (
+      !/^([A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?|\[[0-9A-Fa-f:.]+\])$/.test(env.RECOVERY_SMTP_HOST)
+    )
+      add("RECOVERY_SMTP_HOST", "RECOVERY_SMTP_HOST must be a host name or IP address");
+    if (env.RECOVERY_SMTP_USER === undefined)
+      add("RECOVERY_SMTP_USER", "RECOVERY_SMTP_USER is required for the discrete SMTP settings");
+    if (env.RECOVERY_SMTP_PASSWORD === undefined && env.RECOVERY_SMTP_PASSWORD_FILE === undefined)
+      add(
+        "RECOVERY_SMTP_PASSWORD_FILE",
+        "set RECOVERY_SMTP_PASSWORD_FILE (preferred) or RECOVERY_SMTP_PASSWORD",
+      );
+    if (env.RECOVERY_SMTP_PASSWORD !== undefined && env.RECOVERY_SMTP_PASSWORD_FILE !== undefined)
+      add(
+        "RECOVERY_SMTP_PASSWORD",
+        "RECOVERY_SMTP_PASSWORD and RECOVERY_SMTP_PASSWORD_FILE are mutually exclusive: set exactly one",
+      );
+    if (env.RECOVERY_SMTP_PORT !== undefined) {
+      const port = Number(env.RECOVERY_SMTP_PORT);
+      if (!/^[0-9]{1,5}$/.test(env.RECOVERY_SMTP_PORT) || port < 1 || port > 65_535)
+        add("RECOVERY_SMTP_PORT", "RECOVERY_SMTP_PORT must be a port number from 1 to 65535");
+    }
+    if (
+      env.RECOVERY_SMTP_SECURITY !== undefined &&
+      env.RECOVERY_SMTP_SECURITY !== "starttls" &&
+      env.RECOVERY_SMTP_SECURITY !== "tls"
+    )
+      add("RECOVERY_SMTP_SECURITY", "RECOVERY_SMTP_SECURITY must be starttls or tls");
+  }
+  if (
+    (env.RECOVERY_SMTP_URL !== undefined || discreteSmtp) &&
+    env.RECOVERY_EMAIL_FROM === undefined
+  )
+    add(
+      "RECOVERY_EMAIL_FROM",
+      "RECOVERY_EMAIL_FROM is required when SMTP recovery email is configured",
+    );
   if (production && emailProvider === "outbox")
     add(
       "RECOVERY_EMAIL_OUTBOX_FILE",
-      "the file outbox is for development; production needs RECOVERY_SMTP_URL",
+      "the file outbox is for development; production needs the RECOVERY_SMTP_* settings",
     );
   if (env.RECOVERY_ENABLED) {
     const missing: string[] = [];
@@ -526,7 +626,7 @@ function crossChecks(
     if (env.RECOVERY_TOTP_SECRET_KEY === undefined) missing.push("RECOVERY_TOTP_SECRET_KEY");
     if (emailProvider === "none")
       missing.push(
-        "an email provider (RECOVERY_SMTP_URL, or RECOVERY_EMAIL_OUTBOX_FILE in development)",
+        "an email provider (the RECOVERY_SMTP_* settings, or RECOVERY_EMAIL_OUTBOX_FILE in development)",
       );
     if (missing.length > 0)
       add("RECOVERY_ENABLED", `RECOVERY_ENABLED=true needs ${missing.join(", ")}`);

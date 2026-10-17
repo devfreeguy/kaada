@@ -38,7 +38,7 @@ const production = {
   NODE_ENV: "production",
   PIN_PEPPER: "p".repeat(32),
   REDIS_URL: "rediss://redis.example:6380",
-  PLATFORM_WALLET_KEY_FILE: "/run/secrets/kaada-platform-agent.key",
+  PLATFORM_WALLET_KEY_FILE: "/run/secrets/platform-agent.key",
   PLATFORM_WALLET_ADDRESS: `0x${"ab".repeat(20)}`,
 };
 
@@ -494,7 +494,7 @@ describe("account recovery", () => {
       ...production,
       RECOVERY_NETWORK: "celo-mainnet",
       RECOVERY_ENABLED: "true",
-      RECOVERY_RELAYER_KEY_FILE: "/run/secrets/kaada-recovery-relayer.key",
+      RECOVERY_RELAYER_KEY_FILE: "/run/secrets/recovery-relayer.key",
       RECOVERY_CHALLENGE_SECRET: key,
       RECOVERY_TOTP_SECRET_KEY: totpKey,
       RECOVERY_TOTP_SECRET_KEY_VERSION: "1",
@@ -520,7 +520,7 @@ describe("account recovery", () => {
     assert.equal(config.recovery.network, "celo-mainnet");
     assert.equal(config.recovery.chainId, 42220);
     assert.equal(config.recovery.setup?.contracts.relayer, address(6));
-    assert.equal(config.recovery.setup?.relayerKeyFile, "/run/secrets/kaada-recovery-relayer.key");
+    assert.equal(config.recovery.setup?.relayerKeyFile, "/run/secrets/recovery-relayer.key");
     assert.equal(config.recovery.gasTopUpMaxWei, 0n);
     // None of the old settings exist in what the process is given.
     assert.equal(
@@ -537,7 +537,7 @@ describe("account recovery", () => {
       ...production,
       RECOVERY_NETWORK: "celo-sepolia",
       RECOVERY_ENABLED: "true",
-      RECOVERY_RELAYER_KEY_FILE: "/run/secrets/kaada-recovery-relayer.key",
+      RECOVERY_RELAYER_KEY_FILE: "/run/secrets/recovery-relayer.key",
       RECOVERY_CHALLENGE_SECRET: key,
       RECOVERY_TOTP_SECRET_KEY: totpKey,
       RECOVERY_SMTP_URL: "smtps://user:pass@mail.example:465",
@@ -602,7 +602,7 @@ describe("account recovery", () => {
     const ok = { ...base3, RECOVERY_ENABLED: "false" };
     const config = loadConfig(ok);
     assert.deepEqual(config.platformWallet, {
-      keyFile: "/run/secrets/kaada-platform-agent.key",
+      keyFile: "/run/secrets/platform-agent.key",
       address: `0x${"ab".repeat(20)}`,
     });
     const { PLATFORM_WALLET_KEY_FILE: _k, ...noKey } = ok;
@@ -788,5 +788,108 @@ describe("chat channels", () => {
       assert.equal(message.includes("SECRETTOKEN"), false);
       assert.equal(message.includes(secret), false);
     }
+  });
+});
+
+describe("recovery SMTP settings", () => {
+  const prod = {
+    ...kernel,
+    ...production,
+    PASSKEY_RP_ID: "kaada.app",
+    BUNDLER_URL: "https://bundler.example/rpc",
+    RECOVERY_ENABLED: "true",
+    RECOVERY_NETWORK: "celo-sepolia",
+    RECOVERY_RELAYER_KEY_FILE: "/run/secrets/recovery-relayer.key",
+    RECOVERY_CHALLENGE_SECRET: key,
+    RECOVERY_TOTP_SECRET_KEY: totpKey,
+    RECOVERY_EMAIL_FROM: "Kaada Security <security@kaada.xyz>",
+  };
+  const discrete = {
+    ...prod,
+    RECOVERY_SMTP_HOST: "smtp.example.com",
+    RECOVERY_SMTP_USER: "mailer",
+    RECOVERY_SMTP_PASSWORD_FILE: "/run/secrets/recovery-smtp-password",
+  };
+  const load = (env: Record<string, string>) => loadConfig(env, { deployments: deployed });
+  const without = (env: Record<string, string>, name: string) => {
+    const { [name]: _gone, ...rest } = env;
+    return rest;
+  };
+  const passwordOf = (config: ReturnType<typeof load>) =>
+    config.recovery.smtp && "password" in config.recovery.smtp
+      ? config.recovery.smtp.password
+      : undefined;
+
+  it("the discrete form defaults to port 587 and STARTTLS and carries the password file path only", () => {
+    const config = load(discrete);
+    assert.equal(config.recovery.emailProvider, "smtp");
+    assert.deepEqual(config.recovery.smtp, {
+      host: "smtp.example.com",
+      port: 587,
+      user: "mailer",
+      security: "starttls",
+      passwordFile: "/run/secrets/recovery-smtp-password",
+      from: "Kaada Security <security@kaada.xyz>",
+    });
+    const tls = load({ ...discrete, RECOVERY_SMTP_PORT: "465", RECOVERY_SMTP_SECURITY: "tls" });
+    assert.ok(tls.recovery.smtp && "security" in tls.recovery.smtp);
+    assert.equal(tls.recovery.smtp.port, 465);
+    assert.equal(tls.recovery.smtp.security, "tls");
+  });
+
+  it("a password with # $ & ^ { } @ : / % is kept exactly (not trimmed, not decoded)", () => {
+    const noFile = without(discrete, "RECOVERY_SMTP_PASSWORD_FILE");
+    const password = "p#a$s&s^w{o}r@d:/%41";
+    assert.equal(passwordOf(load({ ...noFile, RECOVERY_SMTP_PASSWORD: password })), password);
+    assert.equal(
+      passwordOf(load({ ...noFile, RECOVERY_SMTP_PASSWORD: "  keep my edges  " })),
+      "  keep my edges  ",
+    );
+  });
+
+  it("the discrete form and RECOVERY_SMTP_URL together stop startup with a clear error that leaks no credential", () => {
+    try {
+      load({ ...discrete, RECOVERY_SMTP_URL: "smtps://user:hunter2secret@mail.example:465" });
+      assert.fail("expected a failure");
+    } catch (error) {
+      assert.ok(error instanceof ConfigError);
+      assert.match(error.message, /mutually exclusive/);
+      assert.equal(error.message.includes("hunter2secret"), false);
+    }
+    // the legacy form alone still works
+    const legacy = load({ ...prod, RECOVERY_SMTP_URL: "smtps://user:pass@mail.example:465" });
+    assert.deepEqual(legacy.recovery.smtp, {
+      url: "smtps://user:pass@mail.example:465",
+      from: "Kaada Security <security@kaada.xyz>",
+    });
+  });
+
+  it("requires host, user, exactly one password form and the sender", () => {
+    for (const drop of [
+      "RECOVERY_SMTP_HOST",
+      "RECOVERY_SMTP_USER",
+      "RECOVERY_SMTP_PASSWORD_FILE",
+      "RECOVERY_EMAIL_FROM",
+    ])
+      assert.throws(() => load(without(discrete, drop)), ConfigError, drop);
+    assert.throws(() => load({ ...discrete, RECOVERY_SMTP_PASSWORD: "x" }), /exactly one/);
+    // settings without a host are not silently ignored
+    assert.throws(() => load({ ...prod, RECOVERY_SMTP_PORT: "587" }), /RECOVERY_SMTP_HOST/);
+  });
+
+  it("validates the port and the security mode", () => {
+    for (const port of ["0", "70000", "abc", "58.7"])
+      assert.throws(() => load({ ...discrete, RECOVERY_SMTP_PORT: port }), ConfigError, port);
+    for (const security of ["none", "ssl", "plain"])
+      assert.throws(
+        () => load({ ...discrete, RECOVERY_SMTP_SECURITY: security }),
+        ConfigError,
+        security,
+      );
+  });
+
+  it("production accepts the discrete form as the email provider and still refuses the file outbox", () => {
+    assert.doesNotThrow(() => load(discrete));
+    assert.throws(() => load({ ...prod, RECOVERY_EMAIL_OUTBOX_FILE: "/tmp/o" }), /development/);
   });
 });

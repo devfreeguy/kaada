@@ -133,14 +133,14 @@ describe("the platform wallet stays server-side and out of user payments", () =>
     const compose = readFileSync(join(root, "deploy/compose.yml"), "utf8");
     assert.match(
       compose,
-      /^\s*-\s*\/opt\/apps\/kaada\/secrets\/platform-agent\.key:\/run\/secrets\/kaada-platform-agent\.key:ro\s*$/m,
+      /^\s*-\s*\/opt\/apps\/kaada\/secrets\/platform-agent\.key:\/run\/secrets\/platform-agent.key:ro\s*$/m,
     );
     assert.equal(/\/opt\/apps\/kaada\/secrets:/.test(compose), false);
     const gitignore = readFileSync(join(root, ".gitignore"), "utf8").split("\n");
     for (const pattern of ["*.key", "*.pem", "secrets/"])
       assert.ok(gitignore.includes(pattern), pattern);
     const example = readFileSync(join(root, "deploy/.env.example"), "utf8");
-    assert.match(example, /^PLATFORM_WALLET_KEY_FILE=\/run\/secrets\/kaada-platform-agent\.key$/m);
+    assert.match(example, /^PLATFORM_WALLET_KEY_FILE=\/run\/secrets\/platform-agent.key$/m);
     assert.match(example, /^PLATFORM_WALLET_ADDRESS=/m);
     assert.equal(/PLATFORM_WALLET_(PRIVATE|SECRET)/.test(example + compose), false);
   });
