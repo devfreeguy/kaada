@@ -322,6 +322,70 @@ export async function permissionInstallCalls(
   ];
 }
 
+export interface FeePair {
+  maxFeePerGas: bigint;
+  maxPriorityFeePerGas: bigint;
+}
+
+/**
+ * The fee floor a bundler publishes with `pimlico_getUserOperationGasPrice` (its "standard" tier), or null. Pimlico on Celo refuses a
+ * maxFeePerGas below its own price, which is well above the node's estimate. A bundler without the method (Alchemy, ZeroDev), an
+ * error, a timeout, a non-JSON answer or a malformed price all give null, so preparing an operation is never broken by this extension
+ * and nothing about the request or the failure (the URL carries the API key) is thrown, logged or returned.
+ */
+export async function readBundlerFeeFloor(
+  bundlerUrl: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<FeePair | null> {
+  try {
+    const response = await fetchImpl(bundlerUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "pimlico_getUserOperationGasPrice",
+        params: [],
+      }),
+      signal: AbortSignal.timeout(5_000),
+    });
+    const body = (await response.json()) as {
+      result?: { standard?: { maxFeePerGas?: unknown; maxPriorityFeePerGas?: unknown } };
+    };
+    const standard = body.result?.standard;
+    const hex = /^0x[0-9a-fA-F]{1,32}$/;
+    if (
+      typeof standard?.maxFeePerGas !== "string" ||
+      typeof standard.maxPriorityFeePerGas !== "string" ||
+      !hex.test(standard.maxFeePerGas) ||
+      !hex.test(standard.maxPriorityFeePerGas)
+    ) {
+      return null;
+    }
+    const floor = {
+      maxFeePerGas: BigInt(standard.maxFeePerGas),
+      maxPriorityFeePerGas: BigInt(standard.maxPriorityFeePerGas),
+    };
+    return floor.maxFeePerGas > 0n ? floor : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The higher of the chain's fee and the bundler's floor, each field on its own. */
+export function pickFees(chain: FeePair, floor: FeePair | null): FeePair {
+  if (!floor) {
+    return { maxFeePerGas: chain.maxFeePerGas, maxPriorityFeePerGas: chain.maxPriorityFeePerGas };
+  }
+  return {
+    maxFeePerGas: floor.maxFeePerGas > chain.maxFeePerGas ? floor.maxFeePerGas : chain.maxFeePerGas,
+    maxPriorityFeePerGas:
+      floor.maxPriorityFeePerGas > chain.maxPriorityFeePerGas
+        ? floor.maxPriorityFeePerGas
+        : chain.maxPriorityFeePerGas,
+  };
+}
+
 export function createZeroDevKernelAdapter(
   config: ZeroDevKernelAdapterConfig,
 ): KernelExecutionPort {
@@ -331,9 +395,11 @@ export function createZeroDevKernelAdapter(
   // Fees come from the chain, not from a bundler-specific method: the SDK's default asks the bundler for
   // `zd_getUserOperationGasPrice`, which only ZeroDev's own bundler implements (Alchemy's answers
   // "Unsupported method"). Observed live on Celo Sepolia.
+  // A bundler may enforce a higher floor than the chain's own estimate (see `readBundlerFeeFloor`). The operation uses the HIGHER of
+  // the two; a bundler that does not publish a price changes nothing.
   const estimateFeesPerGas = async () => {
-    const fees = await client.estimateFeesPerGas();
-    return { maxFeePerGas: fees.maxFeePerGas, maxPriorityFeePerGas: fees.maxPriorityFeePerGas };
+    const chainFees = await client.estimateFeesPerGas();
+    return pickFees(chainFees, await readBundlerFeeFloor(config.bundlerUrl));
   };
   const bundler = createBundlerClient({ client, transport: http(config.bundlerUrl) });
   const tagged = (callData: Hex): Hex =>
