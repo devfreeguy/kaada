@@ -1,0 +1,43 @@
+# What the Docker build context leaves out. Smaller context, faster builds, and nothing secret can end up in a layer.
+
+# Dependencies and build output are produced inside the image.
+**/node_modules
+**/dist
+**/.turbo
+**/.next
+**/*.tsbuildinfo
+**/coverage
+
+# Secrets and local environment. NEVER send these to the daemon.
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Version control, CI and deploy files are not part of the image.
+.git
+.gitignore
+.github
+deploy
+
+# The web app is not deployed with the API.
+apps/web
+
+# Tests are not run in the image (CI runs them before the build). Source files, scripts the build needs and every
+# non-test file stay.
+**/*.test.ts
+**/*.test.tsx
+apps/api/test
+packages/*/test
+
+# Docs and editor/OS files.
+docs
+**/*.md
+AGENTS.md
+CLAUDE.md
+.editorconfig
+.prettierrc.json
+.prettierignore
+**/.DS_Store
+**/Thumbs.db
+**/*.log

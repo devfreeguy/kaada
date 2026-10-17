@@ -307,9 +307,6 @@ importers:
       '@noble/hashes':
         specifier: 1.8.0
         version: 1.8.0
-      solc:
-        specifier: ^0.8.37
-        version: 0.8.37(debug@4.4.3(supports-color@7.2.0))
       viem:
         specifier: ^2.57.4
         version: 2.57.4(typescript@6.0.3)(zod@4.6.5)
@@ -341,6 +338,9 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 9.39.5(jiti@2.7.0)(supports-color@7.2.0)
+      solc:
+        specifier: ^0.8.37
+        version: 0.8.37(debug@4.4.3(supports-color@7.2.0))
       tsx:
         specifier: 'catalog:'
         version: 4.23.15

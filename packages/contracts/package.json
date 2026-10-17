@@ -30,12 +30,12 @@
     "@noble/curves": "1.9.7",
     "@types/node": "catalog:",
     "eslint": "catalog:",
+    "solc": "^0.8.37",
     "tsx": "catalog:",
     "typescript": "catalog:"
   },
   "dependencies": {
     "@noble/hashes": "1.8.0",
-    "solc": "^0.8.37",
     "viem": "^2.57.4"
   }
 }

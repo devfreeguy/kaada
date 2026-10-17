@@ -99,6 +99,13 @@ export interface ZeroDevKernelAdapterConfig {
    * them. Not wired into the application.
    */
   submitUserOperation?: (signedOperation: Record<string, unknown>) => Promise<Hex>;
+  /**
+   * An ERC-8021 attribution suffix (`toDataSuffix(code)` from @celo/attribution-tags), appended to the end of every
+   * UserOperation's `callData`. For ERC-4337 the on-chain transaction is the bundler's `handleOps`, so the tag has to live
+   * inside each operation's callData; the suffix follows the ABI-encoded `execute(mode, calldata)` and the Kernel ignores it.
+   * It is appended BEFORE the operation is hashed, so every signature covers it. Absent: no tag.
+   */
+  attributionSuffix?: Hex;
 }
 
 /** BigInt-safe JSON for a prepared UserOperation (no secrets are ever part of it). */
@@ -329,6 +336,8 @@ export function createZeroDevKernelAdapter(
     return { maxFeePerGas: fees.maxFeePerGas, maxPriorityFeePerGas: fees.maxPriorityFeePerGas };
   };
   const bundler = createBundlerClient({ client, transport: http(config.bundlerUrl) });
+  const tagged = (callData: Hex): Hex =>
+    config.attributionSuffix ? concat([callData, config.attributionSuffix]) : callData;
 
   /** The Kernel account whose root validator is the user's root credential, optionally with a permission. */
   async function rootAccount(
@@ -495,7 +504,7 @@ export function createZeroDevKernelAdapter(
           userOperation: { estimateFeesPerGas },
         });
         const userOperation = await accountClient.prepareUserOperation({
-          callData: await account.encodeCalls(calls),
+          callData: tagged(await account.encodeCalls(calls)),
         });
         const hash = getUserOperationHash({
           userOperation: { ...userOperation, signature: "0x" },
@@ -626,12 +635,14 @@ export function createZeroDevKernelAdapter(
           client,
           userOperation: { estimateFeesPerGas },
         });
-        const callData = await account.encodeCalls(
-          input.calls.map((call: AccountCall) => ({
-            to: call.to as Address,
-            data: call.data as Hex,
-            value: BigInt(call.value),
-          })),
+        const callData = tagged(
+          await account.encodeCalls(
+            input.calls.map((call: AccountCall) => ({
+              to: call.to as Address,
+              data: call.data as Hex,
+              value: BigInt(call.value),
+            })),
+          ),
         );
         // Prepare and sign first, so the hash is KNOWN before anything is submitted.
         const prepared = await accountClient.prepareUserOperation({ callData });

@@ -1,0 +1,38 @@
+# Kaada API on the shared host. Postgres and Redis are NOT defined here: they live in the shared infra stack on the external
+# `alpha` network and are reached by hostname (postgres, redis).
+#
+# Images are pinned by IMAGE_OWNER / REPO_NAME / IMAGE_TAG, supplied by the environment (deploy.sh exports them; the systemd
+# unit loads them from image.env). Application settings come from .env next to this file; they are never part of the image.
+name: kaada
+
+services:
+  kaada-api:
+    image: ghcr.io/${IMAGE_OWNER}/${REPO_NAME}-api:${IMAGE_TAG}
+    container_name: kaada-api
+    restart: unless-stopped
+    # A real PID 1 that forwards SIGTERM and reaps children, so a stop is a clean shutdown (Nest shutdown hooks run).
+    init: true
+    # Caddy on the host proxies api.kaada.xyz to this loopback port; it is never published on a public interface.
+    ports:
+      - "127.0.0.1:3005:3005"
+    env_file: .env
+    # These two must agree with the port mapping above, whatever .env says.
+    environment:
+      PORT: "3005"
+      API_HOST: "0.0.0.0"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - alpha
+
+networks:
+  alpha:
+    external: true
+    name: alpha

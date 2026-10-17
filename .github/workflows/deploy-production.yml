@@ -1,0 +1,226 @@
+name: Deploy production (API)
+
+# Every push to main verifies, builds and deploys the Kaada API (apps/api) to the production VM. The web app is not deployed
+# here. Run it by hand (workflow_dispatch) to redeploy, or to re-run a failed deploy.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One production deploy at a time; a newer push waits rather than cancelling a deploy that may be mid-migration.
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  # ── 1. Typecheck and test the API and the packages it depends on (not apps/web). ────────────────────────────────────────
+  verify:
+    name: Verify (typecheck + test)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      # `...` selects the API and everything it depends on. turbo builds those dependencies and runs the generate tasks
+      # (prisma generate, contracts compile) first. No database or Redis is needed.
+      - name: Typecheck
+        run: pnpm exec turbo run typecheck --filter=@kaada/api...
+
+      - name: Test
+        run: pnpm exec turbo run test --filter=@kaada/api...
+
+  # ── 2. Build both images for both architectures and push them. ──────────────────────────────────────────────────────────
+  build-and-push:
+    name: Build and push images
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      owner: ${{ steps.names.outputs.owner }}
+      repo: ${{ steps.names.outputs.repo }}
+      tag: ${{ steps.names.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Registry names must be lowercase.
+      - name: Image names
+        id: names
+        run: |
+          owner="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
+          repo="$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')"
+          tag="${GITHUB_SHA::12}"
+          echo "owner=$owner" >> "$GITHUB_OUTPUT"
+          echo "repo=$repo" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      # QEMU lets this amd64 runner build the linux/arm64 image the OCI ARM VM runs.
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The cache is deliberately unscoped: both targets come from one Dockerfile and share the expensive build stage.
+      - name: Build and push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          target: api
+          platforms: linux/amd64,linux/arm64
+          push: true
+          provenance: false
+          sbom: false
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.names.outputs.owner }}/${{ steps.names.outputs.repo }}-api:${{ steps.names.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ steps.names.outputs.owner }}/${{ steps.names.outputs.repo }}-api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push migrator image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          target: migrator
+          platforms: linux/amd64,linux/arm64
+          push: true
+          provenance: false
+          sbom: false
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.names.outputs.owner }}/${{ steps.names.outputs.repo }}-migrator:${{ steps.names.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ steps.names.outputs.owner }}/${{ steps.names.outputs.repo }}-migrator:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ── 3. Both images must really be multi-arch before anything is deployed. ───────────────────────────────────────────────
+  verify-manifests:
+    name: Verify image manifests
+    needs: build-and-push
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Both architectures are present in both images
+        env:
+          OWNER: ${{ needs.build-and-push.outputs.owner }}
+          REPO: ${{ needs.build-and-push.outputs.repo }}
+          TAG: ${{ needs.build-and-push.outputs.tag }}
+        run: |
+          set -euo pipefail
+          for image in "${REGISTRY}/${OWNER}/${REPO}-api:${TAG}" "${REGISTRY}/${OWNER}/${REPO}-migrator:${TAG}"; do
+            manifest="$(docker buildx imagetools inspect --raw "$image")"
+            for arch in amd64 arm64; do
+              count="$(echo "$manifest" | jq "[.manifests[]? | select(.platform.os == \"linux\" and .platform.architecture == \"${arch}\")] | length")"
+              if [ "$count" != "1" ]; then
+                echo "::error::${image} has no linux/${arch} manifest"
+                exit 1
+              fi
+            done
+            echo "ok: ${image} has linux/amd64 and linux/arm64"
+          done
+
+  # ── 4. Deploy to the VM: sync the compose file and scripts (never .env), then run deploy.sh. ────────────────────────────────
+  deploy:
+    name: Deploy
+    needs: [build-and-push, verify-manifests]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare SSH
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_KEY: ${{ secrets.SERVER_KEY }}
+          SERVER_KNOWN_HOSTS: ${{ secrets.SERVER_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SERVER_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # Pin the host key if SERVER_KNOWN_HOSTS is set (recommended); otherwise trust it on first sight for this run.
+          if [ -n "${SERVER_KNOWN_HOSTS:-}" ]; then
+            printf '%s\n' "$SERVER_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            ssh-keyscan -H "$SERVER_HOST" > ~/.ssh/known_hosts 2>/dev/null
+          fi
+          chmod 644 ~/.ssh/known_hosts
+
+      # Files only, from deploy/. The server's .env and image.env are never sent and never overwritten.
+      - name: Sync compose file and scripts
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+        run: |
+          set -euo pipefail
+          ssh_opts=(-i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o BatchMode=yes)
+          target="${SERVER_USER}@${SERVER_HOST}"
+          ssh "${ssh_opts[@]}" "$target" 'mkdir -p /opt/apps/kaada/scripts'
+          scp "${ssh_opts[@]}" deploy/compose.yml "${target}:/opt/apps/kaada/compose.yml"
+          scp "${ssh_opts[@]}" deploy/scripts/deploy.sh "${target}:/opt/apps/kaada/scripts/deploy.sh"
+          ssh "${ssh_opts[@]}" "$target" 'chmod 750 /opt/apps/kaada/scripts/deploy.sh'
+
+      # Runs only after the sync above. The registry credentials are passed in the SSH session's environment through stdin,
+      # not on the command line, so they never appear in a process list or the workflow log.
+      - name: Deploy
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          IMAGE_OWNER: ${{ needs.build-and-push.outputs.owner }}
+          REPO_NAME: ${{ needs.build-and-push.outputs.repo }}
+          IMAGE_TAG: ${{ needs.build-and-push.outputs.tag }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          ssh_opts=(-i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o BatchMode=yes)
+          {
+            printf 'export IMAGE_OWNER=%q\n' "$IMAGE_OWNER"
+            printf 'export REPO_NAME=%q\n' "$REPO_NAME"
+            printf 'export IMAGE_TAG=%q\n' "$IMAGE_TAG"
+            printf 'export GHCR_USER=%q\n' "$GHCR_USER"
+            printf 'export GHCR_TOKEN=%q\n' "$GHCR_TOKEN"
+            echo 'exec bash /opt/apps/kaada/scripts/deploy.sh'
+          } | ssh "${ssh_opts[@]}" "${SERVER_USER}@${SERVER_HOST}" 'bash -s'
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
