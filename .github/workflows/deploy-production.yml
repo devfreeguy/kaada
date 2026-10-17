@@ -198,22 +198,9 @@ jobs:
           scp "${ssh_opts[@]}" deploy/scripts/deploy.sh "${target}:/opt/apps/kaada/scripts/deploy.sh"
           ssh "${ssh_opts[@]}" "$target" 'chmod 750 /opt/apps/kaada/scripts/deploy.sh'
 
-      # TEMPORARY DIAGNOSTIC: remove after the registry login problem is understood. Prints only lengths, a boolean, the first 4
-      # characters of the token and a whitespace check; never either full value.
-      - name: Diagnose registry credentials (temporary)
-        env:
-          GHCR_USER: ${{ github.actor }}
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          echo "GHCR_USER length: ${#GHCR_USER}"
-          if [ "$GHCR_USER" = "devfreeguy" ]; then echo "GHCR_USER equals devfreeguy: true"; else echo "GHCR_USER equals devfreeguy: false"; fi
-          echo "GHCR_TOKEN length: ${#GHCR_TOKEN}"
-          echo "GHCR_TOKEN first 4 characters: ${GHCR_TOKEN:0:4}"
-          if [[ "$GHCR_TOKEN" =~ [[:space:]] ]]; then echo "GHCR_TOKEN contains whitespace: true"; else echo "GHCR_TOKEN contains whitespace: false"; fi
-
       # Runs only after the sync above. The registry credentials are passed in the SSH session's environment through stdin,
-      # not on the command line, so they never appear in a process list or the workflow log.
+      # not on the command line, so they never appear in a process list or the workflow log. They are the repository secrets
+      # GHCR_USER and GHCR_TOKEN (a classic PAT with read:packages), not the job's GITHUB_TOKEN: the VM pulls the images.
       - name: Deploy
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
@@ -221,8 +208,8 @@ jobs:
           IMAGE_OWNER: ${{ needs.build-and-push.outputs.owner }}
           REPO_NAME: ${{ needs.build-and-push.outputs.repo }}
           IMAGE_TAG: ${{ needs.build-and-push.outputs.tag }}
-          GHCR_USER: ${{ github.actor }}
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ secrets.GHCR_USER }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
         run: |
           set -euo pipefail
           ssh_opts=(-i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o BatchMode=yes)
