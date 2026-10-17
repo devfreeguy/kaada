@@ -13,6 +13,11 @@
 .env.*
 **/.env
 **/.env.*
+# Key files and secret directories (the recovery relayer key is mounted at run time, never built in).
+**/*.key
+**/*.pem
+secrets
+**/secrets
 
 # Version control, CI and deploy files are not part of the image.
 .git

@@ -67,7 +67,11 @@
       "authorization-controller.test.ts"
     ],
     "notifications": ["recovery-channels.test.ts", "recovery-flow.test.ts"],
-    "recovery signer boundary": ["recovery-security.test.ts", "recovery-relayer.test.ts"],
+    "recovery signer boundary": [
+      "recovery-security.test.ts",
+      "recovery-relayer.test.ts",
+      "recovery-production-config.test.ts"
+    ],
     "relayer-only initiation": ["recovery-relayer.test.ts"],
     "device attestation": [
       "device-tier-service.test.ts",

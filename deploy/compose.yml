@@ -16,6 +16,10 @@ services:
     ports:
       - "127.0.0.1:3005:3005"
     env_file: .env
+    # The recovery relayer key: ONE file, read-only, outside the image. Never the whole secrets directory, never an environment variable.
+    # Host: /opt/apps/kaada/secrets/recovery-relayer.key (owner 1000:1000, mode 400, in a 500 directory).
+    volumes:
+      - /opt/apps/kaada/secrets/recovery-relayer.key:/run/secrets/kaada-recovery-relayer.key:ro
     # These two must agree with the port mapping above, whatever .env says.
     environment:
       PORT: "3005"

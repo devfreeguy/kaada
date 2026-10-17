@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Logger, Module } from "@nestjs/common";
 import { createRepositories, withTransaction } from "@kaada/database";
 import type { KernelExecutionPort, RootValidatorDeployer } from "@kaada/domain";
 import type { AppConfig } from "@kaada/config";
@@ -34,7 +34,11 @@ import { WalletModule } from "../wallet/wallet.module.js";
 import { DEVICE_TIER_SERVICE } from "../wallet/wallet.tokens.js";
 import type { DeviceTierService } from "../core/attestation/device-tier-service.js";
 import { RecoveryController } from "./recovery.controller.js";
-import { createRecoveryChain, createRecoveryRuntime } from "./recovery.runtime.js";
+import {
+  assertRelayerMatchesDeployment,
+  createRecoveryChain,
+  createRecoveryRuntime,
+} from "./recovery.runtime.js";
 import type { RecoveryRuntime } from "./recovery.runtime.js";
 import { RecoverySweeper } from "./recovery-sweeper.js";
 import { RECOVERY_RUNTIME } from "./recovery.tokens.js";
@@ -110,13 +114,13 @@ import { AesGcmSecretCipher } from "../infrastructure/security/aes-gcm-cipher.js
           p256Precompile: true,
           gasTopUpMaxWei: recovery.gasTopUpMaxWei,
         });
-        // The validator only accepts `initiate` from the relayer address it was deployed with. A key file that derives to any
-        // other address could never start a recovery, so refuse to boot instead of failing later, mid-recovery.
-        if (viemChain.relayerAddress !== recovery.setup.contracts.relayer.toLowerCase()) {
-          throw new Error(
-            "RECOVERY_RELAYER_KEY_FILE does not derive to the relayer address the recovery validator was deployed with (deployments.ts)",
-          );
-        }
+        // Fail closed: the validator only accepts `initiate` from the relayer address it was deployed with, so a key file that
+        // derives to any other address could never start a recovery. Refuse to boot instead of failing mid-recovery.
+        assertRelayerMatchesDeployment(viemChain.relayerAddress, recovery.setup.contracts.relayer);
+        // The PUBLIC address only; the key never reaches a log.
+        new Logger("Recovery").log(
+          `recovery relayer ${viemChain.relayerAddress} on ${recovery.network}`,
+        );
         return createRecoveryRuntime({
           database,
           chain: viemChain,

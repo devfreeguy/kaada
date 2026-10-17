@@ -461,6 +461,11 @@ function crossChecks(
       "RECOVERY_TOTP_SECRET_KEY",
       "RECOVERY_TOTP_SECRET_KEY must be its own key: it cannot be the same as EXECUTION_SECRET_KEY",
     );
+  if (env.RECOVERY_TOTP_SECRET_KEY !== undefined && env.RECOVERY_TOTP_SECRET_KEY === env.PIN_PEPPER)
+    add(
+      "RECOVERY_TOTP_SECRET_KEY",
+      "RECOVERY_TOTP_SECRET_KEY must be its own key: it cannot be the same as PIN_PEPPER",
+    );
   if (!isAesKey(env.RECOVERY_CHALLENGE_SECRET))
     add(
       "RECOVERY_CHALLENGE_SECRET",

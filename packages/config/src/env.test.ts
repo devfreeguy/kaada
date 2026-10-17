@@ -486,6 +486,114 @@ describe("account recovery", () => {
     assert.equal(dump.includes("kms-key"), false);
   });
 
+  it("production mainnet recovery needs real deployed addresses: null refuses to start and never falls back to Sepolia or dev", () => {
+    const prodMainnet = {
+      ...dev,
+      ...production,
+      RECOVERY_NETWORK: "celo-mainnet",
+      RECOVERY_ENABLED: "true",
+      RECOVERY_RELAYER_KEY_FILE: "/run/secrets/kaada-recovery-relayer.key",
+      RECOVERY_CHALLENGE_SECRET: key,
+      RECOVERY_TOTP_SECRET_KEY: totpKey,
+      RECOVERY_TOTP_SECRET_KEY_VERSION: "1",
+      RECOVERY_SMTP_URL: "smtps://user:pass@mail.example:465",
+      RECOVERY_EMAIL_FROM: "Kaada <no-reply@kaada.xyz>",
+      RECOVERY_GAS_TOPUP_MAX_WEI: "0",
+    };
+    const { RECOVERY_EMAIL_OUTBOX_FILE: _o, ...clean } = prodMainnet;
+    // The COMMITTED table (no override) has no mainnet addresses yet: startup must say so.
+    assert.throws(() => loadConfig(clean), /not deployed on celo-mainnet/);
+    // Sepolia addresses present must NOT satisfy mainnet.
+    assert.throws(
+      () =>
+        loadConfig(clean, {
+          deployments: { "celo-mainnet": null, "celo-sepolia": deployed["celo-sepolia"] },
+        }),
+      /not deployed on celo-mainnet/,
+    );
+    // With real mainnet addresses (including the relayer the validator expects) it starts, and carries them.
+    const config = loadConfig(clean, {
+      deployments: { "celo-mainnet": deployed["celo-sepolia"], "celo-sepolia": null },
+    });
+    assert.equal(config.recovery.network, "celo-mainnet");
+    assert.equal(config.recovery.chainId, 42220);
+    assert.equal(config.recovery.setup?.contracts.relayer, address(6));
+    assert.equal(config.recovery.setup?.relayerKeyFile, "/run/secrets/kaada-recovery-relayer.key");
+    assert.equal(config.recovery.gasTopUpMaxWei, 0n);
+    // None of the old settings exist in what the process is given.
+    assert.equal(
+      /attestor|kms/i.test(
+        JSON.stringify(config, (_k, v: unknown) => (typeof v === "bigint" ? v.toString() : v)),
+      ),
+      false,
+    );
+  });
+
+  it("production recovery needs each of its required settings", () => {
+    const base2 = {
+      ...dev,
+      ...production,
+      RECOVERY_NETWORK: "celo-sepolia",
+      RECOVERY_ENABLED: "true",
+      RECOVERY_RELAYER_KEY_FILE: "/run/secrets/kaada-recovery-relayer.key",
+      RECOVERY_CHALLENGE_SECRET: key,
+      RECOVERY_TOTP_SECRET_KEY: totpKey,
+      RECOVERY_SMTP_URL: "smtps://user:pass@mail.example:465",
+      RECOVERY_EMAIL_FROM: "Kaada <no-reply@kaada.xyz>",
+    };
+    const { RECOVERY_EMAIL_OUTBOX_FILE: _o, ...ok } = base2;
+    assert.doesNotThrow(() => loadConfig(ok, { deployments: deployed }));
+    for (const drop of [
+      "RECOVERY_RELAYER_KEY_FILE",
+      "RECOVERY_CHALLENGE_SECRET",
+      "RECOVERY_TOTP_SECRET_KEY",
+      "RECOVERY_SMTP_URL",
+      "RECOVERY_EMAIL_FROM",
+    ]) {
+      const { [drop]: _gone, ...without } = ok as Record<string, string>;
+      assert.throws(() => loadConfig(without, { deployments: deployed }), ConfigError, drop);
+    }
+  });
+
+  it("the authenticator key version defaults to 1 and must be a positive integer", () => {
+    assert.equal(
+      loadConfig(dev, { deployments: deployed }).recovery.setup?.totpCipherKeys[0]?.version,
+      1,
+    );
+    for (const bad of ["0", "-1", "1.5", "abc", ""]) {
+      assert.throws(
+        () =>
+          loadConfig({ ...dev, RECOVERY_TOTP_SECRET_KEY_VERSION: bad }, { deployments: deployed }),
+        ConfigError,
+        JSON.stringify(bad),
+      );
+    }
+    assert.equal(
+      loadConfig(
+        { ...dev, RECOVERY_TOTP_SECRET_KEY_VERSION: "3", RECOVERY_TOTP_SECRET_KEY_PREVIOUS: key },
+        { deployments: deployed },
+      ).recovery.setup?.totpCipherKeys.length,
+      2,
+    );
+    // The previous key is only meaningful during a rotation: at version 1 it is ignored, never used.
+    assert.equal(
+      loadConfig({ ...dev, RECOVERY_TOTP_SECRET_KEY_PREVIOUS: key }, { deployments: deployed })
+        .recovery.setup?.totpCipherKeys.length,
+      1,
+    );
+  });
+
+  it("the authenticator key cannot be the PIN pepper either", () => {
+    assert.throws(
+      () =>
+        loadConfig(
+          { ...dev, PIN_PEPPER: totpKey, RECOVERY_TOTP_SECRET_KEY: totpKey },
+          { deployments: deployed },
+        ),
+      /PIN_PEPPER|its own key/,
+    );
+  });
+
   it("validates SMTP and Redis URLs", () => {
     assert.throws(
       () => loadConfig({ ...base, RECOVERY_SMTP_URL: "http://x", RECOVERY_EMAIL_FROM: "a@b.c" }),

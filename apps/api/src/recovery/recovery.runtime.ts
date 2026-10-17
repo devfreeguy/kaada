@@ -130,7 +130,27 @@ export function createRecoveryRuntime(params: RecoveryRuntimeParams): RecoveryRu
 /** The repository checkout root: signing keys must live outside it. */
 export const repositoryRoot = (): string => fileURLToPath(new URL("../../../../", import.meta.url));
 
-/** Builds the chain adapter. The relayer's gas key is read from a FILE outside the repository. */
+/**
+ * Startup guard: the recovery validator accepts `initiate` only from the relayer address it was deployed with, so a key file that
+ * derives to any other address could never start a recovery. Refuse to boot instead of failing mid-recovery. The message names
+ * the two PUBLIC addresses only; the key is never part of it.
+ */
+export function assertRelayerMatchesDeployment(
+  derivedAddress: string,
+  deployedAddress: string,
+): void {
+  if (derivedAddress.toLowerCase() !== deployedAddress.toLowerCase()) {
+    throw new Error(
+      `RECOVERY_RELAYER_KEY_FILE derives to ${derivedAddress.toLowerCase()}, but the recovery validator on this network was deployed with relayer ${deployedAddress.toLowerCase()} (deployments.ts). Refusing to start.`,
+    );
+  }
+}
+
+/**
+ * Builds the chain adapter. The relayer's gas key is read from a FILE outside the repository (in production a read-only mounted
+ * secret, /run/secrets/kaada-recovery-relayer.key). The relayer is a hot operational key: it submits recovery initiation and pays
+ * gas, it does not have the Recovery Code, cannot forge a recovery, cannot cancel one and controls no user funds.
+ */
 export function createRecoveryChain(input: {
   chain: ViemRecoveryChainOptions["chain"];
   rpcUrl: string;

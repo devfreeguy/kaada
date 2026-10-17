@@ -46,6 +46,22 @@ openssl rand -hex 32      # PIN_PEPPER, TELEGRAM_WEBHOOK_SECRET
 openssl rand -base64 32   # EXECUTION_SECRET_KEY, RECOVERY_CHALLENGE_SECRET, RECOVERY_TOTP_SECRET_KEY (three different values)
 ```
 
+### Recovery relayer key (only when recovery is enabled)
+
+The recovery relayer is a hot operational key: it submits recovery initiation and pays that gas. It does not have anyone's Recovery Code,
+cannot forge or cancel a recovery and controls no user funds. It is a file, never an environment variable and never part of an image:
+
+```bash
+# host:  /opt/apps/kaada/secrets/recovery-relayer.key  (directory 1000:1000 mode 500, file 1000:1000 mode 400)
+# one line, a 0x-prefixed 32-byte hex private key
+```
+
+`compose.yml` mounts exactly that one file read-only as `/run/secrets/kaada-recovery-relayer.key`, and `.env` points
+`RECOVERY_RELAYER_KEY_FILE` at it. At startup the API derives the key's address and refuses to start unless it equals the relayer recorded
+for `RECOVERY_NETWORK` in `packages/config/src/deployments.ts` (the validator only accepts `initiate` from the address it was deployed with).
+Fund that address with a little CELO and watch its balance: if it is empty or the key is lost, nobody can start a recovery.
+No server key can approve a recovery. `RECOVERY_ENABLED=true` also refuses to start while `celo-mainnet` has no deployed addresses.
+
 > **Do not rotate `PIN_PEPPER` or `EXECUTION_SECRET_KEY` casually.** Changing `PIN_PEPPER` makes every existing PIN unverifiable.
 > Changing `EXECUTION_SECRET_KEY` makes everything already encrypted with it unreadable. To rotate the key, raise
 > `EXECUTION_SECRET_KEY_VERSION` and move the old key to `EXECUTION_SECRET_KEY_PREVIOUS`.
