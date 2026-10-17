@@ -1,4 +1,4 @@
-// Off-chain half of the recovery protocol: the EIP-712 shape both signers sign, and the commitment, exactly
+// Off-chain half of the recovery protocol: the EIP-712 shape the recovery key signs, and the commitment, exactly
 // as KaadaRecoveryValidator computes them. Clients (to sign) and the backend (to verify) share these.
 import { encodeAbiParameters, keccak256 } from "viem";
 import type { Address, Hex } from "viem";
@@ -61,7 +61,7 @@ export interface RecoveryInitiateMessage {
   deadline: bigint;
 }
 
-/** The typed-data message both the recovery key and the attestor sign. */
+/** The typed-data message the recovery key (derived from the Recovery Code) signs. */
 export function recoveryInitiateMessage(input: RecoveryInitiateMessage) {
   const c = recoveryCommitment(input.root);
   return {

@@ -5,8 +5,9 @@ import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
 /*
- * The recovery attestor and relayer are the one sanctioned signer location besides the Kernel adapter.
- * The broad wallet/execution scans exempt them; this scan holds them to narrow, explicit rules instead.
+ * The recovery relayer (it only pays gas) is the one signer location in the recovery adapter besides the Kernel adapter. There is
+ * no attestor, no KMS signer and no registry any more. The broad wallet/execution scans exempt the relayer; this scan holds it to
+ * narrow, explicit rules, and holds the authenticator-app (TOTP) code to its own: no logging, no plaintext at rest.
  */
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
@@ -19,34 +20,28 @@ function code(path: string): string {
 }
 
 const sources = readdirSync(dir).filter((n) => n.endsWith(".ts") && !n.endsWith(".test.ts"));
-const attestor = code(join(dir, "attestor.ts"));
+const keyFile = code(join(dir, "key-file.ts"));
 const chain = code(join(dir, "viem-chain.ts"));
 const deployer = code(join(dir, "validator-deployer.ts"));
 
 describe("recovery signer boundary (source scan)", () => {
-  it("scans the recovery adapter files", () => {
+  it("scans the recovery adapter files: no attestor or signer-service file exists", () => {
     assert.deepEqual(sources.sort(), [
-      "attestor-signer.ts",
-      "attestor.ts",
       "index.ts",
+      "key-file.ts",
       "validator-deployer.ts",
       "viem-chain.ts",
     ]);
   });
 
-  it("the KMS adapter holds no key: it only wraps a digest-signing service", () => {
-    const adapter = code(join(dir, "attestor-signer.ts"));
-    assert.equal(
-      /privateKeyToAccount|generatePrivateKey|privateKey|mnemonic|seed/i.test(adapter),
-      false,
-    );
-    assert.ok(/service\.signDigest\(/.test(adapter));
-    // The attestor class itself never signs a message or a transaction: only typed data, and the veto it sends.
-    assert.equal(/signMessage|signTransaction/.test(attestor), false);
+  it("nothing in the recovery adapter mentions an attestor, a veto, a registry or a KMS", () => {
+    for (const name of sources) {
+      assert.equal(/attestor|veto|registry|\bkms\b/i.test(code(join(dir, name))), false, name);
+    }
   });
 
   it("no recovery file handles a mnemonic, seed or raw signing", () => {
-    for (const name of sources.filter((n) => n !== "attestor-signer.ts")) {
+    for (const name of sources) {
       const text = code(join(dir, name));
       assert.equal(
         /\b(mnemonic|seedPhrase|secretKey|signMessage|signTransaction|generatePrivateKey|mnemonicToAccount)\b/.test(
@@ -58,17 +53,9 @@ describe("recovery signer boundary (source scan)", () => {
     }
   });
 
-  it("the attestor signs only the typed Initiate message and sends only attestorCancel", () => {
-    assert.equal((attestor.match(/\.signTypedData\(/g) ?? []).length, 1);
-    assert.ok(/primaryType:\s*"Initiate"/.test(attestor));
-    assert.equal((attestor.match(/writeContract\(/g) ?? []).length, 1);
-    assert.ok(/functionName:\s*"attestorCancel"/.test(attestor));
-    assert.equal(/sendTransaction|signUserOperation|sendUserOperation/.test(attestor), false);
-  });
-
-  it("the attestor key is read from outside the repository and nothing generates a key", () => {
-    assert.ok(/must be stored outside the repository/.test(attestor));
-    assert.equal(/generatePrivateKey/.test(attestor + chain + deployer), false);
+  it("the relayer key is read from outside the repository and nothing generates a key", () => {
+    assert.ok(/must be stored outside the repository/.test(keyFile));
+    assert.equal(/generatePrivateKey/.test(keyFile + chain + deployer), false);
   });
 
   it("the relayer only pays gas and relays: it never signs typed data or messages", () => {
@@ -91,7 +78,39 @@ describe("recovery signer boundary (source scan)", () => {
     for (const m of chain.matchAll(/Number\(([^)]*)\)/g)) {
       assert.ok(/nonce|current|config\[1\]|pending\[1\]/.test(m[1] ?? ""), m[0]);
     }
-    assert.equal(/parseFloat|toFixed|Math\.(round|floor|ceil)/.test(attestor + chain), false);
+    assert.equal(/parseFloat|toFixed|Math\.(round|floor|ceil)/.test(chain), false);
+  });
+});
+
+describe("the authenticator-app factor (source scan)", () => {
+  const coreDir = join(root, "apps/api/src/core/recovery");
+  const totpPrimitive = code(join(coreDir, "totp.ts"));
+  const totpService = code(join(coreDir, "recovery-totp.ts"));
+  const flow = code(join(coreDir, "recovery-flow.ts"));
+
+  it("the primitive is pure RFC 6238 over node:crypto: no storage, network, logging or randomness other than the CSPRNG", () => {
+    assert.equal(
+      /fetch\(|console\.|process\.env|Math\.random|readFile|writeFile/.test(totpPrimitive),
+      false,
+    );
+    assert.ok(/randomBytes\(TOTP_SECRET_BYTES\)/.test(totpPrimitive));
+    assert.ok(/timingSafeEqual/.test(totpPrimitive));
+  });
+
+  it("the service stores only ciphertext and never logs, audits or returns a secret or a code afterwards", () => {
+    assert.equal(/console\.|log\(/.test(totpService), false);
+    assert.ok(/cipher\.encrypt\(/.test(totpService));
+    assert.ok(/encryptedSecret: ciphertext/.test(totpService));
+    // The plaintext secret is never what gets stored.
+    assert.equal(/encryptedSecret:\s*secret\b/.test(totpService), false);
+    // No audit record carries data at all for the authenticator events.
+    for (const m of totpService.matchAll(/audit\.append\(\{[\s\S]*?\}\)/g)) {
+      assert.equal(/\bdata:/.test(m[0]), false);
+    }
+  });
+
+  it("the recovery flow never logs a code or a signature", () => {
+    assert.equal(/ctx\.log\([^)]*(authenticatorCode|recoverySignature|code)/.test(flow), false);
   });
 });
 

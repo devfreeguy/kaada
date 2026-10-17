@@ -89,10 +89,12 @@ export class FakeRecoveryChain implements RecoveryChainPort {
   readonly instances = new Map<string, FakeInstance>();
   readonly operations = new Map<string, FakeOperation>();
   readonly log: string[] = [];
-  /** The registry's current attestor (what `initiate` checks the second signature against). */
-  attestor = "";
+  /** The validator's immutable RELAYER: the only address whose `initiate` it accepts. */
+  readonly relayerAddress = "0x00000000000000000000000000000000000fee01";
   /** Failure injection for the next call of each kind. */
   inject: {
+    /** The relayer cannot submit (out of gas, node down): nothing is sent, and it stays that way until cleared. */
+    relayerDown?: boolean;
     initiate?: Error;
     submit?: Error;
     deploy?: Error;
@@ -100,7 +102,7 @@ export class FakeRecoveryChain implements RecoveryChainPort {
     holdInclusion?: boolean;
     /** The batch passes validation (and consumes the recovery) but its execution reverts. */
     revertExecution?: boolean;
-    /** After a cancel or a veto, the next N reads still show the recovery (a node answering from an older block). */
+    /** After a cancel, the next N reads still show the recovery (a node answering from an older block). */
     staleReads?: number;
     /** After `initiate`, the next N reads do not show the new recovery yet (a node behind by a block). */
     hiddenReads?: number;
@@ -162,7 +164,7 @@ export class FakeRecoveryChain implements RecoveryChainPort {
     }
   }
 
-  /** Signs as the Recovery Code key / attestor would (tests only). */
+  /** Signs as the Recovery Code key would (tests only). */
   async signAs(privateKey: Hex, message: RecoveryTypedMessage): Promise<Hex> {
     const { privateKeyToAccount } = await import("viem/accounts");
     return privateKeyToAccount(privateKey).signTypedData(this.viemTyped(message));
@@ -261,10 +263,20 @@ export class FakeRecoveryChain implements RecoveryChainPort {
     );
   }
 
+  private requireRelayerUp(): void {
+    if (this.inject.relayerDown) {
+      throw new KaadaError(
+        "RECOVERY_RELAYER_UNAVAILABLE",
+        "the recovery service cannot submit right now; nothing was sent, try again shortly",
+      );
+    }
+  }
+
   deployInstance(input: {
     account: string;
     root: ProposedRoot;
   }): Promise<{ created: boolean; txHash?: string }> {
+    this.requireRelayerUp();
     if (this.inject.deploy) {
       const error = this.inject.deploy;
       delete this.inject.deploy;
@@ -584,15 +596,17 @@ export class FakeRecoveryChain implements RecoveryChainPort {
     });
   }
 
-  // ───────────────────────────── initiate and attestor ─────────────────────────────
+  // ───────────────────────────── initiate ─────────────────────────────
 
   async initiate(input: {
     account: string;
     root: ProposedRoot;
     deadline: string;
     recoverySignature: string;
-    attestorSignature: string;
+    /** Who calls the validator. The adapter always sends from the relayer; tests pass another address to prove the gate. */
+    sender?: string;
   }): Promise<{ txHash: string }> {
+    this.requireRelayerUp();
     if (this.inject.initiate) {
       const error = this.inject.initiate;
       delete this.inject.initiate;
@@ -601,6 +615,7 @@ export class FakeRecoveryChain implements RecoveryChainPort {
     const acct = this.mustAccount(input.account);
     const revert = (reason: string) =>
       new KaadaError("RECOVERY_REJECTED", "initiate reverted", { details: { reason } });
+    if ((input.sender ?? this.relayerAddress).toLowerCase() !== this.relayerAddress) throw revert("NotRelayer");
     if (!acct.config) throw revert("NotInitialized");
     if (acct.pending) throw revert("RecoveryActive");
     if (Number(input.deadline) < Math.floor(this.clock().getTime() / 1000)) throw revert("Expired");
@@ -613,27 +628,14 @@ export class FakeRecoveryChain implements RecoveryChainPort {
       deadline: input.deadline,
     });
     const recovery = await this.recoverInitiateSigner(message, input.recoverySignature);
-    const attestor = await this.recoverInitiateSigner(message, input.attestorSignature);
     if (recovery !== acct.config.recoveryKey || acct.usedKeys.has(acct.config.recoveryKey))
       throw revert("BadSignature");
-    if (attestor !== this.attestor.toLowerCase()) throw revert("BadSignature");
     acct.pending = {
       commitment: input.root.commitmentHash,
       executeAfter: Math.floor(this.clock().getTime() / 1000) + acct.config.delay,
     };
     if (this.inject.hiddenReads) acct.hiddenReads = this.inject.hiddenReads;
     return { txHash: fakeHash(["initiate", input.account, input.root.commitmentHash]) };
-  }
-
-  /** The attestor's veto: only STOPS a pending recovery. */
-  attestorCancel(account: string): string {
-    const acct = this.mustAccount(account);
-    if (acct.pending) {
-      if (this.inject.staleReads) acct.stale = { ...acct.pending, reads: this.inject.staleReads };
-      delete acct.pending;
-      acct.recoveryNonce += 1n;
-    }
-    return fakeHash(["veto", account, ++this.counter]);
   }
 
   private mustAccount(address: string): FakeAccount {

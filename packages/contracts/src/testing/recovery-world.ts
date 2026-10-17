@@ -1,4 +1,4 @@
-// Shared fixture for KaadaRecoveryValidator tests: a registry, a validator, a mock Kernel account, the keys,
+// Shared fixture for KaadaRecoveryValidator tests: a validator, a mock Kernel account, the keys,
 // and builders for the exact recovery batch.
 import {
   concat,
@@ -17,7 +17,6 @@ import { TestChain, describeRevert } from "./evm.js";
 
 export const validatorAbi = artifacts.KaadaRecoveryValidator.abi as unknown as Abi;
 export const accountAbi = artifacts.MockAccount.abi as unknown as Abi;
-export const registryAbi = artifacts.MockAttestorRegistry.abi as unknown as Abi;
 
 export const DAY = 86_400;
 export const MODE_BATCH: Hex = `0x01${"00".repeat(31)}`;
@@ -102,66 +101,41 @@ export interface Outcome {
 export class World {
   readonly deployer: Address = "0x1000000000000000000000000000000000000001";
   readonly stranger: Address = "0x1000000000000000000000000000000000000002";
-  /** The registry admin (real-registry worlds only). Distinct from the attestor and the recovery key. */
-  readonly registryAdmin: Address = "0x0000000000000000000000000000000000000a0a";
+  /** Kaada's recovery relayer: the only address the validator lets call `initiate`. */
+  relayer: Address = "0x1000000000000000000000000000000000000003";
   readonly recoveryAddress: Address;
-  readonly attestorAddress: Address;
 
   private constructor(
     readonly recoveryKey: Hex,
-    readonly attestorKey: Hex,
     readonly chain: TestChain,
-    readonly registry: Address,
     readonly validator: Address,
     readonly account: Address,
     /** Any deployed contract: stands in for the new root validator instance. */
     readonly newValidator: Address,
   ) {
     this.recoveryAddress = privateKeyToAccount(recoveryKey).address;
-    this.attestorAddress = privateKeyToAccount(attestorKey).address;
   }
 
   static async create(
     options: {
       contract?: "KaadaRecoveryValidator" | "ShortDelayRecoveryValidator";
-      registry?: "mock" | "real";
+      relayer?: Address;
     } = {},
   ): Promise<World> {
     const chain = await TestChain.create();
     const deployer: Address = "0x1000000000000000000000000000000000000001";
     const recoveryKey = generatePrivateKey();
-    const attestorKey = generatePrivateKey();
-    const attestorAddress = privateKeyToAccount(attestorKey).address;
-    const registry =
-      options.registry === "real"
-        ? await chain.deploy(
-            deployer,
-            artifacts.TimelockedAttestorRegistry.abi,
-            artifacts.TimelockedAttestorRegistry.bytecode,
-            ["0x0000000000000000000000000000000000000a0a", attestorAddress, 72 * 3600],
-          )
-        : await chain.deploy(deployer, registryAbi, artifacts.MockAttestorRegistry.bytecode);
     const contract = options.contract ?? "KaadaRecoveryValidator";
     const validator = await chain.deploy(
       deployer,
       artifacts[contract].abi,
       artifacts[contract].bytecode,
-      [registry],
+      [options.relayer ?? "0x1000000000000000000000000000000000000003"],
     );
     const account = await chain.deploy(deployer, accountAbi, artifacts.MockAccount.bytecode);
     const newValidator = await chain.deploy(deployer, accountAbi, artifacts.MockAccount.bytecode);
-    const world = new World(
-      recoveryKey,
-      attestorKey,
-      chain,
-      registry,
-      validator,
-      account,
-      newValidator,
-    );
-    if (options.registry !== "real") {
-      await chain.call(deployer, registry, registryAbi, "setAttestor", [world.attestorAddress]);
-    }
+    const world = new World(recoveryKey, chain, validator, account, newValidator);
+    if (options.relayer) world.relayer = options.relayer;
     return world;
   }
 
@@ -268,7 +242,7 @@ export class World {
     });
   }
 
-  /** Both signatures, then `initiate` (submitted by `sender`). */
+  /** The recovery key signs, then `initiate` (submitted by `sender`). */
   async initiate(
     root: NewRoot = this.root(),
     options: {
@@ -276,21 +250,17 @@ export class World {
       account?: Address;
       deadline?: bigint;
       sigRecovery?: Hex;
-      sigAttestor?: Hex;
     } = {},
   ): Promise<Outcome> {
     const account = options.account ?? this.account;
     const deadline = options.deadline ?? this.chain.timestamp + 3600n;
     const sigRecovery =
       options.sigRecovery ?? (await this.sign(this.recoveryKey, root, { account, deadline }));
-    const sigAttestor =
-      options.sigAttestor ?? (await this.sign(this.attestorKey, root, { account, deadline }));
-    return this.from(options.sender ?? this.stranger, "initiate", [
+    return this.from(options.sender ?? this.relayer, "initiate", [
       account,
       this.commitment(root),
       deadline,
       sigRecovery,
-      sigAttestor,
     ]);
   }
 

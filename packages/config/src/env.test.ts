@@ -9,9 +9,11 @@ import { SETTINGS } from "./settings.js";
 const databaseUrl = "postgresql://user:secret-password@db.example.com/kaada";
 const base = { DATABASE_URL: databaseUrl };
 const key = Buffer.alloc(32, 7).toString("base64");
+const totpKey = Buffer.alloc(32, 9).toString("base64");
 const address = (n: number) => `0x${n.toString(16).padStart(40, "0")}`;
 const contracts: RecoveryContracts = {
   validator: address(1),
+  relayer: address(6),
   passkeyFactory: address(2),
   passkeyImplementation: address(3),
   deviceFactory: address(4),
@@ -130,7 +132,6 @@ describe("hardcoded settings are not configurable from the environment", () => {
       RECOVERY_MIN_DELAY_SECONDS: "1",
       RECOVERY_DELAY_SECONDS: "1",
       RECOVERY_SWEEP_INTERVAL_SECONDS: "0",
-      RECOVERY_ATTESTOR_SIGNER: "file",
       RECOVERY_EMAIL_PROVIDER: "outbox",
       ATTESTATION_ANDROID_MIN_LEVEL: "TEE",
       ATTESTATION_IOS_ALLOW_DEVELOPMENT: "true",
@@ -346,7 +347,7 @@ describe("account recovery", () => {
     RECOVERY_ENABLED: "true",
     RECOVERY_NETWORK: "celo-sepolia",
     RECOVERY_RELAYER_KEY_FILE: "/secrets/relayer.key",
-    RECOVERY_ATTESTOR_KEY_FILE: "/secrets/attestor.key",
+    RECOVERY_TOTP_SECRET_KEY: totpKey,
     RECOVERY_CHALLENGE_SECRET: key,
     RECOVERY_EMAIL_OUTBOX_FILE: "/tmp/outbox.jsonl",
   };
@@ -368,7 +369,10 @@ describe("account recovery", () => {
     );
     const config = loadConfig(dev, { deployments: deployed });
     assert.equal(config.recovery.setup?.contracts.validator, address(1));
-    assert.equal(config.recovery.setup?.attestor.signer, "file");
+    assert.equal(config.recovery.setup?.contracts.relayer, address(6));
+    assert.equal(config.recovery.setup?.totpCipherKeys[0]?.key, totpKey);
+    assert.equal(config.recovery.setup?.totpCipherKeys[0]?.version, 1);
+    assert.equal("attestor" in (config.recovery.setup ?? {}), false);
     assert.equal(config.recovery.chainId, 11142220);
     assert.equal(config.wallet.onChainId, 11142220);
     assert.equal(config.recovery.emailProvider, "outbox");
@@ -376,7 +380,7 @@ describe("account recovery", () => {
       "WALLET_PROVIDER",
       "BUNDLER_URL",
       "RECOVERY_RELAYER_KEY_FILE",
-      "RECOVERY_ATTESTOR_KEY_FILE",
+      "RECOVERY_TOTP_SECRET_KEY",
       "RECOVERY_CHALLENGE_SECRET",
       "RECOVERY_EMAIL_OUTBOX_FILE",
     ]) {
@@ -405,7 +409,7 @@ describe("account recovery", () => {
     );
   });
 
-  it("production: Redis, a KMS attestor, SMTP, never the file outbox or a key file", () => {
+  it("production: Redis, SMTP and the authenticator key; no KMS, no attestor key of any kind", () => {
     const prod = {
       ...dev,
       ...production,
@@ -414,22 +418,18 @@ describe("account recovery", () => {
       RECOVERY_ENABLED: "true",
       RECOVERY_RELAYER_KEY_FILE: "/secrets/relayer.key",
       RECOVERY_CHALLENGE_SECRET: key,
-      RECOVERY_ATTESTOR_KMS_KEY_ID: "attestor-key-1",
+      RECOVERY_TOTP_SECRET_KEY: totpKey,
       RECOVERY_SMTP_URL: "smtps://user:pass@mail.example:465",
       RECOVERY_EMAIL_FROM: "Kaada <no-reply@kaada.app>",
     };
-    const { RECOVERY_EMAIL_OUTBOX_FILE: _o, RECOVERY_ATTESTOR_KEY_FILE: _k, ...clean } = prod;
+    const { RECOVERY_EMAIL_OUTBOX_FILE: _o, ...clean } = prod;
+    // Production starts with no KMS key id and no attestor key file: neither exists in the design any more.
     const config = loadConfig(clean, { deployments: deployed });
-    assert.deepEqual(config.recovery.setup?.attestor, {
-      signer: "kms",
-      kmsKeyId: "attestor-key-1",
-    });
+    assert.equal(config.recovery.setup?.contracts.validator, address(1));
     assert.equal(config.recovery.emailProvider, "smtp");
     assert.equal(config.recovery.smtp?.from, "Kaada <no-reply@kaada.app>");
     assert.equal(config.redis?.url, "rediss://redis.example:6380");
 
-    const { RECOVERY_ATTESTOR_KMS_KEY_ID: _id, ...noKms } = clean;
-    assert.throws(() => loadConfig(noKms, { deployments: deployed }), /KMS/);
     const { REDIS_URL: _r, ...noRedis } = clean;
     assert.throws(() => loadConfig(noRedis, { deployments: deployed }), /REDIS_URL/);
     const { RECOVERY_SMTP_URL: _s, RECOVERY_EMAIL_FROM: _f, ...noSmtp } = clean;
@@ -438,6 +438,52 @@ describe("account recovery", () => {
         loadConfig({ ...noSmtp, RECOVERY_EMAIL_OUTBOX_FILE: "/tmp/o" }, { deployments: deployed }),
       /development/,
     );
+    // The authenticator key is the one secret recovery adds: production without it does not start.
+    const { RECOVERY_TOTP_SECRET_KEY: _t, ...noTotp } = clean;
+    assert.throws(() => loadConfig(noTotp, { deployments: deployed }), /RECOVERY_TOTP_SECRET_KEY/);
+  });
+
+  it("the authenticator key is a dedicated 32-byte key, never the execution key, and rotates like it", () => {
+    assert.throws(
+      () => loadConfig({ ...dev, RECOVERY_TOTP_SECRET_KEY: "short" }, { deployments: deployed }),
+      /32 random bytes/,
+    );
+    assert.throws(
+      () =>
+        loadConfig(
+          { ...dev, EXECUTION_SECRET_KEY: totpKey, RECOVERY_TOTP_SECRET_KEY: totpKey },
+          { deployments: deployed },
+        ),
+      /its own key/,
+    );
+    const rotated = loadConfig(
+      {
+        ...dev,
+        RECOVERY_TOTP_SECRET_KEY_VERSION: "2",
+        RECOVERY_TOTP_SECRET_KEY_PREVIOUS: key,
+      },
+      { deployments: deployed },
+    );
+    assert.deepEqual(rotated.recovery.setup?.totpCipherKeys, [
+      { version: 2, key: totpKey },
+      { version: 1, key },
+    ]);
+  });
+
+  it("no attestor setting is read from the environment any more", () => {
+    const config = loadConfig(
+      {
+        ...dev,
+        RECOVERY_ATTESTOR_KMS_KEY_ID: "kms-key",
+        RECOVERY_ATTESTOR_KEY_FILE: "/secrets/attestor.key",
+      },
+      { deployments: deployed },
+    );
+    const dump = JSON.stringify(config, (_k, v: unknown) =>
+      typeof v === "bigint" ? v.toString() : v,
+    );
+    assert.equal(dump.toLowerCase().includes("attestor"), false);
+    assert.equal(dump.includes("kms-key"), false);
   });
 
   it("validates SMTP and Redis URLs", () => {

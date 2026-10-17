@@ -82,7 +82,11 @@ export interface ViemRecoveryChainOptions {
   /** The KaadaRecoveryValidator (or its test-only short-delay build on a testnet). */
   recoveryValidator: Address;
   deployments: ValidatorDeployments;
-  /** An EOA that pays gas for clone deployment and `initiate` (anyone may submit them; it holds no authority). */
+  /**
+   * Kaada's recovery relayer: the ONE address KaadaRecoveryValidator lets call `initiate` (it is the contract's immutable RELAYER),
+   * and the EOA that pays gas for clone deployment. It is a submission gate, not an authority: it cannot produce the Recovery Code
+   * signature `initiate` requires, holds no user wallet key, and cannot cancel or complete a recovery.
+   */
   relayerKey: Hex;
   /** Whether the P-256 precompile (RIP-7212) exists: the passkey assertion encoding depends on it. */
   p256Precompile: boolean;
@@ -133,19 +137,27 @@ interface WireOperation {
 export class ViemRecoveryChain implements RecoveryChainPort {
   readonly chainId: number;
   readonly recoveryValidator: string;
+  /** The relayer's address (public). The key itself never leaves this class and is never logged. */
+  readonly relayerAddress: string;
   private readonly client: PublicClient;
   private readonly relayer;
   private readonly wallet;
   private readonly gas: { verification: bigint; call: bigint; preVerification: bigint };
 
-  constructor(private readonly options: ViemRecoveryChainOptions) {
+  /** Everything but the key: the key is used once, in the constructor, and is not kept on the object (so logging or serialising this class cannot leak it). */
+  private readonly options: Omit<ViemRecoveryChainOptions, "relayerKey">;
+
+  constructor(configured: ViemRecoveryChainOptions) {
+    const { relayerKey, ...options } = configured;
+    this.options = options;
     this.chainId = options.chain.id;
     this.recoveryValidator = options.recoveryValidator.toLowerCase();
     this.client = createPublicClient({
       chain: options.chain,
       transport: http(options.rpcUrl),
     });
-    this.relayer = privateKeyToAccount(options.relayerKey);
+    this.relayer = privateKeyToAccount(relayerKey);
+    this.relayerAddress = this.relayer.address.toLowerCase();
     this.wallet = createWalletClient({
       account: this.relayer,
       chain: options.chain,
@@ -275,23 +287,36 @@ export class ViemRecoveryChain implements RecoveryChainPort {
     account: string;
     root: ProposedRoot;
   }): Promise<{ created: boolean; txHash?: string }> {
-    if ((await this.instanceStatus(input)) !== "NOT_DEPLOYED") return { created: false };
+    let status: InstanceStatus;
+    try {
+      status = await this.instanceStatus(input);
+    } catch (error) {
+      throw relayerUnavailable(error, "read");
+    }
+    if (status !== "NOT_DEPLOYED") return { created: false };
+    await this.requireFundedRelayer();
     const factory =
       input.root.kind === "PASSKEY"
         ? this.options.deployments.passkey.factory
         : this.options.deployments.device.factory;
-    const hash = await this.wallet.writeContract({
-      address: factory,
-      abi: factoryAbi,
-      functionName: "deploy",
-      args: [
-        getAddress(input.account),
-        input.root.purpose,
-        this.credentialCommitment(input.root),
-        input.root.deploymentSalt,
-      ],
-      gas: 400_000n,
-    });
+    let hash: Hex;
+    try {
+      hash = await this.wallet.writeContract({
+        address: factory,
+        abi: factoryAbi,
+        functionName: "deploy",
+        args: [
+          getAddress(input.account),
+          input.root.purpose,
+          this.credentialCommitment(input.root),
+          input.root.deploymentSalt,
+        ],
+        gas: 400_000n,
+      });
+    } catch (error) {
+      if (isInsufficientFunds(error)) throw relayerUnavailable(error, "funds");
+      throw error;
+    }
     const receipt = await this.client.waitForTransactionReceipt({ hash });
     if (receipt.status !== "success")
       throw new KaadaError("RECOVERY_REJECTED", "the validator instance could not be deployed");
@@ -723,7 +748,6 @@ export class ViemRecoveryChain implements RecoveryChainPort {
     root: ProposedRoot;
     deadline: string;
     recoverySignature: string;
-    attestorSignature: string;
   }): Promise<{ txHash: string }> {
     const args = [
       getAddress(input.account),
@@ -735,32 +759,55 @@ export class ViemRecoveryChain implements RecoveryChainPort {
       },
       BigInt(input.deadline),
       input.recoverySignature,
-      input.attestorSignature,
     ];
+    // Stage 1, nothing sent: the relayer must be reachable, funded, and be the validator's RELAYER. Any failure here means NOTHING
+    // was broadcast, so it is reported as a retryable relayer outage. There is NO fallback to submitting from anywhere else.
+    await this.requireFundedRelayer();
+    let request: unknown;
     try {
-      const { request } = await this.client.simulateContract({
+      ({ request } = await this.client.simulateContract({
         account: this.relayer,
         address: this.options.recoveryValidator,
         abi: recoveryAbi,
         functionName: "initiate",
         args,
-      } as never);
-      const hash = await this.wallet.writeContract(request as never);
-      const receipt = await this.client.waitForTransactionReceipt({ hash });
-      if (receipt.status !== "success")
-        throw new KaadaError("RECOVERY_REJECTED", "initiate reverted");
-      return { txHash: hash.toLowerCase() };
+      } as never));
     } catch (error) {
-      if (error instanceof KaadaError) throw error;
       const reason = decodeRevert(error);
-      // A decoded contract error is a DEFINITE refusal; anything else (a network failure) is ambiguous.
+      // The validator names a different relayer than the key this service holds: a deployment mistake, not the person's fault.
+      if (reason === "NotRelayer") throw relayerUnavailable(error, "relayer-mismatch");
+      // Any other decoded contract error is a DEFINITE refusal of this recovery.
       if (reason)
         throw new KaadaError("RECOVERY_REJECTED", "initiate was refused", {
           details: { reason },
           cause: error,
         });
+      throw relayerUnavailable(error, "simulate");
+    }
+    // Stage 2: broadcast. An unfunded relayer fails before anything leaves; any other failure here may have reached the network,
+    // so it stays AMBIGUOUS and is settled by reading the chain.
+    let hash: Hex;
+    try {
+      hash = await this.wallet.writeContract(request as never);
+    } catch (error) {
+      if (isInsufficientFunds(error)) throw relayerUnavailable(error, "funds");
       throw error;
     }
+    const receipt = await this.client.waitForTransactionReceipt({ hash });
+    if (receipt.status !== "success")
+      throw new KaadaError("RECOVERY_REJECTED", "initiate reverted");
+    return { txHash: hash.toLowerCase() };
+  }
+
+  /** The relayer can pay for a transaction at all (a zero balance is the commonest outage). Reads only. */
+  private async requireFundedRelayer(): Promise<void> {
+    let balance: bigint;
+    try {
+      balance = await this.client.getBalance({ address: this.relayer.address });
+    } catch (error) {
+      throw relayerUnavailable(error, "read");
+    }
+    if (balance === 0n) throw relayerUnavailable(new Error("relayer has no gas"), "funds");
   }
 
   private async bundler(
@@ -852,6 +899,25 @@ function encodePasskeyStub(usePrecompiled: boolean): Hex {
 }
 
 /** The contract error name behind a viem failure, if it is one of the recovery validator's own errors. */
+/**
+ * The relayer could not submit and NOTHING was broadcast: retryable, and the person must not be told to submit anything themselves.
+ * Carries a stage code only; never an address, a key or the node's raw error text.
+ */
+function relayerUnavailable(cause: unknown, stage: string): KaadaError {
+  return new KaadaError(
+    "RECOVERY_RELAYER_UNAVAILABLE",
+    "the recovery service cannot submit right now; nothing was sent, try again shortly",
+    { details: { stage }, cause },
+  );
+}
+
+function isInsufficientFunds(error: unknown): boolean {
+  const walked = (error as { walk?: (fn: (e: unknown) => boolean) => unknown } | null)?.walk?.(
+    (e) => (e as { name?: string } | null)?.name === "InsufficientFundsError",
+  );
+  return walked !== undefined && walked !== null;
+}
+
 function decodeRevert(error: unknown): string | null {
   const text = JSON.stringify(
     (error as { cause?: unknown } | null)?.cause ?? {},

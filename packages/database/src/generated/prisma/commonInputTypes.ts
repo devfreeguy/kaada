@@ -1021,6 +1021,23 @@ export type EnumRecoveryTerminatorNullableWithAggregatesFilter<$PrismaModel = ne
   _max?: Prisma.NestedEnumRecoveryTerminatorNullableFilter<$PrismaModel>
 }
 
+export type EnumRecoveryTotpStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.RecoveryTotpStatus | Prisma.EnumRecoveryTotpStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.RecoveryTotpStatus[] | Prisma.ListEnumRecoveryTotpStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RecoveryTotpStatus[] | Prisma.ListEnumRecoveryTotpStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRecoveryTotpStatusFilter<$PrismaModel> | $Enums.RecoveryTotpStatus
+}
+
+export type EnumRecoveryTotpStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RecoveryTotpStatus | Prisma.EnumRecoveryTotpStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.RecoveryTotpStatus[] | Prisma.ListEnumRecoveryTotpStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RecoveryTotpStatus[] | Prisma.ListEnumRecoveryTotpStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRecoveryTotpStatusWithAggregatesFilter<$PrismaModel> | $Enums.RecoveryTotpStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumRecoveryTotpStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumRecoveryTotpStatusFilter<$PrismaModel>
+}
+
 export type EnumAttestationPlatformFilter<$PrismaModel = never> = {
   equals?: $Enums.AttestationPlatform | Prisma.EnumAttestationPlatformFieldRefInput<$PrismaModel>
   in?: $Enums.AttestationPlatform[] | Prisma.ListEnumAttestationPlatformFieldRefInput<$PrismaModel>
@@ -2100,6 +2117,23 @@ export type NestedEnumRecoveryTerminatorNullableWithAggregatesFilter<$PrismaMode
   _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
   _min?: Prisma.NestedEnumRecoveryTerminatorNullableFilter<$PrismaModel>
   _max?: Prisma.NestedEnumRecoveryTerminatorNullableFilter<$PrismaModel>
+}
+
+export type NestedEnumRecoveryTotpStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.RecoveryTotpStatus | Prisma.EnumRecoveryTotpStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.RecoveryTotpStatus[] | Prisma.ListEnumRecoveryTotpStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RecoveryTotpStatus[] | Prisma.ListEnumRecoveryTotpStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRecoveryTotpStatusFilter<$PrismaModel> | $Enums.RecoveryTotpStatus
+}
+
+export type NestedEnumRecoveryTotpStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.RecoveryTotpStatus | Prisma.EnumRecoveryTotpStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.RecoveryTotpStatus[] | Prisma.ListEnumRecoveryTotpStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.RecoveryTotpStatus[] | Prisma.ListEnumRecoveryTotpStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumRecoveryTotpStatusWithAggregatesFilter<$PrismaModel> | $Enums.RecoveryTotpStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumRecoveryTotpStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumRecoveryTotpStatusFilter<$PrismaModel>
 }
 
 export type NestedEnumAttestationPlatformFilter<$PrismaModel = never> = {

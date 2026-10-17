@@ -5,8 +5,7 @@
  *   KAADA_HARNESS_STATE=<state.json> npx tsx src/testnet/recovery-validator-sepolia.ts
  *
  * It checks what the in-process unit tests cannot: EntryPoint validAfter, Kernel's InvalidNonce voiding, the
- * selector grants, and re-arming a NEW recovery configuration after a recovery. Registry: the test mock
- * (the production registry is a later component).
+ * selector grants, and re-arming a NEW recovery configuration after a recovery.
  */
 import { writeFileSync } from "node:fs";
 
@@ -51,7 +50,6 @@ const DELAY = 25;
 const MODE_BATCH: Hex = `0x01${"00".repeat(31)}`;
 
 const validatorAbi = artifacts.ShortDelayRecoveryValidator.abi as unknown as Abi;
-const registryAbi = artifacts.MockAttestorRegistry.abi as unknown as Abi;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const chainTime = async () => (await pub.getBlock()).timestamp;
@@ -82,38 +80,21 @@ async function main(): Promise<void> {
   console.log("deployer", deployer.address, "balance", balance, "CELO");
   if (balance < 0.8) throw new Error("deployer balance too low");
 
-  const registryHash = await wallet.deployContract({
-    abi: registryAbi,
-    bytecode: artifacts.MockAttestorRegistry.bytecode,
-    gas: 600_000n,
-  });
-  const registry = (await pub.waitForTransactionReceipt({ hash: registryHash }))
-    .contractAddress as Address;
-  const attestorKey = generatePrivateKey();
-  const attestorAddress = privateKeyToAccount(attestorKey).address;
-  const set = await wallet.writeContract({
-    address: registry,
-    abi: registryAbi,
-    functionName: "setAttestor",
-    args: [attestorAddress],
-    gas: 100_000n,
-  });
-  await pub.waitForTransactionReceipt({ hash: set });
   const moduleHash = await wallet.deployContract({
     abi: validatorAbi,
     bytecode: artifacts.ShortDelayRecoveryValidator.bytecode,
-    args: [registry],
+    // The deployer doubles as the recovery relayer on Sepolia: the only address `initiate` accepts.
+    args: [deployer.address],
     gas: 4_000_000n,
   });
   const MODULE = (await pub.waitForTransactionReceipt({ hash: moduleHash }))
     .contractAddress as Address;
   (state as { recoveryProbe?: object }).recoveryProbe = {
     ...(state.recoveryProbe ?? { copies: [] }),
-    registry,
     validator: MODULE,
   };
   writeFileSync(statePath ?? "", JSON.stringify(state), { mode: 0o600 });
-  console.log("registry (mock)", registry, "validator", MODULE);
+  console.log("validator", MODULE);
   await sleep(4000);
 
   const [, Z, W, V] = await ensureCopies(4);
@@ -168,7 +149,6 @@ async function main(): Promise<void> {
     a: Account,
     root: ReturnType<typeof rootFor>,
     recoveryKey: Hex,
-    sigAttestorKey: Hex = attestorKey,
   ): Promise<string> {
     const nonce = await read<bigint>("recoveryNonce", [a.address]);
     const deadline = (await chainTime()) + 600n;
@@ -179,13 +159,7 @@ async function main(): Promise<void> {
         address: MODULE,
         abi: validatorAbi,
         functionName: "initiate",
-        args: [
-          a.address,
-          c,
-          deadline,
-          await sign(recoveryKey, a, nonce, root, deadline),
-          await sign(sigAttestorKey, a, nonce, root, deadline),
-        ],
+        args: [a.address, c, deadline, await sign(recoveryKey, a, nonce, root, deadline)],
       } as never);
       await pub.waitForTransactionReceipt({ hash: await wallet.writeContract(request) });
       await sleep(4000);
@@ -244,14 +218,79 @@ async function main(): Promise<void> {
   if (!(r.accepted && r.executed)) throw new Error("setup failed");
 
   const rootZ = rootFor(Z!, kC);
-  const tooSoon = await initiate(a, rootZ, recoveryKey1, recoveryKey1);
+  const stranger = await initiate(a, rootZ, generatePrivateKey());
+  record("a stranger's signature cannot start a recovery", stranger !== "ok", stranger);
+  // The Recovery Code holder cannot submit `initiate` themselves: only the relayer (the deployer here) can.
+  const holder = privateKeyToAccount(recoveryKey1);
+  let holderRefused = false;
+  try {
+    await pub.simulateContract({
+      account: holder,
+      address: MODULE,
+      abi: validatorAbi,
+      functionName: "initiate",
+      args: [
+        a.address,
+        recoveryCommitment(rootZ),
+        (await chainTime()) + 600n,
+        await sign(
+          recoveryKey1,
+          a,
+          await read<bigint>("recoveryNonce", [a.address]),
+          rootZ,
+          (await chainTime()) + 600n,
+        ),
+      ],
+    } as never);
+  } catch (error) {
+    holderRefused = /NotRelayer/.test(describeError(error));
+  }
   record(
-    "attestor key missing: recovery key signing both slots cannot start",
-    tooSoon !== "ok",
-    tooSoon,
+    "the Recovery Code holder cannot call initiate: only the relayer can (NotRelayer)",
+    holderRefused,
+    "",
   );
   const started = await initiate(a, rootZ, recoveryKey1);
-  record("recovery key + attestor start a recovery", started === "ok", started);
+  record(
+    "the relayer with the Recovery Code signature starts a recovery",
+    started === "ok",
+    started,
+  );
+
+  // The relayer cannot cancel (cancel acts on msg.sender's own state), but the wallet's current root can, directly.
+  let relayerCancelRefused = false;
+  try {
+    await pub.simulateContract({
+      account: deployer,
+      address: MODULE,
+      abi: validatorAbi,
+      functionName: "cancel",
+    } as never);
+  } catch (error) {
+    relayerCancelRefused = /NoPendingRecovery/.test(describeError(error));
+  }
+  record("the relayer cannot cancel the account's pending recovery", relayerCancelRefused, "");
+  const cancelRoot = await submit(
+    a,
+    null,
+    kA,
+    encodeExecute([
+      { to: MODULE, data: encodeFunctionData({ abi: validatorAbi, functionName: "cancel" }) },
+    ]),
+    GAS,
+  );
+  const stillPending = (await read<[Hex, number, boolean]>("pendings", [a.address]))[2];
+  record(
+    "the current root cancels the pending recovery directly (no relayer involved)",
+    cancelRoot.accepted && cancelRoot.executed && !stillPending,
+    cancelRoot.detail,
+  );
+  const restarted = await initiate(a, rootZ, recoveryKey1);
+  record(
+    "a fresh recovery can start after the cancel (new recovery nonce, new signature)",
+    restarted === "ok",
+    restarted,
+  );
   const [, executeAfter] = await read<[Hex, number, boolean]>("pendings", [a.address]);
   const exact = await exactBatch(a, rootZ);
 
@@ -285,7 +324,8 @@ async function main(): Promise<void> {
   record(
     "the validator's own state is void for the account",
     (await read<boolean>("isInitialized", [a.address])) === false &&
-      (await read<bigint>("recoveryNonce", [a.address])) === 1n,
+      // 0 -> 1 by the root cancel above, -> 2 when this recovery was consumed.
+      (await read<bigint>("recoveryNonce", [a.address])) === 2n,
     "",
   );
 

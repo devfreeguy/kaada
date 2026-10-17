@@ -7,7 +7,7 @@ import {
   recoveryInitiateTypes,
 } from "@kaada/contracts";
 import type { RecoveryCode } from "@kaada/contracts";
-import { KERNEL_ENFORCEMENT, KeyAttestor } from "@kaada/blockchain";
+import { KERNEL_ENFORCEMENT } from "@kaada/blockchain";
 import { createRepositories, withTransaction } from "@kaada/database";
 import type { Database } from "@kaada/database";
 import { KaadaError } from "@kaada/domain";
@@ -22,7 +22,7 @@ import type {
   VerifiedRegistration,
   Wallet,
 } from "@kaada/domain";
-import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
+import { privateKeyToAccount } from "viem/accounts";
 import type { Address, Hex } from "viem";
 
 import type { AuthorizationUnitOfWork } from "../../src/core/authorization/ports.js";
@@ -39,6 +39,9 @@ import { RecoveryCleanup } from "../../src/core/recovery/recovery-cleanup.js";
 import { RecoveryConfigurationService } from "../../src/core/recovery/recovery-configuration.js";
 import { RecoveryFinalizer } from "../../src/core/recovery/recovery-finalizer.js";
 import { RecoveryFlowService } from "../../src/core/recovery/recovery-flow.js";
+import { RecoveryTotpService } from "../../src/core/recovery/recovery-totp.js";
+import { stepAt, totpAtStep } from "../../src/core/recovery/totp.js";
+import { AesGcmSecretCipher } from "../../src/infrastructure/security/aes-gcm-cipher.js";
 import { DefaultRecoveryRiskPolicy } from "../../src/core/recovery/risk-policy.js";
 import { createAuthorizationStores } from "./authorization-memory.js";
 import { createFirmStores } from "./firm-memory.js";
@@ -118,6 +121,8 @@ export interface TestUser {
   code: RecoveryCode;
   recoveryKey: { privateKey: Hex; address: Address };
   rootCredentialId: string;
+  /** The base32 secret in the person's authenticator app. In tests only; the server keeps it encrypted. */
+  authenticatorSecret?: string;
 }
 
 export interface NewRoot {
@@ -169,6 +174,7 @@ export function createRecoveryWorld(
     webUrl?: string;
     database?: Database;
     deviceTiers?: DeviceTierResolver;
+    totpLimiter?: { allow(key: string): boolean | Promise<boolean> };
   } = {},
 ) {
   // Fake time that still advances in real time, so bounded waits end; tests jump it with `advance`.
@@ -196,6 +202,7 @@ export function createRecoveryWorld(
     recoveryConfigurations: recovery.repositories.recoveryConfigurations,
     recoveryAttempts: recovery.repositories.recoveryAttempts,
     recoveryEmailChallenges: recovery.repositories.recoveryEmailChallenges,
+    recoveryTotps: recovery.repositories.recoveryTotps,
     recoveryCleanup: recovery.repositories.recoveryCleanup,
     delegatedPermissions: wallet.repositories.delegatedPermissions,
     executionSecrets: firm.repositories.executionSecrets,
@@ -231,20 +238,22 @@ export function createRecoveryWorld(
     log: log,
   });
 
-  const attestorKey = generatePrivateKey();
-  const attestor = new KeyAttestor({
-    privateKey: attestorKey,
-    chainId: chain.chainId,
-    recoveryValidator: chain.recoveryValidator,
-    sendVeto: ({ account }) => Promise.resolve(chain.attestorCancel(account) as Hex),
+  // A DEDICATED key for the authenticator secrets, exactly as production configures it.
+  const totpKey = randomBytes(32).toString("base64");
+  const totpCipher = new AesGcmSecretCipher([{ version: 1, key: totpKey }]);
+  const totp = new RecoveryTotpService({
+    totps: repositories.recoveryTotps,
+    audit: repositories.audit,
+    cipher: totpCipher,
+    now,
+    ...(options.totpLimiter && { limiter: options.totpLimiter }),
   });
-  chain.attestor = privateKeyToAccount(attestorKey).address.toLowerCase();
 
   const policy: RecoveryPolicy = { ...TEST_POLICY, ...options.policy };
   const context: RecoveryContext = {
     uow,
     chain,
-    attestor,
+    totp,
     email,
     notifier,
     risk: new DefaultRecoveryRiskPolicy(policy),
@@ -291,6 +300,8 @@ export function createRecoveryWorld(
       armed?: boolean;
       telegram?: boolean;
       delay?: number;
+      /** Armed recovery normally has an authenticator app too; false builds a wallet that never set one up. */
+      authenticator?: boolean;
     } = {},
   ): Promise<TestUser> {
     counter += 1;
@@ -393,7 +404,25 @@ export function createRecoveryWorld(
       });
       void configurationRow;
     }
+    let authenticatorSecret: string | undefined;
+    if (input.authenticator ?? armed) {
+      // Enrolled exactly as a person does: begin, read the secret, enter a code from the app.
+      const enrolment = await totp.begin({
+        userId,
+        walletId: active.id,
+        accountName: email,
+      });
+      authenticatorSecret = enrolment.secret;
+      await totp.confirm({
+        userId,
+        walletId: active.id,
+        code: totpAtStep(enrolment.secret, stepAt(now().getTime())),
+      });
+      // The enrolment spent this time step. A person waits for the app's next code; so does the test world.
+      advance(31_000);
+    }
     return {
+      ...(authenticatorSecret && { authenticatorSecret }),
       email,
       userId,
       wallet: active as Wallet & { address: string },
@@ -476,11 +505,29 @@ export function createRecoveryWorld(
     });
   }
 
+  /**
+   * The code the person's authenticator app shows now (or `steps` time steps away). A code can be used once: a second use needs
+   * the clock to have moved on to the next time step (`advance`).
+   */
+  function authenticatorCode(user: TestUser, steps = 0): string {
+    if (!user.authenticatorSecret) throw new Error("this user has no authenticator app");
+    return totpAtStep(user.authenticatorSecret, stepAt(now().getTime()) + steps);
+  }
+
+  /** A code is single use: if this wallet's current time step was already spent, wait for the app's next code. */
+  function nextAuthenticatorStep(user: TestUser): void {
+    const row = recovery.totps.find((t) => t.walletId === user.wallet.id && t.status === "ACTIVE");
+    const last = row?.lastUsedStep;
+    const current = stepAt(now().getTime());
+    if (last !== undefined && last >= current) advance((last + 1 - current) * 30_000 + 1_000);
+  }
+
   /** The whole happy path up to a PENDING recovery on chain. */
   async function startRecovery(user: TestUser, root: NewRoot = newPasskeyRoot()) {
+    nextAuthenticatorStep(user);
     const token = await startAndVerify(user.email);
     const { proposal, signature } = await proposeAndSign(user, token, root);
-    const view = await flow.submitProof(token, signature);
+    const view = await flow.submitProof(token, signature, authenticatorCode(user));
     const attempt = await attemptOf(token);
     return { token, proposal, signature, view, attempt, root };
   }
@@ -496,9 +543,9 @@ export function createRecoveryWorld(
   function cancelTokenFrom(user: TestUser): string {
     const mail = [...email.sent]
       .reverse()
-      .find((m) => m.to === user.email && m.text.includes("/recovery/report#"));
-    const token = /\/recovery\/report#([A-Za-z0-9_-]{43})/.exec(mail?.text ?? "")?.[1];
-    if (!token) throw new Error("no report link was sent");
+      .find((m) => m.to === user.email && m.text.includes("/recovery/cancel#"));
+    const token = /\/recovery\/cancel#([A-Za-z0-9_-]{43})/.exec(mail?.text ?? "")?.[1];
+    if (!token) throw new Error("no cancel link was sent");
     return token;
   }
 
@@ -592,7 +639,10 @@ export function createRecoveryWorld(
     finalizer,
     configuration,
     pins,
-    attestor,
+    totp,
+    totpCipher,
+    authenticatorCode,
+    nextAuthenticatorStep,
     createUser,
     startAndVerify,
     proposeAndSign,

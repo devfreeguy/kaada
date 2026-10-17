@@ -316,6 +316,7 @@ export type WalletWhereInput = {
   walletCredentials?: Prisma.WalletCredentialListRelationFilter
   recoveryConfigurations?: Prisma.RecoveryConfigurationListRelationFilter
   recoveryAttempts?: Prisma.RecoveryAttemptListRelationFilter
+  recoveryTotps?: Prisma.RecoveryTotpListRelationFilter
   rootChanges?: Prisma.RootChangeListRelationFilter
   attestationChallenges?: Prisma.DeviceAttestationChallengeListRelationFilter
   deviceAttestations?: Prisma.DeviceAttestationListRelationFilter
@@ -348,6 +349,7 @@ export type WalletOrderByWithRelationInput = {
   walletCredentials?: Prisma.WalletCredentialOrderByRelationAggregateInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationOrderByRelationAggregateInput
   recoveryAttempts?: Prisma.RecoveryAttemptOrderByRelationAggregateInput
+  recoveryTotps?: Prisma.RecoveryTotpOrderByRelationAggregateInput
   rootChanges?: Prisma.RootChangeOrderByRelationAggregateInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeOrderByRelationAggregateInput
   deviceAttestations?: Prisma.DeviceAttestationOrderByRelationAggregateInput
@@ -384,6 +386,7 @@ export type WalletWhereUniqueInput = Prisma.AtLeast<{
   walletCredentials?: Prisma.WalletCredentialListRelationFilter
   recoveryConfigurations?: Prisma.RecoveryConfigurationListRelationFilter
   recoveryAttempts?: Prisma.RecoveryAttemptListRelationFilter
+  recoveryTotps?: Prisma.RecoveryTotpListRelationFilter
   rootChanges?: Prisma.RootChangeListRelationFilter
   attestationChallenges?: Prisma.DeviceAttestationChallengeListRelationFilter
   deviceAttestations?: Prisma.DeviceAttestationListRelationFilter
@@ -461,6 +464,7 @@ export type WalletCreateInput = {
   walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutWalletInput
@@ -492,6 +496,7 @@ export type WalletUncheckedCreateInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutWalletInput
@@ -523,6 +528,7 @@ export type WalletUpdateInput = {
   walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutWalletNestedInput
@@ -554,6 +560,7 @@ export type WalletUncheckedUpdateInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutWalletNestedInput
@@ -911,6 +918,20 @@ export type WalletUpdateOneRequiredWithoutRecoveryAttemptsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.WalletUpdateToOneWithWhereWithoutRecoveryAttemptsInput, Prisma.WalletUpdateWithoutRecoveryAttemptsInput>, Prisma.WalletUncheckedUpdateWithoutRecoveryAttemptsInput>
 }
 
+export type WalletCreateNestedOneWithoutRecoveryTotpsInput = {
+  create?: Prisma.XOR<Prisma.WalletCreateWithoutRecoveryTotpsInput, Prisma.WalletUncheckedCreateWithoutRecoveryTotpsInput>
+  connectOrCreate?: Prisma.WalletCreateOrConnectWithoutRecoveryTotpsInput
+  connect?: Prisma.WalletWhereUniqueInput
+}
+
+export type WalletUpdateOneRequiredWithoutRecoveryTotpsNestedInput = {
+  create?: Prisma.XOR<Prisma.WalletCreateWithoutRecoveryTotpsInput, Prisma.WalletUncheckedCreateWithoutRecoveryTotpsInput>
+  connectOrCreate?: Prisma.WalletCreateOrConnectWithoutRecoveryTotpsInput
+  upsert?: Prisma.WalletUpsertWithoutRecoveryTotpsInput
+  connect?: Prisma.WalletWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.WalletUpdateToOneWithWhereWithoutRecoveryTotpsInput, Prisma.WalletUpdateWithoutRecoveryTotpsInput>, Prisma.WalletUncheckedUpdateWithoutRecoveryTotpsInput>
+}
+
 export type WalletCreateNestedOneWithoutAttestationChallengesInput = {
   create?: Prisma.XOR<Prisma.WalletCreateWithoutAttestationChallengesInput, Prisma.WalletUncheckedCreateWithoutAttestationChallengesInput>
   connectOrCreate?: Prisma.WalletCreateOrConnectWithoutAttestationChallengesInput
@@ -968,6 +989,7 @@ export type WalletCreateWithoutUserInput = {
   walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutWalletInput
@@ -998,6 +1020,7 @@ export type WalletUncheckedCreateWithoutUserInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutWalletInput
@@ -1076,6 +1099,7 @@ export type WalletCreateWithoutAuthorizationSessionsInput = {
   walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutWalletInput
@@ -1106,6 +1130,7 @@ export type WalletUncheckedCreateWithoutAuthorizationSessionsInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutWalletInput
@@ -1152,6 +1177,7 @@ export type WalletUpdateWithoutAuthorizationSessionsInput = {
   walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutWalletNestedInput
@@ -1182,6 +1208,7 @@ export type WalletUncheckedUpdateWithoutAuthorizationSessionsInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutWalletNestedInput
@@ -1212,6 +1239,7 @@ export type WalletCreateWithoutPaymentAuthorizationsInput = {
   walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutWalletInput
@@ -1242,6 +1270,7 @@ export type WalletUncheckedCreateWithoutPaymentAuthorizationsInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutWalletInput
@@ -1288,6 +1317,7 @@ export type WalletUpdateWithoutPaymentAuthorizationsInput = {
   walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutWalletNestedInput
@@ -1318,6 +1348,7 @@ export type WalletUncheckedUpdateWithoutPaymentAuthorizationsInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutWalletNestedInput
@@ -1348,6 +1379,7 @@ export type WalletCreateWithoutFirmQuoteAttemptsInput = {
   walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutWalletInput
@@ -1378,6 +1410,7 @@ export type WalletUncheckedCreateWithoutFirmQuoteAttemptsInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutWalletInput
@@ -1424,6 +1457,7 @@ export type WalletUpdateWithoutFirmQuoteAttemptsInput = {
   walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutWalletNestedInput
@@ -1454,6 +1488,7 @@ export type WalletUncheckedUpdateWithoutFirmQuoteAttemptsInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutWalletNestedInput
@@ -1484,6 +1519,7 @@ export type WalletCreateWithoutRootActionSessionsInput = {
   walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutWalletInput
@@ -1514,6 +1550,7 @@ export type WalletUncheckedCreateWithoutRootActionSessionsInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutWalletInput
@@ -1560,6 +1597,7 @@ export type WalletUpdateWithoutRootActionSessionsInput = {
   walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutWalletNestedInput
@@ -1590,6 +1628,7 @@ export type WalletUncheckedUpdateWithoutRootActionSessionsInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutWalletNestedInput
@@ -1620,6 +1659,7 @@ export type WalletCreateWithoutDelegatedPermissionsInput = {
   walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutWalletInput
@@ -1650,6 +1690,7 @@ export type WalletUncheckedCreateWithoutDelegatedPermissionsInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutWalletInput
@@ -1696,6 +1737,7 @@ export type WalletUpdateWithoutDelegatedPermissionsInput = {
   walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutWalletNestedInput
@@ -1726,6 +1768,7 @@ export type WalletUncheckedUpdateWithoutDelegatedPermissionsInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutWalletNestedInput
@@ -1756,6 +1799,7 @@ export type WalletCreateWithoutExecutionsInput = {
   walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutWalletInput
@@ -1786,6 +1830,7 @@ export type WalletUncheckedCreateWithoutExecutionsInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutWalletInput
@@ -1832,6 +1877,7 @@ export type WalletUpdateWithoutExecutionsInput = {
   walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutWalletNestedInput
@@ -1862,6 +1908,7 @@ export type WalletUncheckedUpdateWithoutExecutionsInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutWalletNestedInput
@@ -1892,6 +1939,7 @@ export type WalletCreateWithoutWalletCredentialsInput = {
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutWalletInput
@@ -1922,6 +1970,7 @@ export type WalletUncheckedCreateWithoutWalletCredentialsInput = {
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutWalletInput
@@ -1968,6 +2017,7 @@ export type WalletUpdateWithoutWalletCredentialsInput = {
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutWalletNestedInput
@@ -1998,6 +2048,7 @@ export type WalletUncheckedUpdateWithoutWalletCredentialsInput = {
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutWalletNestedInput
@@ -2029,6 +2080,7 @@ export type WalletCreateWithoutRootChangesInput = {
   walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutWalletInput
 }
@@ -2059,6 +2111,7 @@ export type WalletUncheckedCreateWithoutRootChangesInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutWalletInput
 }
@@ -2105,6 +2158,7 @@ export type WalletUpdateWithoutRootChangesInput = {
   walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutWalletNestedInput
 }
@@ -2135,6 +2189,7 @@ export type WalletUncheckedUpdateWithoutRootChangesInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutWalletNestedInput
 }
@@ -2164,6 +2219,7 @@ export type WalletCreateWithoutRecoveryConfigurationsInput = {
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutWalletInput
   walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutWalletInput
@@ -2194,6 +2250,7 @@ export type WalletUncheckedCreateWithoutRecoveryConfigurationsInput = {
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutWalletInput
   walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutWalletInput
@@ -2240,6 +2297,7 @@ export type WalletUpdateWithoutRecoveryConfigurationsInput = {
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutWalletNestedInput
   walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutWalletNestedInput
@@ -2270,6 +2328,7 @@ export type WalletUncheckedUpdateWithoutRecoveryConfigurationsInput = {
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutWalletNestedInput
   walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutWalletNestedInput
@@ -2300,6 +2359,7 @@ export type WalletCreateWithoutRecoveryAttemptsInput = {
   rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutWalletInput
   walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutWalletInput
@@ -2330,6 +2390,7 @@ export type WalletUncheckedCreateWithoutRecoveryAttemptsInput = {
   rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutWalletInput
   walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutWalletInput
@@ -2376,6 +2437,7 @@ export type WalletUpdateWithoutRecoveryAttemptsInput = {
   rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutWalletNestedInput
   walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutWalletNestedInput
@@ -2406,6 +2468,147 @@ export type WalletUncheckedUpdateWithoutRecoveryAttemptsInput = {
   rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutWalletNestedInput
   walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedUpdateManyWithoutWalletNestedInput
+  rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutWalletNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutWalletNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutWalletNestedInput
+}
+
+export type WalletCreateWithoutRecoveryTotpsInput = {
+  id: string
+  chainId: number
+  address?: string | null
+  label?: string | null
+  isPrimary?: boolean
+  type?: $Enums.WalletType
+  status?: $Enums.WalletStatus
+  deployment?: $Enums.WalletDeployment
+  provider?: string | null
+  providerAccountId?: string | null
+  statusReason?: string | null
+  provisionedAt?: Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutWalletsInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutWalletInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutWalletInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutWalletInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutWalletInput
+  executions?: Prisma.ExecutionCreateNestedManyWithoutWalletInput
+  rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutWalletInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
+  rootChanges?: Prisma.RootChangeCreateNestedManyWithoutWalletInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutWalletInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutWalletInput
+}
+
+export type WalletUncheckedCreateWithoutRecoveryTotpsInput = {
+  id: string
+  userId: string
+  chainId: number
+  address?: string | null
+  label?: string | null
+  isPrimary?: boolean
+  type?: $Enums.WalletType
+  status?: $Enums.WalletStatus
+  deployment?: $Enums.WalletDeployment
+  provider?: string | null
+  providerAccountId?: string | null
+  statusReason?: string | null
+  provisionedAt?: Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutWalletInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutWalletInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutWalletInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutWalletInput
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutWalletInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutWalletInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
+  rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutWalletInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutWalletInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutWalletInput
+}
+
+export type WalletCreateOrConnectWithoutRecoveryTotpsInput = {
+  where: Prisma.WalletWhereUniqueInput
+  create: Prisma.XOR<Prisma.WalletCreateWithoutRecoveryTotpsInput, Prisma.WalletUncheckedCreateWithoutRecoveryTotpsInput>
+}
+
+export type WalletUpsertWithoutRecoveryTotpsInput = {
+  update: Prisma.XOR<Prisma.WalletUpdateWithoutRecoveryTotpsInput, Prisma.WalletUncheckedUpdateWithoutRecoveryTotpsInput>
+  create: Prisma.XOR<Prisma.WalletCreateWithoutRecoveryTotpsInput, Prisma.WalletUncheckedCreateWithoutRecoveryTotpsInput>
+  where?: Prisma.WalletWhereInput
+}
+
+export type WalletUpdateToOneWithWhereWithoutRecoveryTotpsInput = {
+  where?: Prisma.WalletWhereInput
+  data: Prisma.XOR<Prisma.WalletUpdateWithoutRecoveryTotpsInput, Prisma.WalletUncheckedUpdateWithoutRecoveryTotpsInput>
+}
+
+export type WalletUpdateWithoutRecoveryTotpsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  chainId?: Prisma.IntFieldUpdateOperationsInput | number
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  type?: Prisma.EnumWalletTypeFieldUpdateOperationsInput | $Enums.WalletType
+  status?: Prisma.EnumWalletStatusFieldUpdateOperationsInput | $Enums.WalletStatus
+  deployment?: Prisma.EnumWalletDeploymentFieldUpdateOperationsInput | $Enums.WalletDeployment
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provisionedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutWalletsNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutWalletNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutWalletNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutWalletNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutWalletNestedInput
+  executions?: Prisma.ExecutionUpdateManyWithoutWalletNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutWalletNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
+  rootChanges?: Prisma.RootChangeUpdateManyWithoutWalletNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutWalletNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutWalletNestedInput
+}
+
+export type WalletUncheckedUpdateWithoutRecoveryTotpsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  chainId?: Prisma.IntFieldUpdateOperationsInput | number
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  label?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  type?: Prisma.EnumWalletTypeFieldUpdateOperationsInput | $Enums.WalletType
+  status?: Prisma.EnumWalletStatusFieldUpdateOperationsInput | $Enums.WalletStatus
+  deployment?: Prisma.EnumWalletDeploymentFieldUpdateOperationsInput | $Enums.WalletDeployment
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  statusReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provisionedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutWalletNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutWalletNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutWalletNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutWalletNestedInput
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutWalletNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutWalletNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutWalletNestedInput
@@ -2437,6 +2640,7 @@ export type WalletCreateWithoutAttestationChallengesInput = {
   walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutWalletInput
 }
@@ -2467,6 +2671,7 @@ export type WalletUncheckedCreateWithoutAttestationChallengesInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutWalletInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutWalletInput
 }
@@ -2513,6 +2718,7 @@ export type WalletUpdateWithoutAttestationChallengesInput = {
   walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutWalletNestedInput
 }
@@ -2543,6 +2749,7 @@ export type WalletUncheckedUpdateWithoutAttestationChallengesInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutWalletNestedInput
 }
@@ -2573,6 +2780,7 @@ export type WalletCreateWithoutDeviceAttestationsInput = {
   walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutWalletInput
 }
@@ -2603,6 +2811,7 @@ export type WalletUncheckedCreateWithoutDeviceAttestationsInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutWalletInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutWalletInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutWalletInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedCreateNestedManyWithoutWalletInput
   rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutWalletInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutWalletInput
 }
@@ -2649,6 +2858,7 @@ export type WalletUpdateWithoutDeviceAttestationsInput = {
   walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutWalletNestedInput
 }
@@ -2679,6 +2889,7 @@ export type WalletUncheckedUpdateWithoutDeviceAttestationsInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutWalletNestedInput
 }
@@ -2726,6 +2937,7 @@ export type WalletUpdateWithoutUserInput = {
   walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutWalletNestedInput
@@ -2756,6 +2968,7 @@ export type WalletUncheckedUpdateWithoutUserInput = {
   walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutWalletNestedInput
   recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutWalletNestedInput
   recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutWalletNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedUpdateManyWithoutWalletNestedInput
   rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutWalletNestedInput
   attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutWalletNestedInput
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutWalletNestedInput
@@ -2794,6 +3007,7 @@ export type WalletCountOutputType = {
   walletCredentials: number
   recoveryConfigurations: number
   recoveryAttempts: number
+  recoveryTotps: number
   rootChanges: number
   attestationChallenges: number
   deviceAttestations: number
@@ -2809,6 +3023,7 @@ export type WalletCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions
   walletCredentials?: boolean | WalletCountOutputTypeCountWalletCredentialsArgs
   recoveryConfigurations?: boolean | WalletCountOutputTypeCountRecoveryConfigurationsArgs
   recoveryAttempts?: boolean | WalletCountOutputTypeCountRecoveryAttemptsArgs
+  recoveryTotps?: boolean | WalletCountOutputTypeCountRecoveryTotpsArgs
   rootChanges?: boolean | WalletCountOutputTypeCountRootChangesArgs
   attestationChallenges?: boolean | WalletCountOutputTypeCountAttestationChallengesArgs
   deviceAttestations?: boolean | WalletCountOutputTypeCountDeviceAttestationsArgs
@@ -2890,6 +3105,13 @@ export type WalletCountOutputTypeCountRecoveryAttemptsArgs<ExtArgs extends runti
 /**
  * WalletCountOutputType without action
  */
+export type WalletCountOutputTypeCountRecoveryTotpsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.RecoveryTotpWhereInput
+}
+
+/**
+ * WalletCountOutputType without action
+ */
 export type WalletCountOutputTypeCountRootChangesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.RootChangeWhereInput
 }
@@ -2936,6 +3158,7 @@ export type WalletSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   walletCredentials?: boolean | Prisma.Wallet$walletCredentialsArgs<ExtArgs>
   recoveryConfigurations?: boolean | Prisma.Wallet$recoveryConfigurationsArgs<ExtArgs>
   recoveryAttempts?: boolean | Prisma.Wallet$recoveryAttemptsArgs<ExtArgs>
+  recoveryTotps?: boolean | Prisma.Wallet$recoveryTotpsArgs<ExtArgs>
   rootChanges?: boolean | Prisma.Wallet$rootChangesArgs<ExtArgs>
   attestationChallenges?: boolean | Prisma.Wallet$attestationChallengesArgs<ExtArgs>
   deviceAttestations?: boolean | Prisma.Wallet$deviceAttestationsArgs<ExtArgs>
@@ -3013,6 +3236,7 @@ export type WalletInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   walletCredentials?: boolean | Prisma.Wallet$walletCredentialsArgs<ExtArgs>
   recoveryConfigurations?: boolean | Prisma.Wallet$recoveryConfigurationsArgs<ExtArgs>
   recoveryAttempts?: boolean | Prisma.Wallet$recoveryAttemptsArgs<ExtArgs>
+  recoveryTotps?: boolean | Prisma.Wallet$recoveryTotpsArgs<ExtArgs>
   rootChanges?: boolean | Prisma.Wallet$rootChangesArgs<ExtArgs>
   attestationChallenges?: boolean | Prisma.Wallet$attestationChallengesArgs<ExtArgs>
   deviceAttestations?: boolean | Prisma.Wallet$deviceAttestationsArgs<ExtArgs>
@@ -3038,6 +3262,7 @@ export type $WalletPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     walletCredentials: Prisma.$WalletCredentialPayload<ExtArgs>[]
     recoveryConfigurations: Prisma.$RecoveryConfigurationPayload<ExtArgs>[]
     recoveryAttempts: Prisma.$RecoveryAttemptPayload<ExtArgs>[]
+    recoveryTotps: Prisma.$RecoveryTotpPayload<ExtArgs>[]
     rootChanges: Prisma.$RootChangePayload<ExtArgs>[]
     attestationChallenges: Prisma.$DeviceAttestationChallengePayload<ExtArgs>[]
     deviceAttestations: Prisma.$DeviceAttestationPayload<ExtArgs>[]
@@ -3463,6 +3688,7 @@ export interface Prisma__WalletClient<T, Null = never, ExtArgs extends runtime.T
   walletCredentials<T extends Prisma.Wallet$walletCredentialsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Wallet$walletCredentialsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WalletCredentialPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   recoveryConfigurations<T extends Prisma.Wallet$recoveryConfigurationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Wallet$recoveryConfigurationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RecoveryConfigurationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   recoveryAttempts<T extends Prisma.Wallet$recoveryAttemptsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Wallet$recoveryAttemptsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RecoveryAttemptPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  recoveryTotps<T extends Prisma.Wallet$recoveryTotpsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Wallet$recoveryTotpsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RecoveryTotpPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   rootChanges<T extends Prisma.Wallet$rootChangesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Wallet$rootChangesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RootChangePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   attestationChallenges<T extends Prisma.Wallet$attestationChallengesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Wallet$attestationChallengesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DeviceAttestationChallengePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   deviceAttestations<T extends Prisma.Wallet$deviceAttestationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Wallet$deviceAttestationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DeviceAttestationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -4125,6 +4351,30 @@ export type Wallet$recoveryAttemptsArgs<ExtArgs extends runtime.Types.Extensions
   take?: number
   skip?: number
   distinct?: Prisma.RecoveryAttemptScalarFieldEnum | Prisma.RecoveryAttemptScalarFieldEnum[]
+}
+
+/**
+ * Wallet.recoveryTotps
+ */
+export type Wallet$recoveryTotpsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the RecoveryTotp
+   */
+  select?: Prisma.RecoveryTotpSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the RecoveryTotp
+   */
+  omit?: Prisma.RecoveryTotpOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.RecoveryTotpInclude<ExtArgs> | null
+  where?: Prisma.RecoveryTotpWhereInput
+  orderBy?: Prisma.RecoveryTotpOrderByWithRelationInput | Prisma.RecoveryTotpOrderByWithRelationInput[]
+  cursor?: Prisma.RecoveryTotpWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.RecoveryTotpScalarFieldEnum | Prisma.RecoveryTotpScalarFieldEnum[]
 }
 
 /**

@@ -5,14 +5,14 @@
  *   KAADA_HARNESS_STATE=<state.json> BUNDLER_URL_TESTNET=http://localhost:4337 \
  *     node --import tsx test/testnet/sepolia-recovery.ts
  *
- * It boots the production AppModule (the real controller, services, repositories, Postgres, recovery chain adapter, attestor
- * key and the SHORT-DELAY test build of KaadaRecoveryValidator through the local Alto bundler), then plays the person with
+ * It boots the production AppModule (the real controller, services, repositories, Postgres, recovery chain adapter, the
+ * authenticator-app factor and the SHORT-DELAY test build of KaadaRecoveryValidator through the local Alto bundler), then plays the person with
  * plain HTTP calls and software authenticators. Nothing about recovery is stubbed:
  *
- *   A. passkey root  -> device-key root   (email, Recovery Code, attestor, 25 s delay, finalize, proof, PIN, new Recovery Code)
+ *   A. passkey root  -> device-key root   (email, Recovery Code + authenticator code, 25 s delay, finalize, proof, PIN, new authenticator + Recovery Code)
  *   B. device root   -> passkey root       (a real WebAuthn registration on the new device, verified by SimpleWebAuthn)
  *   C. passkey root, recovery CANCELLED by the existing root through the cancel link
- *   D. device root, recovery VETOED by the attestor through the report link
+ *   D. device root, the authenticator gate: wrong code refused, replayed code refused, then the root cancels
  *
  * The short delay lives only in the test deployment of the validator; the production contract and the production
  * configuration refuse anything below 24 hours. Secrets (keys, the email outbox) live OUTSIDE the repository.
@@ -32,7 +32,7 @@ interface State {
   validator: string;
   passkeyFactory: { address: string };
   deviceKey: { implementation: string; factory: string };
-  recoveryProbe: { registry: string; validator: string };
+  recoveryProbe: { validator: string };
 }
 const state = JSON.parse(readFileSync(statePath, "utf8")) as State;
 const workDir = dirname(statePath);
@@ -53,7 +53,6 @@ const keyFile = (name: string, make: () => string) => {
 };
 const { generatePrivateKey, privateKeyToAccount } = await import("viem/accounts");
 const relayerKeyFile = keyFile("recovery-relayer.key", () => state.deployerKey);
-const attestorKeyFile = keyFile("recovery-attestor.key", () => generatePrivateKey());
 const outboxFile = `${workDir}/recovery-outbox.jsonl`;
 mkdirSync(workDir, { recursive: true });
 writeFileSync(outboxFile, "", { mode: 0o600 });
@@ -83,7 +82,7 @@ Object.assign(process.env, {
   RECOVERY_DEVICE_FACTORY_ADDRESS: state.deviceKey.factory,
   RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS: state.deviceKey.implementation,
   RECOVERY_RELAYER_KEY_FILE: relayerKeyFile,
-  RECOVERY_ATTESTOR_KEY_FILE: attestorKeyFile,
+  RECOVERY_TOTP_SECRET_KEY: randomBytes(32).toString("base64"),
   RECOVERY_CHALLENGE_SECRET: randomBytes(32).toString("base64"),
   RECOVERY_EMAIL_PROVIDER: "outbox",
   RECOVERY_EMAIL_OUTBOX_FILE: outboxFile,
@@ -161,7 +160,6 @@ const kernelFactoryAbi = viem.parseAbi([
   "function getAddress(bytes data, bytes32 salt) view returns (address)",
 ]);
 const factoryAbi = contracts.artifacts.KaadaPasskeyValidatorFactory.abi;
-const registryAbi = contracts.artifacts.MockAttestorRegistry.abi;
 const KernelV3_3AccountAbi = viem.parseAbi([
   "function initialize(bytes21 rootValidator, address hook, bytes validatorData, bytes hookData, bytes[] initConfig)",
   "function installValidations(bytes21[] vIds, (uint32 nonce, address hook)[] configs, bytes[] validationData, bytes[] hookData)",
@@ -184,37 +182,12 @@ const chain = new blockchain.ViemRecoveryChain({
   p256Precompile: true,
   gasSponsor: { mode: "topup", maxTopUpWei: 300_000_000_000_000_000n },
 });
-const attestorAddress = privateKeyToAccount(
-  readFileSync(attestorKeyFile, "utf8").trim() as Hex,
-).address;
-
 async function send(request: Parameters<typeof wallet.writeContract>[0]): Promise<Hex> {
   const hash = await wallet.writeContract(request);
   await pub.waitForTransactionReceipt({ hash });
   await sleep(3_000);
   return hash;
 }
-
-async function prepareAttestor(): Promise<void> {
-  await send({
-    address: state.recoveryProbe.registry as Hex,
-    abi: registryAbi,
-    functionName: "setAttestor",
-    args: [attestorAddress],
-    chain: celoSepolia,
-    account: deployer,
-  });
-  const balance = await pub.getBalance({ address: attestorAddress });
-  if (balance < 150_000_000_000_000_000n) {
-    const hash = await wallet.sendTransaction({
-      to: attestorAddress,
-      value: 200_000_000_000_000_000n,
-    });
-    await pub.waitForTransactionReceipt({ hash });
-  }
-}
-await prepareAttestor();
-console.log("attestor", attestorAddress);
 
 // ── clients: software passkey and a raw P-256 device key ──
 interface Credential {
@@ -508,7 +481,7 @@ function emailCode(to: string): string {
   if (!code) throw new Error(`no code for ${to}`);
   return code;
 }
-function reportToken(to: string): string {
+function cancelLinkToken(to: string): string {
   const lines = readFileSync(outboxFile, "utf8")
     .trim()
     .split("\n")
@@ -516,9 +489,9 @@ function reportToken(to: string): string {
     .map((l) => JSON.parse(l) as { to: string; text: string });
   const mail = [...lines]
     .reverse()
-    .find((m) => m.to === to && m.text.includes("/recovery/report#"));
-  const token = /\/recovery\/report#([A-Za-z0-9_-]{43})/.exec(mail?.text ?? "")?.[1];
-  if (!token) throw new Error(`no report link for ${to}`);
+    .find((m) => m.to === to && m.text.includes("/recovery/cancel#"));
+  const token = /\/recovery\/cancel#([A-Za-z0-9_-]{43})/.exec(mail?.text ?? "")?.[1];
+  if (!token) throw new Error(`no cancel link for ${to}`);
   return token;
 }
 
@@ -536,6 +509,39 @@ async function currentRoot(world: World): Promise<Hex> {
   return (await chain.accountState(world.account)).rootValidator as Hex;
 }
 
+/** The authenticator apps of the people in this run (the server only ever holds the encrypted secret). */
+const authenticators = new Map<string, { secret: string; lastStep: number }>();
+const { totpAtStep, stepAt } = await import("../../src/core/recovery/totp.js");
+
+/** Sets up the wallet's authenticator app through the API: begin, then confirm with a code from the "app". */
+async function enrolAuthenticator(world: World, token: string): Promise<void> {
+  const begin = await api("POST", "/configuration/authenticator/begin", { token });
+  if (begin.status !== 200)
+    throw new Error(
+      `authenticator begin failed ${String(begin.status)} ${JSON.stringify(begin.body)}`,
+    );
+  const secret = String(begin.body["secret"]);
+  const step = stepAt(Date.now());
+  const confirm = await api("POST", "/configuration/authenticator/confirm", {
+    token,
+    body: { code: totpAtStep(secret, step) },
+  });
+  if (confirm.status !== 200)
+    throw new Error(
+      `authenticator confirm failed ${String(confirm.status)} ${JSON.stringify(confirm.body)}`,
+    );
+  authenticators.set(world.userId, { secret, lastStep: step });
+}
+
+/** The code the app shows now, waiting for the next 30-second step if the current one was already used. */
+async function authenticatorCode(world: World): Promise<string> {
+  const app = authenticators.get(world.userId);
+  if (!app) throw new Error("this person has no authenticator app");
+  while (stepAt(Date.now()) <= app.lastStep) await sleep(1_000);
+  app.lastStep = stepAt(Date.now());
+  return totpAtStep(app.secret, app.lastStep);
+}
+
 /** Arms a Recovery Code through the API with the wallet setup link, signed by the CURRENT root. */
 async function armRecovery(
   world: World,
@@ -548,6 +554,8 @@ async function armRecovery(
     chainId: CHAIN_ID,
     account: world.account,
   });
+  const context = await api("GET", "/configuration/context", { token });
+  if (context.body["authenticatorEnrolled"] !== true) await enrolAuthenticator(world, token);
   const prepared = await api("POST", "/configuration/prepare", {
     token,
     body: { recoveryAddress: verifier.address, delaySeconds: 25 },
@@ -585,6 +593,7 @@ async function proposeAndProve(
   token: string,
   code: InstanceType<typeof contracts.RecoveryCode>,
   next: Credential,
+  options: { authenticatorCode?: string } = {},
 ) {
   let proposal;
   if (next.kind === "DEVICE_KEY") {
@@ -626,8 +635,66 @@ async function proposeAndProve(
       deadline: BigInt(typed.message["deadline"] ?? "0"),
     },
   });
-  const proof = await api("POST", "/proof", { token, body: { signature } });
+  const proof = await api("POST", "/proof", {
+    token,
+    body: {
+      signature,
+      authenticatorCode: options.authenticatorCode ?? (await authenticatorCode(world)),
+    },
+  });
   return { proposal, proof, signature };
+}
+
+/** After a refused proof the attempt is still ROOT_PROPOSED: sign the stored proposal again and send the right code. */
+async function proposeAndProveAgain(
+  world: World,
+  token: string,
+  code: InstanceType<typeof contracts.RecoveryCode>,
+  authenticator: string,
+) {
+  const status = await api("GET", "/status", { token });
+  const attempt = await db.client.recoveryAttempt.findFirst({
+    where: { walletId: world.walletId },
+    orderBy: { createdAt: "desc" },
+  });
+  const typed = chain.typedData(
+    chain.typedMessage({
+      account: world.account,
+      root: await (
+        await import("../../src/core/recovery/recovery-flow.js")
+      ).RecoveryFlowService.prototype.rebuildRoot.call(
+        { ctx: { uow: { read: repos }, chain } },
+        (await repos.recoveryAttempts.findById(attempt?.id ?? ""))!,
+        (await repos.wallets.findById(world.walletId))! as never,
+      ),
+      nonce: attempt?.recoveryNonce ?? "0",
+      deadline: String(Math.floor((attempt?.proofDeadline?.getTime() ?? 0) / 1000)),
+    }),
+  );
+  const { privateKey } = contracts.deriveRecoveryKey(code, {
+    chainId: CHAIN_ID,
+    account: world.account,
+  });
+  const signature = await privateKeyToAccount(privateKey).signTypedData({
+    domain: contracts.recoveryDomain(typed.domain.chainId, typed.domain.verifyingContract as Hex),
+    types: contracts.recoveryInitiateTypes,
+    primaryType: "Initiate",
+    message: {
+      account: typed.message["account"] as Hex,
+      nonce: BigInt(typed.message["nonce"] ?? "0"),
+      rootId: typed.message["rootId"] as Hex,
+      hook: typed.message["hook"] as Hex,
+      validatorDataHash: typed.message["validatorDataHash"] as Hex,
+      hookDataHash: typed.message["hookDataHash"] as Hex,
+      deadline: BigInt(typed.message["deadline"] ?? "0"),
+    },
+  });
+  void status;
+  const proof = await api("POST", "/proof", {
+    token,
+    body: { signature, authenticatorCode: authenticator },
+  });
+  return { proof };
 }
 
 const only = new Set(
@@ -745,7 +812,7 @@ try {
     );
     const { proposal: propA, proof: proofA } = await proposeAndProve(worldA, startA, codeA, nextA);
     record(
-      "recovery committed on chain: exact root, Recovery Code signature, attestor signature",
+      "recovery committed on chain: exact root, Recovery Code signature, authenticator code",
       proofA.status === 200 && proofA.body["status"] === "PENDING",
       JSON.stringify(proofA.body),
     );
@@ -780,10 +847,10 @@ try {
       JSON.stringify(early.body),
     );
     record(
-      "every linked channel was told, with the report link",
+      "every linked channel was told, with the cancel link",
       (() => {
         try {
-          reportToken(worldA.email);
+          cancelLinkToken(worldA.email);
           return true;
         } catch {
           return false;
@@ -993,7 +1060,7 @@ try {
       newDeviceKey(),
     );
     record("C: a recovery is pending on chain", proofC.body["status"] === "PENDING", "");
-    const cancelToken = reportToken(worldC.email);
+    const cancelToken = cancelLinkToken(worldC.email);
     const prepC = await api("POST", "/cancel/prepare", { token: cancelToken });
     const wrongCancel = await api("POST", "/cancel", {
       token: cancelToken,
@@ -1030,7 +1097,10 @@ try {
       finalizeC.status !== 200 || finalizeC.body["outcome"] === "NOT_ELIGIBLE",
       JSON.stringify(finalizeC.body),
     );
-    const replayC = await api("POST", "/proof", { token: tokenC, body: { signature: signatureC } });
+    const replayC = await api("POST", "/proof", {
+      token: tokenC,
+      body: { signature: signatureC, authenticatorCode: await authenticatorCode(worldC) },
+    });
     record(
       "C: the old Recovery Code signature cannot be replayed",
       replayC.status !== 200 || replayC.body["status"] === "CANCELLED",
@@ -1056,7 +1126,7 @@ try {
     );
   }
   if (only.has("D")) {
-    console.log("\n── D. recovery vetoed by the attestor ──");
+    console.log("\n── D. the authenticator gate, then a cancel by the root ──");
     const rootD = newDeviceKey();
     const worldD = await createWorld(rootD, "d");
     created.push(worldD);
@@ -1064,62 +1134,45 @@ try {
     const codeD = contracts.generateRecoveryCode();
     await armRecovery(worldD, codeD, worldD.setupToken, rootD, rootValidatorD);
     const tokenD = await startVerified(worldD);
-    const { proof: proofD } = await proposeAndProve(worldD, tokenD, codeD, newPasskey());
-    record("D: a recovery is pending on chain", proofD.body["status"] === "PENDING", "");
-    const vetoD = await api("POST", "/report", { token: reportToken(worldD.email) });
-    record(
-      "D: 'this was not me' makes the attestor veto on chain; the attempt is VETOED",
-      vetoD.status === 200 && vetoD.body["status"] === "VETOED",
-      JSON.stringify(vetoD.body),
-    );
-    const storedD = await repos.recoveryAttempts.findById(
-      (
-        await db.client.recoveryAttempt.findFirst({
-          where: { walletId: worldD.walletId },
-          orderBy: { createdAt: "desc" },
-        })
-      )?.id ?? "",
-    );
-    record(
-      "D: the veto transaction hash is recorded and the chain shows nothing pending",
-      /^0x[0-9a-f]{64}$/.test(storedD?.terminationTxHash ?? "") &&
-        (await chain.validatorState(worldD.account)).pending === undefined,
-      "",
-    );
-    const strangerD = privateKeyToAccount(generatePrivateKey());
-    let strangerRefused = false;
-    try {
-      await pub.simulateContract({
-        address: state.recoveryProbe.validator as Hex,
-        abi: viem.parseAbi(["function attestorCancel(address account)"]),
-        functionName: "attestorCancel",
-        args: [worldD.account],
-        account: strangerD,
-      });
-    } catch {
-      strangerRefused = true;
-    }
-    record("D: a stranger cannot veto (the contract refuses attestorCancel)", strangerRefused, "");
-    await sleep(30_000); // past the test delay: the vetoed recovery would be mature
-    const finalizeD = await api("POST", "/finalize", { token: tokenD });
-    record(
-      "D: a matured-but-vetoed attempt cannot finalize",
-      finalizeD.status !== 200 || finalizeD.body["outcome"] === "NOT_ELIGIBLE",
-      JSON.stringify(finalizeD.body),
-    );
-    const { RecoverySweeper: SweeperD } = await import("../../src/recovery/recovery-sweeper.js");
-    await app.get(SweeperD).sweepNow();
-    const rowD = await db.client.recoveryAttempt.findFirst({
-      where: { walletId: worldD.walletId },
-      orderBy: { createdAt: "desc" },
+    const shown = await authenticatorCode(worldD);
+    const wrongCode = shown === "000000" ? "111111" : "000000";
+    const { proof: refused } = await proposeAndProve(worldD, tokenD, codeD, newPasskey(), {
+      authenticatorCode: wrongCode,
     });
     record(
-      "D: after a sweep (restart reconciliation) the attempt is still VETOED, never stranded PENDING",
-      rowD?.status === "VETOED",
-      String(rowD?.status),
+      "D: a right Recovery Code with a wrong authenticator code is refused and nothing reaches the chain",
+      refused.status === 400 && (await chain.validatorState(worldD.account)).pending === undefined,
+      JSON.stringify(refused.body),
+    );
+    const { proof: started } = await proposeAndProveAgain(worldD, tokenD, codeD, shown);
+    record(
+      "D: the right codes start the recovery on chain",
+      started.status === 200,
+      JSON.stringify(started.body),
+    );
+    const replayedD = await api("POST", "/proof", {
+      token: tokenD,
+      body: { signature: `0x${"11".repeat(65)}`, authenticatorCode: shown },
+    });
+    record(
+      "D: the spent authenticator code cannot be replayed",
+      replayedD.status === 400,
+      JSON.stringify(replayedD.body),
+    );
+    const prepareD = await api("POST", "/cancel/prepare", { token: cancelLinkToken(worldD.email) });
+    const cancelD = await api("POST", "/cancel", {
+      token: cancelLinkToken(worldD.email),
+      body: { material: rootMaterial(worldD, prepareD.body, rootD, rootValidatorD) },
+    });
+    record(
+      "D: the existing root cancels; the attempt is CANCELLED and nothing is pending",
+      cancelD.status === 200 &&
+        cancelD.body["status"] === "CANCELLED" &&
+        (await chain.validatorState(worldD.account)).pending === undefined,
+      JSON.stringify(cancelD.body),
     );
     record(
-      "D: the attestor alone cannot start or finish a recovery (its veto moved no root)",
+      "D: the root never changed",
       (await currentRoot(worldD)).toLowerCase() === rootValidatorD.toLowerCase(),
       "",
     );

@@ -5,12 +5,12 @@ import type { JsonObject } from "../json.js";
  * processes (or a retried request) can never both apply it.
  *
  *   EMAIL_PENDING --verify email--> EMAIL_VERIFIED --propose new root--> ROOT_PROPOSED
- *     --Recovery Code proof + attestor--> INITIATING --on-chain initiate--> PENDING (timelock running)
+ *     --Recovery Code proof + authenticator code--> INITIATING --on-chain initiate--> PENDING (timelock running)
  *     --maturity + no in-flight payment--> FINALIZING --root read back--> ROOT_CHANGED
  *     --new credential proves it can sign--> COMPLETED
  *
- *   Terminal exits: CANCELLED (the existing root cancelled), VETOED (the attestor vetoed), EXPIRED (never reached the
- *   chain and ran out of time), FAILED (the chain refused it). A terminal attempt is never reused.
+ *   Terminal exits: CANCELLED (the existing root cancelled), EXPIRED (never reached the chain and ran out of time),
+ *   FAILED (the chain or a factor refused it). A terminal attempt is never reused.
  */
 
 export const RECOVERY_ATTEMPT_STATUSES = [
@@ -23,20 +23,13 @@ export const RECOVERY_ATTEMPT_STATUSES = [
   "ROOT_CHANGED",
   "COMPLETED",
   "CANCELLED",
-  "VETOED",
   "EXPIRED",
   "FAILED",
 ] as const;
 export type RecoveryAttemptStatus = (typeof RECOVERY_ATTEMPT_STATUSES)[number];
 
 /** Statuses from which nothing further happens. */
-export const RECOVERY_TERMINAL_STATUSES = [
-  "COMPLETED",
-  "CANCELLED",
-  "VETOED",
-  "EXPIRED",
-  "FAILED",
-] as const;
+export const RECOVERY_TERMINAL_STATUSES = ["COMPLETED", "CANCELLED", "EXPIRED", "FAILED"] as const;
 
 /** At most one non-terminal attempt may exist per wallet (a partial unique index enforces it). */
 export function isRecoveryAttemptActive(status: RecoveryAttemptStatus): boolean {
@@ -50,14 +43,14 @@ export const RECOVERY_TRANSITIONS: Readonly<
   EMAIL_PENDING: ["EMAIL_VERIFIED", "EXPIRED"],
   EMAIL_VERIFIED: ["ROOT_PROPOSED", "EXPIRED", "FAILED"],
   ROOT_PROPOSED: ["INITIATING", "EXPIRED", "FAILED"],
-  INITIATING: ["PENDING", "FAILED"],
-  PENDING: ["FINALIZING", "CANCELLED", "VETOED", "FAILED"],
+  // INITIATING -> ROOT_PROPOSED: the relayer could not be reached BEFORE anything was sent; the claim is released and the person tries again.
+  INITIATING: ["PENDING", "ROOT_PROPOSED", "FAILED"],
+  PENDING: ["FINALIZING", "CANCELLED", "FAILED"],
   // A crashed finalizer's lease may be reclaimed (FINALIZING -> FINALIZING); the chain decides what happened.
-  FINALIZING: ["FINALIZING", "ROOT_CHANGED", "PENDING", "CANCELLED", "VETOED", "FAILED"],
+  FINALIZING: ["FINALIZING", "ROOT_CHANGED", "PENDING", "CANCELLED", "FAILED"],
   ROOT_CHANGED: ["COMPLETED"],
   COMPLETED: [],
   CANCELLED: [],
-  VETOED: [],
   EXPIRED: [],
   FAILED: [],
 };
@@ -69,8 +62,8 @@ export function canTransitionRecovery(
   return RECOVERY_TRANSITIONS[from].includes(to);
 }
 
-export const RECOVERY_TERMINATORS = ["ROOT", "ATTESTOR", "SYSTEM"] as const;
-/** Who ended an attempt: the existing root (cancel), the attestor (veto) or Kaada itself (expiry, failure). */
+export const RECOVERY_TERMINATORS = ["ROOT", "SYSTEM"] as const;
+/** Who ended an attempt: the existing root (cancel) or Kaada itself (expiry, failure). */
 export type RecoveryTerminator = (typeof RECOVERY_TERMINATORS)[number];
 
 export interface RecoveryAttempt {
@@ -104,6 +97,12 @@ export interface RecoveryAttempt {
   recoveryNonce?: string;
   proofDeadline?: Date;
   proposedAt?: Date;
+  /**
+   * When the authenticator-app code was accepted (checked together with the Recovery Code signature, before the recovery
+   * reaches the chain), and the 30-second time step it was accepted for. Never the code itself.
+   */
+  totpVerifiedAt?: Date;
+  totpStep?: number;
 
   // On-chain progress.
   /** The root validator the account had when recovery was initiated (to be replaced). */
@@ -129,7 +128,7 @@ export interface RecoveryAttempt {
   cancelUserOpHash?: string;
   /** The random challenge the new credential must sign to prove it works (hex). */
   proofChallenge?: string;
-  /** Wrong Recovery Code signatures submitted so far; the attempt fails after a few. */
+  /** Wrong Recovery Code / authenticator code submissions so far; the attempt fails after a few. */
   proofFailures: number;
   proofVerifiedAt?: Date;
   completedAt?: Date;
@@ -137,7 +136,6 @@ export interface RecoveryAttempt {
   // Terminal exits.
   terminatedBy?: RecoveryTerminator;
   terminatedAt?: Date;
-  terminationTxHash?: string;
   failureCode?: string;
 
   // After the root changed.
@@ -175,7 +173,7 @@ export interface RecoveryAttemptRepository {
   findById(id: string): Promise<RecoveryAttempt | null>;
   findByTokenHash(tokenHash: string): Promise<RecoveryAttempt | null>;
   findByCancelTokenHash(tokenHash: string): Promise<RecoveryAttempt | null>;
-  /** Counts one wrong Recovery Code signature and returns the new total. */
+  /** Counts one wrong Recovery Code or authenticator code submission and returns the new total. */
   recordProofFailure(id: string): Promise<number>;
   /** The wallet non-terminal attempt, if any. */
   findActiveByWallet(walletId: string): Promise<RecoveryAttempt | null>;

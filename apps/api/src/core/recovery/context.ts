@@ -5,7 +5,6 @@ import type {
   PasskeyVerifier,
   RecoveryAttempt,
   RecoveryAttemptStatus,
-  RecoveryAttestor,
   RecoveryChainPort,
   RecoveryEmailSender,
   RecoveryRiskPolicy,
@@ -15,13 +14,15 @@ import type {
 import type { AgentLog } from "../agent/ports.js";
 import { OPAQUE_TOKEN_PATTERN, hashOpaqueToken } from "../authorization/token.js";
 import type { RecoveryNotifier } from "./notifier.js";
+import type { RecoveryTotpService } from "./recovery-totp.js";
 import type { RecoveryPolicy, RecoveryRepositories, RecoveryUnitOfWork } from "./ports.js";
 
 /** Everything the recovery services share. */
 export interface RecoveryContext {
   uow: RecoveryUnitOfWork;
   chain: RecoveryChainPort;
-  attestor: RecoveryAttestor;
+  /** The authenticator-app factor: checked here, off-chain, before a recovery may reach the chain. */
+  totp: RecoveryTotpService;
   email: RecoveryEmailSender;
   notifier: RecoveryNotifier;
   risk: RecoveryRiskPolicy;
@@ -41,7 +42,7 @@ export interface RecoveryContext {
 export type RecoveryNextStep =
   | "VERIFY_EMAIL"
   | "CREATE_CREDENTIAL"
-  | "SIGN_WITH_RECOVERY_CODE"
+  | "PROVE_RECOVERY_FACTORS"
   | "SUBMITTING"
   | "WAIT"
   | "WAITING_FOR_PAYMENT"
@@ -68,6 +69,8 @@ export interface RecoveryStatusView {
   /** Post-recovery to-do list. */
   pinResetRequired?: boolean;
   recoveryCodeRequired?: boolean;
+  /** After a recovery the authenticator app is retired too: a new one is set up with the new Recovery Code. */
+  authenticatorRequired?: boolean;
   tokenExpiresAt: string;
 }
 
@@ -136,7 +139,7 @@ export function nextStepFor(attempt: RecoveryAttempt): RecoveryNextStep {
     case "EMAIL_VERIFIED":
       return "CREATE_CREDENTIAL";
     case "ROOT_PROPOSED":
-      return "SIGN_WITH_RECOVERY_CODE";
+      return "PROVE_RECOVERY_FACTORS";
     case "INITIATING":
       return "SUBMITTING";
     case "PENDING":
@@ -150,7 +153,6 @@ export function nextStepFor(attempt: RecoveryAttempt): RecoveryNextStep {
       if (!attempt.newConfigurationId) return "CREATE_RECOVERY_CODE";
       return "DONE";
     case "CANCELLED":
-    case "VETOED":
     case "EXPIRED":
       return "STOPPED";
     case "FAILED":
@@ -177,6 +179,7 @@ export function statusView(
     ...(attempt.status === "COMPLETED" && {
       pinResetRequired: !attempt.pinResetAt,
       recoveryCodeRequired: !attempt.newConfigurationId,
+      authenticatorRequired: !attempt.newConfigurationId,
     }),
     tokenExpiresAt: attempt.tokenExpiresAt.toISOString(),
   };

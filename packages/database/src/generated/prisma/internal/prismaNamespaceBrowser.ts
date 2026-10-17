@@ -84,6 +84,7 @@ export const ModelName = {
   RootChange: 'RootChange',
   RecoveryConfiguration: 'RecoveryConfiguration',
   RecoveryAttempt: 'RecoveryAttempt',
+  RecoveryTotp: 'RecoveryTotp',
   RecoveryEmailChallenge: 'RecoveryEmailChallenge',
   DeviceAttestationChallenge: 'DeviceAttestationChallenge',
   DeviceAttestation: 'DeviceAttestation',
@@ -758,6 +759,8 @@ export const RecoveryAttemptScalarFieldEnum = {
   recoveryNonce: 'recoveryNonce',
   proofDeadline: 'proofDeadline',
   proposedAt: 'proposedAt',
+  totpVerifiedAt: 'totpVerifiedAt',
+  totpStep: 'totpStep',
   previousRootValidator: 'previousRootValidator',
   initiatedAt: 'initiatedAt',
   executeAfter: 'executeAfter',
@@ -778,7 +781,6 @@ export const RecoveryAttemptScalarFieldEnum = {
   completedAt: 'completedAt',
   terminatedBy: 'terminatedBy',
   terminatedAt: 'terminatedAt',
-  terminationTxHash: 'terminationTxHash',
   failureCode: 'failureCode',
   cleanupCompletedAt: 'cleanupCompletedAt',
   pinResetAt: 'pinResetAt',
@@ -788,6 +790,23 @@ export const RecoveryAttemptScalarFieldEnum = {
 } as const
 
 export type RecoveryAttemptScalarFieldEnum = (typeof RecoveryAttemptScalarFieldEnum)[keyof typeof RecoveryAttemptScalarFieldEnum]
+
+
+export const RecoveryTotpScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  walletId: 'walletId',
+  status: 'status',
+  encryptedSecret: 'encryptedSecret',
+  keyVersion: 'keyVersion',
+  enabledAt: 'enabledAt',
+  lastUsedStep: 'lastUsedStep',
+  disabledAt: 'disabledAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RecoveryTotpScalarFieldEnum = (typeof RecoveryTotpScalarFieldEnum)[keyof typeof RecoveryTotpScalarFieldEnum]
 
 
 export const RecoveryEmailChallengeScalarFieldEnum = {

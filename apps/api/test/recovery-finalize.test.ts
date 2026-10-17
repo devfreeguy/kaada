@@ -13,7 +13,7 @@ import type { NewRoot, RecoveryWorld, TestUser } from "./support/recovery-world.
 
 /*
  * After the proof: the timelock, finalization (one exact batch), what is confirmed before success is claimed, cancellation by
- * the existing root, the attestor veto, and the cleanup that retires everything the old root could reach.
+ * the existing root (the only party that can stop a recovery), and the cleanup that retires everything the old root could reach.
  */
 
 const MATURE_MS = 72 * 3600 * 1000 + 10_000;
@@ -154,8 +154,37 @@ describe("a successful recovery", () => {
       assert.equal((await world.pins.verify(user.userId, "735142")).status, "INVALID");
       await expectKaada(finalizer.resetPin(token, "135790"), "RECOVERY_REJECTED");
 
-      // A NEW Recovery Code is required, and the new root arms it.
+      // The recovery spent the authenticator app together with the Recovery Code: both must be set up again.
+      assert.equal(
+        await world.totp.isEnrolled(user.wallet.id),
+        false,
+        "the old authenticator is retired",
+      );
+      assert.equal((await world.flow.status(token)).authenticatorRequired, true);
       const { generateRecoveryCode, deriveRecoveryKey } = await import("@kaada/contracts");
+      const early = deriveRecoveryKey(generateRecoveryCode(), {
+        chainId: world.chain.chainId,
+        account: user.account as Address,
+      });
+      await expectKaada(
+        world.configuration.prepare({ userId: user.userId, recoveryAddress: early.address }),
+        "RECOVERY_TOTP_REQUIRED",
+      );
+      // A fresh authenticator enrolment (a new secret), confirmed with a real code from the app.
+      const enrolment = await world.configuration.beginAuthenticator(user.userId);
+      assert.notEqual(
+        enrolment.secret,
+        user.authenticatorSecret,
+        "a NEW secret, never the retired one",
+      );
+      assert.match(enrolment.otpauthUri, /^otpauth:\/\/totp\/Kaada:/);
+      const { totpAtStep, stepAt } = await import("../src/core/recovery/totp.js");
+      await world.configuration.confirmAuthenticator(
+        user.userId,
+        totpAtStep(enrolment.secret, stepAt(world.now().getTime())),
+      );
+
+      // A NEW Recovery Code is required, and the new root arms it.
       const nextCode = generateRecoveryCode();
       const verifier = deriveRecoveryKey(nextCode, {
         chainId: world.chain.chainId,
@@ -435,7 +464,11 @@ describe("cancellation by the existing root", () => {
       world.flow.submitCancel(cancelToken, world.rootSigns(root.credentialRef, request.challenge)),
       "RECOVERY_SESSION_INVALID",
     );
-    await expectKaada(world.flow.submitProof(token, signature), "RECOVERY_REJECTED");
+    world.advance(31_000);
+    await expectKaada(
+      world.flow.submitProof(token, signature, world.authenticatorCode(user)),
+      "RECOVERY_REJECTED",
+    );
     // The recovery nonce moved: the old signatures can never start anything on the chain.
     assert.equal((await world.chain.validatorState(user.account)).recoveryNonce, "1");
     assert.equal(world.chain.submittedBatches, 0);
@@ -515,56 +548,80 @@ describe("cancellation by the existing root", () => {
   });
 });
 
-describe("the attestor veto", () => {
-  it("'this was not me' makes the attestor veto: VETOED, announced, and the attestor still cannot approve anything", async () => {
+describe("nobody but the existing root can stop a recovery", () => {
+  it('there is no veto and no "report" API: the flow offers no way for Kaada to stop a recovery', () => {
+    const world = createRecoveryWorld();
+    const names = Object.getOwnPropertyNames(Object.getPrototypeOf(world.flow));
+    assert.equal(
+      names.some((name) => /veto|report|attestor/i.test(name)),
+      false,
+    );
+  });
+
+  it("a cancel from the root that did not go through Kaada is still recorded: the chain says who ended it", async () => {
     const world = createRecoveryWorld();
     const user = await world.createUser({ telegram: true });
     const { token, attempt } = await pending(world, user);
-    const cancelToken = world.cancelTokenFrom(user);
-    const view = await world.flow.report(cancelToken);
-    assert.equal(view.status, "VETOED");
-    const after = await world.attemptOf(token);
-    assert.equal(after.terminatedBy, "ATTESTOR");
-    assert.match(after.terminationTxHash ?? "", /^0x[0-9a-f]{64}$/);
+    // The person cancels with their own wallet app, straight on chain, never touching Kaada's cancel route.
+    const root = (await world.repositories.walletCredentials.findRoot(user.wallet.id))!;
+    const prepared = await world.chain.prepareRootOperation({
+      account: user.account,
+      rootValidator: root.validatorAddress,
+      rootKind: root.kind,
+      calls: world.chain.cancelCalls(),
+    });
+    const signature = world.chain.encodeRootSignature({
+      kind: root.kind,
+      material: world.rootSigns(root.credentialRef, prepared.userOpHash),
+    });
+    await world.chain.submitOperation({ operation: prepared.operation, signature });
     assert.equal((await world.chain.validatorState(user.account)).pending, undefined);
-    assert.ok(
-      world.telegram.sent.some((m) => m.message.text.includes("stopped by Kaada security")),
-    );
+    await world.finalizer().runDue();
+    const after = await world.attemptOf(token);
+    assert.equal(after.status, "CANCELLED");
+    assert.equal(after.terminatedBy, "ROOT");
+    assert.ok(world.telegram.sent.some((m) => m.message.text.includes("cancelled")));
     world.advance(MATURE_MS);
     assert.deepEqual(await world.finalizer().finalize(attempt.id), { outcome: "NOT_ELIGIBLE" });
-    await expectKaada(world.flow.report(cancelToken), "RECOVERY_SESSION_INVALID");
   });
 
-  it("a node that still answers from an older block for a moment does not leave the attempt PENDING", async () => {
+  it("a node that still answers from an older block for a moment does not leave a cancelled attempt PENDING", async () => {
     const world = createRecoveryWorld({ policy: { inclusionWaitMs: 5_000 } });
     const user = await world.createUser();
     const { token } = await pending(world, user);
+    const cancelToken = world.cancelTokenFrom(user);
+    const request = await world.flow.prepareCancel(cancelToken);
+    const root = (await world.repositories.walletCredentials.findRoot(user.wallet.id))!;
     world.chain.inject.staleReads = 3;
-    const view = await world.flow.report(world.cancelTokenFrom(user));
-    assert.equal(view.status, "VETOED");
-    assert.equal((await world.attemptOf(token)).terminatedBy, "ATTESTOR");
+    const view = await world.flow.submitCancel(
+      cancelToken,
+      world.rootSigns(root.credentialRef, request.challenge),
+    );
+    assert.equal(view.status, "CANCELLED");
+    assert.equal((await world.attemptOf(token)).terminatedBy, "ROOT");
   });
 
-  it("an operator veto works only on a pending recovery", async () => {
-    const world = createRecoveryWorld();
-    const user = await world.createUser();
-    const { attempt } = await pending(world, user);
-    const vetoed = await world.flow.vetoAttempt(attempt.id, "RISK_SIGNAL");
-    assert.equal(vetoed.status, "VETOED");
-    await expectKaada(world.flow.vetoAttempt(attempt.id, "AGAIN"), "RECOVERY_REJECTED");
-  });
-
-  it("after a veto a new attempt needs a fresh email, a fresh root and a fresh proof (nothing is reused)", async () => {
+  it("after a cancel a new attempt needs a fresh email, a fresh root and a fresh proof (nothing is reused)", async () => {
     const world = createRecoveryWorld({ policy: { maxStartsPerDay: 10 } });
     const user = await world.createUser();
     const first = await pending(world, user);
-    await world.flow.report(world.cancelTokenFrom(user));
+    const cancelToken = world.cancelTokenFrom(user);
+    const request = await world.flow.prepareCancel(cancelToken);
+    const root = (await world.repositories.walletCredentials.findRoot(user.wallet.id))!;
+    await world.flow.submitCancel(
+      cancelToken,
+      world.rootSigns(root.credentialRef, request.challenge),
+    );
     world.advance(2_000);
     const second = await world.startRecovery(user);
     assert.notEqual(second.attempt.id, first.attempt.id);
     assert.notEqual(second.attempt.newValidator, first.attempt.newValidator);
     assert.equal(second.view.status, "PENDING");
-    await expectKaada(world.flow.submitProof(first.token, first.signature), "RECOVERY_REJECTED");
+    world.advance(31_000);
+    await expectKaada(
+      world.flow.submitProof(first.token, first.signature, world.authenticatorCode(user)),
+      "RECOVERY_REJECTED",
+    );
   });
 });
 
@@ -648,7 +705,7 @@ describe("cleanup after the root changed", () => {
 describe("configuring a Recovery Code", () => {
   it("refuses a delay below the minimum, a zero or malformed verifier, and arming while a recovery is pending", async () => {
     const world = createRecoveryWorld();
-    const user = await world.createUser({ armed: false });
+    const user = await world.createUser({ armed: false, authenticator: true });
     const good = "0x00000000000000000000000000000000000000f9";
     await expectKaada(
       world.configuration.prepare({
@@ -679,7 +736,7 @@ describe("configuring a Recovery Code", () => {
 
   it("arms a wallet that had no recovery: ACTIVE only after the chain reads back the same verifier and delay", async () => {
     const world = createRecoveryWorld();
-    const user = await world.createUser({ armed: false });
+    const user = await world.createUser({ armed: false, authenticator: true });
     const verifier = "0x00000000000000000000000000000000000000f9";
     const request = await world.configuration.prepare({
       userId: user.userId,
@@ -709,9 +766,22 @@ describe("configuring a Recovery Code", () => {
     assert.equal((await world.chain.validatorState(user.account)).recoveryKey, verifier);
   });
 
-  it("another user cannot submit someone else's configuration", async () => {
+  it("a Recovery Code cannot be armed before the authenticator app is set up", async () => {
     const world = createRecoveryWorld();
     const user = await world.createUser({ armed: false });
+    await expectKaada(
+      world.configuration.prepare({
+        userId: user.userId,
+        recoveryAddress: "0x00000000000000000000000000000000000000f9",
+      }),
+      "RECOVERY_TOTP_REQUIRED",
+    );
+    assert.equal(await world.repositories.recoveryConfigurations.findActive(user.wallet.id), null);
+  });
+
+  it("another user cannot submit someone else's configuration", async () => {
+    const world = createRecoveryWorld();
+    const user = await world.createUser({ armed: false, authenticator: true });
     const other = await world.createUser();
     const request = await world.configuration.prepare({
       userId: user.userId,
@@ -743,7 +813,7 @@ describe("audit and secrecy", () => {
       "recovery.email_challenge_sent",
       "recovery.email_verified",
       "recovery.root_proposed",
-      "recovery.attestor_signed",
+      "recovery.totp_verified",
       "recovery.initiated",
       "recovery.notification_sent",
       "recovery.finalization_submitted",
@@ -761,9 +831,20 @@ describe("audit and secrecy", () => {
       user.code.canonical(),
       user.recoveryKey.privateKey,
       "735142",
+      user.authenticatorSecret ?? "",
     ]) {
       assert.ok(!everything.includes(secret), "a secret leaked into the audit trail or the logs");
     }
+    // The authenticator code that was accepted appears nowhere either.
+    const { totpAtStep } = await import("../src/core/recovery/totp.js");
+    const accepted = totpAtStep(
+      user.authenticatorSecret ?? "",
+      (await world.attemptOf(token)).totpStep ?? 0,
+    );
+    assert.ok(
+      !everything.includes(accepted),
+      "the authenticator code leaked into the audit trail or the logs",
+    );
     for (const mail of world.email.sent.filter((m) => !/verification code/.test(m.text))) {
       assert.ok(!mail.text.includes(token));
       assert.ok(!mail.text.includes(user.code.canonical()));

@@ -28,11 +28,13 @@ export type AggregateRecoveryAttempt = {
 }
 
 export type RecoveryAttemptAvgAggregateOutputType = {
+  totpStep: number | null
   nonceBefore: number | null
   proofFailures: number | null
 }
 
 export type RecoveryAttemptSumAggregateOutputType = {
+  totpStep: number | null
   nonceBefore: number | null
   proofFailures: number | null
 }
@@ -59,6 +61,8 @@ export type RecoveryAttemptMinAggregateOutputType = {
   recoveryNonce: string | null
   proofDeadline: Date | null
   proposedAt: Date | null
+  totpVerifiedAt: Date | null
+  totpStep: number | null
   previousRootValidator: string | null
   initiatedAt: Date | null
   executeAfter: Date | null
@@ -78,7 +82,6 @@ export type RecoveryAttemptMinAggregateOutputType = {
   completedAt: Date | null
   terminatedBy: $Enums.RecoveryTerminator | null
   terminatedAt: Date | null
-  terminationTxHash: string | null
   failureCode: string | null
   cleanupCompletedAt: Date | null
   pinResetAt: Date | null
@@ -109,6 +112,8 @@ export type RecoveryAttemptMaxAggregateOutputType = {
   recoveryNonce: string | null
   proofDeadline: Date | null
   proposedAt: Date | null
+  totpVerifiedAt: Date | null
+  totpStep: number | null
   previousRootValidator: string | null
   initiatedAt: Date | null
   executeAfter: Date | null
@@ -128,7 +133,6 @@ export type RecoveryAttemptMaxAggregateOutputType = {
   completedAt: Date | null
   terminatedBy: $Enums.RecoveryTerminator | null
   terminatedAt: Date | null
-  terminationTxHash: string | null
   failureCode: string | null
   cleanupCompletedAt: Date | null
   pinResetAt: Date | null
@@ -159,6 +163,8 @@ export type RecoveryAttemptCountAggregateOutputType = {
   recoveryNonce: number
   proofDeadline: number
   proposedAt: number
+  totpVerifiedAt: number
+  totpStep: number
   previousRootValidator: number
   initiatedAt: number
   executeAfter: number
@@ -179,7 +185,6 @@ export type RecoveryAttemptCountAggregateOutputType = {
   completedAt: number
   terminatedBy: number
   terminatedAt: number
-  terminationTxHash: number
   failureCode: number
   cleanupCompletedAt: number
   pinResetAt: number
@@ -191,11 +196,13 @@ export type RecoveryAttemptCountAggregateOutputType = {
 
 
 export type RecoveryAttemptAvgAggregateInputType = {
+  totpStep?: true
   nonceBefore?: true
   proofFailures?: true
 }
 
 export type RecoveryAttemptSumAggregateInputType = {
+  totpStep?: true
   nonceBefore?: true
   proofFailures?: true
 }
@@ -222,6 +229,8 @@ export type RecoveryAttemptMinAggregateInputType = {
   recoveryNonce?: true
   proofDeadline?: true
   proposedAt?: true
+  totpVerifiedAt?: true
+  totpStep?: true
   previousRootValidator?: true
   initiatedAt?: true
   executeAfter?: true
@@ -241,7 +250,6 @@ export type RecoveryAttemptMinAggregateInputType = {
   completedAt?: true
   terminatedBy?: true
   terminatedAt?: true
-  terminationTxHash?: true
   failureCode?: true
   cleanupCompletedAt?: true
   pinResetAt?: true
@@ -272,6 +280,8 @@ export type RecoveryAttemptMaxAggregateInputType = {
   recoveryNonce?: true
   proofDeadline?: true
   proposedAt?: true
+  totpVerifiedAt?: true
+  totpStep?: true
   previousRootValidator?: true
   initiatedAt?: true
   executeAfter?: true
@@ -291,7 +301,6 @@ export type RecoveryAttemptMaxAggregateInputType = {
   completedAt?: true
   terminatedBy?: true
   terminatedAt?: true
-  terminationTxHash?: true
   failureCode?: true
   cleanupCompletedAt?: true
   pinResetAt?: true
@@ -322,6 +331,8 @@ export type RecoveryAttemptCountAggregateInputType = {
   recoveryNonce?: true
   proofDeadline?: true
   proposedAt?: true
+  totpVerifiedAt?: true
+  totpStep?: true
   previousRootValidator?: true
   initiatedAt?: true
   executeAfter?: true
@@ -342,7 +353,6 @@ export type RecoveryAttemptCountAggregateInputType = {
   completedAt?: true
   terminatedBy?: true
   terminatedAt?: true
-  terminationTxHash?: true
   failureCode?: true
   cleanupCompletedAt?: true
   pinResetAt?: true
@@ -460,6 +470,8 @@ export type RecoveryAttemptGroupByOutputType = {
   recoveryNonce: string | null
   proofDeadline: Date | null
   proposedAt: Date | null
+  totpVerifiedAt: Date | null
+  totpStep: number | null
   previousRootValidator: string | null
   initiatedAt: Date | null
   executeAfter: Date | null
@@ -480,7 +492,6 @@ export type RecoveryAttemptGroupByOutputType = {
   completedAt: Date | null
   terminatedBy: $Enums.RecoveryTerminator | null
   terminatedAt: Date | null
-  terminationTxHash: string | null
   failureCode: string | null
   cleanupCompletedAt: Date | null
   pinResetAt: Date | null
@@ -534,6 +545,8 @@ export type RecoveryAttemptWhereInput = {
   recoveryNonce?: Prisma.StringNullableFilter<"RecoveryAttempt"> | string | null
   proofDeadline?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
   proposedAt?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
+  totpVerifiedAt?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
+  totpStep?: Prisma.IntNullableFilter<"RecoveryAttempt"> | number | null
   previousRootValidator?: Prisma.StringNullableFilter<"RecoveryAttempt"> | string | null
   initiatedAt?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
   executeAfter?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
@@ -554,7 +567,6 @@ export type RecoveryAttemptWhereInput = {
   completedAt?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
   terminatedBy?: Prisma.EnumRecoveryTerminatorNullableFilter<"RecoveryAttempt"> | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
-  terminationTxHash?: Prisma.StringNullableFilter<"RecoveryAttempt"> | string | null
   failureCode?: Prisma.StringNullableFilter<"RecoveryAttempt"> | string | null
   cleanupCompletedAt?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
   pinResetAt?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
@@ -591,6 +603,8 @@ export type RecoveryAttemptOrderByWithRelationInput = {
   recoveryNonce?: Prisma.SortOrderInput | Prisma.SortOrder
   proofDeadline?: Prisma.SortOrderInput | Prisma.SortOrder
   proposedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  totpVerifiedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  totpStep?: Prisma.SortOrderInput | Prisma.SortOrder
   previousRootValidator?: Prisma.SortOrderInput | Prisma.SortOrder
   initiatedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   executeAfter?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -611,7 +625,6 @@ export type RecoveryAttemptOrderByWithRelationInput = {
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   terminatedBy?: Prisma.SortOrderInput | Prisma.SortOrder
   terminatedAt?: Prisma.SortOrderInput | Prisma.SortOrder
-  terminationTxHash?: Prisma.SortOrderInput | Prisma.SortOrder
   failureCode?: Prisma.SortOrderInput | Prisma.SortOrder
   cleanupCompletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   pinResetAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -651,6 +664,8 @@ export type RecoveryAttemptWhereUniqueInput = Prisma.AtLeast<{
   recoveryNonce?: Prisma.StringNullableFilter<"RecoveryAttempt"> | string | null
   proofDeadline?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
   proposedAt?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
+  totpVerifiedAt?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
+  totpStep?: Prisma.IntNullableFilter<"RecoveryAttempt"> | number | null
   previousRootValidator?: Prisma.StringNullableFilter<"RecoveryAttempt"> | string | null
   initiatedAt?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
   executeAfter?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
@@ -671,7 +686,6 @@ export type RecoveryAttemptWhereUniqueInput = Prisma.AtLeast<{
   completedAt?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
   terminatedBy?: Prisma.EnumRecoveryTerminatorNullableFilter<"RecoveryAttempt"> | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
-  terminationTxHash?: Prisma.StringNullableFilter<"RecoveryAttempt"> | string | null
   failureCode?: Prisma.StringNullableFilter<"RecoveryAttempt"> | string | null
   cleanupCompletedAt?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
   pinResetAt?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
@@ -708,6 +722,8 @@ export type RecoveryAttemptOrderByWithAggregationInput = {
   recoveryNonce?: Prisma.SortOrderInput | Prisma.SortOrder
   proofDeadline?: Prisma.SortOrderInput | Prisma.SortOrder
   proposedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  totpVerifiedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  totpStep?: Prisma.SortOrderInput | Prisma.SortOrder
   previousRootValidator?: Prisma.SortOrderInput | Prisma.SortOrder
   initiatedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   executeAfter?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -728,7 +744,6 @@ export type RecoveryAttemptOrderByWithAggregationInput = {
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   terminatedBy?: Prisma.SortOrderInput | Prisma.SortOrder
   terminatedAt?: Prisma.SortOrderInput | Prisma.SortOrder
-  terminationTxHash?: Prisma.SortOrderInput | Prisma.SortOrder
   failureCode?: Prisma.SortOrderInput | Prisma.SortOrder
   cleanupCompletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   pinResetAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -767,6 +782,8 @@ export type RecoveryAttemptScalarWhereWithAggregatesInput = {
   recoveryNonce?: Prisma.StringNullableWithAggregatesFilter<"RecoveryAttempt"> | string | null
   proofDeadline?: Prisma.DateTimeNullableWithAggregatesFilter<"RecoveryAttempt"> | Date | string | null
   proposedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"RecoveryAttempt"> | Date | string | null
+  totpVerifiedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"RecoveryAttempt"> | Date | string | null
+  totpStep?: Prisma.IntNullableWithAggregatesFilter<"RecoveryAttempt"> | number | null
   previousRootValidator?: Prisma.StringNullableWithAggregatesFilter<"RecoveryAttempt"> | string | null
   initiatedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"RecoveryAttempt"> | Date | string | null
   executeAfter?: Prisma.DateTimeNullableWithAggregatesFilter<"RecoveryAttempt"> | Date | string | null
@@ -787,7 +804,6 @@ export type RecoveryAttemptScalarWhereWithAggregatesInput = {
   completedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"RecoveryAttempt"> | Date | string | null
   terminatedBy?: Prisma.EnumRecoveryTerminatorNullableWithAggregatesFilter<"RecoveryAttempt"> | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"RecoveryAttempt"> | Date | string | null
-  terminationTxHash?: Prisma.StringNullableWithAggregatesFilter<"RecoveryAttempt"> | string | null
   failureCode?: Prisma.StringNullableWithAggregatesFilter<"RecoveryAttempt"> | string | null
   cleanupCompletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"RecoveryAttempt"> | Date | string | null
   pinResetAt?: Prisma.DateTimeNullableWithAggregatesFilter<"RecoveryAttempt"> | Date | string | null
@@ -814,6 +830,8 @@ export type RecoveryAttemptCreateInput = {
   recoveryNonce?: string | null
   proofDeadline?: Date | string | null
   proposedAt?: Date | string | null
+  totpVerifiedAt?: Date | string | null
+  totpStep?: number | null
   previousRootValidator?: string | null
   initiatedAt?: Date | string | null
   executeAfter?: Date | string | null
@@ -834,7 +852,6 @@ export type RecoveryAttemptCreateInput = {
   completedAt?: Date | string | null
   terminatedBy?: $Enums.RecoveryTerminator | null
   terminatedAt?: Date | string | null
-  terminationTxHash?: string | null
   failureCode?: string | null
   cleanupCompletedAt?: Date | string | null
   pinResetAt?: Date | string | null
@@ -870,6 +887,8 @@ export type RecoveryAttemptUncheckedCreateInput = {
   recoveryNonce?: string | null
   proofDeadline?: Date | string | null
   proposedAt?: Date | string | null
+  totpVerifiedAt?: Date | string | null
+  totpStep?: number | null
   previousRootValidator?: string | null
   initiatedAt?: Date | string | null
   executeAfter?: Date | string | null
@@ -890,7 +909,6 @@ export type RecoveryAttemptUncheckedCreateInput = {
   completedAt?: Date | string | null
   terminatedBy?: $Enums.RecoveryTerminator | null
   terminatedAt?: Date | string | null
-  terminationTxHash?: string | null
   failureCode?: string | null
   cleanupCompletedAt?: Date | string | null
   pinResetAt?: Date | string | null
@@ -918,6 +936,8 @@ export type RecoveryAttemptUpdateInput = {
   recoveryNonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   proposedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpStep?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   previousRootValidator?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   initiatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   executeAfter?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -938,7 +958,6 @@ export type RecoveryAttemptUpdateInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   terminatedBy?: Prisma.NullableEnumRecoveryTerminatorFieldUpdateOperationsInput | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  terminationTxHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cleanupCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pinResetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -974,6 +993,8 @@ export type RecoveryAttemptUncheckedUpdateInput = {
   recoveryNonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   proposedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpStep?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   previousRootValidator?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   initiatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   executeAfter?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -994,7 +1015,6 @@ export type RecoveryAttemptUncheckedUpdateInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   terminatedBy?: Prisma.NullableEnumRecoveryTerminatorFieldUpdateOperationsInput | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  terminationTxHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cleanupCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pinResetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1026,6 +1046,8 @@ export type RecoveryAttemptCreateManyInput = {
   recoveryNonce?: string | null
   proofDeadline?: Date | string | null
   proposedAt?: Date | string | null
+  totpVerifiedAt?: Date | string | null
+  totpStep?: number | null
   previousRootValidator?: string | null
   initiatedAt?: Date | string | null
   executeAfter?: Date | string | null
@@ -1046,7 +1068,6 @@ export type RecoveryAttemptCreateManyInput = {
   completedAt?: Date | string | null
   terminatedBy?: $Enums.RecoveryTerminator | null
   terminatedAt?: Date | string | null
-  terminationTxHash?: string | null
   failureCode?: string | null
   cleanupCompletedAt?: Date | string | null
   pinResetAt?: Date | string | null
@@ -1073,6 +1094,8 @@ export type RecoveryAttemptUpdateManyMutationInput = {
   recoveryNonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   proposedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpStep?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   previousRootValidator?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   initiatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   executeAfter?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1093,7 +1116,6 @@ export type RecoveryAttemptUpdateManyMutationInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   terminatedBy?: Prisma.NullableEnumRecoveryTerminatorFieldUpdateOperationsInput | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  terminationTxHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cleanupCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pinResetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1123,6 +1145,8 @@ export type RecoveryAttemptUncheckedUpdateManyInput = {
   recoveryNonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   proposedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpStep?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   previousRootValidator?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   initiatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   executeAfter?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1143,7 +1167,6 @@ export type RecoveryAttemptUncheckedUpdateManyInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   terminatedBy?: Prisma.NullableEnumRecoveryTerminatorFieldUpdateOperationsInput | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  terminationTxHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cleanupCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pinResetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1184,6 +1207,8 @@ export type RecoveryAttemptCountOrderByAggregateInput = {
   recoveryNonce?: Prisma.SortOrder
   proofDeadline?: Prisma.SortOrder
   proposedAt?: Prisma.SortOrder
+  totpVerifiedAt?: Prisma.SortOrder
+  totpStep?: Prisma.SortOrder
   previousRootValidator?: Prisma.SortOrder
   initiatedAt?: Prisma.SortOrder
   executeAfter?: Prisma.SortOrder
@@ -1204,7 +1229,6 @@ export type RecoveryAttemptCountOrderByAggregateInput = {
   completedAt?: Prisma.SortOrder
   terminatedBy?: Prisma.SortOrder
   terminatedAt?: Prisma.SortOrder
-  terminationTxHash?: Prisma.SortOrder
   failureCode?: Prisma.SortOrder
   cleanupCompletedAt?: Prisma.SortOrder
   pinResetAt?: Prisma.SortOrder
@@ -1214,6 +1238,7 @@ export type RecoveryAttemptCountOrderByAggregateInput = {
 }
 
 export type RecoveryAttemptAvgOrderByAggregateInput = {
+  totpStep?: Prisma.SortOrder
   nonceBefore?: Prisma.SortOrder
   proofFailures?: Prisma.SortOrder
 }
@@ -1240,6 +1265,8 @@ export type RecoveryAttemptMaxOrderByAggregateInput = {
   recoveryNonce?: Prisma.SortOrder
   proofDeadline?: Prisma.SortOrder
   proposedAt?: Prisma.SortOrder
+  totpVerifiedAt?: Prisma.SortOrder
+  totpStep?: Prisma.SortOrder
   previousRootValidator?: Prisma.SortOrder
   initiatedAt?: Prisma.SortOrder
   executeAfter?: Prisma.SortOrder
@@ -1259,7 +1286,6 @@ export type RecoveryAttemptMaxOrderByAggregateInput = {
   completedAt?: Prisma.SortOrder
   terminatedBy?: Prisma.SortOrder
   terminatedAt?: Prisma.SortOrder
-  terminationTxHash?: Prisma.SortOrder
   failureCode?: Prisma.SortOrder
   cleanupCompletedAt?: Prisma.SortOrder
   pinResetAt?: Prisma.SortOrder
@@ -1290,6 +1316,8 @@ export type RecoveryAttemptMinOrderByAggregateInput = {
   recoveryNonce?: Prisma.SortOrder
   proofDeadline?: Prisma.SortOrder
   proposedAt?: Prisma.SortOrder
+  totpVerifiedAt?: Prisma.SortOrder
+  totpStep?: Prisma.SortOrder
   previousRootValidator?: Prisma.SortOrder
   initiatedAt?: Prisma.SortOrder
   executeAfter?: Prisma.SortOrder
@@ -1309,7 +1337,6 @@ export type RecoveryAttemptMinOrderByAggregateInput = {
   completedAt?: Prisma.SortOrder
   terminatedBy?: Prisma.SortOrder
   terminatedAt?: Prisma.SortOrder
-  terminationTxHash?: Prisma.SortOrder
   failureCode?: Prisma.SortOrder
   cleanupCompletedAt?: Prisma.SortOrder
   pinResetAt?: Prisma.SortOrder
@@ -1319,6 +1346,7 @@ export type RecoveryAttemptMinOrderByAggregateInput = {
 }
 
 export type RecoveryAttemptSumOrderByAggregateInput = {
+  totpStep?: Prisma.SortOrder
   nonceBefore?: Prisma.SortOrder
   proofFailures?: Prisma.SortOrder
 }
@@ -1582,6 +1610,8 @@ export type RecoveryAttemptCreateWithoutUserInput = {
   recoveryNonce?: string | null
   proofDeadline?: Date | string | null
   proposedAt?: Date | string | null
+  totpVerifiedAt?: Date | string | null
+  totpStep?: number | null
   previousRootValidator?: string | null
   initiatedAt?: Date | string | null
   executeAfter?: Date | string | null
@@ -1602,7 +1632,6 @@ export type RecoveryAttemptCreateWithoutUserInput = {
   completedAt?: Date | string | null
   terminatedBy?: $Enums.RecoveryTerminator | null
   terminatedAt?: Date | string | null
-  terminationTxHash?: string | null
   failureCode?: string | null
   cleanupCompletedAt?: Date | string | null
   pinResetAt?: Date | string | null
@@ -1636,6 +1665,8 @@ export type RecoveryAttemptUncheckedCreateWithoutUserInput = {
   recoveryNonce?: string | null
   proofDeadline?: Date | string | null
   proposedAt?: Date | string | null
+  totpVerifiedAt?: Date | string | null
+  totpStep?: number | null
   previousRootValidator?: string | null
   initiatedAt?: Date | string | null
   executeAfter?: Date | string | null
@@ -1656,7 +1687,6 @@ export type RecoveryAttemptUncheckedCreateWithoutUserInput = {
   completedAt?: Date | string | null
   terminatedBy?: $Enums.RecoveryTerminator | null
   terminatedAt?: Date | string | null
-  terminationTxHash?: string | null
   failureCode?: string | null
   cleanupCompletedAt?: Date | string | null
   pinResetAt?: Date | string | null
@@ -1717,6 +1747,8 @@ export type RecoveryAttemptScalarWhereInput = {
   recoveryNonce?: Prisma.StringNullableFilter<"RecoveryAttempt"> | string | null
   proofDeadline?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
   proposedAt?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
+  totpVerifiedAt?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
+  totpStep?: Prisma.IntNullableFilter<"RecoveryAttempt"> | number | null
   previousRootValidator?: Prisma.StringNullableFilter<"RecoveryAttempt"> | string | null
   initiatedAt?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
   executeAfter?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
@@ -1737,7 +1769,6 @@ export type RecoveryAttemptScalarWhereInput = {
   completedAt?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
   terminatedBy?: Prisma.EnumRecoveryTerminatorNullableFilter<"RecoveryAttempt"> | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
-  terminationTxHash?: Prisma.StringNullableFilter<"RecoveryAttempt"> | string | null
   failureCode?: Prisma.StringNullableFilter<"RecoveryAttempt"> | string | null
   cleanupCompletedAt?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
   pinResetAt?: Prisma.DateTimeNullableFilter<"RecoveryAttempt"> | Date | string | null
@@ -1764,6 +1795,8 @@ export type RecoveryAttemptCreateWithoutWalletInput = {
   recoveryNonce?: string | null
   proofDeadline?: Date | string | null
   proposedAt?: Date | string | null
+  totpVerifiedAt?: Date | string | null
+  totpStep?: number | null
   previousRootValidator?: string | null
   initiatedAt?: Date | string | null
   executeAfter?: Date | string | null
@@ -1784,7 +1817,6 @@ export type RecoveryAttemptCreateWithoutWalletInput = {
   completedAt?: Date | string | null
   terminatedBy?: $Enums.RecoveryTerminator | null
   terminatedAt?: Date | string | null
-  terminationTxHash?: string | null
   failureCode?: string | null
   cleanupCompletedAt?: Date | string | null
   pinResetAt?: Date | string | null
@@ -1818,6 +1850,8 @@ export type RecoveryAttemptUncheckedCreateWithoutWalletInput = {
   recoveryNonce?: string | null
   proofDeadline?: Date | string | null
   proposedAt?: Date | string | null
+  totpVerifiedAt?: Date | string | null
+  totpStep?: number | null
   previousRootValidator?: string | null
   initiatedAt?: Date | string | null
   executeAfter?: Date | string | null
@@ -1838,7 +1872,6 @@ export type RecoveryAttemptUncheckedCreateWithoutWalletInput = {
   completedAt?: Date | string | null
   terminatedBy?: $Enums.RecoveryTerminator | null
   terminatedAt?: Date | string | null
-  terminationTxHash?: string | null
   failureCode?: string | null
   cleanupCompletedAt?: Date | string | null
   pinResetAt?: Date | string | null
@@ -1892,6 +1925,8 @@ export type RecoveryAttemptCreateWithoutNewCredentialInput = {
   recoveryNonce?: string | null
   proofDeadline?: Date | string | null
   proposedAt?: Date | string | null
+  totpVerifiedAt?: Date | string | null
+  totpStep?: number | null
   previousRootValidator?: string | null
   initiatedAt?: Date | string | null
   executeAfter?: Date | string | null
@@ -1912,7 +1947,6 @@ export type RecoveryAttemptCreateWithoutNewCredentialInput = {
   completedAt?: Date | string | null
   terminatedBy?: $Enums.RecoveryTerminator | null
   terminatedAt?: Date | string | null
-  terminationTxHash?: string | null
   failureCode?: string | null
   cleanupCompletedAt?: Date | string | null
   pinResetAt?: Date | string | null
@@ -1946,6 +1980,8 @@ export type RecoveryAttemptUncheckedCreateWithoutNewCredentialInput = {
   recoveryNonce?: string | null
   proofDeadline?: Date | string | null
   proposedAt?: Date | string | null
+  totpVerifiedAt?: Date | string | null
+  totpStep?: number | null
   previousRootValidator?: string | null
   initiatedAt?: Date | string | null
   executeAfter?: Date | string | null
@@ -1966,7 +2002,6 @@ export type RecoveryAttemptUncheckedCreateWithoutNewCredentialInput = {
   completedAt?: Date | string | null
   terminatedBy?: $Enums.RecoveryTerminator | null
   terminatedAt?: Date | string | null
-  terminationTxHash?: string | null
   failureCode?: string | null
   cleanupCompletedAt?: Date | string | null
   pinResetAt?: Date | string | null
@@ -2020,6 +2055,8 @@ export type RecoveryAttemptCreateWithoutConfigurationInput = {
   recoveryNonce?: string | null
   proofDeadline?: Date | string | null
   proposedAt?: Date | string | null
+  totpVerifiedAt?: Date | string | null
+  totpStep?: number | null
   previousRootValidator?: string | null
   initiatedAt?: Date | string | null
   executeAfter?: Date | string | null
@@ -2040,7 +2077,6 @@ export type RecoveryAttemptCreateWithoutConfigurationInput = {
   completedAt?: Date | string | null
   terminatedBy?: $Enums.RecoveryTerminator | null
   terminatedAt?: Date | string | null
-  terminationTxHash?: string | null
   failureCode?: string | null
   cleanupCompletedAt?: Date | string | null
   pinResetAt?: Date | string | null
@@ -2074,6 +2110,8 @@ export type RecoveryAttemptUncheckedCreateWithoutConfigurationInput = {
   recoveryNonce?: string | null
   proofDeadline?: Date | string | null
   proposedAt?: Date | string | null
+  totpVerifiedAt?: Date | string | null
+  totpStep?: number | null
   previousRootValidator?: string | null
   initiatedAt?: Date | string | null
   executeAfter?: Date | string | null
@@ -2094,7 +2132,6 @@ export type RecoveryAttemptUncheckedCreateWithoutConfigurationInput = {
   completedAt?: Date | string | null
   terminatedBy?: $Enums.RecoveryTerminator | null
   terminatedAt?: Date | string | null
-  terminationTxHash?: string | null
   failureCode?: string | null
   cleanupCompletedAt?: Date | string | null
   pinResetAt?: Date | string | null
@@ -2132,6 +2169,8 @@ export type RecoveryAttemptCreateWithoutNewConfigurationInput = {
   recoveryNonce?: string | null
   proofDeadline?: Date | string | null
   proposedAt?: Date | string | null
+  totpVerifiedAt?: Date | string | null
+  totpStep?: number | null
   previousRootValidator?: string | null
   initiatedAt?: Date | string | null
   executeAfter?: Date | string | null
@@ -2152,7 +2191,6 @@ export type RecoveryAttemptCreateWithoutNewConfigurationInput = {
   completedAt?: Date | string | null
   terminatedBy?: $Enums.RecoveryTerminator | null
   terminatedAt?: Date | string | null
-  terminationTxHash?: string | null
   failureCode?: string | null
   cleanupCompletedAt?: Date | string | null
   pinResetAt?: Date | string | null
@@ -2187,6 +2225,8 @@ export type RecoveryAttemptUncheckedCreateWithoutNewConfigurationInput = {
   recoveryNonce?: string | null
   proofDeadline?: Date | string | null
   proposedAt?: Date | string | null
+  totpVerifiedAt?: Date | string | null
+  totpStep?: number | null
   previousRootValidator?: string | null
   initiatedAt?: Date | string | null
   executeAfter?: Date | string | null
@@ -2207,7 +2247,6 @@ export type RecoveryAttemptUncheckedCreateWithoutNewConfigurationInput = {
   completedAt?: Date | string | null
   terminatedBy?: $Enums.RecoveryTerminator | null
   terminatedAt?: Date | string | null
-  terminationTxHash?: string | null
   failureCode?: string | null
   cleanupCompletedAt?: Date | string | null
   pinResetAt?: Date | string | null
@@ -2276,6 +2315,8 @@ export type RecoveryAttemptCreateWithoutEmailChallengesInput = {
   recoveryNonce?: string | null
   proofDeadline?: Date | string | null
   proposedAt?: Date | string | null
+  totpVerifiedAt?: Date | string | null
+  totpStep?: number | null
   previousRootValidator?: string | null
   initiatedAt?: Date | string | null
   executeAfter?: Date | string | null
@@ -2296,7 +2337,6 @@ export type RecoveryAttemptCreateWithoutEmailChallengesInput = {
   completedAt?: Date | string | null
   terminatedBy?: $Enums.RecoveryTerminator | null
   terminatedAt?: Date | string | null
-  terminationTxHash?: string | null
   failureCode?: string | null
   cleanupCompletedAt?: Date | string | null
   pinResetAt?: Date | string | null
@@ -2331,6 +2371,8 @@ export type RecoveryAttemptUncheckedCreateWithoutEmailChallengesInput = {
   recoveryNonce?: string | null
   proofDeadline?: Date | string | null
   proposedAt?: Date | string | null
+  totpVerifiedAt?: Date | string | null
+  totpStep?: number | null
   previousRootValidator?: string | null
   initiatedAt?: Date | string | null
   executeAfter?: Date | string | null
@@ -2351,7 +2393,6 @@ export type RecoveryAttemptUncheckedCreateWithoutEmailChallengesInput = {
   completedAt?: Date | string | null
   terminatedBy?: $Enums.RecoveryTerminator | null
   terminatedAt?: Date | string | null
-  terminationTxHash?: string | null
   failureCode?: string | null
   cleanupCompletedAt?: Date | string | null
   pinResetAt?: Date | string | null
@@ -2394,6 +2435,8 @@ export type RecoveryAttemptUpdateWithoutEmailChallengesInput = {
   recoveryNonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   proposedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpStep?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   previousRootValidator?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   initiatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   executeAfter?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2414,7 +2457,6 @@ export type RecoveryAttemptUpdateWithoutEmailChallengesInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   terminatedBy?: Prisma.NullableEnumRecoveryTerminatorFieldUpdateOperationsInput | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  terminationTxHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cleanupCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pinResetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2449,6 +2491,8 @@ export type RecoveryAttemptUncheckedUpdateWithoutEmailChallengesInput = {
   recoveryNonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   proposedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpStep?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   previousRootValidator?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   initiatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   executeAfter?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2469,7 +2513,6 @@ export type RecoveryAttemptUncheckedUpdateWithoutEmailChallengesInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   terminatedBy?: Prisma.NullableEnumRecoveryTerminatorFieldUpdateOperationsInput | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  terminationTxHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cleanupCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pinResetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2499,6 +2542,8 @@ export type RecoveryAttemptCreateManyUserInput = {
   recoveryNonce?: string | null
   proofDeadline?: Date | string | null
   proposedAt?: Date | string | null
+  totpVerifiedAt?: Date | string | null
+  totpStep?: number | null
   previousRootValidator?: string | null
   initiatedAt?: Date | string | null
   executeAfter?: Date | string | null
@@ -2519,7 +2564,6 @@ export type RecoveryAttemptCreateManyUserInput = {
   completedAt?: Date | string | null
   terminatedBy?: $Enums.RecoveryTerminator | null
   terminatedAt?: Date | string | null
-  terminationTxHash?: string | null
   failureCode?: string | null
   cleanupCompletedAt?: Date | string | null
   pinResetAt?: Date | string | null
@@ -2546,6 +2590,8 @@ export type RecoveryAttemptUpdateWithoutUserInput = {
   recoveryNonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   proposedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpStep?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   previousRootValidator?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   initiatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   executeAfter?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2566,7 +2612,6 @@ export type RecoveryAttemptUpdateWithoutUserInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   terminatedBy?: Prisma.NullableEnumRecoveryTerminatorFieldUpdateOperationsInput | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  terminationTxHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cleanupCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pinResetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2600,6 +2645,8 @@ export type RecoveryAttemptUncheckedUpdateWithoutUserInput = {
   recoveryNonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   proposedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpStep?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   previousRootValidator?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   initiatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   executeAfter?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2620,7 +2667,6 @@ export type RecoveryAttemptUncheckedUpdateWithoutUserInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   terminatedBy?: Prisma.NullableEnumRecoveryTerminatorFieldUpdateOperationsInput | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  terminationTxHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cleanupCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pinResetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2651,6 +2697,8 @@ export type RecoveryAttemptUncheckedUpdateManyWithoutUserInput = {
   recoveryNonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   proposedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpStep?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   previousRootValidator?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   initiatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   executeAfter?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2671,7 +2719,6 @@ export type RecoveryAttemptUncheckedUpdateManyWithoutUserInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   terminatedBy?: Prisma.NullableEnumRecoveryTerminatorFieldUpdateOperationsInput | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  terminationTxHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cleanupCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pinResetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2701,6 +2748,8 @@ export type RecoveryAttemptCreateManyWalletInput = {
   recoveryNonce?: string | null
   proofDeadline?: Date | string | null
   proposedAt?: Date | string | null
+  totpVerifiedAt?: Date | string | null
+  totpStep?: number | null
   previousRootValidator?: string | null
   initiatedAt?: Date | string | null
   executeAfter?: Date | string | null
@@ -2721,7 +2770,6 @@ export type RecoveryAttemptCreateManyWalletInput = {
   completedAt?: Date | string | null
   terminatedBy?: $Enums.RecoveryTerminator | null
   terminatedAt?: Date | string | null
-  terminationTxHash?: string | null
   failureCode?: string | null
   cleanupCompletedAt?: Date | string | null
   pinResetAt?: Date | string | null
@@ -2748,6 +2796,8 @@ export type RecoveryAttemptUpdateWithoutWalletInput = {
   recoveryNonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   proposedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpStep?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   previousRootValidator?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   initiatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   executeAfter?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2768,7 +2818,6 @@ export type RecoveryAttemptUpdateWithoutWalletInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   terminatedBy?: Prisma.NullableEnumRecoveryTerminatorFieldUpdateOperationsInput | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  terminationTxHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cleanupCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pinResetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2802,6 +2851,8 @@ export type RecoveryAttemptUncheckedUpdateWithoutWalletInput = {
   recoveryNonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   proposedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpStep?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   previousRootValidator?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   initiatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   executeAfter?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2822,7 +2873,6 @@ export type RecoveryAttemptUncheckedUpdateWithoutWalletInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   terminatedBy?: Prisma.NullableEnumRecoveryTerminatorFieldUpdateOperationsInput | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  terminationTxHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cleanupCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pinResetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2853,6 +2903,8 @@ export type RecoveryAttemptUncheckedUpdateManyWithoutWalletInput = {
   recoveryNonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   proposedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpStep?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   previousRootValidator?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   initiatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   executeAfter?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2873,7 +2925,6 @@ export type RecoveryAttemptUncheckedUpdateManyWithoutWalletInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   terminatedBy?: Prisma.NullableEnumRecoveryTerminatorFieldUpdateOperationsInput | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  terminationTxHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cleanupCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pinResetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2903,6 +2954,8 @@ export type RecoveryAttemptCreateManyNewCredentialInput = {
   recoveryNonce?: string | null
   proofDeadline?: Date | string | null
   proposedAt?: Date | string | null
+  totpVerifiedAt?: Date | string | null
+  totpStep?: number | null
   previousRootValidator?: string | null
   initiatedAt?: Date | string | null
   executeAfter?: Date | string | null
@@ -2923,7 +2976,6 @@ export type RecoveryAttemptCreateManyNewCredentialInput = {
   completedAt?: Date | string | null
   terminatedBy?: $Enums.RecoveryTerminator | null
   terminatedAt?: Date | string | null
-  terminationTxHash?: string | null
   failureCode?: string | null
   cleanupCompletedAt?: Date | string | null
   pinResetAt?: Date | string | null
@@ -2950,6 +3002,8 @@ export type RecoveryAttemptUpdateWithoutNewCredentialInput = {
   recoveryNonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   proposedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpStep?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   previousRootValidator?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   initiatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   executeAfter?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2970,7 +3024,6 @@ export type RecoveryAttemptUpdateWithoutNewCredentialInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   terminatedBy?: Prisma.NullableEnumRecoveryTerminatorFieldUpdateOperationsInput | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  terminationTxHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cleanupCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pinResetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3004,6 +3057,8 @@ export type RecoveryAttemptUncheckedUpdateWithoutNewCredentialInput = {
   recoveryNonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   proposedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpStep?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   previousRootValidator?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   initiatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   executeAfter?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3024,7 +3079,6 @@ export type RecoveryAttemptUncheckedUpdateWithoutNewCredentialInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   terminatedBy?: Prisma.NullableEnumRecoveryTerminatorFieldUpdateOperationsInput | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  terminationTxHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cleanupCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pinResetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3055,6 +3109,8 @@ export type RecoveryAttemptUncheckedUpdateManyWithoutNewCredentialInput = {
   recoveryNonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   proposedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpStep?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   previousRootValidator?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   initiatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   executeAfter?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3075,7 +3131,6 @@ export type RecoveryAttemptUncheckedUpdateManyWithoutNewCredentialInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   terminatedBy?: Prisma.NullableEnumRecoveryTerminatorFieldUpdateOperationsInput | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  terminationTxHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cleanupCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pinResetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3105,6 +3160,8 @@ export type RecoveryAttemptCreateManyConfigurationInput = {
   recoveryNonce?: string | null
   proofDeadline?: Date | string | null
   proposedAt?: Date | string | null
+  totpVerifiedAt?: Date | string | null
+  totpStep?: number | null
   previousRootValidator?: string | null
   initiatedAt?: Date | string | null
   executeAfter?: Date | string | null
@@ -3125,7 +3182,6 @@ export type RecoveryAttemptCreateManyConfigurationInput = {
   completedAt?: Date | string | null
   terminatedBy?: $Enums.RecoveryTerminator | null
   terminatedAt?: Date | string | null
-  terminationTxHash?: string | null
   failureCode?: string | null
   cleanupCompletedAt?: Date | string | null
   pinResetAt?: Date | string | null
@@ -3156,6 +3212,8 @@ export type RecoveryAttemptCreateManyNewConfigurationInput = {
   recoveryNonce?: string | null
   proofDeadline?: Date | string | null
   proposedAt?: Date | string | null
+  totpVerifiedAt?: Date | string | null
+  totpStep?: number | null
   previousRootValidator?: string | null
   initiatedAt?: Date | string | null
   executeAfter?: Date | string | null
@@ -3176,7 +3234,6 @@ export type RecoveryAttemptCreateManyNewConfigurationInput = {
   completedAt?: Date | string | null
   terminatedBy?: $Enums.RecoveryTerminator | null
   terminatedAt?: Date | string | null
-  terminationTxHash?: string | null
   failureCode?: string | null
   cleanupCompletedAt?: Date | string | null
   pinResetAt?: Date | string | null
@@ -3202,6 +3259,8 @@ export type RecoveryAttemptUpdateWithoutConfigurationInput = {
   recoveryNonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   proposedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpStep?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   previousRootValidator?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   initiatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   executeAfter?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3222,7 +3281,6 @@ export type RecoveryAttemptUpdateWithoutConfigurationInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   terminatedBy?: Prisma.NullableEnumRecoveryTerminatorFieldUpdateOperationsInput | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  terminationTxHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cleanupCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pinResetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3256,6 +3314,8 @@ export type RecoveryAttemptUncheckedUpdateWithoutConfigurationInput = {
   recoveryNonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   proposedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpStep?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   previousRootValidator?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   initiatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   executeAfter?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3276,7 +3336,6 @@ export type RecoveryAttemptUncheckedUpdateWithoutConfigurationInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   terminatedBy?: Prisma.NullableEnumRecoveryTerminatorFieldUpdateOperationsInput | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  terminationTxHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cleanupCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pinResetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3307,6 +3366,8 @@ export type RecoveryAttemptUncheckedUpdateManyWithoutConfigurationInput = {
   recoveryNonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   proposedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpStep?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   previousRootValidator?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   initiatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   executeAfter?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3327,7 +3388,6 @@ export type RecoveryAttemptUncheckedUpdateManyWithoutConfigurationInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   terminatedBy?: Prisma.NullableEnumRecoveryTerminatorFieldUpdateOperationsInput | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  terminationTxHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cleanupCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pinResetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3354,6 +3414,8 @@ export type RecoveryAttemptUpdateWithoutNewConfigurationInput = {
   recoveryNonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   proposedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpStep?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   previousRootValidator?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   initiatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   executeAfter?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3374,7 +3436,6 @@ export type RecoveryAttemptUpdateWithoutNewConfigurationInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   terminatedBy?: Prisma.NullableEnumRecoveryTerminatorFieldUpdateOperationsInput | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  terminationTxHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cleanupCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pinResetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3409,6 +3470,8 @@ export type RecoveryAttemptUncheckedUpdateWithoutNewConfigurationInput = {
   recoveryNonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   proposedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpStep?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   previousRootValidator?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   initiatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   executeAfter?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3429,7 +3492,6 @@ export type RecoveryAttemptUncheckedUpdateWithoutNewConfigurationInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   terminatedBy?: Prisma.NullableEnumRecoveryTerminatorFieldUpdateOperationsInput | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  terminationTxHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cleanupCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pinResetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3460,6 +3522,8 @@ export type RecoveryAttemptUncheckedUpdateManyWithoutNewConfigurationInput = {
   recoveryNonce?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofDeadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   proposedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  totpStep?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   previousRootValidator?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   initiatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   executeAfter?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3480,7 +3544,6 @@ export type RecoveryAttemptUncheckedUpdateManyWithoutNewConfigurationInput = {
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   terminatedBy?: Prisma.NullableEnumRecoveryTerminatorFieldUpdateOperationsInput | $Enums.RecoveryTerminator | null
   terminatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  terminationTxHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   failureCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cleanupCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   pinResetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3541,6 +3604,8 @@ export type RecoveryAttemptSelect<ExtArgs extends runtime.Types.Extensions.Inter
   recoveryNonce?: boolean
   proofDeadline?: boolean
   proposedAt?: boolean
+  totpVerifiedAt?: boolean
+  totpStep?: boolean
   previousRootValidator?: boolean
   initiatedAt?: boolean
   executeAfter?: boolean
@@ -3561,7 +3626,6 @@ export type RecoveryAttemptSelect<ExtArgs extends runtime.Types.Extensions.Inter
   completedAt?: boolean
   terminatedBy?: boolean
   terminatedAt?: boolean
-  terminationTxHash?: boolean
   failureCode?: boolean
   cleanupCompletedAt?: boolean
   pinResetAt?: boolean
@@ -3599,6 +3663,8 @@ export type RecoveryAttemptSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
   recoveryNonce?: boolean
   proofDeadline?: boolean
   proposedAt?: boolean
+  totpVerifiedAt?: boolean
+  totpStep?: boolean
   previousRootValidator?: boolean
   initiatedAt?: boolean
   executeAfter?: boolean
@@ -3619,7 +3685,6 @@ export type RecoveryAttemptSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
   completedAt?: boolean
   terminatedBy?: boolean
   terminatedAt?: boolean
-  terminationTxHash?: boolean
   failureCode?: boolean
   cleanupCompletedAt?: boolean
   pinResetAt?: boolean
@@ -3655,6 +3720,8 @@ export type RecoveryAttemptSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
   recoveryNonce?: boolean
   proofDeadline?: boolean
   proposedAt?: boolean
+  totpVerifiedAt?: boolean
+  totpStep?: boolean
   previousRootValidator?: boolean
   initiatedAt?: boolean
   executeAfter?: boolean
@@ -3675,7 +3742,6 @@ export type RecoveryAttemptSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
   completedAt?: boolean
   terminatedBy?: boolean
   terminatedAt?: boolean
-  terminationTxHash?: boolean
   failureCode?: boolean
   cleanupCompletedAt?: boolean
   pinResetAt?: boolean
@@ -3711,6 +3777,8 @@ export type RecoveryAttemptSelectScalar = {
   recoveryNonce?: boolean
   proofDeadline?: boolean
   proposedAt?: boolean
+  totpVerifiedAt?: boolean
+  totpStep?: boolean
   previousRootValidator?: boolean
   initiatedAt?: boolean
   executeAfter?: boolean
@@ -3731,7 +3799,6 @@ export type RecoveryAttemptSelectScalar = {
   completedAt?: boolean
   terminatedBy?: boolean
   terminatedAt?: boolean
-  terminationTxHash?: boolean
   failureCode?: boolean
   cleanupCompletedAt?: boolean
   pinResetAt?: boolean
@@ -3740,7 +3807,7 @@ export type RecoveryAttemptSelectScalar = {
   updatedAt?: boolean
 }
 
-export type RecoveryAttemptOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "walletId" | "configurationId" | "status" | "tokenHash" | "tokenExpiresAt" | "cancelTokenHash" | "emailVerifiedAt" | "newCredentialId" | "newRootKind" | "newValidator" | "newValidatorData" | "newValidatorDataHash" | "newHook" | "newHookData" | "newHookDataHash" | "commitmentHash" | "recoveryNonce" | "proofDeadline" | "proposedAt" | "previousRootValidator" | "initiatedAt" | "executeAfter" | "initiateTxHash" | "nonceBefore" | "finalizeUserOpHash" | "finalizeTxHash" | "blockedReason" | "lockedBy" | "lockedUntil" | "rootConfirmedAt" | "proofChallenge" | "proofFailures" | "cancelChallenge" | "cancelPrepared" | "cancelUserOpHash" | "proofVerifiedAt" | "completedAt" | "terminatedBy" | "terminatedAt" | "terminationTxHash" | "failureCode" | "cleanupCompletedAt" | "pinResetAt" | "newConfigurationId" | "createdAt" | "updatedAt", ExtArgs["result"]["recoveryAttempt"]>
+export type RecoveryAttemptOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "walletId" | "configurationId" | "status" | "tokenHash" | "tokenExpiresAt" | "cancelTokenHash" | "emailVerifiedAt" | "newCredentialId" | "newRootKind" | "newValidator" | "newValidatorData" | "newValidatorDataHash" | "newHook" | "newHookData" | "newHookDataHash" | "commitmentHash" | "recoveryNonce" | "proofDeadline" | "proposedAt" | "totpVerifiedAt" | "totpStep" | "previousRootValidator" | "initiatedAt" | "executeAfter" | "initiateTxHash" | "nonceBefore" | "finalizeUserOpHash" | "finalizeTxHash" | "blockedReason" | "lockedBy" | "lockedUntil" | "rootConfirmedAt" | "proofChallenge" | "proofFailures" | "cancelChallenge" | "cancelPrepared" | "cancelUserOpHash" | "proofVerifiedAt" | "completedAt" | "terminatedBy" | "terminatedAt" | "failureCode" | "cleanupCompletedAt" | "pinResetAt" | "newConfigurationId" | "createdAt" | "updatedAt", ExtArgs["result"]["recoveryAttempt"]>
 export type RecoveryAttemptInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
@@ -3797,6 +3864,8 @@ export type $RecoveryAttemptPayload<ExtArgs extends runtime.Types.Extensions.Int
     recoveryNonce: string | null
     proofDeadline: Date | null
     proposedAt: Date | null
+    totpVerifiedAt: Date | null
+    totpStep: number | null
     previousRootValidator: string | null
     initiatedAt: Date | null
     executeAfter: Date | null
@@ -3817,7 +3886,6 @@ export type $RecoveryAttemptPayload<ExtArgs extends runtime.Types.Extensions.Int
     completedAt: Date | null
     terminatedBy: $Enums.RecoveryTerminator | null
     terminatedAt: Date | null
-    terminationTxHash: string | null
     failureCode: string | null
     cleanupCompletedAt: Date | null
     pinResetAt: Date | null
@@ -4274,6 +4342,8 @@ export interface RecoveryAttemptFieldRefs {
   readonly recoveryNonce: Prisma.FieldRef<"RecoveryAttempt", 'String'>
   readonly proofDeadline: Prisma.FieldRef<"RecoveryAttempt", 'DateTime'>
   readonly proposedAt: Prisma.FieldRef<"RecoveryAttempt", 'DateTime'>
+  readonly totpVerifiedAt: Prisma.FieldRef<"RecoveryAttempt", 'DateTime'>
+  readonly totpStep: Prisma.FieldRef<"RecoveryAttempt", 'Int'>
   readonly previousRootValidator: Prisma.FieldRef<"RecoveryAttempt", 'String'>
   readonly initiatedAt: Prisma.FieldRef<"RecoveryAttempt", 'DateTime'>
   readonly executeAfter: Prisma.FieldRef<"RecoveryAttempt", 'DateTime'>
@@ -4294,7 +4364,6 @@ export interface RecoveryAttemptFieldRefs {
   readonly completedAt: Prisma.FieldRef<"RecoveryAttempt", 'DateTime'>
   readonly terminatedBy: Prisma.FieldRef<"RecoveryAttempt", 'RecoveryTerminator'>
   readonly terminatedAt: Prisma.FieldRef<"RecoveryAttempt", 'DateTime'>
-  readonly terminationTxHash: Prisma.FieldRef<"RecoveryAttempt", 'String'>
   readonly failureCode: Prisma.FieldRef<"RecoveryAttempt", 'String'>
   readonly cleanupCompletedAt: Prisma.FieldRef<"RecoveryAttempt", 'DateTime'>
   readonly pinResetAt: Prisma.FieldRef<"RecoveryAttempt", 'DateTime'>

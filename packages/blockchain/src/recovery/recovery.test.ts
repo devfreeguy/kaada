@@ -8,7 +8,7 @@ import type { Hex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { celoSepolia } from "viem/chains";
 
-import { KeyAttestor, readKeyFileOutsideRepo } from "./attestor.js";
+import { readKeyFileOutsideRepo } from "./key-file.js";
 import { ViemRecoveryChain } from "./viem-chain.js";
 
 const validator = "0x00000000000000000000000000000000000000c1" as const;
@@ -172,40 +172,6 @@ test("the calls the root signs are fixed shapes: cancel, and arm (install + gran
   );
 });
 
-const vetoHash: Hex = `0x${"11".repeat(32)}`;
-
-test("the attestor signs only the typed Initiate of its own chain and validator, and exposes nothing else", async () => {
-  const c = chain();
-  const key = generatePrivateKey();
-  const attestor = new KeyAttestor({
-    privateKey: key,
-    chainId: celoSepolia.id,
-    recoveryValidator: validator,
-    sendVeto: () => Promise.resolve(vetoHash),
-  });
-  const root = c.proposeRoot({ account, credential: device, attemptId: "attempt-1" });
-  const message = c.typedMessage({ account, root, nonce: "0", deadline: "1900000000" });
-  const signature = await attestor.signInitiate(message);
-  assert.equal(await c.recoverInitiateSigner(message, signature), await attestor.address());
-  await assert.rejects(() => attestor.signInitiate({ ...message, chainId: 1 }));
-  await assert.rejects(() =>
-    attestor.signInitiate({
-      ...message,
-      verifyingContract: "0x00000000000000000000000000000000000000dd",
-    }),
-  );
-  assert.deepEqual(Object.getOwnPropertyNames(KeyAttestor.prototype).sort(), [
-    "address",
-    "constructor",
-    "signInitiate",
-    "veto",
-  ]);
-  assert.equal(
-    (await attestor.veto({ recoveryValidator: validator, account })).txHash,
-    `0x${"11".repeat(32)}`,
-  );
-});
-
 test("a key file inside the repository is refused", () => {
   assert.throws(
     () => readKeyFileOutsideRepo("./inside-the-repo.key", process.cwd()),
@@ -213,99 +179,63 @@ test("a key file inside the repository is refused", () => {
   );
 });
 
-// ── the attestor signer boundary: file key for dev/test, an external (KMS/HSM-style) signer for production ──
+test("the chain adapter has no attestor or veto surface: initiate takes the Recovery Code signature only", () => {
+  const surface = Object.getOwnPropertyNames(ViemRecoveryChain.prototype);
+  assert.equal(
+    surface.some((name) => /attestor|veto/i.test(name)),
+    false,
+  );
+  assert.equal(ViemRecoveryChain.prototype.initiate.length, 1);
+});
 
-test("an external digest signer is a drop-in attestor signer: same signatures, never a key in our hands", async () => {
-  const { privateKeyToAccount, sign } = await import("viem/accounts");
-  const { createExternalSigner } = await import("./attestor-signer.js");
+// ── the relayer: the only submitter, never an authority ──────────────────────────────────────────
+
+test("the relayer's key is not kept on the adapter, and an unreachable relayer never leaks it or an address", async () => {
+  const key = generatePrivateKey();
+  const c = new ViemRecoveryChain({
+    chain: celoSepolia,
+    rpcUrl: "http://127.0.0.1:1",
+    bundlerUrl: "http://127.0.0.1:1",
+    recoveryValidator: validator,
+    deployments,
+    relayerKey: key,
+    p256Precompile: true,
+  });
+  assert.equal(c.relayerAddress, privateKeyToAccount(key).address.toLowerCase());
+  const everything = JSON.stringify(c, (_k, v: unknown) =>
+    typeof v === "bigint" ? v.toString() : v,
+  );
+  assert.equal(everything.includes(key.slice(2)), false, "the key is not on the object");
+  const root = c.proposeRoot({ account, credential: device, attemptId: "attempt-1" });
+  const failure = await c
+    .initiate({ account, root, deadline: "1900000000", recoverySignature: `0x${"11".repeat(65)}` })
+    .then(
+      () => null,
+      (error: unknown) => error,
+    );
+  assert.ok(isKaadaError(failure, "RECOVERY_RELAYER_UNAVAILABLE"));
+  const text = JSON.stringify({
+    message: (failure as Error).message,
+    details: (failure as { details?: unknown }).details,
+  });
+  assert.equal(text.includes(key.slice(2)), false);
+  assert.equal(text.toLowerCase().includes(c.relayerAddress.slice(2)), false);
+  assert.match(text, /nothing was sent/);
+});
+
+test("clone deployment through an unreachable relayer is also a retryable outage with nothing sent", async () => {
   const c = chain();
-  const key = generatePrivateKey();
-  const file = privateKeyToAccount(key);
-  // The "KMS": holds the key, signs digests, returns r and s only (like a cloud KMS after DER decoding), sometimes high-s.
-  let calls = 0;
-  const kms = {
-    address: file.address,
-    async signDigest(digest: Hex) {
-      calls += 1;
-      const signature = await sign({ hash: digest, privateKey: key, to: "object" });
-      const n = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n;
-      const s = calls % 2 === 0 ? n - BigInt(signature.s) : BigInt(signature.s);
-      const sOut: Hex = `0x${s.toString(16).padStart(64, "0")}`;
-      return { r: signature.r, s: sOut };
-    },
-  };
-  const attestor = new KeyAttestor({
-    signer: createExternalSigner(kms),
-    chainId: celoSepolia.id,
-    recoveryValidator: validator,
-    sendVeto: () => Promise.resolve(vetoHash),
-  });
-  assert.equal(await attestor.address(), file.address.toLowerCase());
-  const root = c.proposeRoot({ account, credential: device, attemptId: "attempt-ext" });
-  const message = c.typedMessage({ account, root, nonce: "0", deadline: "1900000000" });
-  for (let i = 0; i < 4; i += 1) {
-    const signature = await attestor.signInitiate(message);
-    assert.equal(await c.recoverInitiateSigner(message, signature), await attestor.address());
-  }
-  await assert.rejects(() => attestor.signInitiate({ ...message, chainId: 1 }));
+  const root = c.proposeRoot({ account, credential: device, attemptId: "attempt-2" });
+  const failure = await c.deployInstance({ account, root }).then(
+    () => null,
+    (error: unknown) => error,
+  );
+  assert.ok(isKaadaError(failure, "RECOVERY_RELAYER_UNAVAILABLE"));
 });
 
-test("an external signer signs a transaction (the veto) and a message that recover to its address", async () => {
-  const { privateKeyToAccount, sign } = await import("viem/accounts");
-  const { createExternalSigner } = await import("./attestor-signer.js");
-  const { recoverTransactionAddress, recoverMessageAddress } = await import("viem");
-  const key = generatePrivateKey();
-  const file = privateKeyToAccount(key);
-  const signer = createExternalSigner({
-    address: file.address,
-    signDigest: async (digest) => {
-      const s = await sign({ hash: digest, privateKey: key, to: "object" });
-      return { r: s.r, s: s.s };
-    },
-  });
-  const transaction = {
-    chainId: celoSepolia.id,
-    nonce: 7,
-    to: validator,
-    value: 0n,
-    gas: 200_000n,
-    maxFeePerGas: 2_000_000_000n,
-    maxPriorityFeePerGas: 1_000_000_000n,
-    data: "0x1234" as Hex,
-    type: "eip1559" as const,
-  };
-  const serialized = await signer.signTransaction(transaction);
-  assert.equal(
-    (
-      await recoverTransactionAddress({ serializedTransaction: serialized as `0x02${string}` })
-    ).toLowerCase(),
-    file.address.toLowerCase(),
-  );
-  const signature = await signer.signMessage({ message: "hello" });
-  assert.equal(
-    (await recoverMessageAddress({ message: "hello", signature })).toLowerCase(),
-    file.address.toLowerCase(),
-  );
-});
-
-test("a signer that answers with another key's signature is refused, and the attestor demands exactly one key source", async () => {
-  const { privateKeyToAccount, sign } = await import("viem/accounts");
-  const { createExternalSigner } = await import("./attestor-signer.js");
-  const key = generatePrivateKey();
-  const other = generatePrivateKey();
-  const signer = createExternalSigner({
-    address: privateKeyToAccount(key).address,
-    signDigest: async (digest) => {
-      const s = await sign({ hash: digest, privateKey: other, to: "object" });
-      return { r: s.r, s: s.s };
-    },
-  });
-  await assert.rejects(() => signer.signMessage({ message: "x" }), /does not belong/);
-  const base = {
-    chainId: celoSepolia.id,
-    recoveryValidator: validator,
-    sendVeto: () => Promise.resolve(vetoHash),
-  };
-  assert.throws(() => new KeyAttestor({ ...base }), /exactly one/);
-  assert.throws(() => new KeyAttestor({ ...base, privateKey: key, signer }), /exactly one/);
+test("the adapter offers no way to submit `initiate` from anyone but the relayer", () => {
+  // initiate takes a signature and a commitment: there is no sender, signer or key argument to choose another submitter with.
+  const text = ViemRecoveryChain.prototype.initiate.toString();
+  assert.equal(/relayerKey|privateKey|signer\b/.test(text), false);
+  assert.equal(ViemRecoveryChain.prototype.initiate.length, 1);
 });

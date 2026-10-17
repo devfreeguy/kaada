@@ -1,12 +1,17 @@
 # Recovery contracts
 
-On-chain half of account recovery (`packages/contracts`). Locked model: recovery needs the **Recovery Code** (a key the
-user derives locally), the **Kaada attestor**, and a **timelock** (default 72 h, hard minimum 24 h). Email alone, the code
-alone and the attestor alone can do nothing. Recovery rotates the wallet's root and invalidates every older validator and
-permission, atomically. It never moves funds.
+On-chain half of account recovery (`packages/contracts`). Locked model: recovery needs the registered **email**, the **Recovery Code**
+(a key the user derives locally), a code from the user's **authenticator app**, and a **timelock** (default 72 h, hard minimum
+24 h). There is no Kaada attestor, no KMS key, no registry and no guardian. Recovery rotates the wallet's root and invalidates
+every older validator and permission, atomically. It never moves funds.
 
-Build order: `KaadaRecoveryValidator` (done), `TimelockedAttestorRegistry` (done), passkey validator clone factory,
-`KaadaDeviceKeyValidator`, backend orchestration, UI, Celo Sepolia end-to-end.
+What the CHAIN enforces: that `initiate` comes from the one configured recovery relayer, the Recovery Code's signature over the exact new
+root, the delay, the exact two-call batch, and that only the account itself can cancel. What KAADA enforces before it will submit anything: the verified email and the authenticator
+code (see `docs/recovery-orchestration.md`). The contract never sees, and cannot verify, those two; it is deliberately free of
+any server key so that a compromised Kaada backend cannot recover a wallet.
+
+Build order: `KaadaRecoveryValidator` (done), passkey validator clone factory, `KaadaDeviceKeyValidator`, backend orchestration, UI,
+Celo Sepolia end-to-end.
 
 ## KaadaRecoveryValidator
 
@@ -28,15 +33,32 @@ No third call, no value, no other target or selector, no other mode, no non-cano
 uncancelled recovery. The recovery is consumed during validation (one shot). It returns `validAfter = executeAfter`, so the
 EntryPoint enforces maturity (no `TIMESTAMP` read in validation).
 
-**How a recovery starts.** `initiate(account, RootCommitment, deadline, sigRecovery, sigAttestor)` is open to any
-submitter. Both signatures are EIP-712 over one digest binding: chainId and this contract (domain), account, recovery
-nonce, new validator id, hook, hash of the validator data, hash of the hook data, and deadline. The recovery signer is the
-key stored for the account; the attestor is whatever the shared registry names **now**. Low-s only. The new root must be a
-validator-type id (`0x01 ‖ address`) naming a contract that is not the module.
+**How a recovery starts.** `initiate(account, RootCommitment, deadline, sigRecovery)` can be called ONLY by `RELAYER`, an immutable constructor
+argument (Kaada's recovery relayer address; there is no admin, so no one can swap it), and only with a valid signature from the recovery key
+stored for the account. The signature is EIP-712 over one digest binding: chainId and this contract (domain), account, recovery nonce, new
+validator id, hook, hash of the validator data, hash of the hook data, and deadline. Low-s only. The new root must be a validator-type id
+(`0x01 ‖ address`) naming a contract that is not the module. Starting a recovery starts the timelock; it changes nothing else.
 
-**Cancel / veto.** `cancel()` (the account itself, i.e. a root-signed operation) and `attestorCancel(account)` (the
-registry's current attestor). Both bump the recovery nonce, so the cancelled signatures can never be reused. The attestor
-has no function that starts, advances or completes a recovery.
+| Who | Can |
+| --- | --- |
+| Compromised relayer alone | Nothing: it cannot produce the Recovery Code signature |
+| Recovery Code holder alone | Nothing on chain: `initiate` reverts `NotRelayer` for them |
+| Email + authenticator code alone | Nothing: no signature, and Kaada will not submit |
+| All of them through Kaada | The relayer submits; the delay begins; the root can cancel |
+
+The relayer is a submission gate, not an authority: it cannot cancel, approve or complete anything. Email and the authenticator code are checked
+OFF-CHAIN by Kaada before it submits; the contract cannot see them. If the relayer is down, **nobody** can start a recovery (safety over
+availability); Kaada reports a retryable error and never falls back to the user submitting. Replacing the relayer key means deploying a new
+validator and re-arming the wallets that should use it; `deployments.ts` records the relayer address and the service refuses to start if its
+key file derives to any other.
+
+**Cancel.** `cancel()`, called by the account itself (i.e. a root-signed operation), and nothing else: there is no third-party
+cancel, veto or pause. It bumps the recovery nonce, so the cancelled signature can never be reused. This is the only way to stop
+a pending recovery, which is why the delay exists: the current root has time to use it.
+
+**Defence in depth, not enforcement (not built yet).** A chain watcher that alerts the owner and operators on `RecoveryInitiated`,
+`RecoveryCancelled` and a finalized batch would shorten the time to notice anything unexpected. The relayer gate, not the watcher, is what
+enforces the factors.
 
 **One shot and re-arming.** On success the account's configuration is deleted and its recovery key is burnt
 (`usedRecoveryKeys`): the old key can never be installed again. `recoveryNonce` never resets. Kernel's own
@@ -44,7 +66,7 @@ has no function that starts, advances or completes a recovery.
 (`onInstall`); on Celo Sepolia a plain `installValidations` of the same validator address works after a recovery (no
 uninstall needed).
 
-**Storage.** Everything is keyed by account (ERC-4337 associated storage). The registry is an immutable reference.
+**Storage.** Everything is keyed by account (ERC-4337 associated storage). There is no constructor argument and no external reference.
 
 ### Parameters
 
@@ -59,25 +81,25 @@ day. It is test-only and must never be deployed on a production chain.
 
 ### Guarantees and where each is tested
 
-The 49 guarantees proven on Celo Sepolia by `recovery-atomic-probe.ts` split into validator logic (unit tested in
+The 49 guarantees proven on Celo Sepolia by an earlier Celo Sepolia prototype split into validator logic (unit tested in
 `packages/contracts/src/recovery-validator.test.ts`, in-process EVM) and Kernel behaviour (re-proved against the
 production source by `packages/blockchain/src/testnet/recovery-validator-sepolia.ts`):
 
-| Guarantee                                                                                                 | Unit test                                   | Sepolia (Kernel)                         |
-| --------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ---------------------------------------- |
-| Hard minimum delay                                                                                        | install: delay floor; short-delay variant   |                                          |
-| Recovery key alone / attestor alone cannot start                                                          | initiate: key alone; attestor alone         | yes                                      |
-| Signatures bind chain, contract, account, nonce, new validator/data/hook                                  | binding test; digest parity with viem       |                                          |
-| High-s, wrong length, bad `v`                                                                             | malformed or malleable signatures           |                                          |
-| Exact batch accepted                                                                                      | exact batch validates                       | exact batch succeeds                     |
-| 20+ variants refused (extra call, transfer, approve, target, value, order, arg, mode, selector, encoding) | 39 named variants + 300 random mutations    | different batch refused                  |
-| Variants leave the recovery pending                                                                       | every variant refused and leaves pending    |                                          |
-| Before `executeAfter`                                                                                     | `validAfter` returned equals `executeAfter` | refused by EntryPoint (AA22)             |
-| No recovery pending                                                                                       | refused                                     |                                          |
-| Replay                                                                                                    | replay fails; nonce strictly increases      | replay fails                             |
-| Old root, old validators, sessions rejected                                                               |                                             | yes                                      |
-| Cancel by root; signatures not reusable; attestor veto; stranger refused                                  | cancel and veto tests                       | root cancel and veto proved in the probe |
-| Re-arm needs a NEW recovery key; old key refused                                                          | after success: replay, burnt key, new key   | yes                                      |
+| Guarantee                                                                                                 | Unit test                                        | Sepolia (Kernel)             |
+| --------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | ---------------------------- |
+| Hard minimum delay                                                                                        | install: delay floor; short-delay variant        |                              |
+| Only the recovery key can start; a stranger's or missing signature cannot                                 | initiate: stranger, no signature, anyone submits | yes                          |
+| Signatures bind chain, contract, account, nonce, new validator/data/hook                                  | binding test; digest parity with viem            |                              |
+| High-s, wrong length, bad `v`                                                                             | malformed or malleable signatures                |                              |
+| Exact batch accepted                                                                                      | exact batch validates                            | exact batch succeeds         |
+| 20+ variants refused (extra call, transfer, approve, target, value, order, arg, mode, selector, encoding) | 39 named variants + 300 random mutations         | different batch refused      |
+| Variants leave the recovery pending                                                                       | every variant refused and leaves pending         |                              |
+| Before `executeAfter`                                                                                     | `validAfter` returned equals `executeAfter`      | refused by EntryPoint (AA22) |
+| No recovery pending                                                                                       | refused                                          |                              |
+| Replay                                                                                                    | replay fails; nonce strictly increases           | replay fails                 |
+| Old root, old validators, sessions rejected                                                               |                                                  | yes                          |
+| Cancel by root only; signatures not reusable; no veto or third-party cancel                               | cancel tests; no veto function                   | root cancel                  |
+| Re-arm needs a NEW recovery key; old key refused                                                          | after success: replay, burnt key, new key        | yes                          |
 
 Not covered by unit tests, by design: anything that needs the real Kernel or EntryPoint (selector grants, `InvalidNonce`
 voiding, `validAfter` enforcement). Those run on Celo Sepolia.
@@ -90,43 +112,6 @@ voiding, `validAfter` enforcement). Those run on Celo Sepolia.
   re-initiated (fail-safe, never a bypass).
 - `currentNonce()` is read from the account during validation (the account's own storage).
 - The account must hold gas, or a paymaster restricted to this selector must sponsor the operation.
-
-## TimelockedAttestorRegistry
-
-The shared record of which key is Kaada recovery attestor. Recovery validators depend on ONE function only,
-`IAttestorRegistry.currentAttestor() returns (address)`, never on registry internals. Wallets reference the validator,
-the validator references the registry (immutable), so rotating the attestor never touches a wallet.
-
-| Role               | Can                                                                                                                                                                                    | Cannot                                                                                                                                                                                                                                                                     |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Admin**          | `proposeAttestor`, `cancelAttestorRotation`, `finalizeAttestorRotation` (after the delay), `setRotationDelay` (future proposals, none pending), `proposeAdmin` / `cancelAdminTransfer` | Touch any wallet, validator or recovery (the contract makes no external call: its runtime contains no CALL, STATICCALL, DELEGATECALL, CREATE or SELFDESTRUCT, checked in a test); sign or veto a recovery (it is not the attestor); renounce (the admin can never be zero) |
-| **Attestor**       | Be the key `currentAttestor()` returns                                                                                                                                                 | Anything in the registry: it has no function there, so it cannot rotate itself, instantly or otherwise                                                                                                                                                                     |
-| **Proposed admin** | `acceptAdmin`                                                                                                                                                                          | Anything else until it accepts                                                                                                                                                                                                                                             |
-
-Rotation: `proposeAttestor(new)` records `pendingAttestor` and `executeAfter = now + rotationDelay`; nothing else changes.
-`finalizeAttestorRotation()` works only at or after `executeAfter`, clears the proposal (so it cannot finalize twice) and sets
-`currentAttestor`. `cancelAttestorRotation()` clears it; a cancelled proposal can never finalize. Zero address and the
-current attestor are rejected; only one proposal is pending at a time (a second is refused, even once the first has
-matured, until it is finalized or cancelled). The delay is 72 h by default, 24 h hard minimum, 30 days maximum (a typo
-cannot lock rotation for years). Admin transfer is two-step; it never changes the attestor or a pending rotation, and a
-rotation never changes a pending admin transfer. Not upgradeable; no payable function, no receive/fallback.
-
-Events for audit: `AttestorRotationProposed/Cancelled/Finalized` (with a rotation id), `RotationDelayChanged`,
-`AdminTransferProposed/Cancelled/Accepted`; the constructor emits the initial admin, delay and attestor.
-
-**Security assumptions**
-
-- The admin key is a high-value key: it can, after at least 24 h, name a new attestor. A new attestor alone still cannot
-  recover a wallet (the Recovery Code signature and the timelock are also required), so admin compromise is a
-  delayed, monitored event rather than an instant loss.
-- Shortening the rotation delay to the 24 h floor is an admin action; the floor is the assumption, not the default.
-- There is no emergency instant rotation by design: a compromised attestor key is replaced after the delay, and until
-  then it can only veto or co-sign (never recover alone). Use a multisig (or hardware-backed key) for the admin.
-- If admin and attestor are deliberately the same key, role separation is lost; deployment must use different keys.
-- A lost admin key means the attestor cannot be rotated (nothing breaks; recovery continues with the current attestor).
-
-`ShortDelayAttestorRegistry` (`contracts/testnet`) lowers the floor to 10 s for Sepolia runs and must never be deployed on a
-production chain.
 
 ## KaadaPasskeyValidatorFactory
 

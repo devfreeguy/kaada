@@ -81,7 +81,9 @@ describe("recovery HTTP", () => {
       const r = await call(app, method, url, {
         token: "A".repeat(43),
         body:
-          method === "POST" ? { email: "a@b.co", signature: `0x${"11".repeat(65)}` } : undefined,
+          method === "POST"
+            ? { email: "a@b.co", signature: `0x${"11".repeat(65)}`, authenticatorCode: "123456" }
+            : undefined,
       });
       assert.ok([503, 400].includes(r.status), `${url} -> ${r.status}`);
     }
@@ -120,7 +122,12 @@ describe("recovery HTTP", () => {
     assert.equal(proposal.status, 200);
     const typedData = proposal.body["typedData"] as Parameters<RecoveryWorld["signProposal"]>[0];
     const signature = await world.signProposal(typedData, user.code, user.account as `0x${string}`);
-    const proof = await call(app, "POST", "/proof", { token, body: { signature } });
+    // The Recovery Code signature alone is not a proof: the authenticator code is part of the body.
+    assert.equal((await call(app, "POST", "/proof", { token, body: { signature } })).status, 400);
+    const proof = await call(app, "POST", "/proof", {
+      token,
+      body: { signature, authenticatorCode: world.authenticatorCode(user) },
+    });
     assert.equal(proof.status, 200);
     assert.equal(proof.body["status"], "PENDING");
     assert.equal(proof.body["nextStep"], "WAIT");
@@ -150,6 +157,53 @@ describe("recovery HTTP", () => {
       (await call(app, "POST", "/pin", { token, body: { pin: "135790" } })).status,
       400,
       "a second reset is refused",
+    );
+
+    // The recovery retired the old authenticator: the new Recovery Code needs a NEW one first.
+    const context = await call(app, "GET", "/configuration/context", { token });
+    assert.equal(context.status, 200);
+    assert.equal(context.body["authenticatorEnrolled"], false);
+    const earlyCode = await call(app, "POST", "/configuration/prepare", {
+      token,
+      body: { recoveryAddress: "0x00000000000000000000000000000000000000f9" },
+    });
+    assert.equal(earlyCode.status, 409, "no Recovery Code before the authenticator app");
+    const begin = await call(app, "POST", "/configuration/authenticator/begin", { token });
+    assert.equal(begin.status, 200);
+    assert.equal(begin.headers["cache-control"], "no-store");
+    assert.match(String(begin.body["otpauthUri"]), /^otpauth:\/\/totp\/Kaada:/);
+    assert.match(String(begin.body["secret"]), /^[A-Z2-7]{32}$/);
+    const { totpAtStep, stepAt } = await import("../src/core/recovery/totp.js");
+    // A wrong code does not complete setup, and says nothing about the secret.
+    const wrongCode = totpAtStep(String(begin.body["secret"]), stepAt(world.now().getTime()) + 5);
+    const bad = await call(app, "POST", "/configuration/authenticator/confirm", {
+      token,
+      body: { code: wrongCode },
+    });
+    assert.equal(bad.status, 400);
+    assert.ok(!JSON.stringify(bad.body).includes(String(begin.body["secret"])));
+    assert.equal(
+      (
+        await call(app, "POST", "/configuration/authenticator/confirm", {
+          token,
+          body: { code: "12ab56" },
+        })
+      ).status,
+      400,
+    );
+    const good = await call(app, "POST", "/configuration/authenticator/confirm", {
+      token,
+      body: { code: totpAtStep(String(begin.body["secret"]), stepAt(world.now().getTime())) },
+    });
+    assert.equal(good.status, 200);
+    assert.equal(
+      (await call(app, "GET", "/configuration/context", { token })).body["authenticatorEnrolled"],
+      true,
+    );
+    // A completed enrolment cannot be silently replaced.
+    assert.equal(
+      (await call(app, "POST", "/configuration/authenticator/begin", { token })).status,
+      400,
     );
     await app.close();
   });
@@ -191,7 +245,7 @@ describe("recovery HTTP", () => {
       (
         await call(app, "POST", "/proof", {
           token,
-          body: { signature: `0x${"11".repeat(65)}`, account: "0x1" },
+          body: { signature: `0x${"11".repeat(65)}`, authenticatorCode: "123456", account: "0x1" },
         })
       ).status,
       400,
@@ -218,7 +272,7 @@ describe("recovery HTTP", () => {
     const viaBody = await app.inject({
       method: "POST",
       url: "/api/v1/recovery/proof",
-      payload: { token, signature: `0x${"11".repeat(65)}` },
+      payload: { token, signature: `0x${"11".repeat(65)}`, authenticatorCode: "123456" },
     });
     assert.ok([400, 401].includes(viaBody.statusCode));
     await app.close();
@@ -242,7 +296,7 @@ describe("recovery HTTP", () => {
     await app.close();
   });
 
-  it("the cancel link works end to end over HTTP, and the report link vetoes", async () => {
+  it("the cancel link works end to end over HTTP, and there is no report/veto route", async () => {
     const world = createRecoveryWorld();
     const user = await world.createUser();
     const { token } = await world.startRecovery(user, newPasskeyRoot());
@@ -259,11 +313,8 @@ describe("recovery HTTP", () => {
     });
     assert.equal(cancelled.status, 200);
     assert.equal(cancelled.body["status"], "CANCELLED");
-    assert.equal(
-      (await call(app, "POST", "/report", { token: cancelToken })).status,
-      401,
-      "a dead attempt cannot be reported again",
-    );
+    // There is no way for Kaada to stop a recovery: the old "report" route is gone.
+    assert.equal((await call(app, "POST", "/report", { token: cancelToken })).status, 404);
     assert.equal((await call(app, "GET", "/status", { token })).body["status"], "CANCELLED");
     await app.close();
   });

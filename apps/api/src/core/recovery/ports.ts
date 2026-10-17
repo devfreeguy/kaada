@@ -8,6 +8,7 @@ import type {
   RecoveryCleanupRepository,
   RecoveryConfigurationRepository,
   RecoveryEmailChallengeRepository,
+  RecoveryTotpRepository,
   TransactionPinRepository,
   WalletCredentialRepository,
   WalletRepository,
@@ -23,6 +24,7 @@ export interface RecoveryRepositories {
   recoveryConfigurations: RecoveryConfigurationRepository;
   recoveryAttempts: RecoveryAttemptRepository;
   recoveryEmailChallenges: RecoveryEmailChallengeRepository;
+  recoveryTotps: RecoveryTotpRepository;
   recoveryCleanup: RecoveryCleanupRepository;
   delegatedPermissions: DelegatedPermissionRepository;
   executionSecrets: ExecutionSecretRepository;
@@ -33,7 +35,7 @@ export interface RecoveryRepositories {
 
 /**
  * Storage for the recovery services. `transaction` runs `work` atomically with repositories bound to it. A transaction is
- * never held open across a call to the chain, the attestor, an email provider or a hasher.
+ * never held open across a call to the chain, an email provider or a hasher.
  */
 export interface RecoveryUnitOfWork {
   read: RecoveryRepositories;

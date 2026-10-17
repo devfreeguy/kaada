@@ -319,15 +319,19 @@ enum RecoveryAttemptStatus {
   ROOT_CHANGED
   COMPLETED
   CANCELLED
-  VETOED
   EXPIRED
   FAILED
 }
 
 enum RecoveryTerminator {
   ROOT
-  ATTESTOR
   SYSTEM
+}
+
+enum RecoveryTotpStatus {
+  PENDING
+  ACTIVE
+  DISABLED
 }
 
 // ─────────────────────── Users & identity ───────────────────────
@@ -370,6 +374,7 @@ model User {
   rootChanges              RootChange[]
   recoveryConfigurations   RecoveryConfiguration[]
   recoveryAttempts         RecoveryAttempt[]
+  recoveryTotps            RecoveryTotp[]
   channelActions           ChannelAction[]
   channelPaymentStatuses   ChannelPaymentStatus[]
   userNotifications        UserNotification[]
@@ -447,6 +452,7 @@ model Wallet {
   walletCredentials      WalletCredential[]
   recoveryConfigurations RecoveryConfiguration[]
   recoveryAttempts       RecoveryAttempt[]
+  recoveryTotps          RecoveryTotp[]
   rootChanges            RootChange[]
   attestationChallenges  DeviceAttestationChallenge[]
   deviceAttestations     DeviceAttestation[]
@@ -1309,6 +1315,8 @@ model RecoveryAttempt {
   recoveryNonce         String?
   proofDeadline         DateTime?             @db.Timestamptz(3)
   proposedAt            DateTime?             @db.Timestamptz(3)
+  totpVerifiedAt        DateTime?             @db.Timestamptz(3)
+  totpStep              Int?
   previousRootValidator String?
   initiatedAt           DateTime?             @db.Timestamptz(3)
   executeAfter          DateTime?             @db.Timestamptz(3)
@@ -1329,7 +1337,6 @@ model RecoveryAttempt {
   completedAt           DateTime?             @db.Timestamptz(3)
   terminatedBy          RecoveryTerminator?
   terminatedAt          DateTime?             @db.Timestamptz(3)
-  terminationTxHash     String?
   failureCode           String?
   cleanupCompletedAt    DateTime?             @db.Timestamptz(3)
   pinResetAt            DateTime?             @db.Timestamptz(3)
@@ -1347,6 +1354,28 @@ model RecoveryAttempt {
   @@index([walletId, status])
   @@index([userId, createdAt])
   @@index([status, executeAfter])
+}
+
+/// The authenticator-app (TOTP) factor of a wallet's recovery. The secret is stored ONLY encrypted (AES-256-GCM under a
+/// dedicated key); lastUsedStep only moves forward, which is the replay guard. At most one PENDING and one ACTIVE per wallet
+/// (partial unique indexes, manual migration).
+model RecoveryTotp {
+  id              String             @id @db.Uuid
+  userId          String             @db.Uuid
+  walletId        String             @db.Uuid
+  status          RecoveryTotpStatus @default(PENDING)
+  encryptedSecret String
+  keyVersion      Int
+  enabledAt       DateTime?          @db.Timestamptz(3)
+  lastUsedStep    Int?
+  disabledAt      DateTime?          @db.Timestamptz(3)
+  createdAt       DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime           @updatedAt @db.Timestamptz(3)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Restrict)
+
+  @@index([walletId, status])
 }
 
 /// A short-lived email challenge for one recovery attempt. Only a keyed hash of the code is stored.

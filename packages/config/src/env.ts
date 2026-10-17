@@ -106,9 +106,11 @@ const envShape = {
   RECOVERY_NETWORK: z.enum(RECOVERY_NETWORKS).default("celo-mainnet"),
   // Files holding one 0x-prefixed 32-byte key each. They must not live inside the repository.
   RECOVERY_RELAYER_KEY_FILE: optionalSecret,
-  // Development and tests only (production uses the KMS signer, named by RECOVERY_ATTESTOR_KMS_KEY_ID).
-  RECOVERY_ATTESTOR_KEY_FILE: optionalSecret,
-  RECOVERY_ATTESTOR_KMS_KEY_ID: optionalSecret,
+  // AES-256-GCM key (32 random bytes, base64) that encrypts every wallet's authenticator-app (TOTP) secret at rest. A DEDICATED
+  // key: never the PIN pepper or EXECUTION_SECRET_KEY. Same rotation scheme as EXECUTION_SECRET_KEY.
+  RECOVERY_TOTP_SECRET_KEY: optionalSecret,
+  RECOVERY_TOTP_SECRET_KEY_VERSION: z.coerce.number().int().min(1).max(1_000_000).default(1),
+  RECOVERY_TOTP_SECRET_KEY_PREVIOUS: optionalSecret,
   // Keys the email-code hash: 32 random bytes as base64.
   RECOVERY_CHALLENGE_SECRET: optionalSecret,
   // Email delivery is chosen by what is set: RECOVERY_SMTP_URL (+ FROM) = smtp, else RECOVERY_EMAIL_OUTBOX_FILE = a
@@ -161,8 +163,6 @@ function buildConfig(
   const androidApps = parseAndroidApps(env.ATTESTATION_ANDROID_APPS) ?? [];
   const iosAppIds = parseIosAppIds(env.ATTESTATION_IOS_APP_IDS) ?? [];
   const attestationOn = androidApps.length > 0 || iosAppIds.length > 0;
-  // Production never uses a file-held attestor key; everything else (development, tests) does.
-  const attestorSigner: "file" | "kms" = production ? "kms" : "file";
 
   const deviceKeyContracts =
     env.DEVICE_KEY_ROOTS_ENABLED && contracts && env.RECOVERY_RELAYER_KEY_FILE !== undefined
@@ -174,22 +174,29 @@ function buildConfig(
     contracts &&
     env.RECOVERY_RELAYER_KEY_FILE !== undefined &&
     env.RECOVERY_CHALLENGE_SECRET !== undefined &&
-    (attestorSigner === "file"
-      ? env.RECOVERY_ATTESTOR_KEY_FILE !== undefined
-      : env.RECOVERY_ATTESTOR_KMS_KEY_ID !== undefined)
+    env.RECOVERY_TOTP_SECRET_KEY !== undefined
       ? {
           contracts: {
             validator: contracts.validator,
+            relayer: contracts.relayer,
             passkeyFactory: contracts.passkeyFactory,
             passkeyImplementation: contracts.passkeyImplementation,
             deviceFactory: contracts.deviceFactory,
             deviceImplementation: contracts.deviceImplementation,
           },
           relayerKeyFile: env.RECOVERY_RELAYER_KEY_FILE,
-          attestor:
-            attestorSigner === "kms"
-              ? { signer: "kms" as const, kmsKeyId: env.RECOVERY_ATTESTOR_KMS_KEY_ID ?? "" }
-              : { signer: "file" as const, keyFile: env.RECOVERY_ATTESTOR_KEY_FILE ?? "" },
+          // Newest first: the key that encrypts new authenticator secrets, then the previous one that can still decrypt.
+          totpCipherKeys: [
+            { version: env.RECOVERY_TOTP_SECRET_KEY_VERSION, key: env.RECOVERY_TOTP_SECRET_KEY },
+            ...(env.RECOVERY_TOTP_SECRET_KEY_PREVIOUS && env.RECOVERY_TOTP_SECRET_KEY_VERSION > 1
+              ? [
+                  {
+                    version: env.RECOVERY_TOTP_SECRET_KEY_VERSION - 1,
+                    key: env.RECOVERY_TOTP_SECRET_KEY_PREVIOUS,
+                  },
+                ]
+              : []),
+          ],
           challengeSecret: env.RECOVERY_CHALLENGE_SECRET,
         }
       : undefined;
@@ -441,6 +448,19 @@ function crossChecks(
     );
 
   // Recovery, device keys, attestation.
+  if (!isAesKey(env.RECOVERY_TOTP_SECRET_KEY) || !isAesKey(env.RECOVERY_TOTP_SECRET_KEY_PREVIOUS))
+    add(
+      "RECOVERY_TOTP_SECRET_KEY",
+      "RECOVERY_TOTP_SECRET_KEY must be 32 random bytes encoded as base64",
+    );
+  if (
+    env.RECOVERY_TOTP_SECRET_KEY !== undefined &&
+    env.RECOVERY_TOTP_SECRET_KEY === env.EXECUTION_SECRET_KEY
+  )
+    add(
+      "RECOVERY_TOTP_SECRET_KEY",
+      "RECOVERY_TOTP_SECRET_KEY must be its own key: it cannot be the same as EXECUTION_SECRET_KEY",
+    );
   if (!isAesKey(env.RECOVERY_CHALLENGE_SECRET))
     add(
       "RECOVERY_CHALLENGE_SECRET",
@@ -462,14 +482,8 @@ function crossChecks(
     if (env.PASSKEY_RP_ID === undefined || env.PASSKEY_ORIGIN === undefined)
       missing.push("the passkey settings");
     if (env.RECOVERY_RELAYER_KEY_FILE === undefined) missing.push("RECOVERY_RELAYER_KEY_FILE");
-    if (production) {
-      if (env.RECOVERY_ATTESTOR_KMS_KEY_ID === undefined)
-        missing.push(
-          "RECOVERY_ATTESTOR_KMS_KEY_ID (production attests with a KMS/HSM signer, never a key file)",
-        );
-    } else if (env.RECOVERY_ATTESTOR_KEY_FILE === undefined)
-      missing.push("RECOVERY_ATTESTOR_KEY_FILE");
     if (env.RECOVERY_CHALLENGE_SECRET === undefined) missing.push("RECOVERY_CHALLENGE_SECRET");
+    if (env.RECOVERY_TOTP_SECRET_KEY === undefined) missing.push("RECOVERY_TOTP_SECRET_KEY");
     if (emailProvider === "none")
       missing.push(
         "an email provider (RECOVERY_SMTP_URL, or RECOVERY_EMAIL_OUTBOX_FILE in development)",

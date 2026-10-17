@@ -9,7 +9,7 @@ One normal flow for every Kaada wallet, whatever its root signs with.
 | Root            | a **passkey** (WebAuthn) where the device has one, or a **P-256 device key** (`KaadaDeviceKeyValidator`) where it does not                 |
 | Root actions    | whichever root the wallet actually has signs, once, for the thing that needs a root (deploy, install a permission, rotate, enrol a backup) |
 | Repeat payments | PIN only: the installed permission already covers them, so the root is not asked                                                           |
-| Recovery        | unchanged: verified email + Recovery Code + attestor + timelock, for the exact committed new root (`docs/recovery-orchestration.md`)       |
+| Recovery        | verified email + Recovery Code + authenticator code + timelock, for the exact committed new root (`docs/recovery-orchestration.md`)        |
 
 Nothing in the payment, authorization, execution or recovery logic branches on how a root signs. The two root types differ in exactly
 one place per layer (below), and the client is told which one to show by the server.
@@ -51,8 +51,8 @@ type RootChallenge =
 | `rotateRoot`, backup enrolment | `RootChangeService` (`ROTATE_ROOT`, `ENROLL_BACKUP`), one root-signed UserOperation each                                                                 |
 | which root a wallet has        | `RootCredentialService.activeRoot`: the recorded `WalletCredential` root; a wallet predating credential tracking falls back to its oldest active passkey |
 
-There is no `sign(bytes)`. The only signature the server ever produces is the attestor's typed `Initiate` message and the validated
-session-key signature of a payment (both unchanged, in their own scoped locations); a root's proof is _checked_, never made.
+There is no `sign(bytes)`. The only signature the server ever produces is the validated session-key signature of a payment (in its own
+scoped location); recovery has no server signature at all; a root's proof is _checked_, never made.
 
 ### What each type signs
 
@@ -177,7 +177,7 @@ Android Key Attestation are the next milestone), so nothing can be `TRUSTED_DEVI
 - `packages/blockchain/src/wallet/root-validator.ts` builds the device-key sudo plugin with **no signing members of any kind**; the Kernel
   adapter (the one file that sends operations) is given the device's signature from outside.
 - The relayer's clone deployment (`ViemValidatorDeployer`, one `deploy` call, paid by a key outside the repository) joins the recovery
-  attestor and chain adapter in the second sanctioned signer location, held to its own narrow scan (`recovery-security.test.ts`).
+  chain adapter (the relayer, gas only) in the second sanctioned signer location, held to its own narrow scan (`recovery-security.test.ts`).
 - The browser half (`apps/web/app/lib/device-key.ts`) is scanned too: non-extractable generation only, `exportKey("raw")` of the public key
   only, IndexedDB only (never `localStorage`, a cookie, a URL or a log), one `subtle.sign`, low-s normalisation.
 
@@ -232,5 +232,5 @@ Scenario C also proves live the Kernel adapter's deployed-account path (a rotate
   alarms are production work.
 - Rate limiting of the new endpoints is in-process (like the rest); the relayer-paid clone deployment makes per-link abuse limits worth
   tightening before launch.
-- Real email, Telegram and WhatsApp senders, a KMS/HSM attestor and the other recovery blockers are unchanged
+- Real email, Telegram and WhatsApp senders and the other recovery blockers are unchanged
   (`docs/recovery-orchestration.md`).

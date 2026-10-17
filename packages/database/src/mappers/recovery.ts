@@ -3,6 +3,7 @@ import type {
   RecoveryAttemptPatch,
   RecoveryConfiguration,
   RecoveryEmailChallenge,
+  RecoveryTotp,
   WalletCredential,
 } from "@kaada/domain";
 
@@ -11,6 +12,7 @@ import type {
   RecoveryAttempt as AttemptRow,
   RecoveryConfiguration as ConfigurationRow,
   RecoveryEmailChallenge as ChallengeRow,
+  RecoveryTotp as TotpRow,
   WalletCredential as CredentialRow,
 } from "../generated/prisma/client.js";
 import { maybe, readJsonObject } from "./support.js";
@@ -88,6 +90,8 @@ export function toRecoveryAttempt(row: AttemptRow): RecoveryAttempt {
     ...maybe("recoveryNonce", row.recoveryNonce),
     ...maybe("proofDeadline", row.proofDeadline),
     ...maybe("proposedAt", row.proposedAt),
+    ...maybe("totpVerifiedAt", row.totpVerifiedAt),
+    ...maybe("totpStep", row.totpStep),
     ...maybe("previousRootValidator", row.previousRootValidator),
     ...maybe("initiatedAt", row.initiatedAt),
     ...maybe("executeAfter", row.executeAfter),
@@ -111,7 +115,6 @@ export function toRecoveryAttempt(row: AttemptRow): RecoveryAttempt {
     ...maybe("completedAt", row.completedAt),
     ...maybe("terminatedBy", row.terminatedBy),
     ...maybe("terminatedAt", row.terminatedAt),
-    ...maybe("terminationTxHash", row.terminationTxHash),
     ...maybe("failureCode", row.failureCode),
     ...maybe("cleanupCompletedAt", row.cleanupCompletedAt),
     ...maybe("pinResetAt", row.pinResetAt),
@@ -130,6 +133,22 @@ export function attemptPatchData(
     if (value !== undefined) data[key] = value;
   }
   return data;
+}
+
+export function toRecoveryTotp(row: TotpRow): RecoveryTotp {
+  return {
+    id: row.id,
+    userId: row.userId,
+    walletId: row.walletId,
+    status: row.status,
+    encryptedSecret: row.encryptedSecret,
+    keyVersion: row.keyVersion,
+    ...maybe("enabledAt", row.enabledAt),
+    ...maybe("lastUsedStep", row.lastUsedStep),
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    ...maybe("disabledAt", row.disabledAt),
+  };
 }
 
 export function toRecoveryEmailChallenge(row: ChallengeRow): RecoveryEmailChallenge {

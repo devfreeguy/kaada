@@ -8,6 +8,7 @@ import { PinKeypad } from "../components/pin-keypad";
 import { RecoveryCodeCreator } from "../components/recovery-code-creator";
 import { api, describeError, json } from "../lib/api";
 import { deviceKeySupported } from "../lib/device-key";
+import { RECOVERY_LOSS_WARNING, RECOVERY_NEEDS, RECOVERY_NEEDS_TITLE } from "../lib/recovery-copy";
 import { deviceKeyIdFromPoint } from "../lib/device-key-id";
 import { newDeviceKey, registerPasskey } from "../lib/new-root";
 import { deriveRecoveryKey, parseRecoveryCode, signRecovery } from "../lib/recovery-code";
@@ -19,7 +20,7 @@ import { DeviceKeyMissingError } from "../lib/root-proof";
 type NextStep =
   | "VERIFY_EMAIL"
   | "CREATE_CREDENTIAL"
-  | "SIGN_WITH_RECOVERY_CODE"
+  | "PROVE_RECOVERY_FACTORS"
   | "SUBMITTING"
   | "WAIT"
   | "WAITING_FOR_PAYMENT"
@@ -107,6 +108,7 @@ export function RecoveryFlow() {
   const [email, setEmail] = useState("");
   const [emailCode, setEmailCode] = useState("");
   const [recoveryCode, setRecoveryCode] = useState("");
+  const [authenticatorCode, setAuthenticatorCode] = useState("");
   const [now, setNow] = useState(() => Date.now());
 
   const token = session?.token ?? null;
@@ -246,6 +248,7 @@ export function RecoveryFlow() {
       }
       const canonical = parseRecoveryCode(recoveryCode);
       if (!canonical) throw new Error("malformed");
+      if (!/^[0-9]{6}$/.test(authenticatorCode)) throw new Error("malformed code");
       const derived = deriveRecoveryKey(canonical, {
         chainId: status.chainId,
         account: status.account,
@@ -262,9 +265,13 @@ export function RecoveryFlow() {
         session.proposal.typedData,
       );
       setRecoveryCode("");
-      await json(await api("/recovery/proof", token, { body: { signature } }));
+      const code = authenticatorCode;
+      setAuthenticatorCode("");
+      await json(
+        await api("/recovery/proof", token, { body: { signature, authenticatorCode: code } }),
+      );
       await refresh(token);
-    }, "That Recovery Code didn't work. Check it and try again.");
+    }, "That didn't work. Check your Recovery Code and the code in your authenticator app, then try again.");
 
   const proveNewCredential = () =>
     run(async () => {
@@ -296,9 +303,18 @@ export function RecoveryFlow() {
           <h1 className="text-2xl font-semibold">Recover your wallet</h1>
           <p className="text-neutral-600">
             Lost your device or passkey? Enter the email linked to your Kaada account. You will need
-            your Recovery Code. For your safety, a recovery takes a few days and you are told by
-            email when it starts.
+            your Recovery Code and your authenticator app. For your safety, a recovery takes a few
+            days and you are told by email when it starts.
           </p>
+          <div className="rounded-lg bg-neutral-100 px-4 py-3 text-sm text-neutral-800">
+            <p className="font-medium">{RECOVERY_NEEDS_TITLE}</p>
+            <ul className="mt-1 list-disc pl-5">
+              {RECOVERY_NEEDS.map((need) => (
+                <li key={need}>{need}</li>
+              ))}
+            </ul>
+            <p className="mt-2 font-medium">{RECOVERY_LOSS_WARNING}</p>
+          </div>
           <input
             type="email"
             value={email}
@@ -378,9 +394,9 @@ export function RecoveryFlow() {
         </section>
       )}
 
-      {step === "SIGN_WITH_RECOVERY_CODE" && (
+      {step === "PROVE_RECOVERY_FACTORS" && (
         <section className="flex flex-col gap-4">
-          <h1 className="text-2xl font-semibold">Enter your Recovery Code</h1>
+          <h1 className="text-2xl font-semibold">Prove it is you</h1>
           {!session?.proposal ? (
             <>
               <p className="text-neutral-600">
@@ -393,8 +409,8 @@ export function RecoveryFlow() {
           ) : (
             <>
               <p className="text-neutral-600">
-                The code is checked on this device and never sent to Kaada. It authorises this one
-                recovery.
+                Your Recovery Code is checked on this device and never sent to Kaada. It authorises
+                this one recovery. Then enter the 6-digit code from your authenticator app.
               </p>
               <input
                 value={recoveryCode}
@@ -405,9 +421,20 @@ export function RecoveryFlow() {
                 aria-label="Recovery Code"
                 className="rounded-lg border border-neutral-300 px-4 py-3 font-mono"
               />
+              <input
+                value={authenticatorCode}
+                onChange={(event) =>
+                  setAuthenticatorCode(event.target.value.replace(/\D/g, "").slice(0, 6))
+                }
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                aria-label="6-digit code from your authenticator app"
+                placeholder="000000"
+                className="rounded-lg border border-neutral-300 px-4 py-3 font-mono tracking-widest"
+              />
               <button
                 type="button"
-                disabled={busy || recoveryCode.length < 20}
+                disabled={busy || recoveryCode.length < 20 || authenticatorCode.length !== 6}
                 onClick={() => void proveWithCode()}
                 className={button}
               >
@@ -462,10 +489,10 @@ export function RecoveryFlow() {
 
       {step === "CREATE_RECOVERY_CODE" && token && (
         <section className="flex flex-col gap-4">
-          <h1 className="text-2xl font-semibold">Last step: a new Recovery Code</h1>
+          <h1 className="text-2xl font-semibold">Last step: set up recovery again</h1>
           <p className="text-neutral-600">
-            Your old Recovery Code was used up by this recovery. Create a new one to protect your
-            wallet again.
+            Your old Recovery Code and authenticator app were used up by this recovery. Link a new
+            authenticator app and create a new Recovery Code to protect your wallet again.
           </p>
           <RecoveryCodeCreator token={token} onDone={() => void refresh(token)} />
         </section>
@@ -475,7 +502,8 @@ export function RecoveryFlow() {
         <section className="flex flex-col gap-3">
           <h1 className="text-2xl font-semibold">Your wallet is recovered</h1>
           <p className="text-neutral-600">
-            This device now controls your wallet and your new PIN and Recovery Code are set.
+            This device now controls your wallet. Your new PIN, authenticator app and Recovery Code
+            are set.
           </p>
           <button type="button" onClick={forget} className={secondary}>
             Close
@@ -487,7 +515,8 @@ export function RecoveryFlow() {
         <section className="flex flex-col gap-3">
           <h1 className="text-2xl font-semibold">This recovery was stopped</h1>
           <p className="text-neutral-600">
-            It was cancelled or stopped by Kaada security. Nothing changed. You can start again.
+            It was cancelled from the device or passkey that controls your wallet. Nothing changed.
+            You can start again.
           </p>
           <button type="button" onClick={forget} className={button}>
             Start again

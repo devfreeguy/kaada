@@ -9,7 +9,6 @@ import {
 } from "@kaada/contracts";
 import type { Address } from "viem";
 
-import { KeyAttestor } from "@kaada/blockchain";
 import {
   createRecoveryWorld,
   expectKaada,
@@ -18,8 +17,8 @@ import {
 } from "./support/recovery-world.js";
 
 /*
- * From a verified email to a recovery pending on chain: the new root, the Recovery Code proof, the attestor, the commitment,
- * and everything that must refuse.
+ * From a verified email to a recovery pending on chain: the new root, the two factors (Recovery Code and authenticator code),
+ * the commitment, and everything that must refuse.
  */
 
 describe("proposing the new root", () => {
@@ -293,15 +292,9 @@ describe("the Recovery Code proof and the attestor", () => {
     assert.equal(world.chain.instances.get(attempt.newValidator ?? "")?.deployed, true);
   });
 
-  it("a wrong Recovery Code is rejected: the attestor never signs and nothing reaches the chain", async () => {
+  it("a wrong Recovery Code is rejected: nothing reaches the chain and the authenticator code is NOT spent", async () => {
     const world = createRecoveryWorld();
     const user = await world.createUser();
-    let attested = 0;
-    const original = world.attestor.signInitiate.bind(world.attestor);
-    world.attestor.signInitiate = (m) => {
-      attested += 1;
-      return original(m);
-    };
     const token = await world.startAndVerify(user.email);
     const { proposal } = await world.proposeAndSign(user, token, newPasskeyRoot());
     const wrong = await world.signProposal(
@@ -309,12 +302,16 @@ describe("the Recovery Code proof and the attestor", () => {
       generateRecoveryCode(),
       user.account as Address,
     );
-    await expectKaada(world.flow.submitProof(token, wrong), "RECOVERY_REJECTED");
-    assert.equal(attested, 0);
+    const code = world.authenticatorCode(user);
+    await expectKaada(world.flow.submitProof(token, wrong, code), "RECOVERY_REJECTED");
     assert.equal((await world.chain.validatorState(user.account)).pending, undefined);
     assert.equal(world.chain.instances.get(proposal.root.validator)?.deployed, false);
     assert.equal((await world.attemptOf(token)).status, "ROOT_PROPOSED");
     assert.equal((await world.attemptOf(token)).proofFailures, 1);
+    // The right Recovery Code can still use the very same authenticator code: a wrong guess burnt nothing.
+    const right = await world.signProposal(proposal.typedData, user.code, user.account as Address);
+    const view = await world.flow.submitProof(token, right, code);
+    assert.equal(view.status, "PENDING");
   });
 
   it("the Recovery Code of ANOTHER account does not work", async () => {
@@ -328,7 +325,10 @@ describe("the Recovery Code proof and the attestor", () => {
       attacker.code,
       victim.account as Address,
     );
-    await expectKaada(world.flow.submitProof(token, signature), "RECOVERY_REJECTED");
+    await expectKaada(
+      world.flow.submitProof(token, signature, world.authenticatorCode(victim)),
+      "RECOVERY_REJECTED",
+    );
   });
 
   it("the same Recovery Code derived for another chain or account signs nothing useful", async () => {
@@ -359,7 +359,10 @@ describe("the Recovery Code proof and the attestor", () => {
         deadline: BigInt(proposal.typedData.message["deadline"]!),
       },
     });
-    await expectKaada(world.flow.submitProof(token, signature), "RECOVERY_REJECTED");
+    await expectKaada(
+      world.flow.submitProof(token, signature, world.authenticatorCode(user)),
+      "RECOVERY_REJECTED",
+    );
   });
 
   it("a signature over a DIFFERENT root commitment is rejected", async () => {
@@ -372,7 +375,10 @@ describe("the Recovery Code proof and the attestor", () => {
       message: { ...proposal.typedData.message, validatorDataHash: `0x${"ab".repeat(32)}` },
     };
     const signature = await world.signProposal(swapped, user.code, user.account as Address);
-    await expectKaada(world.flow.submitProof(token, signature), "RECOVERY_REJECTED");
+    await expectKaada(
+      world.flow.submitProof(token, signature, world.authenticatorCode(user)),
+      "RECOVERY_REJECTED",
+    );
     assert.equal((await world.chain.validatorState(user.account)).pending, undefined);
   });
 
@@ -385,7 +391,10 @@ describe("the Recovery Code proof and the attestor", () => {
     const attempt = await world.attemptOf(token);
     const credential = world.recovery.credentials.find((c) => c.id === attempt.newCredentialId)!;
     credential.publicKeyX = "99".repeat(32);
-    await expectKaada(world.flow.submitProof(token, signature), "RECOVERY_REJECTED");
+    await expectKaada(
+      world.flow.submitProof(token, signature, world.authenticatorCode(user)),
+      "RECOVERY_REJECTED",
+    );
     assert.equal((await world.attemptOf(token)).status, "FAILED");
     assert.equal((await world.attemptOf(token)).failureCode, "COMMITMENT_MISMATCH");
     assert.equal((await world.chain.validatorState(user.account)).pending, undefined);
@@ -403,7 +412,10 @@ describe("the Recovery Code proof and the attestor", () => {
         generateRecoveryCode(),
         user.account as Address,
       );
-      await expectKaada(world.flow.submitProof(token, wrong), "RECOVERY_REJECTED");
+      await expectKaada(
+        world.flow.submitProof(token, wrong, world.authenticatorCode(user)),
+        "RECOVERY_REJECTED",
+      );
     }
     assert.equal((await world.attemptOf(token)).status, "FAILED");
     assert.equal((await world.attemptOf(token)).failureCode, "PROOF_FAILURES");
@@ -415,7 +427,10 @@ describe("the Recovery Code proof and the attestor", () => {
     const token = await world.startAndVerify(user.email);
     const { signature } = await world.proposeAndSign(user, token, newPasskeyRoot());
     world.advance(world.policy.proofTtlMs + 1_000);
-    await expectKaada(world.flow.submitProof(token, signature), "RECOVERY_REJECTED");
+    await expectKaada(
+      world.flow.submitProof(token, signature, world.authenticatorCode(user)),
+      "RECOVERY_REJECTED",
+    );
     assert.equal((await world.attemptOf(token)).status, "EXPIRED");
     assert.equal((await world.chain.validatorState(user.account)).pending, undefined);
   });
@@ -426,23 +441,15 @@ describe("the Recovery Code proof and the attestor", () => {
     const token = await world.startAndVerify(user.email);
     await world.proposeAndSign(user, token, newPasskeyRoot());
     for (const bad of ["", "0x", "0x12", 42, null, `0x${"zz".repeat(65)}`]) {
-      await expectKaada(world.flow.submitProof(token, bad), "RECOVERY_REJECTED");
+      await expectKaada(
+        world.flow.submitProof(token, bad, world.authenticatorCode(user)),
+        "RECOVERY_REJECTED",
+      );
     }
     assert.equal((await world.attemptOf(token)).proofFailures, 0, "malformed input is not a guess");
   });
 
-  it("a wrong ATTESTOR makes the chain refuse, and the attempt ends cleanly", async () => {
-    const world = createRecoveryWorld();
-    const user = await world.createUser();
-    world.chain.attestor = "0x00000000000000000000000000000000000000ee";
-    const token = await world.startAndVerify(user.email);
-    const { signature } = await world.proposeAndSign(user, token, newPasskeyRoot());
-    await expectKaada(world.flow.submitProof(token, signature), "RECOVERY_REJECTED");
-    assert.equal((await world.attemptOf(token)).status, "FAILED");
-    assert.equal((await world.chain.validatorState(user.account)).pending, undefined);
-  });
-
-  it("the cooldown after a recent recovery stops the attestor from signing", async () => {
+  it("the cooldown after a recent recovery stops a new recovery from starting", async () => {
     const world = createRecoveryWorld({ policy: { cooldownAfterCompletionMs: 24 * 3600 * 1000 } });
     const user = await world.createUser();
     const token = await world.startAndVerify(user.email);
@@ -460,14 +467,19 @@ describe("the Recovery Code proof and the attestor", () => {
       createdAt: new Date(world.now().getTime() - 7200_000),
       updatedAt: world.now(),
     });
-    let attested = 0;
-    const original = world.attestor.signInitiate.bind(world.attestor);
-    world.attestor.signInitiate = (m) => {
-      attested += 1;
-      return original(m);
-    };
-    await expectKaada(world.flow.submitProof(token, signature), "RECOVERY_REJECTED");
-    assert.equal(attested, 0);
+    const stepBefore = world.recovery.totps.find(
+      (t) => t.walletId === user.wallet.id,
+    )?.lastUsedStep;
+    await expectKaada(
+      world.flow.submitProof(token, signature, world.authenticatorCode(user)),
+      "RECOVERY_REJECTED",
+    );
+    assert.equal((await world.chain.validatorState(user.account)).pending, undefined);
+    // A refusal by the risk policy never spends the person's authenticator code.
+    assert.equal(
+      world.recovery.totps.find((t) => t.walletId === user.wallet.id)?.lastUsedStep,
+      stepBefore,
+    );
   });
 
   it("two simultaneous proofs start exactly one recovery", async () => {
@@ -476,8 +488,8 @@ describe("the Recovery Code proof and the attestor", () => {
     const token = await world.startAndVerify(user.email);
     const { signature } = await world.proposeAndSign(user, token, newPasskeyRoot());
     const results = await Promise.allSettled([
-      world.flow.submitProof(token, signature),
-      world.flow.submitProof(token, signature),
+      world.flow.submitProof(token, signature, world.authenticatorCode(user)),
+      world.flow.submitProof(token, signature, world.authenticatorCode(user)),
     ]);
     assert.equal(results.filter((r) => r.status === "fulfilled").length, 1);
     assert.equal((await world.attemptOf(token)).status, "PENDING");
@@ -496,7 +508,7 @@ describe("the Recovery Code proof and the attestor", () => {
       await real(input);
       throw new Error("socket hang up");
     };
-    const view = await world.flow.submitProof(token, signature);
+    const view = await world.flow.submitProof(token, signature, world.authenticatorCode(user));
     assert.equal(view.status, "PENDING");
     assert.ok((await world.chain.validatorState(user.account)).pending);
   });
@@ -507,7 +519,7 @@ describe("the Recovery Code proof and the attestor", () => {
     const token = await world.startAndVerify(user.email);
     const { signature } = await world.proposeAndSign(user, token, newPasskeyRoot());
     world.chain.inject.hiddenReads = 2;
-    const view = await world.flow.submitProof(token, signature);
+    const view = await world.flow.submitProof(token, signature, world.authenticatorCode(user));
     assert.equal(view.status, "PENDING");
   });
 
@@ -517,7 +529,10 @@ describe("the Recovery Code proof and the attestor", () => {
     const token = await world.startAndVerify(user.email);
     const { signature } = await world.proposeAndSign(user, token, newPasskeyRoot());
     world.chain.inject.initiate = new Error("socket hang up");
-    await expectKaada(world.flow.submitProof(token, signature), "RECOVERY_CHAIN_UNAVAILABLE");
+    await expectKaada(
+      world.flow.submitProof(token, signature, world.authenticatorCode(user)),
+      "RECOVERY_CHAIN_UNAVAILABLE",
+    );
     assert.equal((await world.attemptOf(token)).status, "INITIATING");
     const finalizer = world.finalizer();
     await finalizer.runDue();
@@ -533,69 +548,132 @@ describe("the Recovery Code proof and the attestor", () => {
   });
 });
 
-describe("the attestor boundary", () => {
-  it("exposes only signInitiate, veto and address: no method signs arbitrary data", () => {
-    const methods = Object.getOwnPropertyNames(KeyAttestor.prototype).sort();
-    assert.deepEqual(methods, ["address", "constructor", "signInitiate", "veto"]);
+describe("the two recovery factors", () => {
+  /** A proposed root, signed by the right Recovery Code, ready for the second factor. */
+  async function ready() {
+    const world = createRecoveryWorld();
+    const user = await world.createUser();
+    const token = await world.startAndVerify(user.email);
+    const { proposal, signature } = await world.proposeAndSign(user, token, newPasskeyRoot());
+    return { world, user, token, proposal, signature };
+  }
+
+  it("a correct Recovery Code with a wrong authenticator code is refused, with the same answer as a wrong Recovery Code", async () => {
+    const { world, user, token, proposal, signature } = await ready();
+    const wrongCode = world.authenticatorCode(user) === "000000" ? "111111" : "000000";
+    const noTotp = await expectKaada(
+      world.flow.submitProof(token, signature, wrongCode),
+      "RECOVERY_REJECTED",
+    );
+    const wrongSig = await world.signProposal(
+      proposal.typedData,
+      generateRecoveryCode(),
+      user.account as Address,
+    );
+    const noCode = await expectKaada(
+      world.flow.submitProof(token, wrongSig, world.authenticatorCode(user)),
+      "RECOVERY_REJECTED",
+    );
+    // Nothing tells the caller WHICH factor failed.
+    assert.equal(noTotp.message, noCode.message);
+    assert.equal((await world.chain.validatorState(user.account)).pending, undefined);
+    assert.equal((await world.attemptOf(token)).proofFailures, 2);
   });
 
-  it("refuses a message for another chain or another recovery validator", async () => {
+  it("the authenticator code alone, with no valid Recovery Code signature, cannot start a recovery", async () => {
+    const { world, user, token, proposal } = await ready();
+    const stranger = await world.signProposal(
+      proposal.typedData,
+      generateRecoveryCode(),
+      user.account as Address,
+    );
+    await expectKaada(
+      world.flow.submitProof(token, stranger, world.authenticatorCode(user)),
+      "RECOVERY_REJECTED",
+    );
+    assert.equal((await world.chain.validatorState(user.account)).pending, undefined);
+    assert.equal((await world.attemptOf(token)).status, "ROOT_PROPOSED");
+  });
+
+  it("an authenticator code cannot be used twice: a replayed time step is refused", async () => {
+    const { world, user, token, signature } = await ready();
+    const code = world.authenticatorCode(user);
+    // Spend the step on the wallet (as a second, concurrent recovery action would).
+    await world.totp.verifyAndConsume({ userId: user.userId, walletId: user.wallet.id, code });
+    await expectKaada(world.flow.submitProof(token, signature, code), "RECOVERY_REJECTED");
+    assert.equal((await world.chain.validatorState(user.account)).pending, undefined);
+    // The next code (the next time step) works.
+    world.advance(31_000);
+    const view = await world.flow.submitProof(token, signature, world.authenticatorCode(user));
+    assert.equal(view.status, "PENDING");
+  });
+
+  it("the attempt records WHEN and for which time step the code was accepted, never the code", async () => {
+    const { attempt } = await (async () => {
+      const world = createRecoveryWorld();
+      const user = await world.createUser();
+      return world.startRecovery(user);
+    })();
+    assert.ok(attempt.totpVerifiedAt);
+    assert.equal(typeof attempt.totpStep, "number");
+    assert.equal(JSON.stringify(attempt).includes("secret"), false);
+  });
+
+  it("a wallet that never set up an authenticator app cannot be recovered through Kaada", async () => {
+    const world = createRecoveryWorld();
+    const user = await world.createUser({ authenticator: false });
+    const token = await world.startAndVerify(user.email);
+    const { signature } = await world.proposeAndSign(user, token, newPasskeyRoot());
+    await expectKaada(world.flow.submitProof(token, signature, "123456"), "RECOVERY_TOTP_REQUIRED");
+    assert.equal((await world.chain.validatorState(user.account)).pending, undefined);
+  });
+
+  it("a malformed authenticator code never reaches the verifier and is not a guess", async () => {
+    const { world, token, signature } = await ready();
+    for (const bad of ["", "12345", "1234567", "abcdef", " 123456", 123456, null]) {
+      await expectKaada(world.flow.submitProof(token, signature, bad), "RECOVERY_REJECTED");
+    }
+    assert.equal((await world.attemptOf(token)).proofFailures, 0);
+  });
+
+  it("Kaada alone cannot recover: a full copy of the server state is not enough without the Recovery Code", async () => {
+    // Everything the server holds: the database rows, the encryption key, the TOTP secret (it decrypts it), the email inbox.
     const world = createRecoveryWorld();
     const user = await world.createUser();
     const token = await world.startAndVerify(user.email);
     const { proposal } = await world.proposeAndSign(user, token, newPasskeyRoot());
-    const message = {
-      chainId: proposal.typedData.domain.chainId,
-      verifyingContract: proposal.typedData.domain.verifyingContract,
-      account: user.account,
-      nonce: "0",
-      rootId: proposal.root.rootId,
-      hook: "0x0000000000000000000000000000000000000000",
-      validatorDataHash: `0x${"11".repeat(32)}`,
-      hookDataHash: `0x${"22".repeat(32)}`,
-      deadline: "9999999999",
-    };
-    await expectKaada(world.attestor.signInitiate({ ...message, chainId: 1 }), "RECOVERY_REJECTED");
-    await expectKaada(
-      world.attestor.signInitiate({
-        ...message,
-        verifyingContract: "0x00000000000000000000000000000000000000dd",
-      }),
-      "RECOVERY_REJECTED",
+    const row = world.recovery.totps.find(
+      (t) => t.walletId === user.wallet.id && t.status === "ACTIVE",
+    )!;
+    const secret = world.totpCipher.decrypt(
+      row.encryptedSecret,
+      `recovery-totp:${row.walletId}:${row.id}`,
     );
-    await expectKaada(
-      world.attestor.veto({
-        recoveryValidator: "0x00000000000000000000000000000000000000dd",
-        account: user.account,
-      }),
-      "RECOVERY_REJECTED",
+    assert.equal(secret, user.authenticatorSecret, "the server can read the authenticator secret");
+    const { totpAtStep, stepAt } = await import("../src/core/recovery/totp.js");
+    const validCode = totpAtStep(secret, stepAt(world.now().getTime()));
+    // ...and the only thing it cannot produce is the Recovery Code key's signature over the committed root.
+    const configuration = (await world.repositories.recoveryConfigurations.findActive(
+      user.wallet.id,
+    ))!;
+    assert.equal(configuration.recoveryAddress, user.recoveryKey.address.toLowerCase());
+    const forged = await world.signProposal(
+      proposal.typedData,
+      generateRecoveryCode(),
+      user.account as Address,
     );
-  });
-
-  it("alone it can neither start nor complete a recovery", async () => {
-    const world = createRecoveryWorld();
-    const user = await world.createUser();
-    const token = await world.startAndVerify(user.email);
-    const { proposal } = await world.proposeAndSign(user, token, newPasskeyRoot());
+    await expectKaada(world.flow.submitProof(token, forged, validCode), "RECOVERY_REJECTED");
+    // Straight to the chain with the server's own relayer is no better: initiate needs the Recovery Code signature.
     const attempt = await world.attemptOf(token);
     const wallet = (await world.repositories.wallets.findById(attempt.walletId))!;
     const root = await world.flow.rebuildRoot(attempt, wallet as never);
-    const message = world.chain.typedMessage({
-      account: user.account,
-      root,
-      nonce: "0",
-      deadline: proposal.deadline,
-    });
-    const attestorSignature = await world.attestor.signInitiate(message);
-    // The attestor's signature in BOTH slots does not start a recovery: the Recovery Code key is required.
     await world.chain.deployInstance({ account: user.account, root });
     await assert.rejects(
       world.chain.initiate({
         account: user.account,
         root,
         deadline: proposal.deadline,
-        recoverySignature: attestorSignature,
-        attestorSignature,
+        recoverySignature: forged,
       }),
     );
     assert.equal((await world.chain.validatorState(user.account)).pending, undefined);
@@ -603,7 +681,7 @@ describe("the attestor boundary", () => {
 });
 
 describe("notifications", () => {
-  it("tell every linked channel, with the time and the one link that stops it", async () => {
+  it("tell every linked channel, with the time and the link that leads to stopping it", async () => {
     const world = createRecoveryWorld();
     const user = await world.createUser({ telegram: true });
     const { attempt } = await world.startRecovery(user);
@@ -613,14 +691,14 @@ describe("notifications", () => {
       assert.match(text, /recovery of your Kaada wallet was requested/);
       assert.match(text, /will complete around \d{4}-\d{2}-\d{2} .* UTC/);
       assert.match(text, /in about 3 days/);
-      assert.match(text, /https:\/\/app\.kaada\.test\/recovery\/report#[A-Za-z0-9_-]{43}/);
+      assert.match(text, /https:\/\/app\.kaada\.test\/recovery\/cancel#[A-Za-z0-9_-]{43}/);
       assert.match(text, /If this was NOT you/);
     }
     const cancelToken = world.cancelTokenFrom(user);
     const { hashOpaqueToken } = await import("../src/core/authorization/token.js");
     assert.equal(hashOpaqueToken(cancelToken), attempt.cancelTokenHash);
     // The token appears in a URL FRAGMENT only (never a query string, so it never reaches a server log).
-    assert.ok(!/\/recovery\/report\?/.test(email.text));
+    assert.ok(!/\/recovery\/cancel\?/.test(email.text));
     // The session token and the Recovery Code appear nowhere.
     assert.ok(!email.text.includes(user.code.canonical()));
   });

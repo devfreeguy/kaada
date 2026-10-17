@@ -32,7 +32,12 @@ const sensitiveKeys = [
   "recoveryCode",
   "signature",
   "recoverySignature",
-  "attestorSignature",
+  // The authenticator-app factor: the 6-digit code, its secret (plain or encrypted) and the provisioning URI that embeds it.
+  "authenticatorCode",
+  "totpSecret",
+  "encryptedSecret",
+  "otpauthUri",
+  "secret",
   "material",
   "assertion",
   "cancelToken",

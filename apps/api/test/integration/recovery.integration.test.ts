@@ -41,6 +41,7 @@ describe("account recovery on the real database", { skip }, () => {
     });
     await client.auditEvent.deleteMany({ where });
     await client.recoveryAttempt.deleteMany({ where });
+    await client.recoveryTotp.deleteMany({ where });
     await client.recoveryConfiguration.deleteMany({ where });
     await client.walletCredential.deleteMany({ where });
     await client.delegatedPermission.deleteMany({ where });
@@ -440,6 +441,14 @@ describe("account recovery on the real database", { skip }, () => {
       chainId: w.chain.chainId,
       account: u.account as `0x${string}`,
     });
+    // ...but only after a new authenticator app is linked: the recovery retired the old enrolment with the old Recovery Code.
+    assert.equal(await w.totp.isEnrolled(u.wallet.id), false);
+    const enrolment = await w.configuration.beginAuthenticator(u.userId);
+    const { totpAtStep, stepAt } = await import("../../src/core/recovery/totp.js");
+    await w.configuration.confirmAuthenticator(
+      u.userId,
+      totpAtStep(enrolment.secret, stepAt(w.now().getTime())),
+    );
     const arm = await w.configuration.prepare({
       userId: u.userId,
       recoveryAddress: verifier.address,
@@ -468,7 +477,7 @@ describe("account recovery on the real database", { skip }, () => {
     assert.equal(w.chain.submittedBatches, 1);
   });
 
-  it("cancellation by the root and the attestor veto are recorded on Postgres", async () => {
+  it("cancellation by the root is recorded on Postgres, and the database has no veto", async () => {
     const w = world();
     const cancelled = await user(w);
     const a = await w.startRecovery(cancelled, newPasskeyRoot());
@@ -482,13 +491,97 @@ describe("account recovery on the real database", { skip }, () => {
     assert.equal(view.status, "CANCELLED");
     assert.equal((await w.attemptOf(a.token)).terminatedBy, "ROOT");
 
-    const vetoed = await user(w);
-    const b = await w.startRecovery(vetoed, newPasskeyRoot());
-    const report = await w.flow.report(w.cancelTokenFrom(vetoed));
-    assert.equal(report.status, "VETOED");
-    const stored = await w.attemptOf(b.token);
-    assert.equal(stored.terminatedBy, "ATTESTOR");
-    assert.match(stored.terminationTxHash ?? "", /^0x[0-9a-f]{64}$/);
+    // The enum itself no longer has a veto: the database refuses the old status and the old terminator.
+    const client = database.client;
+    await assert.rejects(
+      client.$executeRawUnsafe(
+        `UPDATE "RecoveryAttempt" SET "status" = 'VETOED' WHERE "id" = $1::uuid`,
+        a.attempt.id,
+      ),
+    );
+    await assert.rejects(
+      client.$executeRawUnsafe(
+        `UPDATE "RecoveryAttempt" SET "terminatedBy" = 'ATTESTOR' WHERE "id" = $1::uuid`,
+        a.attempt.id,
+      ),
+    );
+  });
+
+  it("the authenticator factor is enforced by the database too: no chain stage without an accepted code", async () => {
+    const w = world();
+    const u = await user(w);
+    const { attempt } = await w.startRecovery(u, newPasskeyRoot());
+    assert.ok(attempt.totpVerifiedAt);
+    assert.equal(typeof attempt.totpStep, "number");
+    const client = database.client;
+    // Strip the recorded code from a PENDING (on-chain) attempt: the CHECK constraint refuses it.
+    await assert.rejects(
+      client.$executeRawUnsafe(
+        `UPDATE "RecoveryAttempt" SET "totpVerifiedAt" = NULL WHERE "id" = $1::uuid`,
+        attempt.id,
+      ),
+    );
+  });
+
+  it("authenticator steps are consumed atomically on Postgres: one winner per step, older steps never win", async () => {
+    const w = world();
+    const u = await user(w, { authenticator: false });
+    const repo = w.repositories.recoveryTotps;
+    const first = await repo.createPending({
+      id: randomUUID(),
+      userId: u.userId,
+      walletId: u.wallet.id,
+      encryptedSecret: "v1.AAAAAAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+      keyVersion: 1,
+    });
+    assert.ok(first);
+    assert.equal(
+      await repo.consumeStep({ id: first.id, step: 100 }),
+      false,
+      "PENDING is not in force",
+    );
+    const active = await repo.activate({ id: first.id, step: 100, at: new Date() });
+    assert.equal(active?.status, "ACTIVE");
+    assert.equal(await repo.activate({ id: first.id, step: 101, at: new Date() }), null);
+    const racing = await Promise.all(
+      Array.from({ length: 6 }, () => repo.consumeStep({ id: first.id, step: 101 })),
+    );
+    assert.equal(racing.filter(Boolean).length, 1, "exactly one concurrent caller spends a step");
+    assert.equal(await repo.consumeStep({ id: first.id, step: 101 }), false, "a replay");
+    assert.equal(await repo.consumeStep({ id: first.id, step: 100 }), false, "an older step");
+    assert.equal(await repo.consumeStep({ id: first.id, step: 102 }), true);
+    // One enrolment in force per wallet; a second cannot even be started.
+    assert.equal(
+      await repo.createPending({
+        id: randomUUID(),
+        userId: u.userId,
+        walletId: u.wallet.id,
+        encryptedSecret: "v1.AAAAAAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+        keyVersion: 1,
+      }),
+      null,
+    );
+    assert.equal(await repo.disableForWallet(u.wallet.id, new Date()), 1);
+    assert.equal(await repo.findActive(u.wallet.id), null);
+    assert.equal(
+      await repo.consumeStep({ id: first.id, step: 500 }),
+      false,
+      "a disabled secret spends nothing",
+    );
+  });
+
+  it("the secret is stored as ciphertext only: the database refuses a plaintext one", async () => {
+    const w = world();
+    const u = await user(w, { authenticator: false });
+    await assert.rejects(
+      w.repositories.recoveryTotps.createPending({
+        id: randomUUID(),
+        userId: u.userId,
+        walletId: u.wallet.id,
+        encryptedSecret: "JBSWY3DPEHPK3PXP",
+        keyVersion: 1,
+      }),
+    );
   });
 
   it("an unverified email never produces an on-chain recovery, and the database agrees", async () => {

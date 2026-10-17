@@ -70,10 +70,7 @@ describe("Telegram alerts", () => {
     const messenger = new TelegramChannelMessenger(
       new TelegramAdapter({ botToken: "123:abc", fetch: okFetch }),
     );
-    await messenger.send(
-      { type: "TELEGRAM", externalId: "987654321" },
-      recoveryCancelledMessage("ROOT"),
-    );
+    await messenger.send({ type: "TELEGRAM", externalId: "987654321" }, recoveryCancelledMessage());
     const [call] = calls;
     assert.equal(call?.url, "https://api.telegram.org/bot123:abc/sendMessage");
     assert.equal(call.body["chat_id"], "987654321");
@@ -89,11 +86,11 @@ describe("Telegram alerts", () => {
       }),
     );
     await assert.rejects(
-      failing.send({ type: "TELEGRAM", externalId: "@someone" }, recoveryCancelledMessage("ROOT")),
+      failing.send({ type: "TELEGRAM", externalId: "@someone" }, recoveryCancelledMessage()),
       /numeric/,
     );
     try {
-      await failing.send({ type: "TELEGRAM", externalId: "42" }, recoveryCancelledMessage("ROOT"));
+      await failing.send({ type: "TELEGRAM", externalId: "42" }, recoveryCancelledMessage());
       assert.fail("expected a failure");
     } catch (error) {
       assert.match((error as Error).message, /403/);
@@ -102,23 +99,21 @@ describe("Telegram alerts", () => {
   });
 });
 
-describe("the four recovery alerts", () => {
+describe("the three recovery alerts", () => {
   it("are distinct, say what happened, and only the start carries a link", () => {
     const now = new Date("2026-10-20T12:00:00Z");
     const started = recoveryStartedMessage({
       now,
       executeAfter: new Date(now.getTime() + 3 * 86_400_000),
-      reportLink: "https://app.example/recovery/report#abc",
+      cancelLink: "https://app.example/recovery/cancel#abc",
     });
-    const cancelled = recoveryCancelledMessage("ROOT");
-    const vetoed = recoveryCancelledMessage("ATTESTOR");
+    const cancelled = recoveryCancelledMessage();
     const completed = recoveryCompletedMessage(now);
-    const subjects = [started, cancelled, vetoed, completed].map((m) => m.subject);
-    assert.equal(new Set(subjects).size, 4);
-    assert.match(started.text, /https:\/\/app\.example\/recovery\/report#abc/);
+    const subjects = [started, cancelled, completed].map((m) => m.subject);
+    assert.equal(new Set(subjects).size, 3);
+    assert.match(started.text, /https:\/\/app\.example\/recovery\/cancel#abc/);
     assert.match(cancelled.text, /cancelled from your current device/);
-    assert.match(vetoed.text, /stopped by Kaada security/);
     assert.match(completed.text, /recovered/);
-    for (const m of [cancelled, vetoed, completed]) assert.equal(/https?:\/\//.test(m.text), false);
+    for (const m of [cancelled, completed]) assert.equal(/https?:\/\//.test(m.text), false);
   });
 });

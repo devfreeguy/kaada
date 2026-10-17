@@ -1,23 +1,30 @@
 # Account recovery orchestration
 
 The backend that turns the validated recovery contracts (see `docs/recovery-contracts.md`) into Kaada's real flow. Everything below
-runs in `apps/api` over `@kaada/domain` ports, with the chain behind `RecoveryChainPort` (`@kaada/blockchain`) and the attestor behind
-`RecoveryAttestor`.
+runs in `apps/api` over `@kaada/domain` ports, with the chain behind `RecoveryChainPort` (`@kaada/blockchain`). There is no attestor, no
+KMS signer and no registry: Kaada holds no key that can start, approve, veto or complete a recovery.
 
 ## The model (locked)
 
-| Concern         | Rule                                                                                                                                                                               |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Login           | email / channel identity                                                                                                                                                           |
-| Normal payments | PIN creates a `PaymentAuthorization` only; it is never a wallet or root key                                                                                                        |
-| Root            | a passkey validator clone, or a `KaadaDeviceKeyValidator` clone with a P-256 device key                                                                                            |
-| Recovery        | verified registered email **and** a Recovery Code signature **and** a Kaada attestor signature **and** a timelock (default 72 h, floor 24 h), for the **exact** committed new root |
-| Stop            | the existing root can cancel (a normal root-signed UserOperation); the attestor can veto; neither can approve                                                                      |
-| Finish          | one atomic batch: `changeRootValidator(committed root)` + `invalidateNonce(currentNonce + 1)`                                                                                      |
-| After           | the old credential is replaced, sessions and permissions are retired, the PIN must be reset, a **new** Recovery Code must be created                                               |
+| Concern         | Rule                                                                                                                                                                                            |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Login           | email / channel identity                                                                                                                                                                        |
+| Normal payments | PIN creates a `PaymentAuthorization` only; it is never a wallet or root key                                                                                                                     |
+| Root            | a passkey validator clone, or a `KaadaDeviceKeyValidator` clone with a P-256 device key                                                                                                         |
+| Recovery        | verified registered email **and** a Recovery Code signature **and** a current authenticator-app (TOTP) code **and** a timelock (default 72 h, floor 24 h), for the **exact** committed new root |
+| Stop            | only the existing root can cancel (a normal root-signed UserOperation). Nobody else, Kaada included, can stop or approve a recovery                                                             |
+| Finish          | one atomic batch: `changeRootValidator(committed root)` + `invalidateNonce(currentNonce + 1)`                                                                                                   |
+| After           | the old credential is replaced, sessions and permissions are retired, the PIN must be reset, a **new** authenticator app and a **new** Recovery Code must be set up                             |
 
-Email alone, the Recovery Code alone and the attestor alone can each do nothing: the state machine below has no edge to the chain
-that skips any of them, and the contract independently refuses it.
+Email alone, the Recovery Code alone and the authenticator code alone can each do nothing: the state machine below has no edge to the
+chain that skips any of them (and the database refuses a chain-stage attempt with no recorded authenticator code), and the contract
+independently refuses anything without the Recovery Code's signature.
+
+**The invariant that matters:** the server cannot recover a wallet by itself. A full copy of Kaada's database, the TOTP encryption key
+and the email inbox still lacks the Recovery Code, and the contract will not start a recovery without a signature from the key that
+Code derives. The email and authenticator checks are Kaada's gates in front of its relayer, and the contract accepts `initiate` from that relayer
+ONLY (see `docs/recovery-contracts.md`): a Recovery Code holder cannot submit a recovery themselves and so cannot skip the email and the
+authenticator code, and a compromised relayer still cannot produce the Recovery Code signature.
 
 ## Persistence
 
@@ -31,8 +38,12 @@ All in Postgres (migrations `20261019000000` to `20261019000003`), with the hard
   Code, the delay, a status (`PENDING_INSTALL` | `ACTIVE` | `CONSUMED` | `SUPERSEDED` | `DISABLED`), the stored install operation. At most one ACTIVE per wallet.
   **No Recovery Code and no key derived from it is stored anywhere.**
 - **`RecoveryAttempt`**: the state machine (below), the exact committed new root (validator, install data, hashes, hook, hook data, commitment hash, recovery
-  nonce), the on-chain progress (`executeAfter`, tx and UserOperation hashes, the nonce read before finalization), the finalizer lease, the cancel
-  operation, the termination (`ROOT` | `ATTESTOR` | `SYSTEM`) and the post-recovery steps. Only SHA-256 digests of tokens. At most one live attempt per wallet.
+  nonce), when the authenticator code was accepted and for which time step (`totpVerifiedAt`, `totpStep`; never the code), the on-chain progress
+  (`executeAfter`, tx and UserOperation hashes, the nonce read before finalization), the finalizer lease, the cancel operation, the termination
+  (`ROOT` | `SYSTEM`) and the post-recovery steps. Only SHA-256 digests of tokens. At most one live attempt per wallet.
+- **`RecoveryTotp`**: the wallet's authenticator-app factor: `PENDING` (secret generated, not yet proven) | `ACTIVE` (a code was entered) | `DISABLED`.
+  Only the **AES-256-GCM ciphertext** of the secret is stored (`v<keyVersion>.<nonce>.<ciphertext+tag>`, bound to the wallet and the row), under a dedicated
+  key (`RECOVERY_TOTP_SECRET_KEY`), plus the newest accepted time step (`lastUsedStep`, the replay guard). One PENDING and one ACTIVE per wallet.
 - **`RecoveryEmailChallenge`**: a keyed hash (HMAC-SHA-256 bound to the attempt) of the 6-digit email code, an attempt budget, single use, and the session token it unlocks.
 
 ## Recovery Code
@@ -45,23 +56,49 @@ Generated and used **only on the person's device** (`@kaada/contracts`, `recover
   reduced into the secp256k1 range. The server stores only the address of that key (the contract's `recoveryKey`). A known vector is pinned by a test.
 - The page can compare a typed code against the verifier the API shows after email verification before it signs anything.
 
+## Authenticator app (TOTP)
+
+The second thing a person holds. Standard RFC 6238: HMAC-SHA-1, 6 digits, 30-second steps, so it works with Google Authenticator, Microsoft
+Authenticator, Authy, 1Password and any other standard app (SHA-1 is kept on purpose: it is what those apps default to, and an HMAC is not
+weakened by SHA-1's collision weakness). Verified in `apps/api/src/core/recovery/totp.ts` against the RFC's published vectors.
+
+- **Setup** (`POST /recovery/configuration/authenticator/begin`, `.../confirm`): the server draws a 160-bit secret from the OS CSPRNG, stores it
+  encrypted as `PENDING`, and returns it **once** as an `otpauth://totp/...` URI (the page draws the QR code locally) and as a key to type. Setup is
+  complete only when the person enters one valid code (`ACTIVE`). A Recovery Code cannot be armed before that.
+- **Use**: a code is accepted within ±1 step of the clock, and only for a step newer than the last one used: the check and the spend are one
+  conditional update, so the same code never works twice, in parallel or after a restart. A wrong Recovery Code never spends the authenticator step.
+- **Rate limits**: per wallet (Redis in production; the limiter fails closed), plus the attempt's own failure budget. A refusal never says which factor failed.
+- **Never logged**: not the secret, not the URI, not a code. The log redactor and a source scan enforce it.
+- **After a recovery** the enrolment is retired (`DISABLED`) together with the Recovery Code it travelled with; the person sets up a new authenticator app
+  and a new Recovery Code in the recovery session.
+
+### What a person is told
+
+Shown during setup, before the Recovery Code is confirmed, and on the recovery start page:
+
+> To recover your Kaada wallet, you'll need both:
+>
+> - your Recovery Code
+> - access to your authenticator app
+>
+> If you lose both recovery methods, Kaada cannot restore your wallet.
+
 ## HTTP flow (`/api/v1/recovery`)
 
 Identity is always an opaque short-lived token in the `Authorization` header; a body or query can never name a user, account or attempt, and tokens are never in a URL.
 Every response is `no-store`. `token` = session token, `cancel` = the one-use link token delivered only through notifications (in a URL **fragment**).
 
-| Step | Route                                                                            | Notes                                                                                                                                                                                     |
-| ---- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1    | `POST /start {email}`                                                            | **Same answer for every email**: an opaque token. Only a registered, armed account is sent a code. Rate limited per email, per IP, per day                                                |
-| 2    | `POST /verify-email {code}` (token)                                              | one generic error for every failure (unknown token, wrong, expired, used, exhausted); budget counted atomically; single use. Proves the email only                                        |
-| 3    | `POST /passkey/options`, `POST /root/passkey` or `POST /root/device-key` (token) | the new device creates a credential; the server proposes the **exact** root: a fresh clone, its install data, no hook. Returns the EIP-712 typed data                                     |
-| 4    | `POST /proof {signature}` (token)                                                | the Recovery Code key's signature; verified against the stored verifier; then (risk policy) the attestor signs the same message and `initiate` goes on chain. Every notification goes out |
-| 5    | `GET /status`, `POST /finalize` (token)                                          | and the background sweeper. Nothing happens before maturity                                                                                                                               |
-| 6    | `POST /signing-proof/options`, `POST /signing-proof` (token)                     | the NEW credential signs a fresh challenge; the on-chain validator says whether it is valid. Only then `COMPLETED`                                                                        |
-| 7    | `POST /pin {pin}` (token)                                                        | PIN reset through the verified recovery session, once                                                                                                                                     |
-| 8    | `POST /configuration/prepare`, `POST /configuration` (token or setup link)       | arm a new Recovery Code; the new root signs the install operation                                                                                                                         |
-| stop | `POST /cancel/prepare`, `POST /cancel {material}` (cancel)                       | the existing root signs a stored cancel operation (a normal UserOperation)                                                                                                                |
-| stop | `POST /report` (cancel)                                                          | "this was not me": the attestor vetoes                                                                                                                                                    |
+| Step | Route                                                                                                                                            | Notes                                                                                                                                                                                                         |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | `POST /start {email}`                                                                                                                            | **Same answer for every email**: an opaque token. Only a registered, armed account is sent a code. Rate limited per email, per IP, per day                                                                    |
+| 2    | `POST /verify-email {code}` (token)                                                                                                              | one generic error for every failure (unknown token, wrong, expired, used, exhausted); budget counted atomically; single use. Proves the email only                                                            |
+| 3    | `POST /passkey/options`, `POST /root/passkey` or `POST /root/device-key` (token)                                                                 | the new device creates a credential; the server proposes the **exact** root: a fresh clone, its install data, no hook. Returns the EIP-712 typed data                                                         |
+| 4    | `POST /proof {signature, authenticatorCode}` (token)                                                                                             | the Recovery Code key's signature (verified against the stored verifier) **and** the 6-digit authenticator code (checked and spent); then (risk policy) `initiate` goes on chain. Every notification goes out |
+| 5    | `GET /status`, `POST /finalize` (token)                                                                                                          | and the background sweeper. Nothing happens before maturity                                                                                                                                                   |
+| 6    | `POST /signing-proof/options`, `POST /signing-proof` (token)                                                                                     | the NEW credential signs a fresh challenge; the on-chain validator says whether it is valid. Only then `COMPLETED`                                                                                            |
+| 7    | `POST /pin {pin}` (token)                                                                                                                        | PIN reset through the verified recovery session, once                                                                                                                                                         |
+| 8    | `POST /configuration/authenticator/begin`, `.../confirm {code}`, then `POST /configuration/prepare`, `POST /configuration` (token or setup link) | set up the authenticator app first (a code proves it), then arm a new Recovery Code; the root signs the install operation                                                                                     |
+| stop | `POST /cancel/prepare`, `POST /cancel {material}` (cancel)                                                                                       | the existing root signs a stored cancel operation (a normal UserOperation). The only way to stop a recovery                                                                                                   |
 
 `POST /root/device-key` is the **web** enrolment route: the server, not the client, decides the channel, so a key from it is at most `WEB_NON_EXTRACTABLE`.
 
@@ -71,7 +108,7 @@ Every response is `no-store`. `token` = session token, `cancel` = the one-use li
 EMAIL_PENDING -> EMAIL_VERIFIED -> ROOT_PROPOSED -> INITIATING -> PENDING -> FINALIZING -> ROOT_CHANGED -> COMPLETED
       \               \                 \              \            |  ^         |
        `---> EXPIRED   `---> EXPIRED     `-> EXPIRED    `-> FAILED  |  `-- deferred (PENDING, blockedReason)
-                                         `-> FAILED                 +--> CANCELLED (root)   +--> VETOED (attestor)   +--> FAILED
+                                         `-> FAILED                 +--> CANCELLED (root)   +--> FAILED
 ```
 
 Every move is one conditional `UPDATE ... WHERE status IN (...)`; the legal moves are listed in `RECOVERY_TRANSITIONS` and enforced by the repository.
@@ -86,18 +123,21 @@ message (`KaadaRecovery` / `1`, chain id, the recovery validator) carries `accou
 recompute the validator address from public configuration (`buildRecoveryRoot` in `@kaada/contracts`) and refuse to sign anything else; Kaada cannot substitute a root
 after the signature: the stored commitment is rebuilt from the stored public credential before the proof is accepted and again before the batch is built.
 
-## Attestor boundary
+## No attestor
 
-`RecoveryAttestor` has three members: `address()`, `signInitiate(typedMessage)` and `veto({validator, account})`. There is no method that signs bytes, calldata, a transaction,
-a transfer, a `PaymentAuthorization` or a UserOperation; it refuses another chain or validator; it is never an account root. The service calls it only after: email verified,
-the risk policy allows (starts per day, quiet period after a recovery), the Recovery Code signature verified against the stored verifier, the commitment rebuilt and equal, and
-no conflicting recovery pending on chain. The development key is read from a file **outside the repository** (`readKeyFileOutsideRepo`); production is a KMS/HSM signer behind the same interface.
+There is no attestor boundary because there is no attestor. Kaada's recovery code holds exactly one key: the **relayer** that pays gas
+(`readKeyFileOutsideRepo`, a file outside the repository). It signs nothing but the transactions it sends; it is not an approver, a veto or a
+root. A source scan (`recovery-security.test.ts`) fails the build if the recovery adapter ever mentions an attestor, a veto, a registry or a KMS.
+Before it submits `initiate` the service has checked: email verified, the risk policy allows (starts per day, quiet period after a recovery),
+the Recovery Code signature verified against the stored verifier, the authenticator code accepted and spent, the commitment rebuilt and equal,
+and no conflicting recovery pending on chain.
 
 ## Concurrency and restarts
 
 - one live attempt per wallet (partial unique index); two simultaneous starts join one attempt;
 - every status change is a conditional update with one winner; two simultaneous proofs start exactly one recovery;
 - the finalizer takes a **lease** in one conditional update (`PENDING and matured`, or `FINALIZING and lease expired`); many processes may run, one drives;
+- an authenticator step is spent in one conditional update and survives restarts;
 - the UserOperation hash is stored **before** sending; a restarted process asks the bundler about it and **does not resend**; "unknown" is the only case that builds a fresh operation
   (safe: the Kernel nonce lets at most one operation of the lane execute and the recovery is consumed once);
 - confirmation reads the chain, never a return value; a crash between the chain and the database is repaired from the chain (root already changed: finish);
@@ -124,22 +164,25 @@ that binds this exact key, hardware backing and the server challenge. **No verif
 
 ## Tests
 
-- `apps/api/test/recovery-start.test.ts`, `recovery-flow.test.ts`, `recovery-finalize.test.ts`, `recovery-controller.test.ts`: the real services over in-memory repositories and a semantic stand-in for the chain (it uses the real shared root, commitment and EIP-712 helpers).
+- `apps/api/test/recovery-start.test.ts`, `recovery-flow.test.ts`, `recovery-finalize.test.ts`, `recovery-controller.test.ts`, `recovery-totp.test.ts`: the real services over in-memory repositories and a semantic stand-in for the chain (it uses the real shared root, commitment and EIP-712 helpers).
 - `apps/api/test/integration/recovery.integration.test.ts`: the same flow and the constraints on real Postgres.
-- `packages/blockchain/src/recovery/recovery.test.ts`: the chain adapter's pure parts and the attestor boundary.
+- `packages/blockchain/src/recovery/recovery.test.ts`: the chain adapter's pure parts (and that it has no attestor or veto surface).
 - `apps/api/test/testnet/sepolia-recovery.ts`: the live run below.
 
-## Celo Sepolia validation (real HTTP/service path, TEST-ONLY 25 s delay)
+## Celo Sepolia validation (real HTTP/service path, TEST-ONLY 25 s delay) — PREVIOUS DESIGN
 
-`apps/api/test/testnet/sepolia-recovery.ts` boots the real Nest API over Postgres, the real `ViemRecoveryChain`, the self-hosted Alto bundler and the file-based attestor key outside the repo.
+> The tables below record the live run of the **previous** (attestor) design. They are history, not evidence for the current design.
+
+`apps/api/test/testnet/sepolia-recovery.ts` boots the real Nest API over Postgres, the real `ViemRecoveryChain` and the self-hosted Alto bundler. **This run was made with the previous
+attestor design and has not been repeated for the authenticator design**; the harness was updated but not re-run (see "Remaining production blockers").
 The 25 s delay exists only in the test-build recovery validator; the production minimum stays 24 h (72 h default) and is enforced by config validation.
 
-| Scenario                           | Result                                                                                                                                                                                                                 |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A. passkey root -> device-key root | all checks pass: arm, email, proof, attestor, maturity gate, finalize via Alto, nonce advanced, old passkey and lane W void, sessions/PIN retired, signing proof, PIN reset, new Recovery Code                         |
-| B. device-key root -> passkey root | all checks pass, including a real WebAuthn registration and assertion accepted on chain                                                                                                                                |
-| C. cancel by existing root         | all checks pass (non-root cancel refused; root-signed UserOperation cancels; never finalizable)                                                                                                                        |
-| D. attestor veto                   | all checks pass with the final code: veto succeeds, attempt reaches VETOED (not PENDING), a stranger's `attestorCancel` is refused, a matured vetoed attempt cannot finalize, a sweep leaves it VETOED, root unchanged |
+| Scenario                           | Result                                                                                                                                                                                         |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A. passkey root -> device-key root | all checks pass: arm, email, proof, attestor, maturity gate, finalize via Alto, nonce advanced, old passkey and lane W void, sessions/PIN retired, signing proof, PIN reset, new Recovery Code |
+| B. device-key root -> passkey root | all checks pass, including a real WebAuthn registration and assertion accepted on chain                                                                                                        |
+| C. cancel by existing root         | all checks pass (non-root cancel refused; root-signed UserOperation cancels; never finalizable)                                                                                                |
+| D. (previous design) attestor veto | REMOVED with the attestor. The harness scenario D now covers the authenticator gate and a cancel by the root; it has not been run live                                                         |
 
 Final live results (final committed code): A and B passed in run 3; C and D passed 15/15 in a dedicated `SCENARIOS=C,D` run, which also checks the post-maturity finalize, the replayed signature, the stranger veto and a recovery sweep. The sweep runs `RecoverySweeper.sweepNow()` inside the same process; it exercises the reconciliation path a restarted process would take, but is not a literal process restart.
 
@@ -154,7 +197,9 @@ Final live results (final committed code): A and B passed in run 3; C and D pass
 
 - No real email provider (file outbox only, refused in production); no Telegram or WhatsApp senders.
 - No Apple App Attest / Android Key Attestation verifier: nothing can be `TRUSTED_DEVICE` yet.
-- The attestor key is a file; production needs a KMS/HSM signer behind `RecoveryAttestor`.
+- The recovery contracts changed (no attestor registry, a single-signature `initiate`): they must be redeployed and re-proved on Celo Sepolia before mainnet. Nothing is deployed on mainnet.
+- The recovery relayer is a single hot key (`RECOVERY_RELAYER_KEY_FILE`, outside the repository, gas only). If it is down or unfunded nobody can start a recovery (by design). Fund it and monitor its balance; replacing it means a new validator deployment. Not yet exercised on Celo Sepolia after the relayer gate was added.
+- A chain watcher (alert on initiated / cancelled / finalized events) is defence in depth, not built.
 - Gas for recovery and cancel needs a sponsor policy (`RECOVERY_GAS_TOPUP_MAX_WEI`).
 - A batch that reverts after validation burns the Recovery Code; mitigated by bundler simulation, not eliminated.
 - (Closed in the root-agnostic milestone: onboarding, PIN enrolment, root actions and payments all work for a device-key root; see `docs/root-agnostic-flow.md`.)
@@ -165,7 +210,6 @@ Final live results (final committed code): A and B passed in run 3; C and D pass
 ## Security MVP additions
 
 See [security-architecture](security-architecture.md) for the frozen architecture. Added on top of the orchestration above, without
-changing it: Redis-backed rate limits (fail closed), the `AttestorSigner` boundary (file key for development and tests, KMS/HSM
-through `createExternalSigner` in production), SMTP email and Telegram delivery of the four recovery alerts, the `/recovery`,
-`/recovery/report` and `/security/[token]` pages, and `device.keyId` / `device.payload` in every root signing request so a browser
+changing it: Redis-backed rate limits (fail closed), SMTP email and Telegram delivery of the three recovery alerts (started, cancelled,
+completed), the `/recovery`, `/recovery/cancel` and `/security/[token]` pages, and `device.keyId` / `device.payload` in every root signing request so a browser
 can sign for a device-key root without re-deriving the payload.

@@ -38,7 +38,7 @@ const production = [
   ...files(dir("apps/web/app")),
 ].filter((path) => !path.replaceAll("\\", "/").includes("packages/blockchain/src/testnet/"));
 
-// The recovery attestor and relayer are the one other sanctioned signer location; they are held to
+// The recovery relayer (it only pays gas) is the one other sanctioned signer location; it is held to
 // their own narrow scan in recovery-security.test.ts, and nothing else is exempted.
 const isRecoverySigner = (path: string): boolean =>
   /packages\/blockchain\/src\/recovery\/|apps\/api\/src\/recovery\/recovery\.runtime\.ts/.test(

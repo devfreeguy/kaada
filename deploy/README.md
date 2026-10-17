@@ -43,7 +43,7 @@ Generate the secrets on the server:
 
 ```bash
 openssl rand -hex 32      # PIN_PEPPER, TELEGRAM_WEBHOOK_SECRET
-openssl rand -base64 32   # EXECUTION_SECRET_KEY, RECOVERY_CHALLENGE_SECRET
+openssl rand -base64 32   # EXECUTION_SECRET_KEY, RECOVERY_CHALLENGE_SECRET, RECOVERY_TOTP_SECRET_KEY (three different values)
 ```
 
 > **Do not rotate `PIN_PEPPER` or `EXECUTION_SECRET_KEY` casually.** Changing `PIN_PEPPER` makes every existing PIN unverifiable.

@@ -13,6 +13,7 @@ import type {
   RecoveryCleanupRepository,
   RecoveryConfigurationRepository,
   RecoveryEmailChallengeRepository,
+  RecoveryTotpRepository,
   ChannelActionRepository,
   ChannelInboundEventRepository,
   ChannelPaymentStatusRepository,
@@ -59,6 +60,7 @@ import {
   createRecoveryCleanupRepository,
   createRecoveryConfigurationRepository,
   createRecoveryEmailChallengeRepository,
+  createRecoveryTotpRepository,
   createWalletCredentialRepository,
 } from "./recovery.js";
 import { createDeviceAttestationRepository } from "./attestation.js";
@@ -123,6 +125,7 @@ export interface Repositories {
   recoveryConfigurations: RecoveryConfigurationRepository;
   recoveryAttempts: RecoveryAttemptRepository;
   recoveryEmailChallenges: RecoveryEmailChallengeRepository;
+  recoveryTotps: RecoveryTotpRepository;
   recoveryCleanup: RecoveryCleanupRepository;
 }
 
@@ -163,6 +166,7 @@ function buildRepositories(db: Db): Repositories {
     recoveryConfigurations: createRecoveryConfigurationRepository(db),
     recoveryAttempts: createRecoveryAttemptRepository(db),
     recoveryEmailChallenges: createRecoveryEmailChallengeRepository(db),
+    recoveryTotps: createRecoveryTotpRepository(db),
     recoveryCleanup: createRecoveryCleanupRepository(db),
   };
 }

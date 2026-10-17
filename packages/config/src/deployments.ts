@@ -24,8 +24,13 @@ export const RECOVERY_DELAYS: Readonly<
 };
 
 export interface RecoveryContracts {
-  /** The recovery validator (the Kernel module the Recovery Code key and the attestor sign for). */
+  /** The recovery validator (the Kernel module the Recovery Code key signs for). */
   validator: string;
+  /**
+   * The recovery relayer the validator was deployed with: the ONLY address its `initiate` accepts (immutable on chain). Public.
+   * The key file in RECOVERY_RELAYER_KEY_FILE must derive to exactly this address or recovery refuses to start.
+   */
+  relayer: string;
   /** The passkey validator clone factory and its implementation. */
   passkeyFactory: string;
   passkeyImplementation: string;
@@ -36,7 +41,7 @@ export interface RecoveryContracts {
 
 /**
  * The deployed contracts per network, or null when they are not deployed there yet. Recovery and device-key roots refuse to
- * start on a network with null here, with a message that says so. After deploying, paste the five addresses in and commit.
+ * start on a network with null here, with a message that says so. After deploying, paste the six addresses in and commit.
  */
 export const RECOVERY_DEPLOYMENTS: Readonly<Record<RecoveryNetwork, RecoveryContracts | null>> = {
   "celo-mainnet": null,

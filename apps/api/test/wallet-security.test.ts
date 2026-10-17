@@ -58,7 +58,7 @@ const harnessPath = join(dir("packages/blockchain/src/testnet"), "celo-sepolia-h
 const isTestnetTool = (path: string): boolean =>
   path.replaceAll("\\", "/").includes("packages/blockchain/src/testnet/");
 /**
- * The recovery attestor and relayer: the one other sanctioned signer location, held to its own narrow
+ * The recovery relayer (gas only): the one other sanctioned signer location, held to its own narrow
  * scan in recovery-security.test.ts. Nothing else is exempted.
  */
 const isRecoverySigner = (path: string): boolean =>

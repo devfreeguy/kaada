@@ -22,6 +22,7 @@ import type {
 } from "@kaada/domain";
 
 import { RateLimiter } from "../authorization/rate-limiter.js";
+import { TOTP_CODE_PATTERN } from "./totp.js";
 import type { RateLimit } from "../authorization/rate-limiter.js";
 import { hashOpaqueToken, newOpaqueToken } from "../authorization/token.js";
 import {
@@ -43,11 +44,11 @@ import {
 } from "./email-code.js";
 import {
   challengeEmail,
+  cancelUrl,
   recoveryCancelledMessage,
   recoveryNotConfiguredEmail,
   recoveryStartedMessage,
   recoveryUnavailableEmail,
-  reportUrl,
 } from "./messages.js";
 import type { RecoveryRepositories } from "./ports.js";
 
@@ -116,9 +117,11 @@ function challengeOf(response: unknown): string | undefined {
 }
 
 /**
- * The recovery flow up to and including the on-chain initiation, plus cancellation and the attestor veto. Email
- * verification proves the email and nothing else: it cannot produce an on-chain authorization. Only a Recovery Code
- * signature over the EXACT stored commitment, checked against the stored verifier, can make the attestor sign.
+ * The recovery flow up to and including the on-chain initiation, plus cancellation by the existing root. Four things must all
+ * hold before a recovery completes: the registered email was verified, the Recovery Code signed the EXACT stored commitment
+ * (checked against the stored verifier), a current authenticator-app code was accepted, and the contract's own delay passed.
+ * Email and the authenticator code are Kaada's gates; the Recovery Code signature is what the chain itself requires, so Kaada
+ * alone can never start, approve or complete a recovery.
  */
 export class RecoveryFlowService {
   private readonly ctx: RecoveryContext;
@@ -518,19 +521,31 @@ export class RecoveryFlowService {
     };
   }
 
-  // ───────────────────────────── proof, attestor, initiation ─────────────────────────────
+  // ───────────────────────────── proof, factors, initiation ─────────────────────────────
 
   /**
-   * The Recovery Code key's signature over the stored commitment. Only after it verifies against the stored verifier, and
-   * every precondition still holds, does the attestor sign and the recovery start on chain.
+   * The two secrets the person holds, submitted together: the Recovery Code key's signature over the stored commitment, and a
+   * current code from their authenticator app. Both are checked here; only if both hold, and every precondition still holds,
+   * does the recovery start on chain. A wrong answer for either one is the SAME refusal, so a caller learns nothing about
+   * which factor failed, and every refusal counts toward the attempt's failure budget.
    */
-  async submitProof(token: unknown, recoverySignature: unknown): Promise<RecoveryStatusView> {
+  async submitProof(
+    token: unknown,
+    recoverySignature: unknown,
+    authenticatorCode: unknown,
+  ): Promise<RecoveryStatusView> {
     const attempt = await resolveAttempt(this.ctx, token, { allow: ["ROOT_PROPOSED"] });
     if (!(await this.stepLimiter.allow(`proof:${attempt.id}`))) {
       throw new KaadaError("RECOVERY_RATE_LIMITED", "too many requests, try again later");
     }
     if (typeof recoverySignature !== "string" || !/^0x[0-9a-fA-F]{130}$/.test(recoverySignature)) {
       throw new KaadaError("RECOVERY_REJECTED", "the signature is malformed");
+    }
+    if (typeof authenticatorCode !== "string" || !TOTP_CODE_PATTERN.test(authenticatorCode)) {
+      throw new KaadaError(
+        "RECOVERY_REJECTED",
+        "enter the 6-digit code from your authenticator app",
+      );
     }
     const now = this.ctx.now();
     if (!attempt.proofDeadline || attempt.proofDeadline.getTime() <= now.getTime()) {
@@ -558,23 +573,15 @@ export class RecoveryFlowService {
     if (state.rootValidator !== (attempt.previousRootValidator ?? state.rootValidator)) {
       throw new KaadaError("RECOVERY_CONFLICT", "the wallet root changed; start again");
     }
-
-    const message = this.ctx.chain.typedMessage({
-      account,
-      root,
-      nonce: attempt.recoveryNonce ?? "0",
-      deadline: String(Math.floor(attempt.proofDeadline.getTime() / 1000)),
-    });
-    const signer = await this.ctx.chain.recoverInitiateSigner(message, recoverySignature);
-    if (!signer || signer.toLowerCase() !== configuration.recoveryAddress.toLowerCase()) {
-      const failures = await this.ctx.uow.read.recoveryAttempts.recordProofFailure(attempt.id);
-      await audit(this.ctx.uow.read, attempt, RECOVERY_AUDIT_EVENTS.proofRejected, { failures });
-      if (failures >= this.ctx.policy.maxProofFailures) {
-        await this.failAttempt(attempt, ["ROOT_PROPOSED"], "PROOF_FAILURES");
-      }
-      throw new KaadaError("RECOVERY_REJECTED", "the Recovery Code did not match");
+    // The authenticator app must be set up first: a wallet without one cannot be recovered through Kaada.
+    if (!(await this.ctx.totp.isEnrolled(wallet.id))) {
+      throw new KaadaError(
+        "RECOVERY_TOTP_REQUIRED",
+        "recovery needs an authenticator app, which is not set up",
+      );
     }
 
+    // The risk policy is asked BEFORE any factor is checked or spent: a refusal here never burns the person's authenticator code.
     const decision = this.ctx.risk.evaluate({
       userId: attempt.userId,
       walletId: wallet.id,
@@ -590,33 +597,61 @@ export class RecoveryFlowService {
       lastCompletedAt: await this.ctx.uow.read.recoveryAttempts.lastCompletedAt(attempt.userId),
     });
     if (!decision.allow) {
-      await audit(this.ctx.uow.read, attempt, RECOVERY_AUDIT_EVENTS.attestorRefused, {
+      await audit(this.ctx.uow.read, attempt, RECOVERY_AUDIT_EVENTS.proofRefused, {
         reason: decision.reason,
       });
       throw new KaadaError("RECOVERY_REJECTED", "recovery cannot continue right now");
     }
 
-    // Every condition held: the attestor signs ONLY the typed message that was just verified.
-    let attestorSignature: string;
-    try {
-      attestorSignature = await this.ctx.attestor.signInitiate(message);
-    } catch (error) {
-      await audit(this.ctx.uow.read, attempt, RECOVERY_AUDIT_EVENTS.attestorRefused, {
-        reason: "ATTESTOR_UNAVAILABLE",
-      });
-      this.ctx.log("error", "recovery.attestor_unavailable", { attemptId: attempt.id });
-      throw new KaadaError("RECOVERY_CHAIN_UNAVAILABLE", "recovery is temporarily unavailable", {
-        cause: error,
-      });
+    const message = this.ctx.chain.typedMessage({
+      account,
+      root,
+      nonce: attempt.recoveryNonce ?? "0",
+      deadline: String(Math.floor(attempt.proofDeadline.getTime() / 1000)),
+    });
+    const signer = await this.ctx.chain.recoverInitiateSigner(message, recoverySignature);
+    const recoveryCodeOk =
+      signer !== null && signer.toLowerCase() === configuration.recoveryAddress.toLowerCase();
+
+    // The authenticator step is only SPENT when the Recovery Code signature is also right: a wrong Recovery Code never burns
+    // the person's authenticator code, and the two failures look the same from outside.
+    let totpStep: number | null = null;
+    if (recoveryCodeOk) {
+      try {
+        totpStep = (
+          await this.ctx.totp.verifyAndConsume({
+            userId: attempt.userId,
+            walletId: wallet.id,
+            code: authenticatorCode,
+          })
+        ).step;
+      } catch (error) {
+        if (isKaadaError(error, "RECOVERY_RATE_LIMITED")) throw error;
+        totpStep = null;
+      }
     }
-    await audit(this.ctx.uow.read, attempt, RECOVERY_AUDIT_EVENTS.attestorSigned);
+    if (!recoveryCodeOk || totpStep === null) {
+      const failures = await this.ctx.uow.read.recoveryAttempts.recordProofFailure(attempt.id);
+      await audit(this.ctx.uow.read, attempt, RECOVERY_AUDIT_EVENTS.proofRejected, { failures });
+      if (failures >= this.ctx.policy.maxProofFailures) {
+        await this.failAttempt(attempt, ["ROOT_PROPOSED"], "PROOF_FAILURES");
+      }
+      throw new KaadaError(
+        "RECOVERY_REJECTED",
+        "the Recovery Code or the authenticator code did not match",
+      );
+    }
 
     // Exactly one process submits: the claim is one conditional update.
     const claimed = await this.ctx.uow.read.recoveryAttempts.advance({
       id: attempt.id,
       from: ["ROOT_PROPOSED"],
       to: "INITIATING",
-      patch: { ...(state.rootValidator && { previousRootValidator: state.rootValidator }) },
+      patch: {
+        totpVerifiedAt: now,
+        totpStep,
+        ...(state.rootValidator && { previousRootValidator: state.rootValidator }),
+      },
     });
     if (!claimed) throw new KaadaError("RECOVERY_REJECTED", "this step is not available right now");
 
@@ -627,10 +662,23 @@ export class RecoveryFlowService {
         root,
         deadline: String(Math.floor(attempt.proofDeadline.getTime() / 1000)),
         recoverySignature,
-        attestorSignature,
       });
       return this.viewOf(await this.finishInitiationPatiently(claimed, wallet, txHash));
     } catch (error) {
+      if (isKaadaError(error, "RECOVERY_RELAYER_UNAVAILABLE")) {
+        // The relayer could not submit and NOTHING was sent. Safety over availability: there is no fallback and nobody else may
+        // submit. The claim is released so the same proposal can be proven again once the service is back; no partial state exists.
+        await audit(this.ctx.uow.read, claimed, RECOVERY_AUDIT_EVENTS.initiationFailed, {
+          reason: "RELAYER_UNAVAILABLE",
+        });
+        await this.ctx.uow.read.recoveryAttempts.advance({
+          id: claimed.id,
+          from: ["INITIATING"],
+          to: "ROOT_PROPOSED",
+        });
+        this.ctx.log("error", "recovery.relayer_unavailable", { attemptId: claimed.id });
+        throw error;
+      }
       await audit(this.ctx.uow.read, claimed, RECOVERY_AUDIT_EVENTS.initiationFailed);
       // The chain may have accepted it even though the call failed: read before giving up.
       const settled = await this.reconcileInitiating(claimed);
@@ -706,14 +754,14 @@ export class RecoveryFlowService {
       if (!current) throw new KaadaError("RECOVERY_REJECTED", "this recovery no longer exists");
       return current;
     }
-    // Tell every linked channel, with the one link that can stop it. A delivery failure never undoes the recovery.
+    // Tell every linked channel, with the link that leads to stopping it from the current root. A delivery failure never undoes the recovery.
     await this.ctx.notifier.notify(
       moved.userId,
       moved.id,
       recoveryStartedMessage({
         now,
         executeAfter,
-        reportLink: reportUrl(this.ctx.webUrl, cancelToken),
+        cancelLink: cancelUrl(this.ctx.webUrl, cancelToken),
       }),
     );
     return moved;
@@ -827,32 +875,6 @@ export class RecoveryFlowService {
     return this.viewOf(settled);
   }
 
-  /** "This was not me": the attestor vetoes the pending recovery. The link comes from a notification. */
-  async report(cancelToken: unknown): Promise<RecoveryStatusView> {
-    const attempt = await this.byCancelToken(cancelToken);
-    return this.viewOf(await this.vetoAttempt(attempt.id, "REPORTED_BY_OWNER"));
-  }
-
-  /** The attestor veto, for an operator or an automated rule. It can only STOP a pending recovery, never approve one. */
-  async vetoAttempt(attemptId: string, reason: string): Promise<RecoveryAttempt> {
-    const attempt = await this.ctx.uow.read.recoveryAttempts.findById(attemptId);
-    if (!attempt || attempt.status !== "PENDING") {
-      throw new KaadaError("RECOVERY_REJECTED", "there is no pending recovery to stop");
-    }
-    const { wallet } = await this.walletOf(attempt);
-    const { txHash } = await this.ctx.attestor.veto({
-      recoveryValidator: this.ctx.chain.recoveryValidator,
-      account: wallet.address,
-    });
-    await this.ctx.uow.read.recoveryAttempts.patch(
-      attempt.id,
-      { terminationTxHash: txHash.toLowerCase() },
-      { status: ["PENDING"] },
-    );
-    await audit(this.ctx.uow.read, attempt, RECOVERY_AUDIT_EVENTS.vetoed, { reason });
-    return (await this.settleWhenGone(attempt.id)) ?? attempt;
-  }
-
   /** Waits (bounded) for a submitted cancel to be included, then settles; otherwise leaves it to the reconciler. */
   private async settleAfterInclusion(
     attempt: RecoveryAttempt,
@@ -869,8 +891,8 @@ export class RecoveryFlowService {
   }
 
   /**
-   * A transaction that stops a recovery was included, but a node may still answer from an older block for a moment: read
-   * again (bounded) until the chain no longer shows the recovery, so the attempt is recorded as ended and not left PENDING.
+   * A cancel was included, but a node may still answer from an older block for a moment: read again (bounded) until the
+   * chain no longer shows the recovery, so the attempt is recorded as ended and not left PENDING.
    * Anything still unresolved is finished by the sweeper.
    */
   private async settleWhenGone(attemptId: string): Promise<RecoveryAttempt | null> {
@@ -884,8 +906,9 @@ export class RecoveryFlowService {
   }
 
   /**
-   * Compares a PENDING attempt with the chain. If the recovery is gone, decides who ended it (the root, by cancelling, or
-   * the attestor, by vetoing) and records it. Safe to call any number of times, from any process.
+   * Compares a PENDING attempt with the chain. If the recovery is gone and the root did not change, it was cancelled: only
+   * the account itself (a root-signed operation) can cancel or uninstall the validator, so the chain alone says who ended it.
+   * Safe to call any number of times, from any process.
    */
   async reconcilePending(attemptId: string): Promise<RecoveryAttempt | null> {
     const attempt = await this.ctx.uow.read.recoveryAttempts.findById(attemptId);
@@ -898,33 +921,18 @@ export class RecoveryFlowService {
     const account = await this.ctx.chain.accountState(wallet.address);
     if (account.rootValidator && account.rootValidator === attempt.newValidator) return attempt; // finalized elsewhere
     const now = this.ctx.now();
-    const byAttestor = attempt.terminationTxHash !== undefined;
-    const byRoot = attempt.cancelUserOpHash !== undefined;
-    if (!byAttestor && !byRoot) {
-      return this.failAttempt(attempt, ["PENDING", "FINALIZING"], "PENDING_VANISHED");
-    }
     const moved = await this.ctx.uow.transaction(async (tx) => {
       const advanced = await tx.recoveryAttempts.advance({
         id: attempt.id,
         from: ["PENDING", "FINALIZING"],
-        to: byAttestor ? "VETOED" : "CANCELLED",
-        patch: { terminatedBy: byAttestor ? "ATTESTOR" : "ROOT", terminatedAt: now },
+        to: "CANCELLED",
+        patch: { terminatedBy: "ROOT", terminatedAt: now },
       });
-      if (advanced) {
-        await audit(
-          tx,
-          advanced,
-          byAttestor ? RECOVERY_AUDIT_EVENTS.vetoed : RECOVERY_AUDIT_EVENTS.cancelled,
-        );
-      }
+      if (advanced) await audit(tx, advanced, RECOVERY_AUDIT_EVENTS.cancelled);
       return advanced;
     });
     if (moved) {
-      await this.ctx.notifier.notify(
-        moved.userId,
-        moved.id,
-        recoveryCancelledMessage(byAttestor ? "ATTESTOR" : "ROOT"),
-      );
+      await this.ctx.notifier.notify(moved.userId, moved.id, recoveryCancelledMessage());
     }
     return moved ?? (await this.ctx.uow.read.recoveryAttempts.findById(attemptId));
   }

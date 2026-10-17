@@ -4,8 +4,7 @@ import type { WalletCredentialKind } from "./credential.js";
 
 /*
  * Kaada-owned recovery contracts. The chain stack (viem, Kernel, the validators, the bundler) lives behind
- * RecoveryChainPort in @kaada/blockchain; the signing key of the attestor lives behind RecoveryAttestor. Domain and
- * application code never import either.
+ * RecoveryChainPort in @kaada/blockchain. Domain and application code never import it.
  */
 
 // ─────────────────────────────── the new root ───────────────────────────────
@@ -50,7 +49,7 @@ export interface ProposedRoot {
   purpose: number;
 }
 
-/** A complete EIP-712 signing request: what a wallet or the Recovery Code key signs. */
+/** A complete EIP-712 signing request: what the Recovery Code key signs. */
 export interface RecoveryTypedData {
   domain: { name: string; version: string; chainId: number; verifyingContract: string };
   types: Record<string, { name: string; type: string }[]>;
@@ -58,7 +57,7 @@ export interface RecoveryTypedData {
   message: Record<string, string>;
 }
 
-/** The typed message the Recovery Code key and the attestor sign (EIP-712 `Initiate`). Decimal strings, no floats. */
+/** The typed message the Recovery Code key signs (EIP-712 `Initiate`). Decimal strings, no floats. */
 export interface RecoveryTypedMessage {
   chainId: number;
   /** The recovery validator contract: the EIP-712 verifying contract. */
@@ -69,7 +68,7 @@ export interface RecoveryTypedMessage {
   hook: string;
   validatorDataHash: string;
   hookDataHash: string;
-  /** Unix seconds after which the signatures are void. */
+  /** Unix seconds after which the signature is void. */
   deadline: string;
 }
 
@@ -141,13 +140,12 @@ export interface RecoveryChainPort {
     root: ProposedRoot;
   }): Promise<{ created: boolean; txHash?: string }>;
 
-  /** `initiate` on the recovery validator with both signatures. Resolves once included and successful. */
+  /** `initiate` on the recovery validator with the Recovery Code signature. Resolves once included and successful. */
   initiate(input: {
     account: string;
     root: ProposedRoot;
     deadline: string;
     recoverySignature: string;
-    attestorSignature: string;
   }): Promise<{ txHash: string }>;
 
   /** The typed `Initiate` message for a root, for the validator at `recoveryValidator`. */
@@ -211,19 +209,6 @@ export interface RecoveryChainPort {
     hash: string;
     signature: string;
   }): Promise<boolean>;
-}
-
-// ──────────────────────────────── the attestor ────────────────────────────────
-
-/**
- * Kaada attestor. The ONLY things it can do: sign the typed `Initiate` message of a recovery (after the backend checked
- * every condition) and veto a pending recovery. It cannot sign calldata, a transfer, a PaymentAuthorization or a
- * UserOperation, and it is never an account root or a recovery approver on its own.
- */
-export interface RecoveryAttestor {
-  address(): Promise<string>;
-  signInitiate(message: RecoveryTypedMessage): Promise<string>;
-  veto(input: { recoveryValidator: string; account: string }): Promise<{ txHash: string }>;
 }
 
 // ──────────────────────────────── communication ───────────────────────────────

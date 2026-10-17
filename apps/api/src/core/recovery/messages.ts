@@ -17,8 +17,8 @@ function approxHours(from: Date, to: Date): string {
   return hours >= 48 ? `${Math.round(hours / 24)} days` : `${hours} hours`;
 }
 
-export function reportUrl(webUrl: string, cancelToken: string): string {
-  return `${webUrl.replace(/\/$/, "")}/recovery/report#${cancelToken}`;
+export function cancelUrl(webUrl: string, cancelToken: string): string {
+  return `${webUrl.replace(/\/$/, "")}/recovery/cancel#${cancelToken}`;
 }
 
 export function challengeEmail(code: string, expiresAt: Date): ChannelMessage {
@@ -57,7 +57,7 @@ export function recoveryUnavailableEmail(): ChannelMessage {
 export function recoveryStartedMessage(input: {
   now: Date;
   executeAfter: Date;
-  reportLink: string;
+  cancelLink: string;
 }): ChannelMessage {
   return {
     subject: "Kaada: wallet recovery requested",
@@ -65,23 +65,17 @@ export function recoveryStartedMessage(input: {
       "A recovery of your Kaada wallet was requested.",
       `It is waiting for a safety delay and will complete around ${utc(input.executeAfter)} (in about ${approxHours(input.now, input.executeAfter)}).`,
       "If this was you, you do not need to do anything.",
-      "If this was NOT you, stop it now: open this link. Do not share it.",
-      input.reportLink,
-      "If you can still use your current device, you can also cancel from there.",
+      "If this was NOT you, stop it now from the device or passkey you normally use: open this link there. Do not share it.",
+      input.cancelLink,
+      "Only your current device or passkey can cancel a recovery. Until it completes, nothing about your wallet has changed.",
     ].join("\n"),
   };
 }
 
-export function recoveryCancelledMessage(by: "ROOT" | "ATTESTOR"): ChannelMessage {
+export function recoveryCancelledMessage(): ChannelMessage {
   return {
-    subject:
-      by === "ROOT"
-        ? "Kaada: wallet recovery cancelled"
-        : "Kaada: wallet recovery stopped by security",
-    text:
-      by === "ROOT"
-        ? "The pending recovery of your Kaada wallet was cancelled from your current device. Nothing changed."
-        : "The pending recovery of your Kaada wallet was stopped by Kaada security. Nothing changed. If you did not ask for it, your wallet is safe; consider reviewing your accounts.",
+    subject: "Kaada: wallet recovery cancelled",
+    text: "The pending recovery of your Kaada wallet was cancelled from your current device. Nothing changed.",
   };
 }
 
@@ -90,7 +84,7 @@ export function recoveryCompletedMessage(now: Date): ChannelMessage {
     subject: "Kaada: wallet recovered",
     text: [
       `Your Kaada wallet was recovered on ${utc(now)}. The old device can no longer control it.`,
-      "Your PIN must be set again, and you will create a new Recovery Code.",
+      "Your PIN must be set again, and you will set up a new authenticator app and a new Recovery Code.",
       "If this was NOT you, contact Kaada support immediately.",
     ].join("\n"),
   };

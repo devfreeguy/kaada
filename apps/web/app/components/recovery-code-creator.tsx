@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { Address } from "viem";
 
 import { api, describeError, json } from "../lib/api";
+import { RECOVERY_LOSS_WARNING, RECOVERY_NEEDS, RECOVERY_NEEDS_TITLE } from "../lib/recovery-copy";
 import {
   deriveRecoveryKey,
   formatRecoveryCode,
@@ -13,9 +14,11 @@ import {
 import { signRootRequest } from "../lib/root-material";
 import type { RootSigningRequest } from "../lib/root-material";
 import { DeviceKeyMissingError } from "../lib/root-proof";
+import { AuthenticatorEnroller } from "./authenticator-enroller";
 
 type Step =
   | { name: "loading" }
+  | { name: "authenticator" }
   | { name: "intro" }
   | { name: "show"; code: string }
   | { name: "confirm"; code: string; mismatch: boolean }
@@ -23,8 +26,24 @@ type Step =
   | { name: "done" }
   | { name: "error"; message: string };
 
+/** The two things recovery needs, said plainly, and what happens if both are lost. */
+function RecoveryNeeds() {
+  return (
+    <div className="rounded-lg bg-neutral-100 px-4 py-3 text-sm text-neutral-800">
+      <p className="font-medium">{RECOVERY_NEEDS_TITLE}</p>
+      <ul className="mt-1 list-disc pl-5">
+        {RECOVERY_NEEDS.map((need) => (
+          <li key={need}>{need}</li>
+        ))}
+      </ul>
+      <p className="mt-2 font-medium">{RECOVERY_LOSS_WARNING}</p>
+    </div>
+  );
+}
+
 /**
- * Creates a NEW Recovery Code and arms it with the wallet's current root. The code is generated in this browser, shown once and
+ * Sets up recovery: the authenticator app first (a code that proves you hold it), then a NEW Recovery Code, armed with the
+ * wallet's current root. The code is generated in this browser, shown once and
  * confirmed by typing it back; Kaada receives only the address derived from it (never the code), and the root signs the
  * operation that installs that address. The code lives in this component's memory only: not in the URL, storage or a form field.
  */
@@ -37,12 +56,14 @@ export function RecoveryCodeCreator({ token, onDone }: { token: string; onDone?:
     let cancelled = false;
     void (async () => {
       try {
-        const loaded = await json<{ account: Address; chainId: number }>(
-          await api("/recovery/configuration/context", token),
-        );
+        const loaded = await json<{
+          account: Address;
+          chainId: number;
+          authenticatorEnrolled: boolean;
+        }>(await api("/recovery/configuration/context", token));
         if (cancelled) return;
         setContext(loaded);
-        setStep({ name: "intro" });
+        setStep(loaded.authenticatorEnrolled ? { name: "intro" } : { name: "authenticator" });
       } catch (error) {
         if (!cancelled) {
           setStep({
@@ -91,14 +112,21 @@ export function RecoveryCodeCreator({ token, onDone }: { token: string; onDone?:
 
   return (
     <section className="flex flex-col gap-4 border-t border-neutral-200 pt-6">
-      <h2 className="text-lg font-semibold">Recovery Code</h2>
+      <h2 className="text-lg font-semibold">Recovery setup</h2>
       {step.name === "loading" && <p className="text-sm text-neutral-600">Loading...</p>}
+      {step.name === "authenticator" && (
+        <>
+          <RecoveryNeeds />
+          <AuthenticatorEnroller token={token} onDone={() => setStep({ name: "intro" })} />
+        </>
+      )}
       {step.name === "intro" && (
         <>
+          <RecoveryNeeds />
           <p className="text-sm text-neutral-600">
-            If you lose this device, your Recovery Code, together with your email, lets you get your
-            wallet back after a safety delay. Kaada never sees it. Write it down and keep it
-            somewhere safe: anyone with it and access to your email could start a recovery.
+            Your Recovery Code is the second part. Kaada never sees it. Write it down and keep it
+            somewhere safe, apart from your phone: with it, your authenticator app and your email,
+            someone could start a recovery of your wallet.
           </p>
           <button
             type="button"
@@ -135,6 +163,7 @@ export function RecoveryCodeCreator({ token, onDone }: { token: string; onDone?:
       {step.name === "confirm" && (
         <>
           <p className="text-sm text-neutral-600">Type the code back to make sure it is right.</p>
+          <RecoveryNeeds />
           <input
             value={typed}
             onChange={(event) => setTyped(event.target.value)}
@@ -172,7 +201,7 @@ export function RecoveryCodeCreator({ token, onDone }: { token: string; onDone?:
       )}
       {step.name === "done" && (
         <p className="rounded-lg bg-neutral-100 px-4 py-3 text-sm text-neutral-800">
-          Your new Recovery Code is active. Keep it safe.
+          Recovery is set up. Keep your Recovery Code safe, and keep your authenticator app.
         </p>
       )}
       {step.name === "error" && (

@@ -69,15 +69,9 @@ describe("starting a recovery", () => {
     assert.equal(messages.size, 1, "one message for all of them: no oracle");
   });
 
-  it("verifies the email: the attempt moves on, and nothing reaches the chain or the attestor", async () => {
+  it("verifies the email: the attempt moves on, and nothing reaches the chain", async () => {
     const world = createRecoveryWorld();
     const user = await world.createUser();
-    let attestorCalls = 0;
-    const original = world.attestor.signInitiate.bind(world.attestor);
-    world.attestor.signInitiate = (message) => {
-      attestorCalls += 1;
-      return original(message);
-    };
     const token = await world.startAndVerify(user.email);
     const view = await world.flow.status(token);
     assert.equal(view.status, "EMAIL_VERIFIED");
@@ -88,11 +82,12 @@ describe("starting a recovery", () => {
       "the wallet is shown only after the email was verified",
     );
     assert.equal(view.recoveryAddress, user.recoveryKey.address.toLowerCase());
-    assert.equal(attestorCalls, 0);
     assert.equal((await world.chain.validatorState(user.account)).pending, undefined);
     // Email alone cannot jump ahead: no proof can be submitted without a proposed root.
-    await expectKaada(world.flow.submitProof(token, `0x${"11".repeat(65)}`), "RECOVERY_REJECTED");
-    assert.equal(attestorCalls, 0);
+    await expectKaada(
+      world.flow.submitProof(token, `0x${"11".repeat(65)}`, world.authenticatorCode(user)),
+      "RECOVERY_REJECTED",
+    );
     assert.equal((await world.chain.validatorState(user.account)).pending, undefined);
   });
 

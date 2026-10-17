@@ -31,7 +31,7 @@ interface State {
   validator: string;
   passkeyFactory: { address: string };
   deviceKey: { implementation: string; factory: string };
-  recoveryProbe: { registry: string; validator: string };
+  recoveryProbe: { validator: string };
   fixtures: { recipient: string };
   runner: { sell: string; buy: string; swap: string };
 }
@@ -57,9 +57,8 @@ const keyFile = (name: string, make: () => string) => {
   if (!existsSync(path)) writeFileSync(path, make(), { mode: 0o600 });
   return path;
 };
-const { generatePrivateKey, privateKeyToAccount } = await import("viem/accounts");
+const { privateKeyToAccount } = await import("viem/accounts");
 const relayerKeyFile = keyFile("recovery-relayer.key", () => state.deployerKey);
-const attestorKeyFile = keyFile("recovery-attestor.key", () => generatePrivateKey());
 const outboxFile = `${workDir}/roots-outbox.jsonl`;
 mkdirSync(workDir, { recursive: true });
 writeFileSync(outboxFile, "", { mode: 0o600 });
@@ -94,7 +93,7 @@ Object.assign(process.env, {
   RECOVERY_DEVICE_FACTORY_ADDRESS: state.deviceKey.factory,
   RECOVERY_DEVICE_IMPLEMENTATION_ADDRESS: state.deviceKey.implementation,
   RECOVERY_RELAYER_KEY_FILE: relayerKeyFile,
-  RECOVERY_ATTESTOR_KEY_FILE: attestorKeyFile,
+  RECOVERY_TOTP_SECRET_KEY: randomBytes(32).toString("base64"),
   RECOVERY_CHALLENGE_SECRET: randomBytes(32).toString("base64"),
   RECOVERY_EMAIL_PROVIDER: "outbox",
   RECOVERY_EMAIL_OUTBOX_FILE: outboxFile,

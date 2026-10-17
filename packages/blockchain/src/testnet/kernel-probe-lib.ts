@@ -1,5 +1,5 @@
 /*
- * Shared helpers for the Celo SEPOLIA Kernel probes (kernel-recovery-probe.ts, recovery-atomic-probe.ts).
+ * Shared helpers for the Celo SEPOLIA Kernel probes (kernel-recovery-probe.ts).
  * TESTNET ONLY: real EntryPoint userOps handed straight to handleOps by the throwaway deployer.
  */
 import { readFileSync, writeFileSync } from "node:fs";

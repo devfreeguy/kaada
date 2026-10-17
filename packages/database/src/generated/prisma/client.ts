@@ -245,6 +245,13 @@ export type RecoveryConfiguration = Prisma.RecoveryConfigurationModel
  */
 export type RecoveryAttempt = Prisma.RecoveryAttemptModel
 /**
+ * Model RecoveryTotp
+ * The authenticator-app (TOTP) factor of a wallet's recovery. The secret is stored ONLY encrypted (AES-256-GCM under a
+ * dedicated key); lastUsedStep only moves forward, which is the replay guard. At most one PENDING and one ACTIVE per wallet
+ * (partial unique indexes, manual migration).
+ */
+export type RecoveryTotp = Prisma.RecoveryTotpModel
+/**
  * Model RecoveryEmailChallenge
  * A short-lived email challenge for one recovery attempt. Only a keyed hash of the code is stored.
  */

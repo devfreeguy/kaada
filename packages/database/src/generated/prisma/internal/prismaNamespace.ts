@@ -430,6 +430,7 @@ export const ModelName = {
   RootChange: 'RootChange',
   RecoveryConfiguration: 'RecoveryConfiguration',
   RecoveryAttempt: 'RecoveryAttempt',
+  RecoveryTotp: 'RecoveryTotp',
   RecoveryEmailChallenge: 'RecoveryEmailChallenge',
   DeviceAttestationChallenge: 'DeviceAttestationChallenge',
   DeviceAttestation: 'DeviceAttestation',
@@ -454,7 +455,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "transactionPinSecurity" | "authorizationSession" | "paymentAuthorization" | "executionSecret" | "firmQuoteAttempt" | "rootActionSession" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent" | "walletCredential" | "rootChange" | "recoveryConfiguration" | "recoveryAttempt" | "recoveryEmailChallenge" | "deviceAttestationChallenge" | "deviceAttestation" | "channelInboundEvent" | "channelAction" | "channelPaymentStatus" | "userNotification" | "walletDepositCheckpoint" | "walletFundingEvent"
+    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "transactionPinSecurity" | "authorizationSession" | "paymentAuthorization" | "executionSecret" | "firmQuoteAttempt" | "rootActionSession" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent" | "walletCredential" | "rootChange" | "recoveryConfiguration" | "recoveryAttempt" | "recoveryTotp" | "recoveryEmailChallenge" | "deviceAttestationChallenge" | "deviceAttestation" | "channelInboundEvent" | "channelAction" | "channelPaymentStatus" | "userNotification" | "walletDepositCheckpoint" | "walletFundingEvent"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2900,6 +2901,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    RecoveryTotp: {
+      payload: Prisma.$RecoveryTotpPayload<ExtArgs>
+      fields: Prisma.RecoveryTotpFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.RecoveryTotpFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryTotpPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.RecoveryTotpFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryTotpPayload>
+        }
+        findFirst: {
+          args: Prisma.RecoveryTotpFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryTotpPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.RecoveryTotpFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryTotpPayload>
+        }
+        findMany: {
+          args: Prisma.RecoveryTotpFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryTotpPayload>[]
+        }
+        create: {
+          args: Prisma.RecoveryTotpCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryTotpPayload>
+        }
+        createMany: {
+          args: Prisma.RecoveryTotpCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.RecoveryTotpCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryTotpPayload>[]
+        }
+        delete: {
+          args: Prisma.RecoveryTotpDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryTotpPayload>
+        }
+        update: {
+          args: Prisma.RecoveryTotpUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryTotpPayload>
+        }
+        deleteMany: {
+          args: Prisma.RecoveryTotpDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.RecoveryTotpUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.RecoveryTotpUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryTotpPayload>[]
+        }
+        upsert: {
+          args: Prisma.RecoveryTotpUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecoveryTotpPayload>
+        }
+        aggregate: {
+          args: Prisma.RecoveryTotpAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateRecoveryTotp>
+        }
+        groupBy: {
+          args: Prisma.RecoveryTotpGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RecoveryTotpGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.RecoveryTotpCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RecoveryTotpCountAggregateOutputType> | number
+        }
+      }
+    }
     RecoveryEmailChallenge: {
       payload: Prisma.$RecoveryEmailChallengePayload<ExtArgs>
       fields: Prisma.RecoveryEmailChallengeFieldRefs
@@ -4252,6 +4327,8 @@ export const RecoveryAttemptScalarFieldEnum = {
   recoveryNonce: 'recoveryNonce',
   proofDeadline: 'proofDeadline',
   proposedAt: 'proposedAt',
+  totpVerifiedAt: 'totpVerifiedAt',
+  totpStep: 'totpStep',
   previousRootValidator: 'previousRootValidator',
   initiatedAt: 'initiatedAt',
   executeAfter: 'executeAfter',
@@ -4272,7 +4349,6 @@ export const RecoveryAttemptScalarFieldEnum = {
   completedAt: 'completedAt',
   terminatedBy: 'terminatedBy',
   terminatedAt: 'terminatedAt',
-  terminationTxHash: 'terminationTxHash',
   failureCode: 'failureCode',
   cleanupCompletedAt: 'cleanupCompletedAt',
   pinResetAt: 'pinResetAt',
@@ -4282,6 +4358,23 @@ export const RecoveryAttemptScalarFieldEnum = {
 } as const
 
 export type RecoveryAttemptScalarFieldEnum = (typeof RecoveryAttemptScalarFieldEnum)[keyof typeof RecoveryAttemptScalarFieldEnum]
+
+
+export const RecoveryTotpScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  walletId: 'walletId',
+  status: 'status',
+  encryptedSecret: 'encryptedSecret',
+  keyVersion: 'keyVersion',
+  enabledAt: 'enabledAt',
+  lastUsedStep: 'lastUsedStep',
+  disabledAt: 'disabledAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RecoveryTotpScalarFieldEnum = (typeof RecoveryTotpScalarFieldEnum)[keyof typeof RecoveryTotpScalarFieldEnum]
 
 
 export const RecoveryEmailChallengeScalarFieldEnum = {
@@ -5065,6 +5158,20 @@ export type ListEnumRecoveryTerminatorFieldRefInput<$PrismaModel> = FieldRefInpu
 
 
 /**
+ * Reference to a field of type 'RecoveryTotpStatus'
+ */
+export type EnumRecoveryTotpStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RecoveryTotpStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'RecoveryTotpStatus[]'
+ */
+export type ListEnumRecoveryTotpStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RecoveryTotpStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'AttestationPlatform'
  */
 export type EnumAttestationPlatformFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AttestationPlatform'>
@@ -5359,6 +5466,7 @@ export type GlobalOmitConfig = {
   rootChange?: Prisma.RootChangeOmit
   recoveryConfiguration?: Prisma.RecoveryConfigurationOmit
   recoveryAttempt?: Prisma.RecoveryAttemptOmit
+  recoveryTotp?: Prisma.RecoveryTotpOmit
   recoveryEmailChallenge?: Prisma.RecoveryEmailChallengeOmit
   deviceAttestationChallenge?: Prisma.DeviceAttestationChallengeOmit
   deviceAttestation?: Prisma.DeviceAttestationOmit

@@ -407,7 +407,6 @@ export const RecoveryAttemptStatus = {
   ROOT_CHANGED: 'ROOT_CHANGED',
   COMPLETED: 'COMPLETED',
   CANCELLED: 'CANCELLED',
-  VETOED: 'VETOED',
   EXPIRED: 'EXPIRED',
   FAILED: 'FAILED'
 } as const
@@ -417,11 +416,19 @@ export type RecoveryAttemptStatus = (typeof RecoveryAttemptStatus)[keyof typeof 
 
 export const RecoveryTerminator = {
   ROOT: 'ROOT',
-  ATTESTOR: 'ATTESTOR',
   SYSTEM: 'SYSTEM'
 } as const
 
 export type RecoveryTerminator = (typeof RecoveryTerminator)[keyof typeof RecoveryTerminator]
+
+
+export const RecoveryTotpStatus = {
+  PENDING: 'PENDING',
+  ACTIVE: 'ACTIVE',
+  DISABLED: 'DISABLED'
+} as const
+
+export type RecoveryTotpStatus = (typeof RecoveryTotpStatus)[keyof typeof RecoveryTotpStatus]
 
 
 export const AttestationPlatform = {

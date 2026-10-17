@@ -83,7 +83,7 @@ export class RecoveryFinalizer {
       reconciled += 1;
     }
     for (const attempt of await read.recoveryAttempts.listByStatus(["PENDING"], limit)) {
-      // Catches a cancel or a veto that happened outside this process.
+      // Catches a cancel that happened outside this process.
       const after = await this.deps.flow.reconcilePending(attempt.id);
       if (after && after.status !== "PENDING") reconciled += 1;
     }
@@ -149,7 +149,7 @@ export class RecoveryFinalizer {
     if (!validatorState.pending) {
       const after = await this.deps.flow.reconcilePending(attempt.id);
       if (after && after.status === "FINALIZING") {
-        // Nobody cancelled, nobody vetoed and the root did not change: the recovery is simply gone.
+        // Nobody cancelled and the root did not change: the recovery is simply gone.
         await this.deps.flow.failAttempt(after, ["FINALIZING"], "PENDING_VANISHED");
         return { outcome: "FAILED", code: "PENDING_VANISHED" };
       }

@@ -16,21 +16,22 @@ together the pieces documented in detail elsewhere: [wallet-architecture](wallet
 - **The 6-digit PIN** confirms one payment. It is Argon2id-hashed, locks after three wrong guesses (in the database, not in memory)
   and is never a way into the wallet.
 - **Recovery** moves the root to a new credential. It needs the registered email, the **Recovery Code** (a 130-bit secret that only
-  the user holds; the chain stores the address of the key derived from it) and a **delay** of at least 24 h enforced by the contract.
-  The current root can **cancel**; Kaada security can **veto** (the attestor can only stop, never approve or complete).
+  the user holds; the chain stores the address of the key derived from it), a current code from the user's **authenticator app** (TOTP,
+  checked by Kaada before it submits anything) and a **delay** of at least 24 h enforced by the contract. Only the current root can
+  **cancel**; there is no attestor, no veto, no registry and no KMS key. Kaada alone can never recover a wallet.
 - **Device attestation** classifies where a device key lives (`TRUSTED_DEVICE`, `APP_ATTESTED_DEVICE`, `WEB_NON_EXTRACTABLE`,
   `UNKNOWN`) from server-verified evidence only.
 
 ## Trust boundaries and who can do what
 
-| Actor                                   | Can                                                                                             | Cannot                                                                                        |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Kaada backend (relayer, bundler client) | Deploy validator clones, send operations a root signed, top up gas within a cap                 | Sign for a root, move funds, start or finish a recovery on its own                            |
-| Attestor                                | Sign the typed `Initiate` of one validator on one chain; send `attestorCancel`                  | Sign bytes, transactions, payments, UserOperations; approve or complete a recovery            |
-| Attestor key holder                     | File key (**development and tests only**) or a KMS/HSM signer through `AttestorSigner`          | Production refuses a file key at startup                                                      |
-| Recovery Code holder + email            | Start a recovery that still waits out the delay and can be cancelled or vetoed                  | Skip the delay, avoid the notifications                                                       |
-| Current root                            | Rotate, add a backup, cancel a pending recovery, install/replace the Recovery Code, set the PIN |                                                                                               |
-| Any client                              | Present evidence and proofs                                                                     | Choose its own security tier; name a user, wallet or amount; read a PIN or Recovery Code back |
+| Actor                                            | Can                                                                                             | Cannot                                                                                                     |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Kaada backend (relayer, bundler client)          | Deploy validator clones, send operations a root signed, top up gas within a cap                 | Sign for a root, move funds, start or finish a recovery on its own                                         |
+| Recovery Code holder + authenticator app + email | Start a recovery through Kaada that still waits out the delay and can be cancelled by the root  | Skip the delay, avoid the notifications                                                                    |
+| Recovery Code holder alone                       | Nothing on chain: `initiate` accepts only the recovery relayer                                  | Skip Kaada's email and authenticator checks, start a recovery                                              |
+| Compromised Kaada backend / relayer              | Read the encrypted authenticator secrets, hold the relayer key, forward signatures it is handed | Produce the Recovery Code signature the contract requires (so it cannot recover a wallet); cancel anything |
+| Current root                                     | Rotate, add a backup, cancel a pending recovery, install/replace the Recovery Code, set the PIN |                                                                                                            |
+| Any client                                       | Present evidence and proofs                                                                     | Choose its own security tier; name a user, wallet or amount; read a PIN or Recovery Code back              |
 
 ## What is frozen
 
@@ -39,8 +40,8 @@ These are the MVP contract. Changing any of them needs a deliberate security rev
 1. The root is exactly one of passkey or device key, behind the `RootCredential` / `RootProof` / `RootChallenge` abstraction. No new
    validator types, no new recovery contracts, no social recovery.
 2. A validator instance is never reused (`validatorEverUsed`), and every root change uses a fresh deterministic clone.
-3. Recovery: email code + Recovery Code proof + contract delay (≥ 24 h) + root cancel + attestor veto. One non-terminal attempt per
-   wallet (partial unique index). The attestor surface stays at `signInitiate` and `veto`.
+3. Recovery: email code + Recovery Code proof + authenticator code + contract delay (≥ 24 h) + root cancel. One non-terminal attempt per
+   wallet (partial unique index). No attestor, veto or registry exists, and nothing may reintroduce a server-held recovery key.
 4. The PIN is exactly six digits, hashed with Argon2id, locked by the database, and confirms one payment only.
 5. Security tiers are derived only from verified evidence on a native route; a tier never rises after the credential exists
    (`canChangeTier`). The web route refuses evidence outright.
@@ -57,19 +58,19 @@ Environment variables hold **secrets and per-deployment facts** only (about 30, 
   cannot weaken a floor. A change is a reviewed, tested diff.
 - `packages/config/src/deployments.ts`: per-network contract addresses and recovery delays (public). `RECOVERY_NETWORK` selects one;
   recovery and device keys refuse to start on a network whose contracts are not listed.
-- Derived from `NODE_ENV`, never configured: production attests with a KMS/HSM signer (a key file is refused), never accepts Apple's
-  sandbox attestation, never uses the file outbox, and needs Redis for wallets and recovery.
+- Derived from `NODE_ENV`, never configured: production never accepts Apple's sandbox attestation, never uses the file outbox, and
+  needs Redis for wallets and recovery.
 
 Production rules enforced at startup:
 
-| Setting              | Rule                                                                                                                                                                                                                   |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `REDIS_URL`          | **Required** for wallets and recovery: every API instance shares the limits and they survive restarts. `rediss://` sets the TLS server name explicitly.                                                                |
-| Attestor             | Production needs `RECOVERY_ATTESTOR_KMS_KEY_ID`; the deployment installs the adapter through the `ATTESTOR_SIGNER_FACTORY` provider (built on `createExternalSigner`). With none installed the process does not start. |
-| Recovery email       | `RECOVERY_SMTP_URL` + `RECOVERY_EMAIL_FROM`; the file outbox is refused.                                                                                                                                               |
-| `TELEGRAM_BOT_TOKEN` | Optional. When set, linked Telegram identities get the same recovery alerts.                                                                                                                                           |
-| Recovery delay       | Fixed floor of 24 h (the contract's own), in `deployments.ts`.                                                                                                                                                         |
-| Key files            | The relayer key (and the dev attestor key) must live outside the repository.                                                                                                                                           |
+| Setting              | Rule                                                                                                                                                                                                           |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `REDIS_URL`          | **Required** for wallets and recovery: every API instance shares the limits and they survive restarts. `rediss://` sets the TLS server name explicitly.                                                        |
+| Authenticator key    | `RECOVERY_TOTP_SECRET_KEY` (32 random bytes, base64) is required when recovery is on, must differ from `EXECUTION_SECRET_KEY`, and rotates with `_VERSION` / `_PREVIOUS`. There is no KMS or attestor setting. |
+| Recovery email       | `RECOVERY_SMTP_URL` + `RECOVERY_EMAIL_FROM`; the file outbox is refused.                                                                                                                                       |
+| `TELEGRAM_BOT_TOKEN` | Optional. When set, linked Telegram identities get the same recovery alerts.                                                                                                                                   |
+| Recovery delay       | Fixed floor of 24 h (the contract's own), in `deployments.ts`.                                                                                                                                                 |
+| Key files            | The relayer key (gas only) must live outside the repository.                                                                                                                                                   |
 
 ## Chat channels
 
@@ -95,10 +96,10 @@ attempt budget, one active recovery per wallet, and the contract's own checks.
 
 ## Notifications
 
-Recovery **started, cancelled, vetoed** and **completed** are sent to every linked channel by `RecoveryNotifier`: email always, Telegram
+Recovery **started, cancelled** and **completed** are sent to every linked channel by `RecoveryNotifier`: email always, Telegram
 when a bot token is configured and the person linked Telegram. A failing channel is recorded (`recovery.notification_failed`) and never
-blocks the other channels or the recovery. The start message is the only one carrying a link (the "this was not me" link, in the URL
-fragment). Subjects differ so the four events are distinguishable at a glance. SMTP rejects any recipient or subject with a line break
+blocks the other channels or the recovery. The start message is the only one carrying a link (the cancel link, in the URL
+fragment). Subjects differ so the three events are distinguishable at a glance. SMTP rejects any recipient or subject with a line break
 (header injection); Telegram errors never include the bot token.
 
 ## User interface
@@ -108,7 +109,7 @@ Minimal pages in `apps/web` (all `no-store`, `no-referrer`, not frameable, not i
 | Page                                                           | What it does                                                                                                                                                                                                                                                                                                                                                             |
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `/recovery`                                                    | Start recovery, verify the email code, create a new passkey or device key, enter the Recovery Code (checked locally against the on-chain verifier, signed locally), countdown while pending, prove the new credential, reset the PIN, create a new Recovery Code. The server's `nextStep` decides what is shown; the session token lives in this tab's `sessionStorage`. |
-| `/recovery/report#token`                                       | "This was not me": report (Kaada security vetoes) or cancel with the current root. The token is moved from the fragment into memory and removed from the address bar immediately.                                                                                                                                                                                        |
+| `/recovery/cancel#token`                                       | "This was not me": cancel with the current root (the only way to stop a recovery). The token is moved from the fragment into memory and removed from the address bar immediately.                                                                                                                                                                                        |
 | `/security/[token]`                                            | Voluntary root rotation, backup credential enrolment and a new Recovery Code, from a security link.                                                                                                                                                                                                                                                                      |
 | `/setup/[token]`, `/root-action/[token]`, `/authorize/[token]` | Unchanged.                                                                                                                                                                                                                                                                                                                                                               |
 
@@ -118,16 +119,16 @@ contract tests on the server side; they have **not** been exercised end to end i
 
 ## Security regression suite
 
-`pnpm --filter @kaada/api test:security` runs the manifest in `apps/api/test/security/manifest.json` (16 areas: passkey root,
-device-key root, 6-digit PIN, delegated permission, recovery, cancellation, attestor veto, root rotation, backup credential, replay
-protection, restart and reconciliation, race conditions, rate limits, notifications, attestor signer, device attestation).
+`pnpm --filter @kaada/api test:security` runs the manifest in `apps/api/test/security/manifest.json` (passkey root,
+device-key root, 6-digit PIN, delegated permission, recovery, cancellation, authenticator factor, root rotation, backup credential, replay
+protection, restart and reconciliation, race conditions, rate limits, notifications, recovery signer boundary, device attestation).
 `--integration` adds the real-database and real-Redis tests. `test/security-manifest.test.ts` fails if a listed file disappears or an
 area becomes empty, so the suite cannot shrink silently. It is part of the normal `pnpm test` too.
 
 ## Remaining blockers (true ones only)
 
-1. **A production KMS/HSM attestor adapter does not exist yet.** The interface, the digest-signing wrapper and the startup refusal are
-   done and tested; a deployment must supply the cloud adapter (`DigestSigningService`) before production recovery can start.
+1. **The recovery contracts changed and are not deployed anywhere.** The new `KaadaRecoveryValidator` (single Recovery Code signature,
+   no registry) must be deployed, listed in `deployments.ts` and re-proved on Celo Sepolia before recovery can start on any network.
 2. **Real-device attestation** has not been validated on a physical Android device or iPhone (see device-attestation.md).
 3. **The recovery and security pages have not been driven in a real browser against a live chain.**
 4. **Native clients** (Android, iOS) that produce attestation evidence are not built.

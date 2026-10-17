@@ -44,9 +44,8 @@ export function adapterDelivery(adapter: ChannelAdapter): DeliveryChannel {
 export type Notification =
   | { type: Exclude<NotificationType, `RECOVERY_${string}` | "PAYMENT_FAILED"> }
   | { type: "PAYMENT_FAILED"; code?: string }
-  | { type: "RECOVERY_STARTED"; now: Date; executeAfter: Date; reportLink: string }
+  | { type: "RECOVERY_STARTED"; now: Date; executeAfter: Date; cancelLink: string }
   | { type: "RECOVERY_CANCELLED" }
-  | { type: "RECOVERY_VETOED" }
   | { type: "RECOVERY_COMPLETED"; now: Date };
 
 const PROGRESS_OF: Record<string, PaymentProgress> = {
@@ -69,16 +68,12 @@ export function renderNotification(notification: Notification): OutboundChannelM
       const message = recoveryStartedMessage({
         now: notification.now,
         executeAfter: notification.executeAfter,
-        reportLink: notification.reportLink,
+        cancelLink: notification.cancelLink,
       });
       return { text: `${message.subject}\n\n${message.text}` };
     }
     case "RECOVERY_CANCELLED": {
-      const message = recoveryCancelledMessage("ROOT");
-      return { text: `${message.subject}\n\n${message.text}` };
-    }
-    case "RECOVERY_VETOED": {
-      const message = recoveryCancelledMessage("ATTESTOR");
+      const message = recoveryCancelledMessage();
       return { text: `${message.subject}\n\n${message.text}` };
     }
     case "RECOVERY_COMPLETED": {

@@ -14,6 +14,7 @@ export interface CleanupSummary {
   webSessionsRevoked: number;
   passkeysRevoked: number;
   pinResetRequired: boolean;
+  authenticatorRetired: boolean;
 }
 
 const REASON = "ACCOUNT_RECOVERY";
@@ -28,7 +29,8 @@ const REASON = "ACCOUNT_RECOVERY";
  *    so nothing prepared under the old root can be revived;
  *  - web sessions of the user: revoked;
  *  - the old passkey credentials: revoked (the new one is recorded as the root);
- *  - the PIN: marked reset-required, so the old PIN cannot authorize anything until the person sets a new one.
+ *  - the PIN: marked reset-required, so the old PIN cannot authorize anything until the person sets a new one;
+ *  - the authenticator app: retired with the Recovery Code it travelled with, so the person sets up a fresh one.
  */
 export class RecoveryCleanup {
   constructor(private readonly ctx: RecoveryContext) {}
@@ -52,6 +54,7 @@ export class RecoveryCleanup {
       webSessionsRevoked: 0,
       passkeysRevoked: 0,
       pinResetRequired: false,
+      authenticatorRetired: false,
     };
 
     for (const permission of await read.delegatedPermissions.listForWallet(attempt.walletId)) {
@@ -103,6 +106,12 @@ export class RecoveryCleanup {
       summary.pinResetRequired = await read.transactionPins.markResetRequired(attempt.userId);
       if (summary.pinResetRequired)
         await audit(read, attempt, RECOVERY_AUDIT_EVENTS.pinResetRequired);
+    }
+
+    // The recovery spent the authenticator enrolment together with the Recovery Code: a new one is set up with the new code.
+    if (first) {
+      await this.ctx.totp.disable({ userId: attempt.userId, walletId: attempt.walletId });
+      summary.authenticatorRetired = true;
     }
 
     if (first) {

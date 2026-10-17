@@ -22,10 +22,11 @@
       "recovery-security.test.ts"
     ],
     "cancellation": ["recovery-finalize.test.ts", "recovery-flow.test.ts"],
-    "attestor veto": [
+    "authenticator factor": [
+      "recovery-totp.test.ts",
       "recovery-flow.test.ts",
-      "recovery-finalize.test.ts",
-      "recovery-channels.test.ts"
+      "recovery-controller.test.ts",
+      "recovery-security.test.ts"
     ],
     "root rotation": [
       "root-change.test.ts",
@@ -38,6 +39,7 @@
       "device-attestation-roots.test.ts"
     ],
     "replay protection": [
+      "recovery-totp.test.ts",
       "recovery-flow.test.ts",
       "recovery-finalize.test.ts",
       "root-agnostic.test.ts",
@@ -47,6 +49,7 @@
     ],
     "restart and reconciliation": [
       "recovery-finalize.test.ts",
+      "recovery-totp.test.ts",
       "root-change.test.ts",
       "execution-runner.test.ts"
     ],
@@ -59,11 +62,13 @@
     ],
     "rate limits": [
       "recovery-limits.test.ts",
+      "recovery-totp.test.ts",
       "redis-rate-limiter.test.ts",
       "authorization-controller.test.ts"
     ],
     "notifications": ["recovery-channels.test.ts", "recovery-flow.test.ts"],
-    "attestor signer": ["recovery-security.test.ts"],
+    "recovery signer boundary": ["recovery-security.test.ts", "recovery-relayer.test.ts"],
+    "relayer-only initiation": ["recovery-relayer.test.ts"],
     "device attestation": [
       "device-tier-service.test.ts",
       "device-attestation-enrolment.test.ts",

@@ -1,7 +1,7 @@
 // KaadaRecoveryValidator: unit, access-control, state-transition, replay, malformed-calldata and property
-// tests. The first block replicates, one for one, the guarantees proven on Celo Sepolia
-// (packages/blockchain/src/testnet/recovery-atomic-probe.ts). Kernel-level behaviour (EntryPoint validAfter,
-// InvalidNonce voiding, selector grants) cannot run here and is covered by the Sepolia end-to-end run.
+// tests. The first block replicates, one for one, the guarantees first proven on Celo Sepolia with an earlier prototype of the
+// validator. Kernel-level behaviour (EntryPoint validAfter, InvalidNonce voiding, selector grants) cannot run here and is covered
+// by the Sepolia end-to-end run (recovery-validator-sepolia.ts).
 import assert from "node:assert/strict";
 import test from "node:test";
 
@@ -94,9 +94,34 @@ test("install: configuration is per account (msg.sender), never settable for ano
   assert.equal(await world.read<boolean>("isInitialized", [world.stranger]), true);
 });
 
-test("the shared registry is immutable and required", async () => {
+test("the validator reads no external state: no registry, no attestor; its only constructor argument is the relayer", async () => {
+  const names = validatorAbi.map((e) => ("name" in e ? e.name : e.type));
+  assert.equal(
+    names.some((n) => /registry|attestor/i.test(String(n))),
+    false,
+  );
+  const constructor = validatorAbi.find((e) => e.type === "constructor") as
+    { inputs: { name: string; type: string }[] } | undefined;
+  assert.deepEqual(
+    constructor?.inputs.map((i) => [i.name, i.type]),
+    [["relayer", "address"]],
+  );
   const world = await installed();
-  assert.equal((await world.read<string>("REGISTRY")).toLowerCase(), world.registry.toLowerCase());
+  assert.equal((await world.read<string>("RELAYER")).toLowerCase(), world.relayer.toLowerCase());
+});
+
+test("the relayer cannot be the zero address", async () => {
+  const { TestChain } = await import("./testing/evm.js");
+  const { artifacts } = await import("./generated/artifacts.js");
+  const chain = await TestChain.create();
+  await assert.rejects(
+    chain.deploy(
+      "0x1000000000000000000000000000000000000001",
+      artifacts.KaadaRecoveryValidator.abi,
+      artifacts.KaadaRecoveryValidator.bytecode,
+      [zeroAddress],
+    ),
+  );
 });
 
 test("module surface: validator type only, never signs for the account", async () => {
@@ -148,7 +173,7 @@ test("test-only short-delay variant lowers only the floor (10 s) and is a separa
 
 // ── initiate: who may start a recovery, and what the signatures bind ─────────────────────────────
 
-test("initiate: recovery key + attestor start a recovery and the timelock is the configured delay", async () => {
+test("initiate: the recovery key alone starts a recovery and the timelock is the configured delay", async () => {
   const world = await installed();
   const root = world.root();
   const at = world.chain.timestamp;
@@ -158,51 +183,126 @@ test("initiate: recovery key + attestor start a recovery and the timelock is the
   assert.equal(pending.executeAfter, at + BigInt(72 * 3600));
 });
 
-test("initiate: the recovery key alone cannot start a recovery", async () => {
-  const world = await installed();
-  const root = world.root();
-  const sig = await world.sign(world.recoveryKey, root);
-  const result = await world.initiate(root, { sigRecovery: sig, sigAttestor: sig });
-  assert.equal(result.error, "BadSignature");
-  assert.equal((await world.pending()).active, false);
-});
-
-test("initiate: the attestor alone cannot start a recovery", async () => {
-  const world = await installed();
-  const root = world.root();
-  const sig = await world.sign(world.attestorKey, root);
-  assert.equal(
-    (await world.initiate(root, { sigRecovery: sig, sigAttestor: sig })).error,
-    "BadSignature",
-  );
-  assert.equal((await world.pending()).active, false);
-});
-
-test("initiate: a stranger's signatures, swapped slots, and a non-attestor second signature all fail", async () => {
+test("initiate: a stranger's signature, or no signature, cannot start a recovery", async () => {
   const world = await installed();
   const root = world.root();
   const stranger = generatePrivateKey();
-  const good = await world.sign(world.recoveryKey, root);
-  const attestor = await world.sign(world.attestorKey, root);
-  assert.equal(
-    (await world.initiate(root, { sigRecovery: attestor, sigAttestor: good })).error,
-    "BadSignature",
-  );
-  assert.equal(
-    (await world.initiate(root, { sigAttestor: await world.sign(stranger, root) })).error,
-    "BadSignature",
-  );
   assert.equal(
     (await world.initiate(root, { sigRecovery: await world.sign(stranger, root) })).error,
     "BadSignature",
   );
+  assert.equal((await world.initiate(root, { sigRecovery: "0x" })).error, "BadSignature");
+  assert.equal((await world.pending()).active, false);
+});
+
+test("initiate: only the relayer, and only with the Recovery Code signature: every other combination fails", async () => {
+  const root = (await installed()).root();
+  const valid = async (w: World) => w.sign(w.recoveryKey, root);
+
+  // 1. The Recovery Code holder cannot call initiate directly, even with a perfect signature.
+  const holder = await installed();
+  const holderSig = await valid(holder);
+  assert.equal(
+    (
+      await holder.initiate(holder.root(), {
+        sender: holder.recoveryAddress,
+        sigRecovery: holderSig,
+      })
+    ).error,
+    "NotRelayer",
+  );
+  // 2. A random address cannot initiate, with a perfect signature or without one.
+  for (const sender of [holder.stranger, ATTACKER, holder.account, holder.deployer]) {
+    assert.equal(
+      (
+        await holder.initiate(holder.root(), {
+          sender,
+          sigRecovery: await holder.sign(holder.recoveryKey, holder.root()),
+        })
+      ).error,
+      "NotRelayer",
+      sender,
+    );
+    assert.equal(
+      (await holder.initiate(holder.root(), { sender, sigRecovery: "0x" })).error,
+      "NotRelayer",
+      sender,
+    );
+  }
+  assert.equal((await holder.pending()).active, false);
+
+  // 3. The relayer with an INVALID Recovery Code signature fails.
+  const invalid = await installed();
+  assert.equal(
+    (
+      await invalid.initiate(invalid.root(), {
+        sigRecovery: await invalid.sign(generatePrivateKey(), invalid.root()),
+      })
+    ).error,
+    "BadSignature",
+  );
+  assert.equal(
+    (await invalid.initiate(invalid.root(), { sigRecovery: "0x" })).error,
+    "BadSignature",
+  );
+  assert.equal((await invalid.pending()).active, false);
+
+  // 4. The relayer with a VALID Recovery Code signature succeeds.
+  const ok = await installed();
+  assert.equal((await ok.initiate(ok.root())).ok, true);
+  assert.equal((await ok.pending()).active, true);
+});
+
+test("initiate: the relayer ALONE cannot forge a recovery: its own key, a replay for another account, or a changed root all fail", async () => {
+  const { privateKeyToAccount: toAccount } = await import("viem/accounts");
+  const world = await installed();
+  const relayerKey = generatePrivateKey();
+  // A world whose relayer is a key the test holds, to prove that even the relayer's own signature is not the Recovery Code's.
+  const mine = await World.create({ relayer: toAccount(relayerKey).address });
+  assert.equal((await mine.install()).ok, true);
+  const root = mine.root();
+  assert.equal(
+    (await mine.initiate(root, { sigRecovery: await mine.sign(relayerKey, root) })).error,
+    "BadSignature",
+  );
+  // The relayer cannot move a valid signature onto another root...
+  const sig = await world.sign(world.recoveryKey, world.root());
+  assert.equal(
+    (await world.initiate(world.root({ validatorData: "0x99" }), { sigRecovery: sig })).error,
+    "BadSignature",
+  );
+  // ...nor onto another account.
+  assert.equal(
+    (await world.initiate(world.root(), { account: ATTACKER, sigRecovery: sig })).error,
+    "NotInitialized",
+  );
+  assert.equal((await world.pending()).active, false);
+});
+
+test("the relayer has no other power: it cannot cancel, uninstall or reconfigure anyone's recovery", async () => {
+  const world = await installed();
+  assert.equal((await world.initiate(world.root())).ok, true);
+  // Everything else is keyed by msg.sender: as the relayer these act on the relayer's own empty state.
+  assert.equal((await world.from(world.relayer, "cancel")).error, "NoPendingRecovery");
+  assert.equal((await world.from(world.relayer, "setDelay", [DAY])).error, "NotInitialized");
+  assert.equal(
+    (await world.from(world.relayer, "setRecoveryKey", [ATTACKER])).error,
+    "NotInitialized",
+  );
+  assert.equal((await world.pending()).active, true);
+});
+
+test("the existing root (the account) can still cancel directly, with no relayer involved", async () => {
+  const world = await installed();
+  assert.equal((await world.initiate(world.root())).ok, true);
+  assert.equal((await world.asAccount(world.fn("cancel"))).ok, true);
+  assert.equal((await world.pending()).active, false);
 });
 
 test("initiate: malformed or malleable signatures fail (length, v, high-s)", async () => {
   const world = await installed();
   const root = world.root();
   const good = await world.sign(world.recoveryKey, root);
-  const attestor = await world.sign(world.attestorKey, root);
   assert.equal((await world.initiate(root, { sigRecovery: "0x" })).error, "BadSignature");
   assert.equal(
     (await world.initiate(root, { sigRecovery: good.slice(0, -2) as Hex })).error,
@@ -220,50 +320,26 @@ test("initiate: malformed or malleable signatures fail (length, v, high-s)", asy
   const twinS = pad(`0x${(n - s).toString(16)}`, { size: 32 });
   const v = Number.parseInt(good.slice(130, 132), 16);
   const twin = concat([good.slice(0, 66) as Hex, twinS, v === 27 ? "0x1c" : "0x1b"]);
-  assert.equal(
-    (await world.initiate(root, { sigRecovery: twin, sigAttestor: attestor })).error,
-    "BadSignature",
-  );
+  assert.equal((await world.initiate(root, { sigRecovery: twin })).error, "BadSignature");
 });
 
 test("initiate: signatures bind chain, contract, account, nonce, new validator, validator data, hook and hook data", async () => {
   const world = await installed();
   const root = world.root();
   const sign = (key: Hex, r = root, o: Parameters<World["sign"]>[2] = {}) => world.sign(key, r, o);
-  const attempt = async (name: string, sigRecovery: Hex, sigAttestor: Hex) =>
-    assert.equal(
-      (await world.initiate(root, { sigRecovery, sigAttestor })).error,
-      "BadSignature",
-      name,
-    );
-  const alter = async (r: typeof root) =>
-    attempt("changed root", await sign(world.recoveryKey, r), await sign(world.attestorKey, r));
+  const attempt = async (name: string, sigRecovery: Hex) =>
+    assert.equal((await world.initiate(root, { sigRecovery })).error, "BadSignature", name);
+  const alter = async (r: typeof root) => attempt("changed root", await sign(world.recoveryKey, r));
   await alter(world.root({ validatorData: "0x1235" }));
   await alter(world.root({ hookData: "0x00" }));
   await alter(world.root({ hook: ATTACKER }));
   await alter(world.root({ rootId: concat(["0x01", ATTACKER]) }));
-  await attempt(
-    "other account",
-    await sign(world.recoveryKey, root, { account: ATTACKER }),
-    await sign(world.attestorKey, root, { account: ATTACKER }),
-  );
-  await attempt(
-    "other nonce",
-    await sign(world.recoveryKey, root, { nonce: 1n }),
-    await sign(world.attestorKey, root, { nonce: 1n }),
-  );
+  await attempt("other account", await sign(world.recoveryKey, root, { account: ATTACKER }));
+  await attempt("other nonce", await sign(world.recoveryKey, root, { nonce: 1n }));
   const otherChain = { ...world.domain(), chainId: world.domain().chainId + 1 };
-  await attempt(
-    "other chain",
-    await sign(world.recoveryKey, root, { domain: otherChain }),
-    await sign(world.attestorKey, root, { domain: otherChain }),
-  );
+  await attempt("other chain", await sign(world.recoveryKey, root, { domain: otherChain }));
   const otherContract = { ...world.domain(), verifyingContract: ATTACKER };
-  await attempt(
-    "other contract",
-    await sign(world.recoveryKey, root, { domain: otherContract }),
-    await sign(world.attestorKey, root, { domain: otherContract }),
-  );
+  await attempt("other contract", await sign(world.recoveryKey, root, { domain: otherContract }));
   assert.equal((await world.pending()).active, false);
 });
 
@@ -323,61 +399,6 @@ test("initiate: the new root must be a validator-type id naming a real contract 
   assert.equal(await attempt(concat(["0x01", ATTACKER])), "InvalidRoot"); // no code
   assert.equal(await attempt(concat(["0x01", world.validator])), "InvalidRoot"); // the module itself
   assert.equal((await world.pending()).active, false);
-});
-
-test("attestor rotation in the registry is honoured immediately and only for the CURRENT attestor", async () => {
-  const world = await installed();
-  const next = generatePrivateKey();
-  const root = world.root();
-  await world.chain.call(
-    world.deployer,
-    world.registry,
-    [
-      {
-        type: "function",
-        name: "setAttestor",
-        inputs: [{ type: "address" }],
-        outputs: [],
-        stateMutability: "nonpayable",
-      },
-    ],
-    "setAttestor",
-    [privateKeyToAccount(next).address],
-  );
-  // the old attestor no longer works
-  assert.equal((await world.initiate(root)).error, "BadSignature");
-  // the new one does
-  const result = await world.initiate(root, { sigAttestor: await world.sign(next, root) });
-  assert.equal(result.ok, true);
-  // and only the new attestor can veto
-  assert.equal(
-    (await world.from(world.attestorAddress, "attestorCancel", [world.account])).error,
-    "NotAttestor",
-  );
-  assert.equal(
-    (await world.from(privateKeyToAccount(next).address, "attestorCancel", [world.account])).ok,
-    true,
-  );
-});
-
-test("initiate: a registry with no attestor (zero address) blocks every recovery", async () => {
-  const world = await installed();
-  await world.chain.call(
-    world.deployer,
-    world.registry,
-    [
-      {
-        type: "function",
-        name: "setAttestor",
-        inputs: [{ type: "address" }],
-        outputs: [],
-        stateMutability: "nonpayable",
-      },
-    ],
-    "setAttestor",
-    [zeroAddress],
-  );
-  assert.equal((await world.initiate(world.root())).error, "BadSignature");
 });
 
 // ── the exact batch ───────────────────────────────────────────────────────────────────────────────
@@ -627,11 +648,7 @@ test("after success: replay fails, the recovery key is burnt, the module is void
   );
   // signatures from the first recovery (nonce 0) are dead: the nonce moved on
   const stale = await world.sign(world.recoveryKey, root, { nonce: 0n });
-  const staleAttestor = await world.sign(world.attestorKey, root, { nonce: 0n });
-  assert.equal(
-    (await world.initiate(root, { sigRecovery: stale, sigAttestor: staleAttestor })).error,
-    "BadSignature",
-  );
+  assert.equal((await world.initiate(root, { sigRecovery: stale })).error, "BadSignature");
   void nonce;
 });
 
@@ -647,31 +664,26 @@ test("the same recovery nonce succeeds only once, across the whole lifecycle", a
     true,
   );
   const second = await world.sign(newKey, root);
-  const secondAttestor = await world.sign(world.attestorKey, root);
-  assert.equal(
-    (await world.initiate(root, { sigRecovery: second, sigAttestor: secondAttestor })).ok,
-    true,
-  );
+  assert.equal((await world.initiate(root, { sigRecovery: second })).ok, true);
   world.chain.warp(72 * 3600 + 1);
   assert.equal((await world.validate(batch(world.exactCalls(root, nonce)))).ok, true);
   seen.add(await world.read<bigint>("recoveryNonce", [world.account]));
   assert.equal(seen.size, 3, "recovery nonce must strictly increase");
 });
 
-// ── cancellation and veto ─────────────────────────────────────────────────────────────────────────
+// ── cancellation ─────────────────────────────────────────────────────────────────────────
 
 test("cancel: the account (root-signed operation) cancels; the matured batch then fails; signatures cannot be reused", async () => {
   const world = await installed();
   const root = world.root();
   const sigRecovery = await world.sign(world.recoveryKey, root);
-  const sigAttestor = await world.sign(world.attestorKey, root);
-  assert.equal((await world.initiate(root, { sigRecovery, sigAttestor })).ok, true);
+  assert.equal((await world.initiate(root, { sigRecovery })).ok, true);
   assert.equal((await world.asAccount(world.fn("cancel"))).ok, true);
   assert.equal((await world.pending()).active, false);
   assert.equal(await world.read<bigint>("recoveryNonce", [world.account]), 1n);
   world.chain.warp(72 * 3600 + 1);
   assert.equal((await world.validate(batch(world.exactCalls(root, 1)))).error, "NoPendingRecovery");
-  assert.equal((await world.initiate(root, { sigRecovery, sigAttestor })).error, "BadSignature");
+  assert.equal((await world.initiate(root, { sigRecovery })).error, "BadSignature");
   // a fresh recovery works again
   assert.equal((await world.initiate(root)).ok, true);
 });
@@ -685,33 +697,19 @@ test("cancel: only the account can cancel its own recovery; nothing to cancel is
   assert.equal((await world.pending()).active, true);
 });
 
-test("attestor veto: the current attestor cancels; a stranger and the recovery key cannot; it cannot approve", async () => {
+test("nobody but the account can stop a recovery: no veto, no third-party cancel", async () => {
   const world = await installed();
   assert.equal((await world.initiate(world.root())).ok, true);
-  assert.equal(
-    (await world.from(world.stranger, "attestorCancel", [world.account])).error,
-    "NotAttestor",
-  );
-  assert.equal(
-    (await world.from(world.recoveryAddress, "attestorCancel", [world.account])).error,
-    "NotAttestor",
-  );
-  assert.equal(
-    (await world.from(world.attestorAddress, "attestorCancel", [world.account])).ok,
-    true,
-  );
-  assert.equal((await world.pending()).active, false);
-  assert.equal(
-    (await world.from(world.attestorAddress, "attestorCancel", [world.account])).error,
-    "NoPendingRecovery",
-  );
-  // the attestor cannot start, advance or complete anything on its own: there is no such function
+  for (const sender of [world.stranger, world.recoveryAddress]) {
+    assert.equal((await world.from(sender, "cancel")).error, "NoPendingRecovery"); // acts on its own empty state
+  }
+  assert.equal((await world.pending()).active, true);
   const names = validatorAbi
     .filter((e) => e.type === "function")
     .map((e) => (e as { name: string }).name);
   assert.deepEqual(
-    names.filter((n) => /attestor/i.test(n)),
-    ["attestorCancel"],
+    names.filter((n) => /cancel|veto/i.test(n)),
+    ["cancel"],
   );
 });
 
@@ -820,7 +818,6 @@ test("property: random signature bytes never start a recovery", async () => {
   for (let i = 0; i < 100; i++) {
     const outcome = await world.initiate(root, {
       sigRecovery: bytes(r, 65),
-      sigAttestor: bytes(r, 65),
     });
     assert.equal(outcome.ok, false);
   }
@@ -833,8 +830,7 @@ test("the validator has no function that moves value or calls out", () => {
     .map((e) => (e as { name: string }).name)
     .sort();
   assert.deepEqual(names, [
-    "REGISTRY",
-    "attestorCancel",
+    "RELAYER",
     "cancel",
     "commitmentOf",
     "configs",
@@ -912,7 +908,7 @@ test("the shared client/backend helpers produce exactly what the contract verifi
       primaryType: "Initiate",
       message,
     });
-  const outcome = await world.from(world.stranger, "initiate", [
+  const outcome = await world.from(world.relayer, "initiate", [
     world.account,
     {
       rootId: message.rootId,
@@ -922,7 +918,6 @@ test("the shared client/backend helpers produce exactly what the contract verifi
     },
     deadline,
     await sign(world.recoveryKey),
-    await sign(world.attestorKey),
   ]);
   assert.equal(outcome.ok, true, outcome.error);
 });

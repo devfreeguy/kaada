@@ -6,6 +6,7 @@ import type {
   RecoveryClearable,
   RecoveryConfigurationRepository,
   RecoveryEmailChallengeRepository,
+  RecoveryTotpRepository,
   WalletCredentialRepository,
 } from "@kaada/domain";
 
@@ -14,6 +15,7 @@ import {
   toRecoveryAttempt,
   toRecoveryConfiguration,
   toRecoveryEmailChallenge,
+  toRecoveryTotp,
   toWalletCredential,
 } from "../mappers/recovery.js";
 import type { Db } from "./db.js";
@@ -23,7 +25,7 @@ function isUniqueViolation(error: unknown): boolean {
   return (error as { code?: unknown } | null)?.code === "P2002";
 }
 
-const TERMINAL: RecoveryAttemptStatus[] = ["COMPLETED", "CANCELLED", "VETOED", "EXPIRED", "FAILED"];
+const TERMINAL: RecoveryAttemptStatus[] = ["COMPLETED", "CANCELLED", "EXPIRED", "FAILED"];
 const PRE_CHAIN: RecoveryAttemptStatus[] = ["EMAIL_PENDING", "EMAIL_VERIFIED", "ROOT_PROPOSED"];
 
 export function createWalletCredentialRepository(db: Db): WalletCredentialRepository {
@@ -405,6 +407,95 @@ export function createRecoveryAttemptRepository(db: Db): RecoveryAttemptReposito
         select: { completedAt: true },
       });
       return row?.completedAt ?? null;
+    },
+  };
+}
+
+/**
+ * The authenticator-app factor. Every state change is ONE conditional statement: a replayed step, a second activation or a
+ * second enrolment cannot win. The partial unique indexes (one PENDING and one ACTIVE per wallet) back the same rules.
+ */
+export function createRecoveryTotpRepository(db: Db): RecoveryTotpRepository {
+  return {
+    async createPending(totp) {
+      if (
+        await db.recoveryTotp.findFirst({ where: { walletId: totp.walletId, status: "ACTIVE" } })
+      ) {
+        return null;
+      }
+      // An unconfirmed enrolment never protected anything: replace it.
+      await db.recoveryTotp.updateMany({
+        where: { walletId: totp.walletId, status: "PENDING" },
+        data: { status: "DISABLED", disabledAt: new Date() },
+      });
+      try {
+        return toRecoveryTotp(
+          await db.recoveryTotp.create({
+            data: {
+              id: totp.id,
+              userId: totp.userId,
+              walletId: totp.walletId,
+              encryptedSecret: totp.encryptedSecret,
+              keyVersion: totp.keyVersion,
+            },
+          }),
+        );
+      } catch (error) {
+        // A concurrent enrolment won the unique index.
+        if (isUniqueViolation(error)) return null;
+        throw error;
+      }
+    },
+
+    async findById(id) {
+      const row = await db.recoveryTotp.findUnique({ where: { id } });
+      return row ? toRecoveryTotp(row) : null;
+    },
+
+    async findPending(walletId) {
+      const row = await db.recoveryTotp.findFirst({ where: { walletId, status: "PENDING" } });
+      return row ? toRecoveryTotp(row) : null;
+    },
+
+    async findActive(walletId) {
+      const row = await db.recoveryTotp.findFirst({ where: { walletId, status: "ACTIVE" } });
+      return row ? toRecoveryTotp(row) : null;
+    },
+
+    async activate({ id, step, at }) {
+      try {
+        const { count } = await db.recoveryTotp.updateMany({
+          where: { id, status: "PENDING" },
+          data: { status: "ACTIVE", enabledAt: at, lastUsedStep: step },
+        });
+        if (count === 0) return null;
+      } catch (error) {
+        // Another enrolment of the wallet became ACTIVE first (the partial unique index).
+        if (isUniqueViolation(error)) return null;
+        throw error;
+      }
+      return toRecoveryTotp(await db.recoveryTotp.findUniqueOrThrow({ where: { id } }));
+    },
+
+    async consumeStep({ id, step }) {
+      // The step must be newer than every step used before: one winner per step, and an older one never wins.
+      const { count } = await db.recoveryTotp.updateMany({
+        where: {
+          id,
+          status: "ACTIVE",
+          OR: [{ lastUsedStep: null }, { lastUsedStep: { lt: step } }],
+        },
+        data: { lastUsedStep: step },
+      });
+      return count === 1;
+    },
+
+    async disableForWallet(walletId, at) {
+      const { count } = await db.recoveryTotp.updateMany({
+        where: { walletId, status: { in: ["ACTIVE", "PENDING"] } },
+        data: { status: "DISABLED", disabledAt: at },
+      });
+      return count;
     },
   };
 }

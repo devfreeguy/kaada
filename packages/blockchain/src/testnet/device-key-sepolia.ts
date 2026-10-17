@@ -60,7 +60,6 @@ const CHAIN_ID = celoSepolia.id;
 const deviceAbi = artifacts.KaadaDeviceKeyValidator.abi as unknown as Abi;
 const factoryAbi = artifacts.KaadaPasskeyValidatorFactory.abi as unknown as Abi;
 const recoveryAbi = artifacts.ShortDelayRecoveryValidator.abi as unknown as Abi;
-const registryAbi = artifacts.MockAttestorRegistry.abi as unknown as Abi;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const chainTime = async () => (await pub.getBlock()).timestamp;
@@ -87,7 +86,7 @@ interface Saved {
   validator?: Address;
   passkeyFactory?: { address: Address };
   deviceKey?: { implementation: Address; factory: Address };
-  recoveryProbe?: { registry?: Address; validator?: Address };
+  recoveryProbe?: { validator?: Address };
 }
 const saved = state as unknown as Saved;
 const persist = () => writeFileSync(statePath ?? "", JSON.stringify(state), { mode: 0o600 });
@@ -515,20 +514,8 @@ async function main(): Promise<void> {
 
   // ═════════════════════════════ scenario RECOVERY ═════════════════════════════
   const probe = saved.recoveryProbe;
-  if (!probe?.registry || !probe.validator)
-    throw new Error("no recovery probe fixtures in the state file");
-  const registry: Address = probe.registry;
+  if (!probe?.validator) throw new Error("no recovery probe fixtures in the state file");
   const MODULE: Address = probe.validator;
-  const attestorKey = generatePrivateKey();
-  const setHash = await wallet.writeContract({
-    address: registry,
-    abi: registryAbi,
-    functionName: "setAttestor",
-    args: [privateKeyToAccount(attestorKey).address],
-    gas: 100_000n,
-  });
-  await pub.waitForTransactionReceipt({ hash: setHash });
-  await sleep(4000);
   const moduleKey = generatePrivateKey(); // the recovery module ignores the userOp signature
 
   const read = <T>(name: string, args: unknown[] = []): Promise<T> =>
@@ -636,13 +623,7 @@ async function main(): Promise<void> {
         address: MODULE,
         abi: recoveryAbi,
         functionName: "initiate",
-        args: [
-          w2.address,
-          recoveryCommitment(root),
-          deadline,
-          await signWith(input.recoveryKey),
-          await signWith(attestorKey),
-        ],
+        args: [w2.address, recoveryCommitment(root), deadline, await signWith(input.recoveryKey)],
       } as never);
       await pub.waitForTransactionReceipt({ hash: await wallet.writeContract(request) });
       await sleep(4000);

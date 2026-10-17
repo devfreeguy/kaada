@@ -1,19 +1,13 @@
 import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
-import {
-  KeyAttestor,
-  ViemRecoveryChain,
-  createVetoSender,
-  readKeyFileOutsideRepo,
-} from "@kaada/blockchain";
-import type { AttestorSigner, ViemRecoveryChainOptions } from "@kaada/blockchain";
+import { ViemRecoveryChain, readKeyFileOutsideRepo } from "@kaada/blockchain";
+import type { ViemRecoveryChainOptions } from "@kaada/blockchain";
 import { createRepositories, withTransaction } from "@kaada/database";
 import type { Database } from "@kaada/database";
 import type {
   ChannelMessenger,
   PasskeyVerifier,
-  RecoveryAttestor,
   RecoveryChainPort,
   RecoveryEmailSender,
 } from "@kaada/domain";
@@ -30,6 +24,8 @@ import { RecoveryCleanup } from "../core/recovery/recovery-cleanup.js";
 import { RecoveryConfigurationService } from "../core/recovery/recovery-configuration.js";
 import { RecoveryFinalizer } from "../core/recovery/recovery-finalizer.js";
 import { RecoveryFlowService } from "../core/recovery/recovery-flow.js";
+import { RecoveryTotpService } from "../core/recovery/recovery-totp.js";
+import type { SecretCipher } from "../core/execution/ports.js";
 import { DefaultRecoveryRiskPolicy } from "../core/recovery/risk-policy.js";
 import { EmailChannelMessenger } from "../infrastructure/recovery/email.js";
 
@@ -48,7 +44,8 @@ import type { DeviceTierResolver } from "../core/attestation/device-tier-service
 export interface RecoveryRuntimeParams {
   database: Database;
   chain: RecoveryChainPort;
-  attestor: RecoveryAttestor;
+  /** Encrypts the authenticator-app secrets at rest: a dedicated key (RECOVERY_TOTP_SECRET_KEY). */
+  totpCipher: SecretCipher;
   email: RecoveryEmailSender;
   passkeyVerifier: PasskeyVerifier;
   pins: Pick<TransactionPinService, "setPin">;
@@ -78,7 +75,13 @@ export function createRecoveryRuntime(params: RecoveryRuntimeParams): RecoveryRu
   const context: RecoveryContext = {
     uow,
     chain: params.chain,
-    attestor: params.attestor,
+    totp: new RecoveryTotpService({
+      totps: read.recoveryTotps,
+      audit: read.audit,
+      cipher: params.totpCipher,
+      now: params.now ?? (() => new Date()),
+      ...(params.limits && { limiter: params.limits("recovery:totp", 10, 10 * 60 * 1000) }),
+    }),
     email: params.email,
     notifier: new RecoveryNotifier({
       identities: read.identities,
@@ -127,30 +130,19 @@ export function createRecoveryRuntime(params: RecoveryRuntimeParams): RecoveryRu
 /** The repository checkout root: signing keys must live outside it. */
 export const repositoryRoot = (): string => fileURLToPath(new URL("../../../../", import.meta.url));
 
-/** Builds the chain adapter and the attestor from key FILES outside the repository. */
-export function createRecoveryChainAndAttestor(input: {
+/** Builds the chain adapter. The relayer's gas key is read from a FILE outside the repository. */
+export function createRecoveryChain(input: {
   chain: ViemRecoveryChainOptions["chain"];
   rpcUrl: string;
   bundlerUrl: string;
   recoveryValidator: `0x${string}`;
   deployments: ViemRecoveryChainOptions["deployments"];
   relayerKeyFile: string;
-  /**
-   * Who holds the attestor key: a key FILE (development and tests; production configuration refuses it) or a signer backed
-   * by a KMS/HSM (see `createExternalSigner`), which this process never sees the key of.
-   */
-  attestor: { kind: "file"; keyFile: string } | { kind: "signer"; signer: AttestorSigner };
   p256Precompile: boolean;
   gasTopUpMaxWei: bigint;
-}): { chain: ViemRecoveryChain; attestor: KeyAttestor } {
+}): ViemRecoveryChain {
   const relayerKey: Hex = readKeyFileOutsideRepo(input.relayerKeyFile, repositoryRoot());
-  const keyed =
-    input.attestor.kind === "file"
-      ? {
-          privateKey: readKeyFileOutsideRepo(input.attestor.keyFile, repositoryRoot()),
-        }
-      : { signer: input.attestor.signer };
-  const chain = new ViemRecoveryChain({
+  return new ViemRecoveryChain({
     chain: input.chain,
     rpcUrl: input.rpcUrl,
     bundlerUrl: input.bundlerUrl,
@@ -163,16 +155,4 @@ export function createRecoveryChainAndAttestor(input: {
         ? { mode: "topup", maxTopUpWei: input.gasTopUpMaxWei }
         : { mode: "none" },
   });
-  const attestor = new KeyAttestor({
-    ...keyed,
-    chainId: input.chain.id,
-    recoveryValidator: input.recoveryValidator,
-    sendVeto: createVetoSender({
-      chain: input.chain,
-      rpcUrl: input.rpcUrl,
-      ...keyed,
-      recoveryValidator: input.recoveryValidator,
-    }),
-  });
-  return { chain, attestor };
 }

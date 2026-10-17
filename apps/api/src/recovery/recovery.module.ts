@@ -1,5 +1,4 @@
 import { Module } from "@nestjs/common";
-import type { AttestorSigner } from "@kaada/blockchain";
 import { createRepositories, withTransaction } from "@kaada/database";
 import type { KernelExecutionPort, RootValidatorDeployer } from "@kaada/domain";
 import type { AppConfig } from "@kaada/config";
@@ -35,14 +34,16 @@ import { WalletModule } from "../wallet/wallet.module.js";
 import { DEVICE_TIER_SERVICE } from "../wallet/wallet.tokens.js";
 import type { DeviceTierService } from "../core/attestation/device-tier-service.js";
 import { RecoveryController } from "./recovery.controller.js";
-import { createRecoveryChainAndAttestor, createRecoveryRuntime } from "./recovery.runtime.js";
+import { createRecoveryChain, createRecoveryRuntime } from "./recovery.runtime.js";
 import type { RecoveryRuntime } from "./recovery.runtime.js";
 import { RecoverySweeper } from "./recovery-sweeper.js";
-import { ATTESTOR_SIGNER_FACTORY, RECOVERY_RUNTIME } from "./recovery.tokens.js";
+import { RECOVERY_RUNTIME } from "./recovery.tokens.js";
+import { AesGcmSecretCipher } from "../infrastructure/security/aes-gcm-cipher.js";
 
 /**
  * Account recovery. Present only when RECOVERY_ENABLED=true (null otherwise): every route then answers "not enabled". The
- * relayer and attestor keys are read from files outside the repository at startup; nothing here can move funds.
+ * relayer's gas key is read from a file outside the repository at startup; nothing here can move funds, and nothing here can
+ * recover a wallet without the person's Recovery Code.
  */
 @Module({
   imports: [WalletModule, AuthorizationModule, RootsModule, ExecutionModule],
@@ -56,7 +57,6 @@ import { ATTESTOR_SIGNER_FACTORY, RECOVERY_RUNTIME } from "./recovery.tokens.js"
         TRANSACTION_PIN_SERVICE,
         DEVICE_TIER_SERVICE,
         RATE_LIMIT_FACTORY,
-        { token: ATTESTOR_SIGNER_FACTORY, optional: true },
       ],
       useFactory: (
         database: Database,
@@ -64,7 +64,6 @@ import { ATTESTOR_SIGNER_FACTORY, RECOVERY_RUNTIME } from "./recovery.tokens.js"
         pins: TransactionPinService | null,
         deviceTiers: DeviceTierService | null,
         limits: RateLimitFactory,
-        signerFactory: ((kmsKeyId: string) => AttestorSigner) | undefined,
       ): RecoveryRuntime | null => {
         const recovery = config.recovery;
         const passkey = config.wallet.passkey;
@@ -89,24 +88,10 @@ import { ATTESTOR_SIGNER_FACTORY, RECOVERY_RUNTIME } from "./recovery.tokens.js"
               ]
             : []),
         ];
-        let attestorSource;
-        if (recovery.setup.attestor.signer === "kms") {
-          if (!signerFactory) {
-            throw new Error(
-              "RECOVERY_ATTESTOR_SIGNER=kms but no KMS signer adapter is installed (provide ATTESTOR_SIGNER_FACTORY)",
-            );
-          }
-          attestorSource = {
-            kind: "signer" as const,
-            signer: signerFactory(recovery.setup.attestor.kmsKeyId),
-          };
-        } else {
-          attestorSource = { kind: "file" as const, keyFile: recovery.setup.attestor.keyFile };
-        }
         const chain = recovery.chainId === celoSepolia.id ? celoSepolia : celo;
         if (chain.id !== recovery.chainId)
           throw new Error(`unsupported recovery chain ${String(recovery.chainId)}`);
-        const { chain: viemChain, attestor } = createRecoveryChainAndAttestor({
+        const viemChain = createRecoveryChain({
           chain,
           rpcUrl: config.wallet.rpcUrl,
           bundlerUrl,
@@ -122,14 +107,20 @@ import { ATTESTOR_SIGNER_FACTORY, RECOVERY_RUNTIME } from "./recovery.tokens.js"
             },
           },
           relayerKeyFile: recovery.setup.relayerKeyFile,
-          attestor: attestorSource,
           p256Precompile: true,
           gasTopUpMaxWei: recovery.gasTopUpMaxWei,
         });
+        // The validator only accepts `initiate` from the relayer address it was deployed with. A key file that derives to any
+        // other address could never start a recovery, so refuse to boot instead of failing later, mid-recovery.
+        if (viemChain.relayerAddress !== recovery.setup.contracts.relayer.toLowerCase()) {
+          throw new Error(
+            "RECOVERY_RELAYER_KEY_FILE does not derive to the relayer address the recovery validator was deployed with (deployments.ts)",
+          );
+        }
         return createRecoveryRuntime({
           database,
           chain: viemChain,
-          attestor,
+          totpCipher: new AesGcmSecretCipher(recovery.setup.totpCipherKeys),
           email,
           messengers,
           limits,

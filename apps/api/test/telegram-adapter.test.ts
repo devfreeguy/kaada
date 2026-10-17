@@ -378,13 +378,12 @@ describe("NotificationService", () => {
     }
     await service.send("u", { type: "PAYMENT_FAILED", code: "X1" });
     await service.send("u", { type: "RECOVERY_CANCELLED" });
-    await service.send("u", { type: "RECOVERY_VETOED" });
     await service.send("u", { type: "RECOVERY_COMPLETED", now: new Date() });
     await service.send("u", {
       type: "RECOVERY_STARTED",
       now: new Date(),
       executeAfter: new Date(Date.now() + 3 * 86_400_000),
-      reportLink: "https://app.kaada.test/recovery/report#tok",
+      cancelLink: "https://app.kaada.test/recovery/cancel#tok",
     });
     assert.equal(
       new Set(adapter.sent.map((m) => m.text)).size,

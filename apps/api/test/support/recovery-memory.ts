@@ -13,6 +13,8 @@ import type {
   RecoveryConfigurationRepository,
   RecoveryEmailChallenge,
   RecoveryEmailChallengeRepository,
+  RecoveryTotp,
+  RecoveryTotpRepository,
   WalletCredential,
   WalletCredentialRepository,
 } from "@kaada/domain";
@@ -33,6 +35,7 @@ export interface RecoveryStores {
   configurations: RecoveryConfiguration[];
   attempts: RecoveryAttempt[];
   challenges: RecoveryEmailChallenge[];
+  totps: RecoveryTotp[];
   /** Rows the cleanup repository acts on. Tests add to these. */
   extras: {
     inFlightExecutions: Map<string, number>;
@@ -47,6 +50,7 @@ export interface RecoveryStores {
     recoveryConfigurations: RecoveryConfigurationRepository;
     recoveryAttempts: RecoveryAttemptRepository;
     recoveryEmailChallenges: RecoveryEmailChallengeRepository;
+    recoveryTotps: RecoveryTotpRepository;
     recoveryCleanup: RecoveryCleanupRepository;
   };
 }
@@ -57,6 +61,7 @@ export function createRecoveryStores(now: () => Date): RecoveryStores {
   const configurations: RecoveryConfiguration[] = [];
   const attempts: RecoveryAttempt[] = [];
   const challenges: RecoveryEmailChallenge[] = [];
+  const totps: RecoveryTotp[] = [];
   const extras: RecoveryStores["extras"] = {
     inFlightExecutions: new Map(),
     webSessions: [],
@@ -421,12 +426,73 @@ export function createRecoveryStores(now: () => Date): RecoveryStores {
       Promise.resolve(extras.inFlightExecutions.get(walletId) ?? 0),
   };
 
+  // The same rules as the SQL: one PENDING and one ACTIVE per wallet; a step is accepted only if it is newer than every
+  // step used before. Each method is synchronous inside, so it is atomic like the single statement it stands in for.
+  const recoveryTotps: RecoveryTotpRepository = {
+    createPending: (input) => {
+      if (totps.some((t) => t.walletId === input.walletId && t.status === "ACTIVE")) {
+        return Promise.resolve(null);
+      }
+      for (const t of totps) {
+        if (t.walletId === input.walletId && t.status === "PENDING") {
+          t.status = "DISABLED";
+          t.disabledAt = now();
+        }
+      }
+      const row: RecoveryTotp = { ...input, status: "PENDING", createdAt: now(), updatedAt: now() };
+      totps.push(row);
+      return Promise.resolve(copy(row));
+    },
+    findById: (id) => Promise.resolve(copyOrNull(totps.find((t) => t.id === id))),
+    findPending: (walletId) =>
+      Promise.resolve(
+        copyOrNull(totps.find((t) => t.walletId === walletId && t.status === "PENDING")),
+      ),
+    findActive: (walletId) =>
+      Promise.resolve(
+        copyOrNull(totps.find((t) => t.walletId === walletId && t.status === "ACTIVE")),
+      ),
+    activate: ({ id, step, at }) => {
+      const row = totps.find((t) => t.id === id && t.status === "PENDING");
+      if (!row) return Promise.resolve(null);
+      if (totps.some((t) => t.walletId === row.walletId && t.status === "ACTIVE")) {
+        throw DUPLICATE("one ACTIVE authenticator per wallet");
+      }
+      row.status = "ACTIVE";
+      row.enabledAt = at;
+      row.lastUsedStep = step;
+      row.updatedAt = now();
+      return Promise.resolve(copy(row));
+    },
+    consumeStep: ({ id, step }) => {
+      const row = totps.find((t) => t.id === id && t.status === "ACTIVE");
+      if (!row || (row.lastUsedStep !== undefined && row.lastUsedStep >= step)) {
+        return Promise.resolve(false);
+      }
+      row.lastUsedStep = step;
+      row.updatedAt = now();
+      return Promise.resolve(true);
+    },
+    disableForWallet: (walletId, at) => {
+      let count = 0;
+      for (const t of totps) {
+        if (t.walletId === walletId && (t.status === "ACTIVE" || t.status === "PENDING")) {
+          t.status = "DISABLED";
+          t.disabledAt = at;
+          count += 1;
+        }
+      }
+      return Promise.resolve(count);
+    },
+  };
+
   return {
     identities,
     credentials,
     configurations,
     attempts,
     challenges,
+    totps,
     extras,
     repositories: {
       identities: identityRepository,
@@ -434,6 +500,7 @@ export function createRecoveryStores(now: () => Date): RecoveryStores {
       recoveryConfigurations,
       recoveryAttempts,
       recoveryEmailChallenges,
+      recoveryTotps,
       recoveryCleanup,
     },
   };

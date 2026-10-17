@@ -50,7 +50,12 @@ const nativeDeviceBody = z.strictObject({
   publicKeyY: hex(32),
   attestation: attestationEvidenceSchema.optional(),
 });
-const proofBody = z.strictObject({ signature: z.string().regex(/^0x[0-9a-fA-F]{130}$/) });
+/** The Recovery Code key's signature, and the current 6-digit code from the person's authenticator app. */
+const proofBody = z.strictObject({
+  signature: z.string().regex(/^0x[0-9a-fA-F]{130}$/),
+  authenticatorCode: z.string().regex(/^[0-9]{6}$/),
+});
+const authenticatorConfirmBody = z.strictObject({ code: z.string().regex(/^[0-9]{6}$/) });
 /** A passkey assertion (an object) or a device signature (a hex string): validated by the chain adapter. */
 const materialBody = z.strictObject({
   material: z.union([
@@ -89,9 +94,19 @@ function httpError(error: unknown): never {
         throw new BadRequestException(error.message);
       case "RECOVERY_CONFLICT":
       case "RECOVERY_NOT_CONFIGURED":
+      case "RECOVERY_TOTP_REQUIRED":
       case "WALLET_NOT_ACTIVE":
       case "ROOT_CREDENTIAL_REQUIRED":
         throw new ConflictException(error.message);
+      case "RECOVERY_RELAYER_UNAVAILABLE":
+        // Nothing was sent and nobody else may send it: the same proof can be submitted again shortly (with the next authenticator code).
+        throw new ServiceUnavailableException({
+          statusCode: 503,
+          message:
+            "the recovery service is temporarily unavailable; nothing was sent, try again shortly",
+          error: "RECOVERY_SERVICE_UNAVAILABLE",
+          retryable: true,
+        });
       case "RECOVERY_CHAIN_UNAVAILABLE":
       case "RECOVERY_BLOCKED":
       case "BUNDLER_UNAVAILABLE":
@@ -107,7 +122,8 @@ function httpError(error: unknown): never {
  * The recovery API. Identity is always an opaque, short-lived token (a session token after the email was verified, a
  * one-use cancel link token, or a wallet setup link); a body or query can never name a user, an account or an attempt.
  * Tokens travel in the Authorization header only, never in a URL, and every response is `no-store`. Email verification alone
- * unlocks nothing on chain: only the Recovery Code proof does, and only for the exact root that was proposed.
+ * unlocks nothing on chain: only the Recovery Code proof together with an authenticator code does, and only for the exact
+ * root that was proposed.
  */
 @Controller({ path: "recovery", version: "1" })
 export class RecoveryController {
@@ -268,9 +284,13 @@ export class RecoveryController {
   @Header("Cache-Control", "no-store")
   async proof(@Body() body: unknown, @Headers("authorization") authorization?: string) {
     const parsed = proofBody.safeParse(body);
-    if (!parsed.success) throw new BadRequestException("the signature is malformed");
+    if (!parsed.success) throw new BadRequestException("the signature or the code is malformed");
     try {
-      return await this.services().flow.submitProof(bearer(authorization), parsed.data.signature);
+      return await this.services().flow.submitProof(
+        bearer(authorization),
+        parsed.data.signature,
+        parsed.data.authenticatorCode,
+      );
     } catch (error) {
       return httpError(error);
     }
@@ -331,7 +351,7 @@ export class RecoveryController {
     }
   }
 
-  // ── cancellation by the existing root, and "this was not me" (the cancel link token) ──
+  // ── cancellation by the existing root (the cancel link token) ──
 
   @Post("cancel/prepare")
   @HttpCode(200)
@@ -357,17 +377,6 @@ export class RecoveryController {
     }
   }
 
-  @Post("report")
-  @HttpCode(200)
-  @Header("Cache-Control", "no-store")
-  async report(@Headers("authorization") authorization?: string) {
-    try {
-      return await this.services().flow.report(bearer(authorization));
-    } catch (error) {
-      return httpError(error);
-    }
-  }
-
   // ── a new Recovery Code (after a recovery, or the first time) ──
 
   /** The account and chain a new Recovery Code is bound to (so the browser can derive its verifier before preparing). */
@@ -378,6 +387,39 @@ export class RecoveryController {
       return await this.services().configuration.describe(
         await this.identify(bearer(authorization)),
       );
+    } catch (error) {
+      return httpError(error);
+    }
+  }
+
+  /** Starts the authenticator-app setup. The secret and the otpauth URI are returned ONCE; only the encrypted secret is kept. */
+  @Post("configuration/authenticator/begin")
+  @HttpCode(200)
+  @Header("Cache-Control", "no-store")
+  async authenticatorBegin(@Headers("authorization") authorization?: string) {
+    try {
+      const userId = await this.identify(bearer(authorization));
+      return await this.services().configuration.beginAuthenticator(userId);
+    } catch (error) {
+      return httpError(error);
+    }
+  }
+
+  /** Completes the setup: one valid code from the app. Until then the authenticator protects nothing. */
+  @Post("configuration/authenticator/confirm")
+  @HttpCode(200)
+  @Header("Cache-Control", "no-store")
+  async authenticatorConfirm(
+    @Body() body: unknown,
+    @Headers("authorization") authorization?: string,
+  ) {
+    const parsed = authenticatorConfirmBody.safeParse(body);
+    if (!parsed.success)
+      throw new BadRequestException("enter the 6-digit code from your authenticator app");
+    try {
+      const userId = await this.identify(bearer(authorization));
+      await this.services().configuration.confirmAuthenticator(userId, parsed.data.code);
+      return { status: "ENABLED" };
     } catch (error) {
       return httpError(error);
     }

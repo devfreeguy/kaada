@@ -3,6 +3,7 @@ import { KaadaError, RECOVERY_AUDIT_EVENTS, createId, isWalletActive } from "@ka
 import type { RecoveryConfiguration, Wallet } from "@kaada/domain";
 
 import type { RecoveryContext } from "./context.js";
+import type { TotpEnrolment } from "./recovery-totp.js";
 import { ensureRootCredential } from "./recovery-flow.js";
 import type { RootSigningRequest } from "./recovery-flow.js";
 
@@ -25,9 +26,31 @@ export class RecoveryConfigurationService {
   constructor(private readonly ctx: RecoveryContext) {}
 
   /** Which account and chain a new Recovery Code must be derived for (the code is bound to both). Public data only. */
-  async describe(userId: string): Promise<{ account: string; chainId: number }> {
+  async describe(
+    userId: string,
+  ): Promise<{ account: string; chainId: number; authenticatorEnrolled: boolean }> {
     const wallet = await this.walletOf(userId);
-    return { account: wallet.address, chainId: this.ctx.chain.chainId };
+    return {
+      account: wallet.address,
+      chainId: this.ctx.chain.chainId,
+      authenticatorEnrolled: await this.ctx.totp.isEnrolled(wallet.id),
+    };
+  }
+
+  /** Starts the authenticator-app setup: the secret is returned ONCE here and kept only encrypted. */
+  async beginAuthenticator(userId: string): Promise<TotpEnrolment> {
+    const wallet = await this.walletOf(userId);
+    return this.ctx.totp.begin({
+      userId,
+      walletId: wallet.id,
+      accountName: await this.accountName(userId),
+    });
+  }
+
+  /** Setup is complete only when a code from the app verifies. */
+  async confirmAuthenticator(userId: string, code: unknown): Promise<void> {
+    const wallet = await this.walletOf(userId);
+    await this.ctx.totp.confirm({ userId, walletId: wallet.id, code });
   }
 
   /** Builds and stores the install operation for the current root to sign. Sends nothing. */
@@ -45,6 +68,13 @@ export class RecoveryConfigurationService {
       throw new KaadaError("RECOVERY_REJECTED", "the recovery delay is below the minimum");
     }
     const wallet = await this.walletOf(input.userId);
+    // Recovery needs both user-held factors. A Recovery Code alone is not armed: the authenticator app comes first.
+    if (!(await this.ctx.totp.isEnrolled(wallet.id))) {
+      throw new KaadaError(
+        "RECOVERY_TOTP_REQUIRED",
+        "set up your authenticator app before saving a Recovery Code",
+      );
+    }
     const account = await this.ctx.chain.accountState(wallet.address);
     if (!account.deployed || !account.rootValidator) {
       throw new KaadaError(
@@ -239,6 +269,12 @@ export class RecoveryConfigurationService {
   async current(userId: string): Promise<RecoveryConfiguration | null> {
     const wallet = await this.walletOf(userId);
     return this.ctx.uow.read.recoveryConfigurations.findActive(wallet.id);
+  }
+
+  /** The label shown in the authenticator app: the registered email, else a plain name. */
+  private async accountName(userId: string): Promise<string> {
+    const identities = await this.ctx.uow.read.identities.listForUser(userId);
+    return identities.find((identity) => identity.type === "EMAIL")?.externalId ?? "wallet";
   }
 
   private async walletOf(userId: string): Promise<Wallet & { address: string }> {

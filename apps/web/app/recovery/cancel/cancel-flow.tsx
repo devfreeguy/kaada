@@ -11,20 +11,20 @@ type View =
   | { name: "loading" }
   | { name: "missing" }
   | { name: "ready" }
-  | { name: "working"; what: "report" | "cancel" }
-  | { name: "stopped"; how: "report" | "cancel" }
+  | { name: "working" }
+  | { name: "stopped" }
   | { name: "error"; message: string };
 
 const button =
   "rounded-xl bg-neutral-900 px-5 py-4 text-base font-medium text-white disabled:opacity-50";
-const secondary = "rounded-xl border border-neutral-300 px-5 py-4 text-base font-medium";
 
 /**
  * "This was not me." The link in the recovery email carries a one-use token in its URL FRAGMENT (which is never sent to a
- * server or a log); it is moved into memory and removed from the address bar at once. Two ways to stop a pending recovery:
- * report it (Kaada security vetoes it; no device needed) or cancel it with the CURRENT root (passkey or device key).
+ * server or a log); it is moved into memory and removed from the address bar at once. A pending recovery can be stopped by
+ * exactly one party: the CURRENT root of the wallet (its passkey or device key). Kaada itself cannot stop it, so this page asks
+ * the device that controls the wallet to confirm.
  */
-export function ReportFlow() {
+export function CancelFlow() {
   const [token, setToken] = useState<string | null>(null);
   const [view, setView] = useState<View>({ name: "loading" });
 
@@ -39,39 +39,22 @@ export function ReportFlow() {
     });
   }, []);
 
-  async function report() {
-    if (!token) return;
-    setView({ name: "working", what: "report" });
-    try {
-      await json(await api("/recovery/report", token, { method: "POST" }));
-      setView({ name: "stopped", how: "report" });
-    } catch (error) {
-      setView({
-        name: "error",
-        message: describeError(
-          error,
-          "We couldn't stop it. It may already be finished or stopped.",
-        ),
-      });
-    }
-  }
-
   async function cancelWithRoot() {
     if (!token) return;
-    setView({ name: "working", what: "cancel" });
+    setView({ name: "working" });
     try {
       const request = await json<RootSigningRequest>(
         await api("/recovery/cancel/prepare", token, { method: "POST" }),
       );
       const material = await signRootRequest(request);
       await json(await api("/recovery/cancel", token, { body: { material } }));
-      setView({ name: "stopped", how: "cancel" });
+      setView({ name: "stopped" });
     } catch (error) {
       setView({
         name: "error",
         message:
           error instanceof DeviceKeyMissingError
-            ? "This browser doesn't hold your wallet's device key. Open the link on the device you use, or report it instead."
+            ? "This browser doesn't hold your wallet's device key. Open the link on the device or passkey you normally use."
             : describeError(error, "We couldn't cancel it. Nothing was changed."),
       });
     }
@@ -93,7 +76,8 @@ export function ReportFlow() {
           <h1 className="text-2xl font-semibold">Stop a wallet recovery</h1>
           <p className="text-neutral-600">
             Someone asked to recover your Kaada wallet. If that was you, you don&apos;t need to do
-            anything. If it was not you, stop it now.
+            anything. If it was not you, stop it now from the device or passkey you normally use for
+            your wallet.
           </p>
           {view.name === "error" && (
             <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -103,25 +87,15 @@ export function ReportFlow() {
           <button
             type="button"
             disabled={view.name === "working"}
-            onClick={() => void report()}
+            onClick={() => void cancelWithRoot()}
             className={button}
           >
-            {view.name === "working" && view.what === "report"
-              ? "Stopping..."
-              : "This was not me. Stop it"}
-          </button>
-          <button
-            type="button"
-            disabled={view.name === "working"}
-            onClick={() => void cancelWithRoot()}
-            className={secondary}
-          >
-            {view.name === "working" && view.what === "cancel"
-              ? "Confirm on your device..."
-              : "Cancel it from my current device"}
+            {view.name === "working" ? "Confirm on your device..." : "This was not me. Stop it"}
           </button>
           <p className="text-xs text-neutral-500">
-            Stopping a recovery never moves funds and never changes your wallet.
+            Only your current device or passkey can stop a recovery, and stopping one never moves
+            funds. If you no longer have it, a recovery needs your Recovery Code, your authenticator
+            app and your email together, so keep those private.
           </p>
         </section>
       )}

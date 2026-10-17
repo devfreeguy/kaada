@@ -57,15 +57,23 @@ test("only the documented forward path exists; nothing skips the chain or goes b
   assert.equal(canTransitionRecovery("ROOT_CHANGED", "FINALIZING"), false);
 });
 
-test("an on-chain pending recovery can be cancelled or vetoed, but a finished one cannot", () => {
-  for (const exit of ["CANCELLED", "VETOED", "FAILED"] as const) {
+test("an on-chain pending recovery can be cancelled by the root, but a finished one cannot; there is no veto", () => {
+  for (const exit of ["CANCELLED", "FAILED"] as const) {
     assert.ok(canTransitionRecovery("PENDING", exit));
   }
   for (const stage of ["ROOT_CHANGED", "COMPLETED"] as const) {
     assert.equal(canTransitionRecovery(stage, "CANCELLED"), false);
-    assert.equal(canTransitionRecovery(stage, "VETOED"), false);
   }
+  assert.equal((RECOVERY_ATTEMPT_STATUSES as readonly string[]).includes("VETOED"), false);
   // a deferred finalization goes back to PENDING (e.g. an in-flight payment); a crashed lease can be reclaimed
   assert.ok(canTransitionRecovery("FINALIZING", "PENDING"));
   assert.ok(canTransitionRecovery("FINALIZING", "FINALIZING"));
+});
+
+test("a claim released because the relayer was unreachable goes back to ROOT_PROPOSED, and nowhere else is a way back", () => {
+  assert.ok(canTransitionRecovery("INITIATING", "ROOT_PROPOSED"));
+  for (const later of ["PENDING", "FINALIZING", "ROOT_CHANGED", "COMPLETED"] as const) {
+    assert.equal(canTransitionRecovery(later, "ROOT_PROPOSED"), false, later);
+    assert.equal(canTransitionRecovery(later, "INITIATING"), false, later);
+  }
 });

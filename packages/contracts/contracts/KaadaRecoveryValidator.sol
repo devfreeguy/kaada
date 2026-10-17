@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {PackedUserOperation, Execution, IKernelCalls, IAttestorRegistry} from "./Interfaces.sol";
+import {PackedUserOperation, Execution, IKernelCalls} from "./Interfaces.sol";
 
 /// @title KaadaRecoveryValidator
 /// @notice A Kernel v3.3 (ERC-7579) validator that can do exactly one thing: rotate a wallet's ROOT validator and
-///         invalidate every older validator/permission, atomically, after a timelocked, doubly-signed recovery.
+///         invalidate every older validator/permission, atomically, after a timelocked, Recovery-Code-signed recovery.
 ///
 /// What it can NEVER do: move funds, approve, swap, call any third party, install modules, or grant itself
 /// anything. It holds Kernel's `execute` selector (a batch needs it), and its `validateUserOp` therefore accepts
@@ -16,24 +16,31 @@ import {PackedUserOperation, Execution, IKernelCalls, IAttestorRegistry} from ".
 ///     Execution(account, 0, invalidateNonce(account.currentNonce() + 1))
 ///   ]))
 ///
-/// Authority to START a recovery is two signatures over the same EIP-712 digest:
-///   1. the recovery key (derived client-side from the user's Recovery Code),
-///   2. the attestor currently named by the shared timelocked registry (Kaada, after email/risk checks).
-/// Neither alone is enough, and neither can move funds. The account's own root can `cancel()`, and the attestor
-/// can veto with `attestorCancel`. The attestor can never approve or complete a recovery.
+/// STARTING a recovery needs two independent things, and neither is enough alone:
+///   1. the signature of the recovery key (derived client-side from the user's Recovery Code) over the exact new root, and
+///   2. the transaction coming from the ONE configured recovery relayer (`RELAYER`, immutable).
+/// The relayer is Kaada's submission gate, not an authority: it can only forward a signature it was handed, so a compromised
+/// relayer cannot recover a wallet (it cannot produce the Recovery Code signature) and a Recovery Code holder cannot call
+/// `initiate` themselves (they are not the relayer). The relayer submits only after Kaada has checked the registered email and
+/// the authenticator-app code OFF-CHAIN; this contract never sees those two and does not pretend to verify them.
+///
+/// The relayer has no other power: it cannot cancel, approve or complete anything. The account's own root can `cancel()` at any
+/// time before the batch executes, directly, with no relayer involved, and the timelock (24 h hard floor) gives it the time to.
+/// If the relayer is unavailable nobody can start a recovery: the design chooses safety over availability.
 ///
 /// After a successful recovery this validator is VOIDED for the account (config deleted, the recovery key can
 /// never be installed again, and Kernel's own invalidateNonce makes the old installation unusable). The new root
 /// must install a fresh configuration with a NEW recovery key.
 ///
-/// Not upgradeable. No owner. No admin. The only shared mutable state it reads is the registry's attestor.
+/// Not upgradeable. No owner. No admin. No external state is read. Replacing the relayer key means deploying a new validator
+/// (the relayer address is immutable) and re-arming recovery on the wallets that should use it.
 contract KaadaRecoveryValidator {
     // ── errors ────────────────────────────────────────────────────────────────────────────────────
     error AlreadyInitialized(address account);
     error NotInitialized(address account);
     error BadConfig();
+    error NotRelayer();
     error RecoveryKeyAlreadyUsed();
-    error NotAttestor();
     error RecoveryActive();
     error NoPendingRecovery();
     error BadSignature();
@@ -47,13 +54,7 @@ contract KaadaRecoveryValidator {
     event Uninstalled(address indexed account);
     event RecoveryKeyChanged(address indexed account, address newRecoveryKey);
     event DelayChanged(address indexed account, uint32 newDelay);
-    event RecoveryInitiated(
-        address indexed account,
-        uint64 indexed nonce,
-        bytes32 commitment,
-        uint48 executeAfter,
-        address attestor
-    );
+    event RecoveryInitiated(address indexed account, uint64 indexed nonce, bytes32 commitment, uint48 executeAfter);
     /// The committed new root, for audit and for notifications.
     event RecoveryRootCommitted(
         address indexed account,
@@ -63,7 +64,7 @@ contract KaadaRecoveryValidator {
         bytes32 validatorDataHash,
         bytes32 hookDataHash
     );
-    event RecoveryCancelled(address indexed account, uint64 indexed nonce, address by);
+    event RecoveryCancelled(address indexed account, uint64 indexed nonce);
     event RecoveryConsumed(address indexed account, uint64 indexed nonce, bytes32 commitment);
 
     // ── types ──────────────────────────────────────────────────────────────────────────────────────
@@ -97,8 +98,8 @@ contract KaadaRecoveryValidator {
     /// secp256k1n / 2: only low-s signatures (no malleable twin).
     uint256 internal constant HALF_N = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
 
-    /// The shared attestor registry (immutable: a different registry means a different validator deployment).
-    IAttestorRegistry public immutable REGISTRY;
+    /// The ONLY address that may call `initiate`: Kaada's recovery relayer. Immutable, so no admin can swap it.
+    address public immutable RELAYER;
 
     // ── state, all keyed by account (ERC-4337 associated storage) ──────────────────────────────────
     mapping(address account => Config) public configs;
@@ -108,9 +109,9 @@ contract KaadaRecoveryValidator {
     /// A recovery key that has been consumed by a completed recovery can never be installed again.
     mapping(address account => mapping(address key => bool)) public usedRecoveryKeys;
 
-    constructor(IAttestorRegistry registry) {
-        if (address(registry) == address(0)) revert BadConfig();
-        REGISTRY = registry;
+    constructor(address relayer) {
+        if (relayer == address(0)) revert BadConfig();
+        RELAYER = relayer;
     }
 
     /// The smallest delay a wallet may configure. 24 hours in production.
@@ -184,7 +185,7 @@ contract KaadaRecoveryValidator {
         );
     }
 
-    /// The digest both signers sign. chainId and this contract are in the domain; account, recovery nonce, new
+    /// The digest the recovery key signs. chainId and this contract are in the domain; account, recovery nonce, new
     /// validator id, hook, validator-data hash and hook-data hash are in the message.
     function initiateDigest(address account, uint64 nonce, RootCommitment memory root, uint256 deadline)
         public
@@ -206,14 +207,11 @@ contract KaadaRecoveryValidator {
         return keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
     }
 
-    /// Anyone may submit; authority is the two signatures. Starts the timelock.
-    function initiate(
-        address account,
-        RootCommitment calldata root,
-        uint256 deadline,
-        bytes calldata sigRecovery,
-        bytes calldata sigAttestor
-    ) external {
+    /// Only the configured relayer may submit, and only with the recovery key's signature. Starts the timelock.
+    function initiate(address account, RootCommitment calldata root, uint256 deadline, bytes calldata sigRecovery)
+        external
+    {
+        if (msg.sender != RELAYER) revert NotRelayer();
         Config storage c = configs[account];
         if (!c.installed) revert NotInitialized(account);
         if (pendings[account].active) revert RecoveryActive();
@@ -221,50 +219,29 @@ contract KaadaRecoveryValidator {
         _checkRoot(root.rootId);
 
         uint64 nonce = recoveryNonce[account];
-        bytes32 digest = initiateDigest(account, nonce, root, deadline);
-        address attestor = _authorise(digest, c.recoveryKey, sigRecovery, sigAttestor);
-        _open(account, root, nonce, c.delay, attestor);
+        if (_recover(initiateDigest(account, nonce, root, deadline), sigRecovery) != c.recoveryKey) {
+            revert BadSignature();
+        }
+        _open(account, root, nonce, c.delay);
     }
 
-    /// Both signatures must recover to the right signers; returns the attestor that signed.
-    function _authorise(bytes32 digest, address recoveryKey, bytes calldata sigRecovery, bytes calldata sigAttestor)
-        internal
-        view
-        returns (address attestor)
-    {
-        if (_recover(digest, sigRecovery) != recoveryKey) revert BadSignature();
-        attestor = REGISTRY.currentAttestor();
-        if (attestor == address(0) || _recover(digest, sigAttestor) != attestor) revert BadSignature();
-    }
-
-    function _open(address account, RootCommitment calldata root, uint64 nonce, uint32 delay, address attestor)
-        internal
-    {
+    function _open(address account, RootCommitment calldata root, uint64 nonce, uint32 delay) internal {
         bytes32 commitment = commitmentOf(account, root);
         uint48 executeAfter = uint48(block.timestamp + delay);
         pendings[account] = Pending({commitment: commitment, executeAfter: executeAfter, active: true});
-        emit RecoveryInitiated(account, nonce, commitment, executeAfter, attestor);
+        emit RecoveryInitiated(account, nonce, commitment, executeAfter);
         emit RecoveryRootCommitted(
             account, nonce, root.rootId, root.hook, root.validatorDataHash, root.hookDataHash
         );
     }
 
-    /// The account itself (a root-signed operation) cancels a pending recovery.
+    /// The account itself (a root-signed operation) cancels a pending recovery. Nobody else can.
     function cancel() external {
-        _cancel(msg.sender, msg.sender);
-    }
-
-    /// The registry's CURRENT attestor may veto a pending recovery. It can never approve or complete one.
-    function attestorCancel(address account) external {
-        if (msg.sender != REGISTRY.currentAttestor()) revert NotAttestor();
-        _cancel(account, msg.sender);
-    }
-
-    function _cancel(address account, address by) internal {
+        address account = msg.sender;
         if (!pendings[account].active) revert NoPendingRecovery();
         delete pendings[account];
         uint64 nonce = recoveryNonce[account]++;
-        emit RecoveryCancelled(account, nonce, by);
+        emit RecoveryCancelled(account, nonce);
     }
 
     // ── the exact batch ────────────────────────────────────────────────────────────────────────────
