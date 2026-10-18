@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+import { errorText } from "../logging/error-text.js";
 import type { OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import type { AppConfig } from "@kaada/config";
 
@@ -44,8 +45,11 @@ export class ExecutionReconciler implements OnModuleInit, OnModuleDestroy {
         this.logger.log(`reconciled ${String(result.examined)} execution(s)`);
       }
       return { examined: result.examined };
-    } catch {
-      this.logger.warn("reconciliation failed; it will be tried again");
+    } catch (error) {
+      this.logger.error(
+        `reconciliation failed; it will be tried again: ${errorText(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       return undefined;
     } finally {
       this.running = false;

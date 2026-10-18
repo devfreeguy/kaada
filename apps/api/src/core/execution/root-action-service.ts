@@ -1,4 +1,6 @@
 import { KaadaError, createId, rootActionFor } from "@kaada/domain";
+import type { AgentLog } from "../agent/ports.js";
+import { errorDetails } from "../channels/error-details.js";
 import type {
   ExecutionPlan,
   KernelExecutionPort,
@@ -22,6 +24,7 @@ export const ROOT_ACTION_TTL_MS = 10 * 60 * 1000;
 const KIND = "DEPLOY_AND_INSTALL_PERMISSION" as const;
 
 export interface RootActionServiceDeps {
+  log?: AgentLog;
   unitOfWork: ExecutionUnitOfWork;
   kernel: KernelExecutionPort;
   cipher: SecretCipher;
@@ -277,7 +280,11 @@ export class RootActionService {
     if (!wallet) return undefined;
     try {
       return rootActionFor((await this.deps.roots.activeRoot(wallet)).type);
-    } catch {
+    } catch (error) {
+      this.deps.log?.("warn", "root_action.active_root_unreadable", {
+        walletId,
+        ...errorDetails(error),
+      });
       return undefined;
     }
   }

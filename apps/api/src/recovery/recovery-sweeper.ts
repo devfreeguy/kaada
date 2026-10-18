@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+import { errorText } from "../logging/error-text.js";
 import type { OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import type { AppConfig } from "@kaada/config";
 
@@ -44,8 +45,11 @@ export class RecoverySweeper implements OnModuleInit, OnModuleDestroy {
           `recovery sweep: ${String(result.finalized.length)} finalized, ${String(result.reconciled)} reconciled, ${String(result.cleaned)} cleaned`,
         );
       }
-    } catch {
-      this.logger.warn("recovery sweep failed; it will be tried again");
+    } catch (error) {
+      this.logger.error(
+        `recovery sweep failed; it will be tried again: ${errorText(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
     } finally {
       this.running = false;
     }

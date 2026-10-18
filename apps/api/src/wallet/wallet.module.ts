@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { nestLog } from "../logging/nest-log.js";
 import {
   ChainBalanceReader,
   KernelPolicyAdapter,
@@ -135,6 +136,7 @@ function unitOfWork(database: Database): WalletUnitOfWork {
         const attestation = config.wallet.deviceAttestation;
         if (!attestation || !config.wallet.deviceKeyRoots) return null;
         return new DeviceTierService({
+          log: nestLog("DeviceTier"),
           attestations: createRepositories(database).deviceAttestations,
           challengeTtlMs: attestation.challengeTtlMs,
           ...(attestation.androidApps.length > 0 && {

@@ -6,6 +6,7 @@ import {
   isKaadaError,
   validatePaymentRoute,
 } from "@kaada/domain";
+import { errorDetails } from "../channels/error-details.js";
 import type {
   Asset,
   AssetRegistry,
@@ -214,7 +215,12 @@ export class RoutingService {
           // The money is there. A direct transfer also needs a little CELO for the network fee; if only THAT is missing, say so
           // (and not that the person lacks the currency).
           if (picked.route.kind === "TRANSFER" && this.deps.gas && wallet) {
-            const enough = await this.deps.gas.enoughForFees(wallet.address).catch(() => undefined);
+            const enough = await this.deps.gas
+              .enoughForFees(wallet.address)
+              .catch((error: unknown) => {
+                this.log("warn", "routing.fee_balance_check_failed", { ...errorDetails(error) });
+                return undefined;
+              });
             if (enough === false) {
               return {
                 status: "FAILED",
@@ -340,7 +346,8 @@ export class RoutingService {
   private async homeCurrencyOf(userId: string): Promise<string | undefined> {
     try {
       return await this.deps.profile?.homeCurrency(userId);
-    } catch {
+    } catch (error) {
+      this.log("warn", "routing.home_currency_unavailable", { userId, ...errorDetails(error) });
       return undefined;
     }
   }

@@ -46,7 +46,10 @@ export class RootActionController {
         isKaadaError(error, "AUTHORIZATION_SESSION_INVALID") ||
         isKaadaError(error, "CREDENTIAL_REJECTED")
       ) {
-        throw new UnauthorizedException("this link is not valid, has expired, or was already used");
+        throw new UnauthorizedException(
+          "this link is not valid, has expired, or was already used",
+          { cause: error },
+        );
       }
       throw error;
     }

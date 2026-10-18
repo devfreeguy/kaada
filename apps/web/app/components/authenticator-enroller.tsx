@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 import { api, describeError, json } from "../lib/api";
 import { groupSecret } from "../lib/recovery-copy";
 import { QrCode } from "./qr-code";
+import { logFailure } from "../lib/client-log";
 
 type Step =
   | { name: "intro" }
@@ -35,6 +36,7 @@ export function AuthenticatorEnroller({ token, onDone }: { token: string; onDone
       setCode("");
       setStep({ name: "scan", uri: made.otpauthUri, secret: made.secret, wrong: false });
     } catch (error) {
+      logFailure("authenticator.begin_failed", error);
       setStep({
         name: "error",
         message: describeError(error, "We couldn't start the authenticator setup."),
@@ -52,6 +54,7 @@ export function AuthenticatorEnroller({ token, onDone }: { token: string; onDone
         setStep({ name: "done" });
         onDone();
       } catch (error) {
+        logFailure("authenticator.confirm_failed", error);
         const text = describeError(error, "");
         if (text) {
           setStep({ name: "error", message: text });

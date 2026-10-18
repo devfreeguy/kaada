@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+import { errorText } from "../logging/error-text.js";
 import type { OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import type { Repositories } from "@kaada/database";
 
@@ -61,8 +62,11 @@ export class ChannelSweeper implements OnModuleInit, OnModuleDestroy {
     try {
       const { announced } = await this.dispatcher.sweep();
       if (announced > 0) this.logger.log(`announced ${String(announced)} payment update(s)`);
-    } catch {
-      this.logger.warn("payment status sweep failed; it will be tried again");
+    } catch (error) {
+      this.logger.error(
+        `payment status sweep failed; it will be tried again: ${errorText(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
     } finally {
       this.running = false;
     }
@@ -76,8 +80,11 @@ export class ChannelSweeper implements OnModuleInit, OnModuleDestroy {
       const { announced, failed } = await this.onboarding.sweep();
       if (announced > 0) this.logger.log(`announced ${String(announced)} onboarding update(s)`);
       if (failed > 0) this.logger.warn(`${String(failed)} onboarding update(s) will be retried`);
-    } catch {
-      this.logger.warn("onboarding sweep failed; it will be tried again");
+    } catch (error) {
+      this.logger.error(
+        `onboarding sweep failed; it will be tried again: ${errorText(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
     } finally {
       this.onboardingRunning = false;
     }
@@ -91,8 +98,11 @@ export class ChannelSweeper implements OnModuleInit, OnModuleDestroy {
       const { announced, failed } = await this.funding.sweep();
       if (announced > 0) this.logger.log(`announced ${String(announced)} deposit(s)`);
       if (failed > 0) this.logger.warn(`${String(failed)} deposit notice(s) will be retried`);
-    } catch {
-      this.logger.warn("deposit check failed; it will be tried again");
+    } catch (error) {
+      this.logger.error(
+        `deposit check failed; it will be tried again: ${errorText(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
     } finally {
       this.fundingRunning = false;
     }
@@ -106,8 +116,11 @@ export class ChannelSweeper implements OnModuleInit, OnModuleDestroy {
         new Date(now - KEEP_EVENTS_MS),
         500,
       );
-    } catch {
-      this.logger.warn("channel housekeeping failed; it will be tried again");
+    } catch (error) {
+      this.logger.error(
+        `channel housekeeping failed; it will be tried again: ${errorText(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
     }
   }
 }

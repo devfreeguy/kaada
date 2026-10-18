@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { DeviceKeyMissingError, proveRoot } from "../../lib/root-proof";
 import type { RootChallenge } from "../../lib/root-proof";
+import { loggedFetch, logFailure } from "../../lib/client-log";
 
 type RootAction = "ROOT_PASSKEY_REQUIRED" | "ROOT_DEVICE_KEY_REQUIRED";
 
@@ -17,7 +18,7 @@ type View =
 
 /** The link token travels in a header only: never in a body, a query string or a log. */
 async function call(token: string, path: string, init: RequestInit = {}): Promise<Response> {
-  return fetch(`/api/v1/root-action${path}`, {
+  return loggedFetch(`/api/v1/root-action${path}`, {
     ...init,
     cache: "no-store",
     headers: {
@@ -54,7 +55,8 @@ export function RootActionFlow({ token }: { token: string }) {
           };
           next = { name: "ready", title: body.title, message: body.message, action: body.action };
         }
-      } catch {
+      } catch (error) {
+        logFailure("root_action.load_failed", error);
         next = {
           name: "error",
           message: "We couldn't reach Kaada. Please try again.",
@@ -83,6 +85,7 @@ export function RootActionFlow({ token }: { token: string }) {
       if (!response.ok) throw new Error("complete");
       setView({ name: "done" });
     } catch (error) {
+      logFailure("root_action.register_failed", error);
       // Cancelling the prompt is the person's choice, not a fault.
       const cancelled = error instanceof Error && error.name === "NotAllowedError";
       setView({

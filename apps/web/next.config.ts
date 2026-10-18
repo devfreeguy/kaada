@@ -1,17 +1,13 @@
 import type { NextConfig } from "next";
 
-// The browser talks to the API through this same origin, so the page that registers a passkey and
-// the origin the server verifies are one and the same, and no CORS exception is needed.
-const apiUrl = (process.env["API_URL"] ?? "http://localhost:4000").replace(/\/$/, "");
-
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Development only: lets the dev server be opened through a public HTTPS tunnel (pnpm --filter @kaada/api dev:tunnels), which
   // Telegram's secure buttons need. It has no effect on a production build.
   allowedDevOrigins: ["*.trycloudflare.com"],
-  rewrites() {
-    return [{ source: "/api/:path*", destination: `${apiUrl}/api/:path*` }];
-  },
+  // The browser talks to the API through this same origin, so the page that registers a passkey and the origin the server
+  // verifies are one and the same. /api/* is served by app/api/[...path]/route.ts, which proxies to API_URL at request time
+  // (not at build time) and logs every failure with its exact cause.
   headers() {
     return [
       {

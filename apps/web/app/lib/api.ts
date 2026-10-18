@@ -1,10 +1,12 @@
+import { loggedFetch } from "./client-log";
+
 /** One way to call the Kaada API from the browser: same origin, never cached, the token only ever in a header. */
 export async function api(
   path: string,
   token: string | null,
   init: { method?: "GET" | "POST"; body?: unknown } = {},
 ): Promise<Response> {
-  return fetch(`/api/v1${path}`, {
+  return loggedFetch(`/api/v1${path}`, {
     method: init.method ?? (init.body === undefined ? "GET" : "POST"),
     cache: "no-store",
     headers: {

@@ -6,6 +6,7 @@ import { api, describeError, json } from "../../lib/api";
 import { signRootRequest } from "../../lib/root-material";
 import type { RootSigningRequest } from "../../lib/root-material";
 import { DeviceKeyMissingError } from "../../lib/root-proof";
+import { logFailure } from "../../lib/client-log";
 
 type View =
   | { name: "loading" }
@@ -50,6 +51,7 @@ export function CancelFlow() {
       await json(await api("/recovery/cancel", token, { body: { material } }));
       setView({ name: "stopped" });
     } catch (error) {
+      logFailure("recovery.cancel_failed", error);
       setView({
         name: "error",
         message:

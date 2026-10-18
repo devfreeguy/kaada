@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { loggedFetch, logFailure } from "../../lib/client-log";
 
 interface Outcome {
   state: string;
@@ -25,7 +26,7 @@ const GIVE_UP_MS = 100_000;
 
 /** The token goes in a header only; this component sends no PIN and no payment detail. */
 async function execution(token: string, path: string, method: "GET" | "POST"): Promise<Response> {
-  return fetch(`/api/v1/execution${path}`, {
+  return loggedFetch(`/api/v1/execution${path}`, {
     method,
     cache: "no-store",
     headers: { Authorization: `Bearer ${token}` },
@@ -109,7 +110,8 @@ export function FinalPricing({ token }: { token: string }) {
           await new Promise((resolve) => setTimeout(resolve, POLL_MS));
           if (cancelled) return;
         }
-      } catch {
+      } catch (error) {
+        logFailure("authorize.final_pricing_failed", error);
         if (!cancelled) {
           setOutcome({
             state: "ERROR",

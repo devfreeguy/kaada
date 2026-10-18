@@ -1,4 +1,5 @@
 import { RECOVERY_AUDIT_EVENTS, createId } from "@kaada/domain";
+import { errorDetails } from "../channels/error-details.js";
 import type {
   ChannelMessage,
   ChannelMessenger,
@@ -47,9 +48,13 @@ export class RecoveryNotifier {
       try {
         await messenger.send({ type: identity.type, externalId: identity.externalId }, message);
         result.delivered += 1;
-      } catch {
+      } catch (error) {
         result.failed += 1;
-        log("warn", "recovery.notification_failed", { userId, channel: identity.type });
+        log("warn", "recovery.notification_failed", {
+          userId,
+          channel: identity.type,
+          ...errorDetails(error),
+        });
       }
     }
     await this.deps.audit.append({

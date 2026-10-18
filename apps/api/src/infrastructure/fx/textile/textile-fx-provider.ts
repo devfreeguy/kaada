@@ -6,6 +6,7 @@ import {
   createMoney,
   validateQuoteRequest,
 } from "@kaada/domain";
+import { errorDetails } from "../../../core/channels/error-details.js";
 import type {
   Asset,
   AssetRegistry,
@@ -77,7 +78,8 @@ export class TextileFxProvider implements FxProvider {
     try {
       await this.tokens(request);
       return true;
-    } catch {
+    } catch (error) {
+      this.log("warn", "fx.pair_unsupported", { ...errorDetails(error) });
       return false;
     }
   }

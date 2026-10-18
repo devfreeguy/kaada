@@ -85,32 +85,43 @@ function httpError(error: unknown): never {
     switch (error.code) {
       case "RECOVERY_SESSION_INVALID":
       case "SETUP_SESSION_INVALID":
-        throw new UnauthorizedException("this recovery link is not valid or has expired");
+        throw new UnauthorizedException("this recovery link is not valid or has expired", {
+          cause: error,
+        });
       case "RECOVERY_RATE_LIMITED":
-        throw new HttpException("too many requests, try again later", HttpStatus.TOO_MANY_REQUESTS);
+        throw new HttpException(
+          "too many requests, try again later",
+          HttpStatus.TOO_MANY_REQUESTS,
+          { cause: error },
+        );
       case "RECOVERY_REJECTED":
       case "CREDENTIAL_REJECTED":
       case "PIN_REJECTED":
-        throw new BadRequestException(error.message);
+        throw new BadRequestException(error.message, { cause: error });
       case "RECOVERY_CONFLICT":
       case "RECOVERY_NOT_CONFIGURED":
       case "RECOVERY_TOTP_REQUIRED":
       case "WALLET_NOT_ACTIVE":
       case "ROOT_CREDENTIAL_REQUIRED":
-        throw new ConflictException(error.message);
+        throw new ConflictException(error.message, { cause: error });
       case "RECOVERY_RELAYER_UNAVAILABLE":
         // Nothing was sent and nobody else may send it: the same proof can be submitted again shortly (with the next authenticator code).
-        throw new ServiceUnavailableException({
-          statusCode: 503,
-          message:
-            "the recovery service is temporarily unavailable; nothing was sent, try again shortly",
-          error: "RECOVERY_SERVICE_UNAVAILABLE",
-          retryable: true,
-        });
+        throw new ServiceUnavailableException(
+          {
+            statusCode: 503,
+            message:
+              "the recovery service is temporarily unavailable; nothing was sent, try again shortly",
+            error: "RECOVERY_SERVICE_UNAVAILABLE",
+            retryable: true,
+          },
+          { cause: error },
+        );
       case "RECOVERY_CHAIN_UNAVAILABLE":
       case "RECOVERY_BLOCKED":
       case "BUNDLER_UNAVAILABLE":
-        throw new ServiceUnavailableException("recovery is temporarily unavailable");
+        throw new ServiceUnavailableException("recovery is temporarily unavailable", {
+          cause: error,
+        });
       default:
         break;
     }

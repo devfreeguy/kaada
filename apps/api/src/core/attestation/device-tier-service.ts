@@ -1,5 +1,7 @@
 import { randomBytes } from "node:crypto";
 
+import type { AgentLog } from "../agent/ports.js";
+import { errorDetails } from "../channels/error-details.js";
 import {
   ANDROID_VERIFIER_VERSION,
   DEFAULT_ANDROID_POLICY,
@@ -64,6 +66,7 @@ export interface ResolvedTier {
 }
 
 export interface DeviceTierServiceDeps {
+  log?: AgentLog;
   attestations: DeviceAttestationRepository;
   android?: {
     applications: readonly AndroidApplication[];
@@ -368,8 +371,12 @@ export class DeviceTierService {
         chainHashes: result.facts.chainHashes,
         trustAnchor: result.facts.trustAnchor,
       };
-    } catch {
+    } catch (error) {
       // A verifier fault is never an upgrade, and never the client's problem to retry blindly.
+      this.deps.log?.("error", "attestation.verifier_fault", {
+        platform: evidence.platform,
+        ...errorDetails(error),
+      });
       return this.refused(
         "VERIFIER_ERROR",
         evidence.platform === "ANDROID" ? ANDROID_VERIFIER_VERSION : IOS_VERIFIER_VERSION,

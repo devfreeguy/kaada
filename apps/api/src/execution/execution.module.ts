@@ -1,4 +1,5 @@
 import { Logger, Module } from "@nestjs/common";
+import { nestLog } from "../logging/nest-log.js";
 import {
   attributionSuffix,
   createViemAllowanceReader,
@@ -214,6 +215,7 @@ export function kernelAdapterConfig(config: AppConfig, bundlerUrl: string) {
           return null;
         }
         return new RootActionService({
+          log: nestLog("RootAction"),
           unitOfWork: unitOfWork(database),
           kernel,
           cipher: new AesGcmSecretCipher(config.execution.cipherKeys),

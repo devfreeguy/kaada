@@ -84,7 +84,7 @@ export class ExecutionController {
       return authorization;
     } catch (error) {
       if (isKaadaError(error, "AUTHORIZATION_SESSION_INVALID")) {
-        throw new UnauthorizedException("this link is not valid or has expired");
+        throw new UnauthorizedException("this link is not valid or has expired", { cause: error });
       }
       throw error;
     }

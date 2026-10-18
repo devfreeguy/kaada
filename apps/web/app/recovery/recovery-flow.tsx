@@ -16,6 +16,7 @@ import type { ServerTypedData } from "../lib/recovery-code";
 import { signRootRequest } from "../lib/root-material";
 import type { RootSigningRequest } from "../lib/root-material";
 import { DeviceKeyMissingError } from "../lib/root-proof";
+import { logFailure } from "../lib/client-log";
 
 type NextStep =
   | "VERIFY_EMAIL"
@@ -57,7 +58,8 @@ function loadSession(): { token: string; proposal?: Proposal } | null {
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     return raw ? (JSON.parse(raw) as { token: string; proposal?: Proposal }) : null;
-  } catch {
+  } catch (error) {
+    logFailure("recovery.session_restore_failed", error);
     return null;
   }
 }
@@ -66,7 +68,8 @@ function saveSession(value: { token: string; proposal?: Proposal } | null): void
   try {
     if (value) sessionStorage.setItem(STORAGE_KEY, JSON.stringify(value));
     else sessionStorage.removeItem(STORAGE_KEY);
-  } catch {
+  } catch (error) {
+    logFailure("recovery.session_save_failed", error);
     // Storage can be refused (private mode); the flow still works until the page is reloaded.
   }
 }
@@ -118,6 +121,7 @@ export function RecoveryFlow() {
       setStatus(await json<Status>(await api("/recovery/status", value)));
       setError(null);
     } catch (failure) {
+      logFailure("recovery.status_failed", failure);
       saveSession(null);
       setSession(null);
       setStatus(null);
@@ -150,7 +154,8 @@ export function RecoveryFlow() {
         try {
           const due = status?.executeAfter && new Date(status.executeAfter).getTime() <= Date.now();
           if (due) await api("/recovery/finalize", token, { method: "POST" });
-        } catch {
+        } catch (error) {
+          logFailure("recovery.finalize_failed", error);
           // The next poll tries again; finalization is idempotent on the server.
         }
         await refresh(token);
@@ -168,6 +173,7 @@ export function RecoveryFlow() {
     try {
       await work();
     } catch (failure) {
+      logFailure("recovery.step_failed", failure);
       setError(
         failure instanceof DeviceKeyMissingError
           ? "This browser doesn't hold your wallet's device key."
@@ -566,6 +572,7 @@ function PinReset({ token, onDone }: { token: string; onDone: () => void }) {
       await json(await api("/recovery/pin", token, { body: { pin: entered } }));
       onDone();
     } catch (failure) {
+      logFailure("recovery.pin_failed", failure);
       setFirst(null);
       setMessage(describeError(failure, "We couldn't save your PIN. Please try again."));
     } finally {

@@ -6,6 +6,7 @@ import type {
   ExecutionPlanRecord,
 } from "@kaada/domain";
 
+import { errorDetails } from "./error-details.js";
 import { paymentView } from "../execution/run-status.js";
 import type { RunOutcome } from "../execution/runner.js";
 import type { AgentLog } from "../agent/ports.js";
@@ -259,7 +260,10 @@ export class PaymentStatusDispatcher {
       text: describeProgress(progress, claimed.authorizationSessionId),
     };
     if (progress.state === "COMPLETED" && this.deps.completionActions) {
-      const actions = await this.deps.completionActions(claimed).catch(() => []);
+      const actions = await this.deps.completionActions(claimed).catch((error: unknown) => {
+        this.log("warn", "channel.completion_actions_failed", { ...errorDetails(error) });
+        return [];
+      });
       if (actions.length > 0) message.actions = actions;
     }
     if (progress.state === "ROOT_ACTION_REQUIRED" && this.deps.rootActionLink) {

@@ -15,6 +15,7 @@ import type { AgentService } from "../core/agent/agent-service.js";
 import type { AgentLog } from "../core/agent/ports.js";
 import type { AuthorizationSessionService } from "../core/authorization/session-service.js";
 import { ChannelActionService } from "../core/channels/action-service.js";
+import { errorDetails } from "../core/channels/error-details.js";
 import { ChannelIdentityService } from "../core/channels/identity-service.js";
 import { ChannelMessageService } from "../core/channels/message-service.js";
 import { PaymentStatusDispatcher } from "../core/channels/payment-status.js";
@@ -191,6 +192,7 @@ function nestLog(): AgentLog {
         balances: WalletBalanceService | null,
       ): ChannelMessageService | null => {
         if (!telegram) return null;
+        const log = nestLog();
         const adapters = new Map<ChannelType, ChannelAdapter>([["TELEGRAM", telegram]]);
         return new ChannelMessageService({
           adapters,
@@ -248,7 +250,11 @@ function nestLog(): AgentLog {
                       assetId: line.assetId,
                       amount: line.money.amount,
                     }));
-                  } catch {
+                  } catch (error) {
+                    log("warn", "funding.holdings_unavailable", {
+                      userId,
+                      ...errorDetails(error),
+                    });
                     return null;
                   }
                 },
@@ -263,8 +269,14 @@ function nestLog(): AgentLog {
               try {
                 // `existingWallet` continues a wallet that already exists (the PIN step) without creating another.
                 return (await setup.createSession(userId, options ?? {})).url;
-              } catch {
-                // A person whose wallet is already active has nothing to set up.
+              } catch (error) {
+                if (error instanceof KaadaError && error.code === "WALLET_ALREADY_SETUP") {
+                  // A person whose wallet is already active has nothing to set up.
+                  log("info", "setup.link_not_needed", { userId, reason: "wallet already set up" });
+                } else {
+                  // Anything else is why the person is told wallet setup is unavailable: it must be findable.
+                  log("error", "setup.link_failed", { userId, ...errorDetails(error) });
+                }
                 return null;
               }
             },
@@ -278,7 +290,7 @@ function nestLog(): AgentLog {
               (await repositories.wallets.findEmbedded(userId, CELO_CHAIN_ID))?.status === "ACTIVE",
           },
           facts: paymentFacts(repositories, runs),
-          log: nestLog(),
+          log,
         });
       },
     },

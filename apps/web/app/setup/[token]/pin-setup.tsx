@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { PinKeypad } from "../../components/pin-keypad";
 import { DeviceKeyMissingError, proveRoot } from "../../lib/root-proof";
 import type { RootChallenge } from "../../lib/root-proof";
+import { loggedFetch, logFailure } from "../../lib/client-log";
 
 type Step =
   | { name: "loading" }
@@ -16,7 +17,7 @@ type Step =
   | { name: "error"; message: string };
 
 async function call(token: string, path: string, init: RequestInit = {}): Promise<Response> {
-  return fetch(`/api/v1/wallet/pin${path}`, {
+  return loggedFetch(`/api/v1/wallet/pin${path}`, {
     ...init,
     cache: "no-store",
     headers: {
@@ -45,7 +46,8 @@ export function PinSetup({ token }: { token: string }) {
           const body = (await response.json()) as { isSet: boolean };
           if (body.isSet) next = { name: "set" };
         }
-      } catch {
+      } catch (error) {
+        logFailure("setup.pin_state_failed", error);
         // Fall through to the creation step; the server decides what is allowed.
       }
       if (!cancelled) setStep(next);
@@ -70,6 +72,7 @@ export function PinSetup({ token }: { token: string }) {
         if (!response.ok) throw new Error("save");
         setStep({ name: "saved" });
       } catch (error) {
+        logFailure("setup.pin_failed", error);
         const cancelled = error instanceof Error && error.name === "NotAllowedError";
         setStep({
           name: "error",

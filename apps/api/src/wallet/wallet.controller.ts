@@ -102,17 +102,23 @@ function httpError(error: unknown): never {
   if (isKaadaError(error)) {
     switch (error.code) {
       case "SETUP_SESSION_INVALID":
-        throw new UnauthorizedException("this setup link is not valid or has expired");
+        throw new UnauthorizedException("this setup link is not valid or has expired", {
+          cause: error,
+        });
       case "CREDENTIAL_REJECTED":
-        throw new BadRequestException("the credential could not be verified");
+        throw new BadRequestException("the credential could not be verified", { cause: error });
       case "WALLET_ALREADY_SETUP":
-        throw new ConflictException("this wallet is already set up or has a passkey");
+        throw new ConflictException("this wallet is already set up or has a passkey", {
+          cause: error,
+        });
       case "ROOT_CREDENTIAL_REQUIRED":
-        throw new ConflictException("register a passkey or a device key first");
+        throw new ConflictException("register a passkey or a device key first", { cause: error });
       case "WALLET_NOT_ACTIVE":
-        throw new NotFoundException("no active wallet yet");
+        throw new NotFoundException("no active wallet yet", { cause: error });
       case "WALLET_PROVISIONING_FAILED":
-        throw new BadGatewayException("the wallet could not be created right now; try again");
+        throw new BadGatewayException("the wallet could not be created right now; try again", {
+          cause: error,
+        });
       default:
         break;
     }

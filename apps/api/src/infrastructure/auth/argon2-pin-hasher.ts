@@ -1,4 +1,6 @@
 import { hash, verify } from "@node-rs/argon2";
+import { Logger } from "@nestjs/common";
+import { errorText } from "../../logging/error-text.js";
 import type { Algorithm } from "@node-rs/argon2";
 
 import type { PinHasher } from "../../core/authorization/ports.js";
@@ -47,8 +49,11 @@ export class Argon2PinHasher implements PinHasher {
   async verify(storedHash: string, pin: string): Promise<boolean> {
     try {
       return await verify(storedHash, pin, this.secret && { secret: this.secret });
-    } catch {
-      // A malformed stored hash is a failed check, never a thrown secret.
+    } catch (error) {
+      // A malformed stored hash is a failed check, never a thrown secret. It is a data fault worth knowing about.
+      new Logger("PinHasher").error(
+        `PIN check failed because the stored hash could not be verified: ${errorText(error)}`,
+      );
       return false;
     }
   }

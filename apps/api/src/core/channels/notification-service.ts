@@ -1,5 +1,6 @@
 import type { ChannelType, IdentityRepository, IdentityType } from "@kaada/domain";
 
+import { errorDetails } from "./error-details.js";
 import type { AgentLog } from "../agent/ports.js";
 import { noopLog } from "../agent/ports.js";
 import {
@@ -129,9 +130,13 @@ export class NotificationService {
       try {
         await channel.deliver({ type: identity.type, externalId: identity.externalId }, message);
         result.delivered += 1;
-      } catch {
+      } catch (error) {
         result.failed += 1;
-        this.log("warn", "notification.delivery_failed", { userId, channel: identity.type });
+        this.log("warn", "notification.delivery_failed", {
+          userId,
+          channel: identity.type,
+          ...errorDetails(error),
+        });
       }
     }
     return result;

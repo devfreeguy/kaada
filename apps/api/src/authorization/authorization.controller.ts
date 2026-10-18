@@ -46,7 +46,9 @@ function bearer(header: string | undefined): string {
 
 function httpError(error: unknown): never {
   if (isKaadaError(error, "AUTHORIZATION_SESSION_INVALID")) {
-    throw new UnauthorizedException("this authorization link is not valid or has expired");
+    throw new UnauthorizedException("this authorization link is not valid or has expired", {
+      cause: error,
+    });
   }
   throw error;
 }

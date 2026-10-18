@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { PinKeypad } from "../../components/pin-keypad";
 import { FinalPricing } from "./final-pricing";
+import { loggedFetch, logFailure } from "../../lib/client-log";
 
 interface MoneyView {
   display: string;
@@ -34,7 +35,7 @@ type State =
 
 /** The token goes in a header, never in a body or query; the PIN goes only in the body of one POST. */
 async function call(token: string, path: string, init: RequestInit = {}): Promise<Response> {
-  return fetch(`/api/v1/authorization${path}`, {
+  return loggedFetch(`/api/v1/authorization${path}`, {
     ...init,
     cache: "no-store",
     headers: {
@@ -77,7 +78,8 @@ export function AuthorizeFlow({ token }: { token: string }) {
               ? { name: "blocked", reason: "reset" }
               : { name: "ready", view };
         }
-      } catch {
+      } catch (error) {
+        logFailure("authorize.load_failed", error);
         next = { name: "invalid" };
       }
       if (cancelled) return;
@@ -127,7 +129,8 @@ export function AuthorizeFlow({ token }: { token: string }) {
         setMessage("Something went wrong. Please try again.");
       }
       setState({ name: "ready", view: state.view });
-    } catch {
+    } catch (error) {
+      logFailure("authorize.submit_failed", error);
       setMessage("We couldn't reach Kaada. Please try again.");
       setState({ name: "ready", view: state.view });
     }

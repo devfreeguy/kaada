@@ -1,3 +1,4 @@
+import { Logger } from "@nestjs/common";
 import { verifyAuthenticationResponse, verifyRegistrationResponse } from "@simplewebauthn/server";
 import type { AuthenticationResponseJSON, RegistrationResponseJSON } from "@simplewebauthn/server";
 import { isoCBOR } from "@simplewebauthn/server/helpers";
@@ -60,6 +61,8 @@ export function coordinatesToCose(x: string, y: string): Uint8Array {
 }
 
 export class SimpleWebAuthnVerifier implements PasskeyVerifier {
+  private readonly logger = new Logger("PasskeyVerifier");
+
   async verifyRegistration(input: {
     response: unknown;
     expectedChallenge: string;
@@ -75,17 +78,31 @@ export class SimpleWebAuthnVerifier implements PasskeyVerifier {
         // A passkey is a strong credential only if the user was verified (biometric or device PIN).
         requireUserVerification: true,
       });
-      if (!result.verified) return null;
+      if (!result.verified) {
+        this.logger.warn(
+          "Passkey registration was not verified by the WebAuthn library (verified=false)",
+        );
+        return null;
+      }
       const { credential } = result.registrationInfo;
       const coordinates = coseToCoordinates(credential.publicKey);
-      if (!coordinates) return null;
+      if (!coordinates) {
+        this.logger.warn(
+          "Passkey registration rejected: the public key is not an ES256 (P-256) key, which is the only type the on-chain validator accepts. The device created a different key type",
+        );
+        return null;
+      }
       return {
         credentialId: credential.id,
         publicKeyX: coordinates.x,
         publicKeyY: coordinates.y,
         signCount: credential.counter,
       };
-    } catch {
+    } catch (error) {
+      // The library's message names the exact mismatch (origin, RP ID hash, challenge, user verification), which is the thing to fix.
+      this.logger.warn(
+        `Passkey registration rejected: ${error instanceof Error ? error.message : String(error)} (server expects origin=${input.expectedOrigin} rpId=${input.expectedRpId}; these must match the web address the person is on)`,
+      );
       return null;
     }
   }
@@ -112,8 +129,17 @@ export class SimpleWebAuthnVerifier implements PasskeyVerifier {
           counter: input.credential.signCount,
         },
       });
-      return result.verified ? { newSignCount: result.authenticationInfo.newCounter } : null;
-    } catch {
+      if (!result.verified) {
+        this.logger.warn(
+          "Passkey sign-in was not verified by the WebAuthn library (verified=false)",
+        );
+        return null;
+      }
+      return { newSignCount: result.authenticationInfo.newCounter };
+    } catch (error) {
+      this.logger.warn(
+        `Passkey sign-in rejected: ${error instanceof Error ? error.message : String(error)} (server expects origin=${input.expectedOrigin} rpId=${input.expectedRpId})`,
+      );
       return null;
     }
   }

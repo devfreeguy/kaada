@@ -9,6 +9,7 @@ import { deviceKeySupported } from "../../lib/device-key";
 import { newDeviceKey, registerPasskey } from "../../lib/new-root";
 import { DeviceKeyMissingError, proveRoot } from "../../lib/root-proof";
 import type { RootChallenge } from "../../lib/root-proof";
+import { logFailure } from "../../lib/client-log";
 
 type Kind = "ROTATE_ROOT" | "ENROLL_BACKUP";
 type NewType = "PASSKEY" | "DEVICE_KEY";
@@ -121,6 +122,7 @@ export function SecurityFlow({ token }: { token: string }) {
           message: "The change did not go through. Nothing was lost; you can try again.",
         });
       } catch (error) {
+        logFailure("security.change_failed", error);
         setProgress({
           name: "error",
           message:

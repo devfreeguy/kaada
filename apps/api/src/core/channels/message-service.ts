@@ -243,7 +243,9 @@ export class ChannelMessageService {
     });
     if (claim === "DUPLICATE") {
       if (message.content.kind === "ACTION")
-        await adapter.acknowledge(message).catch(() => undefined);
+        await adapter
+          .acknowledge(message)
+          .catch(this.recover("channel.acknowledge_failed", undefined));
       return "DUPLICATE";
     }
     if (claim === "IN_PROGRESS") return "IN_PROGRESS";
@@ -286,7 +288,10 @@ export class ChannelMessageService {
     const target = { externalConversationId: message.externalConversationId };
     const { content } = message;
 
-    if (content.kind === "ACTION") await adapter.acknowledge(message).catch(() => undefined);
+    if (content.kind === "ACTION")
+      await adapter
+        .acknowledge(message)
+        .catch(this.recover("channel.acknowledge_failed", undefined));
 
     const { userId, created } = await this.deps.identities.resolve(message.sender);
 
@@ -318,7 +323,9 @@ export class ChannelMessageService {
 
     if (content.kind === "TEXT" && LOOKS_LIKE_PIN.test(content.text)) {
       // Never stored, never interpreted, never left in the chat.
-      await adapter.remove?.(target, message.externalMessageId).catch(() => undefined);
+      await adapter
+        .remove?.(target, message.externalMessageId)
+        .catch(this.recover("channel.pin_message_removal_failed", undefined));
       await adapter.send(target, { text: PIN_WARNING });
       return;
     }
@@ -596,7 +603,9 @@ export class ChannelMessageService {
       received.length <= 1
         ? (received[0] ?? "funds")
         : `${received.slice(0, -1).join(", ")} and ${received[received.length - 1] ?? ""}`;
-    const home = await this.deps.profile?.get(event.userId).catch(() => undefined);
+    const home = await this.deps.profile
+      ?.get(event.userId)
+      .catch(this.recover("profile.read_failed", undefined));
     for (const account of accounts) {
       const channel = CHANNEL_OF_IDENTITY[account.type];
       const adapter = channel ? this.deps.adapters.get(channel) : undefined;
@@ -659,7 +668,9 @@ You're ready to use it.`,
     if (!foreign || !from || !to) return { text: `You received ${list} 💰` };
 
     const offered = Boolean(
-      await this.deps.conversions?.available(from.code, to.code).catch(() => false),
+      await this.deps.conversions
+        ?.available(from.code, to.code)
+        .catch(this.recover("conversion.availability_check_failed", false)),
     );
     return {
       text: offered
@@ -913,6 +924,17 @@ It's in your ${from.name} balance.`,
     }
   }
 
+  /**
+   * For a step whose failure must not fail the message (a courtesy, a read that has a safe default): the failure is logged with
+   * its reason, and the safe default is used.
+   */
+  private recover<T>(event: string, fallback: T): (error: unknown) => T {
+    return (error) => {
+      this.log("warn", event, { ...errorDetails(error) });
+      return fallback;
+    };
+  }
+
   /** The channel's flags (what Kaada really offers here). */
   private flags(): CapabilityFlags {
     return (this.deps.conversation ?? FIXED_WORDING).flags;
@@ -1023,7 +1045,7 @@ It's in your ${from.name} balance.`,
               channel: message.channel,
               externalConversationId: message.externalConversationId,
             })
-            .catch(() => undefined)
+            .catch(this.recover("payment.resume_lookup_failed", undefined))
         : undefined;
     const presented: PresentedMessage = {
       text:
@@ -1139,7 +1161,7 @@ It's in your ${from.name} balance.`,
       const onboardingStep = await this.deps.onboarding
         ?.stateOf(userId)
         .then((state) => state.step)
-        .catch(() => undefined);
+        .catch(this.recover("onboarding.state_read_failed", undefined));
       return await presenter.present({
         onboardingStep,
         response: turn.response,
@@ -1164,7 +1186,7 @@ It's in your ${from.name} balance.`,
       return plain;
     } finally {
       // Whatever happened, no half-written draft keeps updating after the reply is decided.
-      await draft?.close().catch(() => undefined);
+      await draft?.close().catch(this.recover("channel.draft_close_failed", undefined));
     }
   }
 

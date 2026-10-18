@@ -5,6 +5,7 @@ import {
   boundLimits,
   createId,
 } from "@kaada/domain";
+import { errorDetails } from "../channels/error-details.js";
 import type {
   ExecutionPlan,
   ExecutionPlanRecord,
@@ -205,8 +206,12 @@ export class ExecutionRunner {
       let status: string;
       try {
         status = (await this.run(record.id)).status;
-      } catch {
+      } catch (error) {
         status = "ERROR";
+        this.log("error", "execution.reconcile_run_failed", {
+          executionId: record.id,
+          ...errorDetails(error),
+        });
       }
       outcomes[status] = (outcomes[status] ?? 0) + 1;
     }
@@ -439,7 +444,8 @@ export class ExecutionRunner {
         !plan.accountRequirements.deploymentRequired &&
         (await this.permissionReadBack(loaded.live, plan))
       );
-    } catch {
+    } catch (error) {
+      this.log("warn", "execution.readiness_check_failed", { ...errorDetails(error) });
       return false;
     }
   }
@@ -663,8 +669,11 @@ export class ExecutionRunner {
           providerSubmitState: "SUBMITTED",
         });
         await this.audit(live, EXECUTION_AUDIT_EVENTS.providerSubmitted, record.id);
-      } catch {
-        this.log("warn", "execution.provider_submit_failed", { executionId: record.id });
+      } catch (error) {
+        this.log("warn", "execution.provider_submit_failed", {
+          executionId: record.id,
+          ...errorDetails(error),
+        });
       }
     }
     try {
@@ -672,8 +681,12 @@ export class ExecutionRunner {
         providerQuoteId: live.quote.providerQuoteId,
         claimToken: claim,
       });
-    } catch {
+    } catch (error) {
       // The provider could not be reached or answered oddly. The swap is on chain; keep reconciling.
+      this.log("warn", "execution.provider_status_failed", {
+        executionId: record.id,
+        ...errorDetails(error),
+      });
       await repositories.executionPlans.transition(record.id, ["SETTLING"], "SETTLING", {
         lastReconciledAt: this.now(),
       });
@@ -758,8 +771,12 @@ export class ExecutionRunner {
             return receipt.status === "SUCCESS" ? "CONFIRMED" : "REVERTED";
           }
         }
-      } catch {
+      } catch (error) {
         // An outage after sending is not a failure and not a reason to resend.
+        this.log("warn", "execution.receipt_poll_failed", {
+          transactionId: tx.id,
+          ...errorDetails(error),
+        });
         await repositories.executionTransactions.markUnknown(tx.id, this.now());
         return "PENDING";
       }
@@ -776,8 +793,9 @@ export class ExecutionRunner {
       try {
         const seen = await this.deps.kernel.getTransactionReceipt(txHash);
         if (seen.status === "SUCCESS" || seen.status === "REVERTED") return;
-      } catch {
+      } catch (error) {
         // the RPC may be briefly unavailable; keep waiting within the bound
+        this.log("warn", "execution.rpc_receipt_unavailable", { ...errorDetails(error) });
       }
       await this.sleep(poll.intervalMs);
     }
@@ -849,8 +867,12 @@ export class ExecutionRunner {
         // Identifiers and codes only: never an amount, calldata, a key or a token.
         data: { authorizationId: live.authorization.id, ...data },
       });
-    } catch {
-      this.log("error", "execution.audit_write_failed", { executionId: live.record.id, type });
+    } catch (error) {
+      this.log("error", "execution.audit_write_failed", {
+        executionId: live.record.id,
+        type,
+        ...errorDetails(error),
+      });
     }
   }
 }

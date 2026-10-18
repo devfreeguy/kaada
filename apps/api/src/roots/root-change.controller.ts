@@ -87,16 +87,16 @@ function httpError(error: unknown): never {
   if (isKaadaError(error)) {
     switch (error.code) {
       case "SETUP_SESSION_INVALID":
-        throw new UnauthorizedException("this link is not valid or has expired");
+        throw new UnauthorizedException("this link is not valid or has expired", { cause: error });
       case "CREDENTIAL_REJECTED":
-        throw new BadRequestException("your credential could not be verified");
+        throw new BadRequestException("your credential could not be verified", { cause: error });
       case "WALLET_NOT_ACTIVE":
-        throw new ConflictException("set up your wallet first");
+        throw new ConflictException("set up your wallet first", { cause: error });
       case "ROOT_CHANGE_CONFLICT":
-        throw new ConflictException("another change is in progress");
+        throw new ConflictException("another change is in progress", { cause: error });
       case "ROOT_CHANGE_REJECTED":
       case "BUNDLER_REJECTED":
-        throw new BadRequestException("this change is not available right now");
+        throw new BadRequestException("this change is not available right now", { cause: error });
       default:
         break;
     }

@@ -1,4 +1,5 @@
 import type { RateLimit } from "../../core/authorization/rate-limiter.js";
+import { errorDetails } from "../../core/channels/error-details.js";
 import type { AgentLog } from "../../core/agent/ports.js";
 
 /** The one ioredis method used, so tests (and any other client) can stand in. */
@@ -38,8 +39,12 @@ export class RedisRateLimiter implements RateLimit {
     try {
       const count = await this.client.eval(SCRIPT, 1, redisKey, this.options.windowMs);
       return typeof count === "number" && count <= this.options.limit;
-    } catch {
-      this.options.log?.("warn", "rate_limit.redis_unavailable", { limiter: this.options.name });
+    } catch (error) {
+      // Failing closed: while Redis is unreachable every request through this limiter is refused, so this is an outage.
+      this.options.log?.("error", "rate_limit.redis_unavailable", {
+        limiter: this.options.name,
+        ...errorDetails(error),
+      });
       return false;
     }
   }

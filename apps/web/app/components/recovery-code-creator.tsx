@@ -15,6 +15,7 @@ import { signRootRequest } from "../lib/root-material";
 import type { RootSigningRequest } from "../lib/root-material";
 import { DeviceKeyMissingError } from "../lib/root-proof";
 import { AuthenticatorEnroller } from "./authenticator-enroller";
+import { logFailure } from "../lib/client-log";
 
 type Step =
   | { name: "loading" }
@@ -65,6 +66,7 @@ export function RecoveryCodeCreator({ token, onDone }: { token: string; onDone?:
         setContext(loaded);
         setStep(loaded.authenticatorEnrolled ? { name: "intro" } : { name: "authenticator" });
       } catch (error) {
+        logFailure("recovery_code.context_failed", error);
         if (!cancelled) {
           setStep({
             name: "error",
@@ -98,6 +100,7 @@ export function RecoveryCodeCreator({ token, onDone }: { token: string; onDone?:
         setStep({ name: "done" });
         onDone?.();
       } catch (error) {
+        logFailure("recovery_code.create_failed", error);
         setStep({
           name: "error",
           message:

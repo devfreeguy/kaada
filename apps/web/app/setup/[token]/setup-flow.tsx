@@ -10,6 +10,7 @@ import {
   signDevicePayload,
 } from "../../lib/device-key";
 import { PinSetup } from "./pin-setup";
+import { loggedFetch, logFailure } from "../../lib/client-log";
 
 interface WalletInfo {
   address: string | null;
@@ -32,7 +33,7 @@ type View =
 
 /** Sends the setup token as a bearer header: it is never put in a body, a query string or a log. */
 async function call(token: string, path: string, init: RequestInit = {}): Promise<Response> {
-  return fetch(`/api/v1/wallet${path}`, {
+  return loggedFetch(`/api/v1/wallet${path}`, {
     ...init,
     cache: "no-store",
     headers: {
@@ -76,7 +77,8 @@ export function SetupFlow({ token }: { token: string }) {
                 ? { name: "finish" }
                 : { name: "ready", deviceKeysEnabled: body.deviceKeysEnabled };
         }
-      } catch {
+      } catch (error) {
+        logFailure("setup.load_failed", error);
         next = {
           name: "error",
           message: "We couldn't reach Kaada. Please try again.",
@@ -99,7 +101,8 @@ export function SetupFlow({ token }: { token: string }) {
         if (!response.ok) return;
         const body = (await response.json()) as { balances: BalanceLine[] };
         setBalances(body.balances.filter((line) => line.formatted !== "0"));
-      } catch {
+      } catch (error) {
+        logFailure("setup.balances_failed", error);
         // Balances are a convenience; the wallet is ready either way.
       }
     })();
@@ -114,7 +117,8 @@ export function SetupFlow({ token }: { token: string }) {
       const body = (await response.json()) as { wallet: WalletInfo | null };
       if (body.wallet?.address) return setView({ name: "done", address: body.wallet.address });
       throw new Error("no wallet");
-    } catch {
+    } catch (error) {
+      logFailure("setup.finish_failed", error);
       setView({
         name: "error",
         message:
@@ -176,7 +180,8 @@ export function SetupFlow({ token }: { token: string }) {
       const body = (await registerResponse.json()) as { wallet: WalletInfo | null };
       if (!body.wallet?.address) throw new Error("no wallet");
       setView({ name: "done", address: body.wallet.address });
-    } catch {
+    } catch (error) {
+      logFailure("setup.device_key_failed", error);
       setView({
         name: "error",
         message: "We couldn't set up your device key. Please try again.",
@@ -226,6 +231,7 @@ export function SetupFlow({ token }: { token: string }) {
       if (!body.wallet?.address) throw new Error("no wallet");
       setView({ name: "done", address: body.wallet.address });
     } catch (error) {
+      logFailure("setup.passkey_failed", error);
       const cancelled = error instanceof Error && error.name === "NotAllowedError";
       setView({
         name: "error",
@@ -242,7 +248,8 @@ export function SetupFlow({ token }: { token: string }) {
       await navigator.clipboard.writeText(value);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } catch (error) {
+      logFailure("setup.clipboard_failed", error);
       // Clipboard access can be refused; the address is still on screen.
     }
   }, []);

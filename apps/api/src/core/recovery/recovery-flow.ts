@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 
+import { errorDetails } from "../channels/error-details.js";
 import { deviceKeyIdFromPoint, deviceKeyPayload, isOnP256Curve } from "@kaada/contracts";
 import type { EnrolmentChannel } from "@kaada/contracts";
 import {
@@ -1109,9 +1110,16 @@ export class RecoveryFlowService {
   ): Promise<void> {
     try {
       await this.ctx.email.send({ to: email, subject: message.subject, text: message.text });
-    } catch {
-      // Never logged with the body (it may carry a code); the person simply asks again.
-      this.ctx.log("warn", "recovery.email_delivery_failed", {});
+    } catch (error) {
+      // Never logged with the body (it may carry a code); the person simply asks again. The mail server's own words say why
+      // (bad credentials, refused sender, unreachable host); the address is masked.
+      const details = errorDetails(error);
+      this.ctx.log("error", "recovery.email_delivery_failed", {
+        ...details,
+        ...(details.message !== undefined && {
+          message: details.message.split(email).join("[email]"),
+        }),
+      });
     }
   }
 }

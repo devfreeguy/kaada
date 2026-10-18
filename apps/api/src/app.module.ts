@@ -3,6 +3,11 @@ import { createLoggerOptions } from "@kaada/logger";
 import type { AppConfig } from "@kaada/config";
 import { LoggerModule } from "nestjs-pino";
 
+import {
+  allExceptionsFilterProvider,
+  httpLogLevel,
+  requestSerializer,
+} from "./logging/all-exceptions.filter.js";
 import { AgentModule } from "./agent/agent.module.js";
 import { ChannelsModule } from "./channels/channels.module.js";
 import { AuthorizationModule } from "./authorization/authorization.module.js";
@@ -24,10 +29,16 @@ import { WalletModule } from "./wallet/wallet.module.js";
     LoggerModule.forRootAsync({
       inject: [APP_CONFIG],
       useFactory: (config: AppConfig) => ({
-        pinoHttp: createLoggerOptions({
-          level: config.logLevel,
-          pretty: config.nodeEnv === "development",
-        }),
+        pinoHttp: {
+          ...createLoggerOptions({
+            level: config.logLevel,
+            pretty: config.nodeEnv === "development",
+          }),
+          customLogLevel: httpLogLevel,
+          serializers: { req: requestSerializer },
+          // The load balancer's liveness probe fires every 30 seconds and would bury everything else.
+          autoLogging: { ignore: (req: { url?: string }) => req.url === "/api/health" },
+        },
       }),
     }),
     HealthModule,
@@ -38,5 +49,6 @@ import { WalletModule } from "./wallet/wallet.module.js";
     RecoveryModule,
     ChannelsModule,
   ],
+  providers: [allExceptionsFilterProvider],
 })
 export class AppModule {}
