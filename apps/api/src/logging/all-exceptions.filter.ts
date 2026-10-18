@@ -132,21 +132,50 @@ export function httpLogLevel(
  * and the headers (the logger redacts the sensitive ones). Replaces the default serializer, which also logged the raw URL and a
  * parsed `query` object.
  */
-export function requestSerializer(req: {
-  id?: unknown;
+const LOGGED_HEADERS = [
+  "host",
+  "user-agent",
+  "content-type",
+  "content-length",
+  "origin",
+  "referer",
+  "x-request-id",
+  "x-forwarded-for",
+  "x-real-ip",
+  "x-forwarded-host",
+  "x-forwarded-proto",
+  "via",
+];
+
+type RawLike = {
   method?: string;
   url?: string;
-  headers?: unknown;
-  remoteAddress?: string;
-  remotePort?: number;
-  raw?: { method?: string; url?: string; headers?: unknown };
-}): Record<string, unknown> {
+  originalUrl?: string;
+  headers?: Record<string, unknown>;
+};
+
+/** The URL the client asked for. Routing rewrites `url` on the raw request (it ends up "/"), so the first hook records it. */
+export function originalUrlOf(req: RawLike): string {
+  return req.originalUrl ?? req.url ?? "";
+}
+
+/**
+ * How a request appears in the access log: the method, the path WITHOUT its query string (a query can carry a one-time token),
+ * and ONLY a short list of harmless headers. Platforms add dozens of headers of their own (signatures, OIDC tokens, geo data);
+ * a header that is not on the list is never written. Replaces the default serializer, which logged every header.
+ */
+export function requestSerializer(
+  req: RawLike & { id?: unknown; remoteAddress?: string; remotePort?: number; raw?: RawLike },
+): Record<string, unknown> {
   const raw = req.raw ?? req;
+  const headers = raw.headers ?? req.headers ?? {};
+  const picked: Record<string, unknown> = {};
+  for (const name of LOGGED_HEADERS) if (headers[name] !== undefined) picked[name] = headers[name];
   return {
     id: req.id,
     method: raw.method ?? req.method,
-    url: pathOf(raw.url ?? req.url ?? ""),
-    headers: raw.headers ?? req.headers,
+    url: pathOf(originalUrlOf(raw) || originalUrlOf(req)),
+    headers: picked,
     remoteAddress: req.remoteAddress,
     remotePort: req.remotePort,
   };

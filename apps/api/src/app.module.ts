@@ -6,6 +6,7 @@ import { LoggerModule } from "nestjs-pino";
 import {
   allExceptionsFilterProvider,
   httpLogLevel,
+  originalUrlOf,
   requestSerializer,
 } from "./logging/all-exceptions.filter.js";
 import { AgentModule } from "./agent/agent.module.js";
@@ -37,7 +38,10 @@ import { WalletModule } from "./wallet/wallet.module.js";
           customLogLevel: httpLogLevel,
           serializers: { req: requestSerializer },
           // The load balancer's liveness probe fires every 30 seconds and would bury everything else.
-          autoLogging: { ignore: (req: { url?: string }) => req.url === "/api/health" },
+          autoLogging: {
+            ignore: (req: { url?: string; originalUrl?: string }) =>
+              originalUrlOf(req).split("?")[0] === "/api/health",
+          },
         },
       }),
     }),

@@ -19,6 +19,8 @@ export function configureApp(app: NestFastifyApplication, config: AppConfig): vo
     .getHttpAdapter()
     .getInstance()
     .addHook("onRequest", (request, _reply, done) => {
+      // Routing rewrites the raw request's url; keep the one the client sent for the access log.
+      (request.raw as { originalUrl?: string }).originalUrl ??= request.raw.url ?? "";
       const headers = request.raw.headers;
       if (headers["content-type"] === undefined && headers["transfer-encoding"] !== undefined) {
         delete headers["transfer-encoding"];

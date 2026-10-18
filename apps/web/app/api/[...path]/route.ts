@@ -20,12 +20,20 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const TIMEOUT_MS = 25_000;
-const SKIPPED_REQUEST_HEADERS = new Set([
-  "host",
-  "connection",
-  "content-length",
-  "accept-encoding",
-  "transfer-encoding",
+/**
+ * Only these request headers reach the API. The platform adds many of its own (Vercel's OIDC token, proxy signatures, geo and
+ * routing headers); none of them is the API's business, and forwarding them would put them in the API's logs.
+ */
+const FORWARDED_REQUEST_HEADERS = new Set([
+  "authorization",
+  "content-type",
+  "accept",
+  "accept-language",
+  "user-agent",
+  "origin",
+  "referer",
+  "x-forwarded-for",
+  "x-real-ip",
 ]);
 const SKIPPED_RESPONSE_HEADERS = new Set([
   "content-encoding",
@@ -95,7 +103,7 @@ async function proxy(
   const target = new URL(`/api/${path.join("/")}${request.nextUrl.search}`, base);
   const headers = new Headers();
   request.headers.forEach((value, name) => {
-    if (!SKIPPED_REQUEST_HEADERS.has(name.toLowerCase())) headers.set(name, value);
+    if (FORWARDED_REQUEST_HEADERS.has(name.toLowerCase())) headers.set(name, value);
   });
   headers.set("x-request-id", requestId);
 

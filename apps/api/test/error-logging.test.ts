@@ -196,6 +196,8 @@ describe("wired into a real application, the log lines a person debugging would 
         headers: {
           "x-request-id": "9b1769f0-8447-41b8-be10-282c1cf1eab0",
           authorization: "Bearer TOKEN987654321",
+          "x-vercel-oidc-token": "OIDCSECRET.jwt.value",
+          "x-vercel-proxy-signature": "Bearer SIGSECRET",
         },
       });
       const crashed = await app.inject({ method: "POST", url: "/api/v1/probe/crash" });
@@ -220,6 +222,20 @@ describe("wired into a real application, the log lines a person debugging would 
     assert.ok(crashLine, "no unhandled-exception line");
     assert.equal(crashLine["level"], 50, "error");
     assert.match(String(crashLine["stack"]), /ProbeController/);
+    const refusedAccess = parsed.find((entry) => entry["msg"] === "request completed");
+    const accessReq = refusedAccess?.["req"] as
+      { url?: string; headers?: Record<string, unknown> } | undefined;
+    assert.equal(
+      accessReq?.url,
+      "/api/v1/probe/refuse",
+      "the access log records the real path, not the rewritten one",
+    );
+    assert.equal(accessReq?.headers?.["x-request-id"], "9b1769f0-8447-41b8-be10-282c1cf1eab0");
+    assert.equal(
+      accessReq?.headers?.["x-vercel-oidc-token"],
+      undefined,
+      "platform headers are never logged",
+    );
     const completed = parsed.filter((entry) =>
       /^request (completed|errored)$/.test(String(entry["msg"])),
     );
@@ -230,7 +246,7 @@ describe("wired into a real application, the log lines a person debugging would 
     );
     assert.doesNotMatch(
       lines.join("\n"),
-      /SECRET123|TOKEN987654321/,
+      /SECRET123|TOKEN987654321|OIDCSECRET|SIGSECRET/,
       "no query string or bearer token in any line",
     );
   });
