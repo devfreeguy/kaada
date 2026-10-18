@@ -29,7 +29,7 @@ import { WalletFundingWatcher } from "../core/wallets/funding-watcher.js";
 import { WalletSetupService } from "../core/wallets/setup-service.js";
 import { DeviceTierService } from "../core/attestation/device-tier-service.js";
 import { GoogleRevocationList } from "../infrastructure/attestation/google-revocation-list.js";
-import { repositoryRoot } from "../recovery/recovery.runtime.js";
+import { applicationRoots } from "../security/application-roots.js";
 import { ROOT_VALIDATOR_DEPLOYER } from "../roots/roots.tokens.js";
 import { WalletController } from "./wallet.controller.js";
 import {
@@ -119,7 +119,11 @@ function unitOfWork(database: Database): WalletUnitOfWork {
               implementation: contracts.deviceImplementation as `0x${string}`,
             },
           },
-          relayerKey: readKeyFileOutsideRepo(deviceKeyRoots.relayerKeyFile, repositoryRoot()),
+          relayerKey: readKeyFileOutsideRepo(
+            deviceKeyRoots.relayerKeyFile,
+            applicationRoots(),
+            "RECOVERY_RELAYER_KEY_FILE",
+          ),
         });
       },
     },

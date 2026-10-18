@@ -1,5 +1,4 @@
 import { randomBytes } from "node:crypto";
-import { fileURLToPath } from "node:url";
 
 import { ViemRecoveryChain, readKeyFileOutsideRepo } from "@kaada/blockchain";
 import type { ViemRecoveryChainOptions } from "@kaada/blockchain";
@@ -16,6 +15,7 @@ import type { Hex } from "viem";
 import type { AgentLog } from "../core/agent/ports.js";
 import { noopLog } from "../core/agent/ports.js";
 import type { TransactionPinService } from "../core/authorization/pin-service.js";
+import { applicationRoots } from "../security/application-roots.js";
 import type { RecoveryContext } from "../core/recovery/context.js";
 import { RecoveryNotifier } from "../core/recovery/notifier.js";
 import { DEFAULT_RECOVERY_POLICY } from "../core/recovery/ports.js";
@@ -127,9 +127,6 @@ export function createRecoveryRuntime(params: RecoveryRuntimeParams): RecoveryRu
   };
 }
 
-/** The repository checkout root: signing keys must live outside it. */
-export const repositoryRoot = (): string => fileURLToPath(new URL("../../../../", import.meta.url));
-
 /**
  * Startup guard: the recovery validator accepts `initiate` only from the relayer address it was deployed with, so a key file that
  * derives to any other address could never start a recovery. Refuse to boot instead of failing mid-recovery. The message names
@@ -161,7 +158,11 @@ export function createRecoveryChain(input: {
   p256Precompile: boolean;
   gasTopUpMaxWei: bigint;
 }): ViemRecoveryChain {
-  const relayerKey: Hex = readKeyFileOutsideRepo(input.relayerKeyFile, repositoryRoot());
+  const relayerKey: Hex = readKeyFileOutsideRepo(
+    input.relayerKeyFile,
+    applicationRoots(),
+    "RECOVERY_RELAYER_KEY_FILE",
+  );
   return new ViemRecoveryChain({
     chain: input.chain,
     rpcUrl: input.rpcUrl,

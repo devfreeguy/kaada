@@ -63,7 +63,8 @@ describe("the relayer key file", () => {
     assert.throws(
       () => chainFor(join(dir, "does-not-exist.key")),
       (error: Error) =>
-        /ENOENT|no such file/i.test(error.message) && !/0x[0-9a-f]{64}/i.test(error.message),
+        /RECOVERY_RELAYER_KEY_FILE: cannot read the key file: file not found/.test(error.message) &&
+        !/0x[0-9a-f]{64}/i.test(error.message),
     );
   });
 

@@ -1,15 +1,11 @@
-import { fileURLToPath } from "node:url";
-
 import { Global, Logger, Module } from "@nestjs/common";
 import { PlatformWallet } from "@kaada/blockchain";
 import type { AppConfig } from "@kaada/config";
 import { celo } from "viem/chains";
 
 import { APP_CONFIG } from "../config/config.module.js";
+import { applicationRoots } from "../security/application-roots.js";
 import { PLATFORM_WALLET } from "./platform.tokens.js";
-
-/** The repository checkout root: the platform key must live outside it. */
-const repositoryRoot = (): string => fileURLToPath(new URL("../../../../", import.meta.url));
 
 /**
  * Builds the platform wallet at startup, or fails the process. Reads the key FILE, derives its address and compares it with
@@ -25,7 +21,7 @@ export function createPlatformWallet(
   const wallet = PlatformWallet.load({
     keyFile: platform.keyFile,
     expectedAddress: platform.address,
-    repositoryRoot: repositoryRoot(),
+    repositoryRoot: applicationRoots(),
     chain: celo,
     rpcUrl: config.wallet.rpcUrl,
   });

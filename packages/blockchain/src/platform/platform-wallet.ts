@@ -29,7 +29,8 @@ export interface PlatformWalletOptions {
   keyFile: string;
   /** The PUBLIC address the deployment expects (PLATFORM_WALLET_ADDRESS). The wallet refuses to exist if the key derives to any other. */
   expectedAddress: string;
-  repositoryRoot: string;
+  /** The directories the key file must not be under (see readKeyFileOutsideRepo). */
+  repositoryRoot: string | readonly string[];
   chain: Chain;
   rpcUrl?: string | undefined;
   /** Tests only: replaces the HTTP transport. */
@@ -57,7 +58,7 @@ export class PlatformWallet {
    */
   static load(options: PlatformWalletOptions): PlatformWallet {
     const account = privateKeyToAccount(
-      readKeyFileOutsideRepo(options.keyFile, options.repositoryRoot),
+      readKeyFileOutsideRepo(options.keyFile, options.repositoryRoot, "PLATFORM_WALLET_KEY_FILE"),
     );
     const expected = options.expectedAddress.trim();
     if (!/^0x[0-9a-fA-F]{40}$/.test(expected) || /^0x0{40}$/.test(expected)) {

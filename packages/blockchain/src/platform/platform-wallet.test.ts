@@ -127,7 +127,7 @@ describe("the platform wallet", () => {
           repositoryRoot: repoRoot,
           chain: celo,
         }),
-      /ENOENT|no such file/i,
+      /PLATFORM_WALLET_KEY_FILE: cannot read the key file: file not found/,
     );
   });
 

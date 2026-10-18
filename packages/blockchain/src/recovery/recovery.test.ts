@@ -174,7 +174,8 @@ test("the calls the root signs are fixed shapes: cancel, and arm (install + gran
 
 test("a key file inside the repository is refused", () => {
   assert.throws(
-    () => readKeyFileOutsideRepo("./inside-the-repo.key", process.cwd()),
+    () =>
+      readKeyFileOutsideRepo("./inside-the-repo.key", process.cwd(), "RECOVERY_RELAYER_KEY_FILE"),
     /outside the repository/,
   );
 });
