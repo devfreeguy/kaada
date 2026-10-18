@@ -832,15 +832,20 @@ It's in your ${from.name} balance.`,
           await adapter.send(target, { text: "That choice isn't available." });
           return null;
         }
+        const firstChoice = !(await this.deps.profile.get(userId)).country;
         await this.deps.profile.set(userId, home);
-        // The first things to do with an account, offered once the default currency is settled.
+        // The first things to do with an account, offered once, when the first default currency is settled. Not when someone
+        // changes their mind later, picks Other (no currency), or presses a stale button again.
         const outbound = await this.compose(
           { channel: message.channel, externalUserId: message.sender.externalUserId },
           userId,
           createId(),
           {
             text: describeHome(home),
-            suggestions: suggestionPolicy("ONBOARDING_COMPLETE", this.flags()),
+            ...(firstChoice &&
+              home.currency && {
+                suggestions: suggestionPolicy("ONBOARDING_COMPLETE", this.flags()),
+              }),
           },
         );
         await adapter.send(target, outbound);

@@ -165,3 +165,27 @@ describe("the country question comes after secure onboarding", () => {
     assert.equal(asked(w.adapter), before, "not asked twice");
   });
 });
+
+describe("first-use actions follow only a first real choice", () => {
+  it("changing country, choosing Other, or pressing again shows no first-use buttons", async () => {
+    const w = world({ home: { country: "NG", currency: "NGN" } });
+    finish(w.facts);
+    await w.service.handleInbound(inbound({ eventId: `oc-${String(++n)}`, command: "COUNTRY" }));
+    const brazil = handleOf(w.adapter.sent.at(-1), "🇧🇷 Brazil");
+    assert.ok(brazil);
+    await w.service.handleInbound(press(brazil));
+    assert.deepEqual([w.profile.country, w.profile.currency], ["BR", "BRL"]);
+    assert.equal(labels(w.adapter.sent.at(-1)).length, 0, "a later change is not onboarding");
+  });
+
+  it("choosing Other as the first answer records no currency and offers no buttons", async () => {
+    const w = world();
+    finish(w.facts);
+    await w.service.handleInbound(start());
+    const other = handleOf(w.adapter.sent.at(-1), "🌍 Other");
+    assert.ok(other);
+    await w.service.handleInbound(press(other));
+    assert.deepEqual([w.profile.country, w.profile.currency], ["ZZ", undefined]);
+    assert.equal(labels(w.adapter.sent.at(-1)).length, 0);
+  });
+});
