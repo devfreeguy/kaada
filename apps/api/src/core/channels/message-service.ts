@@ -483,7 +483,7 @@ export class ChannelMessageService {
       facts: OnboardingFacts;
     },
   ): Promise<void> {
-    // Setup is finished but the country is not chosen yet: this is the one moment to ask. Nothing is asked before this point.
+    // Setup is finished but the country is not chosen yet: this is the only point to ask. Nothing is asked before this point.
     if (step === "COMPLETE" && (await this.countryMissing(userId))) {
       await this.sendCountryPrompt(adapter, message, userId, ACCOUNT_READY_COUNTRY_QUESTION);
       return;
