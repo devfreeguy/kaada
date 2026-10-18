@@ -203,7 +203,7 @@ describe("choosing a country", () => {
     assert.equal(homeFor("FR"), undefined, "an unsupported country is not invented");
     assert.equal(
       describeHome({ country: "NG", currency: "NGN" }),
-      "Nigeria 🇳🇬\nYour default currency will be Nigerian Naira (₦).",
+      "Nigeria 🇳🇬\nYour default currency is Nigerian Naira (₦).",
     );
   });
 
@@ -470,7 +470,7 @@ describe("onboarding asks where the person uses Kaada", () => {
     await service.handleInbound(press(nigeria));
     assert.equal(
       adapter.sent[adapter.sent.length - 1]?.text,
-      "Nigeria 🇳🇬\nYour default currency will be Nigerian Naira (₦).",
+      "Nigeria 🇳🇬\nYour default currency is Nigerian Naira (₦).",
     );
     assert.deepEqual([profile.country, profile.currency], ["NG", "NGN"]);
     const before = adapter.sent.length;

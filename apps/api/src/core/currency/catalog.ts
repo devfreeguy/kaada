@@ -251,14 +251,14 @@ export function homeFor(code: string): { country: string; currency: string | nul
   return country ? { country: country.code, currency: country.currency } : undefined;
 }
 
-/** The sentence that confirms a choice: "Nigeria 🇳🇬\nYour default currency will be Nigerian Naira (₦)." */
+/** The sentence that confirms a choice: "Nigeria 🇳🇬\nYour default currency is Nigerian Naira (₦)." */
 export function describeHome(home: { country: string; currency: string | null }): string {
   const country = homeCountryByCode(home.country);
   const currency = currencyByCode(home.currency ?? undefined);
   if (!country || !currency) {
     return "Okay. I won't assume a currency for you: just tell me which one when you send money.";
   }
-  return `${country.name} ${country.flag}\nYour default currency will be ${currency.name} (${currency.symbol}).`;
+  return `${country.name} ${country.flag}\nYour default currency is ${currency.name} (${currency.symbol}).`;
 }
 
 /** An exact human amount with no grouping, for building a request ("500", "1234.5"). Not for display. */

@@ -21,6 +21,7 @@ import {
 } from "../conversation/capabilities.js";
 import type { CapabilityFlags } from "../conversation/capabilities.js";
 import { ConversationPresenter } from "../conversation/presenter.js";
+import { suggestionPolicy } from "../conversation/suggestions.js";
 import type { OpenPaymentNeeds } from "../intents/coordinator.js";
 import type { ResumeInfo } from "../responses/agent-response.js";
 import {
@@ -182,6 +183,10 @@ const CHANNEL_OF_IDENTITY: Partial<Record<IdentityType, ChannelType>> = {
   WHATSAPP: "WHATSAPP",
 };
 
+const COUNTRY_QUESTION = "Where will you mainly use Kaada?";
+const ACCOUNT_READY_COUNTRY_QUESTION = `Your Kaada account is ready ✅
+One last thing: where will you mainly use Kaada? This helps me choose your default currency.`;
+
 /** Typed words that a state-aware onboarding answer may replace ("done", thanks, hello, "didn't understand"). */
 function canAnswerWithOnboarding(response: AgentTurnResult["response"]): boolean {
   if (response.type === "MESSAGE") return true;
@@ -297,8 +302,11 @@ export class ChannelMessageService {
         await this.startReply(adapter, message, userId);
       } else {
         await adapter.send(target, await this.welcome(userId));
+        // Without onboarding tracking, an active wallet is the only sign that secure setup is done.
+        if (await this.deps.wallets.hasActiveWallet(userId)) {
+          await this.offerCountryIfNeeded(adapter, message, userId);
+        }
       }
-      await this.offerCountryIfNeeded(adapter, message, userId);
       return;
     }
     if (
@@ -475,6 +483,11 @@ export class ChannelMessageService {
       facts: OnboardingFacts;
     },
   ): Promise<void> {
+    // Setup is finished but the country is not chosen yet: this is the one moment to ask. Nothing is asked before this point.
+    if (step === "COMPLETE" && (await this.countryMissing(userId))) {
+      await this.sendCountryPrompt(adapter, message, userId, ACCOUNT_READY_COUNTRY_QUESTION);
+      return;
+    }
     const presented = await this.presentOnboardingStep(step, options);
     if (step === "WALLET" && presented.link && !(await this.deps.links.setupLink(userId))) {
       // Wallet setup is not switched on here: say so rather than offering a button that does nothing.
@@ -535,20 +548,23 @@ export class ChannelMessageService {
     const result = { delivered: 0, failed: 0 };
     const { userId, state } = announcement;
     if (state.step === "WALLET") return result; // nothing the person could act on yet
+    const askCountry = state.step === "COMPLETE" && (await this.countryMissing(userId));
     const accounts = (await this.deps.linked?.listForUser(userId)) ?? [];
     for (const account of accounts) {
       const channel = CHANNEL_OF_IDENTITY[account.type];
       const adapter = channel ? this.deps.adapters.get(channel) : undefined;
       if (!channel || !adapter) continue;
       try {
-        const presented = await this.presentOnboardingStep(state.step, {
-          context: "JUST_CREATED",
-          complete: "ONBOARDING_COMPLETE",
-          userMessage: "",
-          seed: announcement.ids[0] ?? userId,
-          firstName: undefined,
-          facts: state.facts,
-        });
+        const presented: PresentedMessage = askCountry
+          ? { text: ACCOUNT_READY_COUNTRY_QUESTION, countryChoice: true }
+          : await this.presentOnboardingStep(state.step, {
+              context: "JUST_CREATED",
+              complete: "ONBOARDING_COMPLETE",
+              userMessage: "",
+              seed: announcement.ids[0] ?? userId,
+              firstName: undefined,
+              facts: state.facts,
+            });
         const outbound = await this.compose(
           { channel, externalUserId: account.externalId },
           userId,
@@ -670,17 +686,24 @@ It's in your ${from.name} balance.`,
     adapter: ChannelAdapter,
     message: InboundChannelMessage,
     userId: string,
+    text: string = COUNTRY_QUESTION,
   ): Promise<void> {
     const outbound = await this.compose(
       { channel: message.channel, externalUserId: message.sender.externalUserId },
       userId,
       createId(),
-      { text: "Where will you mainly use Kaada?", countryChoice: true },
+      { text, countryChoice: true },
     );
     await adapter.send({ externalConversationId: message.externalConversationId }, outbound);
   }
 
-  /** A person who has not said where they use Kaada is asked once, lightly, after the welcome. Never guessed from their chat account. */
+  /** Whether this person still has to say where they use Kaada. False when the feature is off or they already answered. */
+  private async countryMissing(userId: string): Promise<boolean> {
+    if (!this.deps.profile) return false;
+    return !(await this.deps.profile.get(userId)).country;
+  }
+
+  /** A person who has not said where they use Kaada is asked after secure setup. Never guessed from their chat account. */
   private async offerCountryIfNeeded(
     adapter: ChannelAdapter,
     message: InboundChannelMessage,
@@ -810,7 +833,17 @@ It's in your ${from.name} balance.`,
           return null;
         }
         await this.deps.profile.set(userId, home);
-        await adapter.send(target, { text: describeHome(home) });
+        // The first things to do with an account, offered once the default currency is settled.
+        const outbound = await this.compose(
+          { channel: message.channel, externalUserId: message.sender.externalUserId },
+          userId,
+          createId(),
+          {
+            text: describeHome(home),
+            suggestions: suggestionPolicy("ONBOARDING_COMPLETE", this.flags()),
+          },
+        );
+        await adapter.send(target, outbound);
         return null;
       }
       case "KEEP_CURRENCY": {
