@@ -7,3 +7,4 @@ export {
 } from "./repositories/index.js";
 export type { Repositories } from "./repositories/index.js";
 export { DataIntegrityError } from "./mappers/index.js";
+export { createPaymentStatsRepository } from "./repositories/stats.js";
