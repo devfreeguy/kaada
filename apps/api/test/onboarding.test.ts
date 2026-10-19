@@ -496,6 +496,22 @@ describe("funding", () => {
   const command = (name: "FUND" | "WALLET" | "HELP" | "RATES" | "BALANCE") =>
     inbound({ eventId: `ob-${String(++n)}`, command: name });
 
+  it("shows the person's own @tag with a button to copy it, so others can pay them by it", async () => {
+    const w = await ready();
+    await w.service.handleInbound(
+      inbound({ eventId: `ob-${String(++n)}`, command: "FUND", username: "kryptonite_bk" }),
+    );
+    const text = w.adapter.last?.text ?? "";
+    assert.match(text, /Your Kaada tag: @kryptonite_bk/);
+    assert.deepEqual(
+      copyButtons(w.adapter.last).map((a) => [a.label, a.text]),
+      [
+        ["📋 Copy address", ADDRESS],
+        ["🏷️ Copy my @tag", "@kryptonite_bk"],
+      ],
+    );
+  });
+
   it("'Fund wallet' goes straight to the real way to fund: the wallet's address, the network and the supported assets", async () => {
     const w = await ready();
     await tap(w, "💰 Fund wallet");

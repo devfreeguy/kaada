@@ -1053,15 +1053,20 @@ It's in your ${from.name} balance.`,
             })
             .catch(this.recover("payment.resume_lookup_failed", undefined))
         : undefined;
+    // The person's own @tag (their Telegram username): what a friend on Kaada types to send them money.
+    const tag = message.sender.username?.replace(/^@/, "") || undefined;
     const presented: PresentedMessage = {
       text:
         kind === "ADDRESS"
           ? walletAddressMessage(info)
           : kind === "NETWORK_FEE"
             ? networkFeeFundingMessage(info)
-            : `${fundingInstructions(info)}${resume ? "\n\nWhen the funds arrive, tap Continue and I'll check your payment again." : ""}`,
+            : `${fundingInstructions(info, tag)}${resume ? "\n\nWhen the funds arrive, tap Continue and I'll check your payment again." : ""}`,
       code: [info.address],
-      copy: { label: "📋 Copy address", text: info.address },
+      copy: [
+        { label: "📋 Copy address", text: info.address },
+        ...(tag && kind !== "NETWORK_FEE" ? [{ label: "🏷️ Copy my @tag", text: `@${tag}` }] : []),
+      ],
       ...(this.flags().balance && { suggestions: ["CHECK_BALANCE" as const] }),
       ...(resume && { resume: { intentId: resume.intentId, revision: resume.revision } }),
     };
@@ -1367,11 +1372,13 @@ It's in your ${from.name} balance.`,
     }
     // A copy button (an address), placed before the suggestions so the most useful thing is first.
     if (presented.copy) {
-      actions.unshift({
-        type: "COPY_TEXT",
-        label: presented.copy.label,
-        text: presented.copy.text,
-      });
+      actions.unshift(
+        ...presented.copy.map((copy) => ({
+          type: "COPY_TEXT" as const,
+          label: copy.label,
+          text: copy.text,
+        })),
+      );
     }
     return {
       text: presented.text,

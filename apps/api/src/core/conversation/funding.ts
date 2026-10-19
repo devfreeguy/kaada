@@ -11,7 +11,7 @@ export interface FundingInfo {
   assets: string[];
 }
 
-export function fundingInstructions(info: FundingInfo): string {
+export function fundingInstructions(info: FundingInfo, tag?: string): string {
   const supported =
     info.assets.length > 0
       ? `Your Kaada wallet currently supports:\n${info.assets.join("\n")}`
@@ -19,6 +19,7 @@ export function fundingInstructions(info: FundingInfo): string {
   return [
     "Sure 👍 You can fund your Kaada wallet from another wallet.",
     `Network: ${info.network}\nWallet: ${info.address}`,
+    tag ? `Your Kaada tag: @${tag}\nPeople on Kaada can send you money with it.` : "",
     supported,
     `Only send supported currencies on the ${info.network} network to this address. Funds sent on another network, or unsupported assets, may not appear in Kaada and may be difficult or impossible to recover.`,
   ]

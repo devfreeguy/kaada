@@ -201,7 +201,7 @@ describe("the peso and sol tokens", () => {
       assert.ok(asset, symbol);
       assert.equal(asset.contractAddress, address, symbol);
       assert.equal(asset.decimals, 18, symbol);
-      assert.equal(asset.fiatCode, fiat, symbol);
+      assert.equal((asset as { fiatCode?: string }).fiatCode, fiat, symbol);
       assert.equal(asset.name, name, symbol);
       assert.equal(asset.kind, "LOCAL_STABLECOIN", symbol);
     }

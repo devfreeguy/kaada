@@ -19,7 +19,7 @@ export interface PresentedMessage {
   link?: { kind: "WALLET_SETUP" | "PIN_SETUP"; label: string };
   /** Address-like text to show monospace, and a copy button for it (see OutboundChannelMessage.code and COPY_TEXT). */
   code?: string[];
-  copy?: { label: string; text: string };
+  copy?: { label: string; text: string }[];
   /** A payment is still open behind this answer: offer to carry on with it (or cancel it). The ids are trusted state. */
   resume?: { intentId: string; revision: number };
   /** Ask where the person mainly uses Kaada (their default currency follows from it): one button per supported country. */
