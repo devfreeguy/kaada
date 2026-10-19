@@ -1,4 +1,4 @@
-import { evmAddressCodec } from "@kaada/domain";
+import { CELO_CHAIN_ID, evmAddressCodec } from "@kaada/domain";
 import type {
   IdentityRepository,
   Recipient,
@@ -6,6 +6,7 @@ import type {
   RecipientRepository,
   ResolvedRecipient,
   UserRepository,
+  WalletRepository,
 } from "@kaada/domain";
 
 export type RecipientResolution =
@@ -13,7 +14,7 @@ export type RecipientResolution =
   | { status: "AMBIGUOUS"; candidates: ResolvedRecipient[] }
   | {
       status: "NOT_FOUND";
-      reason: "NO_MATCH" | "INVALID_FORMAT" | "UNSUPPORTED_TYPE";
+      reason: "NO_MATCH" | "INVALID_FORMAT" | "UNSUPPORTED_TYPE" | "NO_WALLET";
     };
 
 /** Turns what the sender called the recipient into someone Kaada can pay. */
@@ -25,6 +26,8 @@ export interface RecipientLookupRepositories {
   users: UserRepository;
   identities: IdentityRepository;
   recipients: RecipientRepository;
+  /** Where a Kaada person is paid: their own Celo wallet. Absent: a Kaada person cannot be paid by name. */
+  wallets?: Pick<WalletRepository, "findEmbedded">;
 }
 
 const notFound = { status: "NOT_FOUND", reason: "NO_MATCH" } as const;
@@ -121,41 +124,95 @@ export function createRepositoryRecipientResolver(
     };
   }
 
+  /**
+   * A person on Kaada is paid at their own wallet: the address is read from THEIR active Celo wallet here, never typed or guessed.
+   * Someone who has not finished setting up has nowhere to receive, which is said plainly (NO_WALLET) instead of "not found".
+   */
+  async function deliverable(
+    senderId: string,
+    candidates: ResolvedRecipient[],
+  ): Promise<RecipientResolution> {
+    const others = candidates.filter((candidate) => candidate.linkedUserId !== senderId);
+    const withWallet: ResolvedRecipient[] = [];
+    let anyWithoutWallet = false;
+    for (const candidate of others) {
+      // No wallet lookup wired (a test world, a deployment without wallets): the candidate is returned as it was found.
+      if (!candidate.linkedUserId || candidate.walletAddress || !repos.wallets) {
+        withWallet.push(candidate);
+        continue;
+      }
+      const wallet = await repos.wallets.findEmbedded(candidate.linkedUserId, CELO_CHAIN_ID);
+      if (wallet?.status === "ACTIVE" && wallet.address) {
+        withWallet.push({ ...candidate, walletAddress: wallet.address.toLowerCase() });
+      } else {
+        anyWithoutWallet = true;
+      }
+    }
+    if (withWallet.length === 0 && anyWithoutWallet) {
+      return { status: "NOT_FOUND", reason: "NO_WALLET" };
+    }
+    return pick(withWallet);
+  }
+
+  /** People whose Telegram @username is this one. Usernames are captured from every message a person sends (case-insensitive). */
+  async function telegramMatches(
+    reference: RecipientReference,
+    raw: string,
+  ): Promise<ResolvedRecipient[]> {
+    const value = raw.trim().replace(/^@/, "");
+    const identities = /^\d+$/.test(value)
+      ? [await repos.identities.findByExternalId("TELEGRAM", value)].filter((i) => i !== null)
+      : await repos.identities.findByUsername("TELEGRAM", value);
+    return Promise.all(
+      identities.map(async (identity): Promise<ResolvedRecipient> => {
+        const user = await repos.users.findById(identity.userId);
+        const displayName =
+          user?.displayName ?? (identity.username ? `@${identity.username}` : undefined);
+        const handle = publicHandle(identity.username);
+        return {
+          reference,
+          linkedUserId: identity.userId,
+          ...(displayName && { displayName }),
+          ...(handle && { handle }),
+        };
+      }),
+    );
+  }
+
+  /** The Kaada user with this username, as candidates (zero or one). */
+  async function kaadaMatches(reference: RecipientReference): Promise<ResolvedRecipient[]> {
+    const found = await kaadaUser(reference);
+    return found.status === "RESOLVED" ? [found.recipient] : [];
+  }
+
   return {
     async resolve(userId, reference) {
       switch (reference.type) {
         case "KAADA_USER":
-          return kaadaUser(reference);
+          return deliverable(userId, await kaadaMatches(reference));
 
         case "SAVED_BENEFICIARY":
           return pick(await savedMatches(userId, reference));
 
         case "USERNAME": {
           const saved = await savedMatches(userId, reference);
-          return saved.length > 0 ? pick(saved) : kaadaUser(reference);
+          if (saved.length > 0) return pick(saved);
+          // A name or @handle that is not a saved contact: a Kaada username, or a Telegram @username of someone on Kaada. The
+          // same person is never listed twice (they may match both ways).
+          const found = new Map<string, ResolvedRecipient>();
+          for (const candidate of [
+            ...(await kaadaMatches(reference)),
+            ...(await telegramMatches(reference, reference.value)),
+          ]) {
+            const key =
+              candidate.linkedUserId ?? candidate.recipientId ?? candidate.displayName ?? "";
+            if (!found.has(key)) found.set(key, candidate);
+          }
+          return deliverable(userId, [...found.values()]);
         }
 
-        case "TELEGRAM_USER": {
-          const value = reference.value.trim().replace(/^@/, "");
-          const identities = /^\d+$/.test(value)
-            ? [await repos.identities.findByExternalId("TELEGRAM", value)].filter((i) => i !== null)
-            : await repos.identities.findByUsername("TELEGRAM", value);
-          const candidates = await Promise.all(
-            identities.map(async (identity): Promise<ResolvedRecipient> => {
-              const user = await repos.users.findById(identity.userId);
-              const displayName =
-                user?.displayName ?? (identity.username ? `@${identity.username}` : undefined);
-              const handle = publicHandle(identity.username);
-              return {
-                reference,
-                linkedUserId: identity.userId,
-                ...(displayName && { displayName }),
-                ...(handle && { handle }),
-              };
-            }),
-          );
-          return pick(candidates);
-        }
+        case "TELEGRAM_USER":
+          return deliverable(userId, await telegramMatches(reference, reference.value));
 
         case "WALLET_ADDRESS": {
           const address = reference.value.trim();

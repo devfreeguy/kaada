@@ -13,6 +13,7 @@ import type {
   RecipientRepository,
   RouteRepository,
   UserRepository,
+  WalletRepository,
 } from "@kaada/domain";
 
 /** The repositories the agent core reads and writes. All are domain contracts. */
@@ -23,6 +24,8 @@ export interface AgentRepositories {
   messages: MessageRepository;
   intents: IntentRepository;
   recipients: RecipientRepository;
+  /** Read access to wallets, so a Kaada person named by @username or name can be paid at their own wallet. */
+  wallets?: Pick<WalletRepository, "findEmbedded">;
   assets: AssetRepository;
   clarifications: ClarificationChoiceRepository;
   quotes: QuoteRepository;

@@ -1,6 +1,8 @@
 import { createId } from "@kaada/domain";
 import type { IdentityRepository, IdentityType, JsonObject, UserRepository } from "@kaada/domain";
 
+import type { AgentLog } from "../agent/ports.js";
+import { errorDetails } from "./error-details.js";
 import type { ChannelIdentity } from "./types.js";
 
 const IDENTITY_TYPES: Partial<Record<ChannelIdentity["channel"], IdentityType>> = {
@@ -29,7 +31,13 @@ export interface ResolvedChannelUser {
  *  - No wallet, key or secret is created here.
  */
 export class ChannelIdentityService {
-  constructor(private readonly deps: { users: UserRepository; identities: IdentityRepository }) {}
+  constructor(
+    private readonly deps: {
+      users: UserRepository;
+      identities: IdentityRepository;
+      log?: AgentLog;
+    },
+  ) {}
 
   async resolve(identity: ChannelIdentity): Promise<ResolvedChannelUser> {
     const type = IDENTITY_TYPES[identity.channel];
@@ -82,8 +90,12 @@ export class ChannelIdentityService {
         username: identity.username ?? "",
         metadata,
       });
-    } catch {
-      // Display metadata is a convenience: never let it fail a message.
+    } catch (error) {
+      // Never let it fail a message, but never lose it silently either: the @username is how people are found by name.
+      this.deps.log?.("warn", "identity.profile_update_failed", {
+        identityId: existing.id,
+        ...errorDetails(error),
+      });
     }
   }
 }

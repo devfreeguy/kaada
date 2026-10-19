@@ -46,7 +46,9 @@ describe("AssetResolver", () => {
 describe("RecipientResolver (database data only)", () => {
   function setup() {
     const h = createHarness();
-    const resolver = createRepositoryRecipientResolver(h.world.repositories);
+    // These tests are about WHO a name means. Where each person is paid (their wallet) is covered in telegram-username.test.ts.
+    const { wallets: _wallets, ...lookup } = h.world.repositories;
+    const resolver = createRepositoryRecipientResolver(lookup);
     return { h, resolver };
   }
 

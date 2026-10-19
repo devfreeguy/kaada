@@ -199,6 +199,7 @@ function nestLog(): AgentLog {
           identities: new ChannelIdentityService({
             users: repositories.users,
             identities: repositories.identities,
+            log,
           }),
           actions: new ChannelActionService(repositories.channelActions),
           inboundEvents: repositories.channelInboundEvents,

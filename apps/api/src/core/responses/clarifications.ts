@@ -22,7 +22,7 @@ export interface Clarification {
   /** Extra detail for the wording, e.g. how many decimals a currency allows. */
   decimals?: number;
   /** Why a recipient was not found, or that too many matched to list. */
-  detail?: "INVALID_FORMAT" | "UNSUPPORTED_TYPE" | "TOO_MANY";
+  detail?: "INVALID_FORMAT" | "UNSUPPORTED_TYPE" | "TOO_MANY" | "NO_WALLET";
   /** Answers the user can pick. They are stored server-side when the question is asked. */
   choices?: ChoiceDraft[];
 }
@@ -57,6 +57,9 @@ export function clarificationText(clarification: Clarification): string {
       if (reason === "NOT_FOUND") {
         if (detail === "INVALID_FORMAT") {
           return "That doesn't look like a valid wallet address. Who would you like to send it to?";
+        }
+        if (detail === "NO_WALLET") {
+          return `${subject ?? "That person"} is on Kaada but hasn't finished setting up their wallet yet, so I can't send to them. You can send to their wallet address instead. Who would you like to send it to?`;
         }
         if (detail === "UNSUPPORTED_TYPE") {
           return "I can't look up that kind of contact yet. You can use a saved contact, a Kaada username, or a wallet address. Who would you like to send it to?";
