@@ -1,0 +1,65 @@
+.particle {
+  display: inline-block;
+  flex-shrink: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.particle svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform-origin: center;
+  animation-duration: var(--particle-duration);
+  animation-delay: var(--particle-delay);
+  animation-iteration-count: infinite;
+}
+
+.none {
+  animation: none;
+}
+.spin {
+  animation-name: counterclockwise;
+  animation-timing-function: linear;
+}
+.horizontal {
+  animation-name: horizontal;
+  animation-timing-function: ease-in-out;
+  animation-direction: alternate;
+}
+.vertical {
+  animation-name: vertical;
+  animation-timing-function: ease-in-out;
+  animation-direction: alternate;
+}
+
+@keyframes counterclockwise {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes horizontal {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-1 * var(--particle-distance)));
+  }
+}
+
+@keyframes vertical {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(var(--particle-distance));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .particle svg {
+    animation: none;
+  }
+}

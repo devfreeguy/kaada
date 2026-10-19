@@ -1,0 +1,69 @@
+.pills {
+  position: relative;
+  width: min(100%, 320px);
+  height: 120px;
+  margin: 0 auto -4px;
+  padding: 0;
+  list-style: none;
+}
+
+.pill {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 8px 18px;
+  border-radius: 9999px;
+  color: var(--navy);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+  transform: rotate(var(--tilt));
+  animation: float-down var(--duration) ease-in-out var(--delay) infinite alternate;
+}
+
+.plain {
+  --tilt: 9deg;
+  --duration: 8s;
+  --delay: -3s;
+  top: 20px;
+  left: 28px;
+  z-index: 1;
+  background: var(--orange);
+}
+
+.local {
+  --tilt: -4deg;
+  --duration: 11s;
+  --delay: -8s;
+  top: 53px;
+  left: 0;
+  z-index: 3;
+  background: var(--coral);
+}
+
+.crossBorder {
+  --tilt: -9deg;
+  --duration: 9.5s;
+  --delay: -5s;
+  top: 80px;
+  left: 69px;
+  z-index: 2;
+  background: var(--lime);
+}
+
+@keyframes float-down {
+  from {
+    transform: translateY(-3px) rotate(var(--tilt));
+  }
+  to {
+    transform: translateY(3px) rotate(var(--tilt));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill {
+    animation: none;
+  }
+}

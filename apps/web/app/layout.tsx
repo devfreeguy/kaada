@@ -13,6 +13,7 @@ const heading = Anton({
 const body = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans", display: "swap" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://kaada.xyz"),
   title: "Kaada",
   description: "Agentic cross-border payment router on Celo.",
 };
