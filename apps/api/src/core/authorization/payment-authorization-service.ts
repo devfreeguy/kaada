@@ -53,6 +53,7 @@ export class PaymentAuthorizationService {
 
     // Fail fast, before spending a PIN attempt, if the payment has already moved on.
     await this.assertCurrent(this.uow.read, session);
+    await this.assertNotAlreadyPaid(this.uow.read, session);
 
     const verification = await this.deps.pins.verify(session.userId, pin);
     if (verification.status !== "VERIFIED") {
@@ -66,6 +67,8 @@ export class PaymentAuthorizationService {
     const authorization = await this.uow.transaction(async (repositories) => {
       await repositories.intents.lockForUpdate(session.intentId);
       const context = await this.assertCurrent(repositories, session);
+      // Under the intent lock: a payment that is moving or already sent can never be authorized a second time.
+      await this.assertNotAlreadyPaid(repositories, session);
       const now = this.now();
 
       const consumed = await repositories.authorizationSessions.markAuthorized(session.id, now);
@@ -139,6 +142,23 @@ export class PaymentAuthorizationService {
    * for: same intent at the same revision, still resolved, a still-VALID route for that revision, and
    * the user's own active wallet. A stale session is cancelled.
    */
+  /**
+   * Double-spend guard. An execution's idempotency key is per authorization, so a SECOND authorization of the same payment
+   * would start a second payment. Once money for this payment has moved or may be moving, the link is dead: the session is
+   * cancelled and the person is told this payment is not available to authorize again.
+   */
+  private async assertNotAlreadyPaid(
+    repositories: AuthorizationRepositories,
+    session: AuthorizationSession,
+  ): Promise<void> {
+    if (!(await repositories.paymentAuthorizations.hasSpendingExecution(session.intentId))) return;
+    await repositories.authorizationSessions.cancel(session.id, "STALE");
+    throw new KaadaError(
+      "AUTHORIZATION_SESSION_INVALID",
+      "this payment was already authorized and is being carried out, so it cannot be authorized again",
+    );
+  }
+
   private async assertCurrent(
     repositories: AuthorizationRepositories,
     session: AuthorizationSession,

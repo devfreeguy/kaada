@@ -253,6 +253,53 @@ describe("PIN entry creates the payment authorization", () => {
     );
   });
 
+  it("DOUBLE SPEND: a payment an execution has already taken can never be authorized again, from a second link", async () => {
+    const { w, authorize, sessionRow } = await pending();
+    await authorize();
+    const first = w.r.world.authorization.payments[0];
+    assert.ok(first);
+    // The execution took the approval (money is moving or has moved).
+    first.status = "CONSUMED";
+
+    // The person taps "Continue" on the old message: a second session for the SAME payment, with a fresh link.
+    const original = sessionRow();
+    assert.ok(original);
+    const second = {
+      ...original,
+      id: randomUUID(),
+      status: "PENDING" as const,
+    };
+    delete (second as { tokenHash?: string }).tokenHash;
+    delete (second as { usedAt?: Date }).usedAt;
+    w.r.world.authorization.sessions.push(second);
+    const secondToken = await w.token(second.id);
+
+    await assert.rejects(authorize(PIN, secondToken), (error) =>
+      isKaadaError(error, "AUTHORIZATION_SESSION_INVALID"),
+    );
+    assert.equal(w.r.world.authorization.payments.length, 1, "no second authorization exists");
+    assert.equal(
+      w.r.world.authorization.payments.filter((p) => p.status === "ACTIVE").length,
+      0,
+      "and nothing is left active that could be executed",
+    );
+  });
+
+  it("an authorization that never started moving money is simply replaced by a new one", async () => {
+    const { w, authorize, sessionRow } = await pending();
+    await authorize();
+    const original = sessionRow();
+    assert.ok(original);
+    const second = { ...original, id: randomUUID(), status: "PENDING" as const };
+    delete (second as { tokenHash?: string }).tokenHash;
+    delete (second as { usedAt?: Date }).usedAt;
+    w.r.world.authorization.sessions.push(second);
+    const token = await w.token(second.id);
+    assert.equal((await authorize(PIN, token)).status, "AUTHORIZED");
+    const statuses = w.r.world.authorization.payments.map((p) => p.status).sort();
+    assert.deepEqual(statuses, ["ACTIVE", "REVOKED"], "the first is replaced, only one is live");
+  });
+
   it("a wrong PIN authorizes nothing and reports the attempts left", async () => {
     const { w, authorize } = await pending();
     assert.deepEqual(await authorize(WRONG), { status: "INVALID_PIN", attemptsRemaining: 2 });

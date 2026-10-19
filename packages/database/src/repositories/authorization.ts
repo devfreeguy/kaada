@@ -248,6 +248,30 @@ export function createPaymentAuthorizationRepository(db: Db): PaymentAuthorizati
       return row ? toPaymentAuthorization(row) : null;
     },
 
+    async hasSpendingExecution(intentId) {
+      const [consumed, executing] = await Promise.all([
+        db.paymentAuthorization.count({ where: { intentId, status: "CONSUMED" } }),
+        db.execution.count({
+          where: {
+            intentId,
+            status: {
+              in: [
+                "SIGNING",
+                "SUBMITTING",
+                "SUBMITTED",
+                "AWAITING_CONFIRMATION",
+                "CONFIRMED",
+                "EXECUTING",
+                "SETTLING",
+                "COMPLETED",
+              ],
+            },
+          },
+        }),
+      ]);
+      return consumed > 0 || executing > 0;
+    },
+
     async consume(id, now) {
       // The whole state machine step is one conditional UPDATE: of any number of racing callers,
       // the database lets exactly one match the WHERE clause.

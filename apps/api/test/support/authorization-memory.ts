@@ -215,6 +215,8 @@ export function createAuthorizationStores(
       const found = payments.find((p) => p.intentId === intentId && p.status === "ACTIVE");
       return Promise.resolve(found ? copy(found) : null);
     },
+    hasSpendingExecution: (intentId) =>
+      Promise.resolve(payments.some((p) => p.intentId === intentId && p.status === "CONSUMED")),
     consume: (id, now) => {
       const found = payments.find((p) => p.id === id);
       if (!found || found.status !== "ACTIVE" || found.expiresAt.getTime() <= now.getTime()) {

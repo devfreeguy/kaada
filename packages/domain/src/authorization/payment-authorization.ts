@@ -88,6 +88,13 @@ export interface PaymentAuthorizationRepository {
   /** The intent's ACTIVE authorization (at most one exists), if any. */
   findActiveByIntent(intentId: string): Promise<PaymentAuthorization | null>;
   /**
+   * True when money for this payment has moved or may be moving: an authorization of the intent was CONSUMED by an execution, or
+   * an execution of the intent is signing, submitting, confirming, settling or complete. Such a payment must never be
+   * authorized again (a second authorization would be a second payment). A failed, blocked, expired or cancelled attempt does
+   * not count: nothing was sent, so the person may try again.
+   */
+  hasSpendingExecution(intentId: string): Promise<boolean>;
+  /**
    * ACTIVE -> CONSUMED atomically, only if unexpired at `now`. Of any number of concurrent
    * callers exactly one gets the authorization back; everyone else gets null.
    */
