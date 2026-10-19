@@ -30,6 +30,22 @@ export function walletAddressMessage(info: FundingInfo): string {
   return `Your Kaada wallet\nNetwork: ${info.network}\nAddress: ${info.address}`;
 }
 
+/**
+ * "What do you support? / Can I receive CELO?": what the wallet really holds (named as currencies, never tickers), and the one
+ * other thing it can receive. Every fact here is application state or a fixed product rule, never model text.
+ */
+export function supportedAssetsMessage(info: FundingInfo): string {
+  const supported =
+    info.assets.length > 0
+      ? `Your Kaada wallet works with these currencies on the ${info.network} network:\n${info.assets.join("\n")}`
+      : `Your Kaada wallet works with the currencies Kaada supports on the ${info.network} network.`;
+  return [
+    supported,
+    "CELO: yes, you can receive a small amount of CELO at your wallet address. It isn't a currency you can spend or convert in Kaada. It only pays the network fee when a transfer needs it.",
+    "Anything else, or funds sent on another network, may not appear in Kaada and may be difficult or impossible to recover.",
+  ].join("\n\n");
+}
+
 export const FUNDING_NOT_READY =
   "Your wallet isn't ready yet. Send /start and I'll take you through the setup.";
 export const FUNDING_UNAVAILABLE = "That way of funding your wallet isn't available.";

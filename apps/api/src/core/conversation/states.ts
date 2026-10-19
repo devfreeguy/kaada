@@ -164,6 +164,8 @@ export function deriveResponseState(turn: {
           return "FINANCIAL_QUESTION";
         case "FUNDING":
           return "FUNDING_OPTIONS";
+        case "SUPPORTED_ASSETS":
+          return "CAPABILITY_DISCOVERY";
         case "OUT_OF_SCOPE":
           return "OUT_OF_SCOPE";
         case "RATE_GENERAL":

@@ -48,6 +48,7 @@ const CHAT_TEXT: Record<ChatTopic, string> = {
   CAPABILITIES: "I can help you with money: sending it, rates and your wallet.",
   FINANCE_QUESTION: "Good question. I don't have an answer for that one yet.",
   FUNDING: "Let's get your wallet funded 💰",
+  SUPPORTED_ASSETS: "Here's what your Kaada wallet works with.",
   OUT_OF_SCOPE: "That's outside my department 😄 I'm your money guy.",
   RATE_GENERAL: "Which rate would you like to check? Tell me the pair.",
 };

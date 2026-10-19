@@ -41,6 +41,7 @@ import {
   FUNDING_UNAVAILABLE,
   fundingInstructions,
   networkFeeFundingMessage,
+  supportedAssetsMessage,
   walletAddressMessage,
 } from "../conversation/funding.js";
 import type { FundingInfo } from "../conversation/funding.js";
@@ -385,6 +386,11 @@ export class ChannelMessageService {
     // "How do I fund my account?" is answered with the wallet's real funding details (or, mid-setup, the next setup step).
     if (turn.response.type === "CHAT" && turn.response.topic === "FUNDING") {
       await this.fundWallet(adapter, message, userId);
+      return;
+    }
+    // "What do you support?" / "Can I receive CELO?" is answered from the wallet's real details, never from model wording.
+    if (turn.response.type === "CHAT" && turn.response.topic === "SUPPORTED_ASSETS") {
+      await this.sendSupportedAssets(adapter, message, userId);
       return;
     }
     if (await this.answerFromOnboardingState(adapter, message, userId, turn)) return;
@@ -1066,6 +1072,32 @@ It's in your ${from.name} balance.`,
         userId,
         createId(),
         presented,
+      ),
+    );
+  }
+
+  private async sendSupportedAssets(
+    adapter: ChannelAdapter,
+    message: InboundChannelMessage,
+    userId: string,
+  ): Promise<void> {
+    const info = (await this.deps.funding?.info(userId)) ?? null;
+    if (!info) {
+      // No wallet yet (or funding is off): the setup step, or the plain "not ready" answer, is the useful reply.
+      await this.sendWalletDetails(adapter, message, userId, "INSTRUCTIONS");
+      return;
+    }
+    const canFund = availableFundingMethods(this.flags()).length > 0;
+    await adapter.send(
+      { externalConversationId: message.externalConversationId },
+      await this.compose(
+        { channel: message.channel, externalUserId: message.sender.externalUserId },
+        userId,
+        createId(),
+        {
+          text: supportedAssetsMessage(info),
+          ...(canFund && { suggestions: ["FUND_WALLET" as const] }),
+        },
       ),
     );
   }

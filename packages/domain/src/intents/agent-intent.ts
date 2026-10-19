@@ -100,9 +100,10 @@ export type AgentIntent =
  * stored operations and need no new intent type: they are side requests that leave any operation in progress untouched.
  * - GREETING / SMALL_TALK / FAREWELL: social turns ("hey", "what's up", "thanks, that's all").
  * - CAPABILITIES: "what can you do?"
- * - FUNDING: "how do I fund my account?", "add money", "deposit": the answer is the wallet's funding details.
- * - FUNDING: "how do I fund my account?", "add money", "deposit": the answer is the wallet's funding details.
- * - FUNDING: "how do I fund my account?", "add money", "deposit": the answer is the wallet's funding details.
+ * - FUNDING: "how do I fund my account?", "add money", "deposit", "where is my wallet address?", "my friend will send me
+ *   money": the answer is the wallet's funding details (its address and what it accepts).
+ * - SUPPORTED_ASSETS: "what coins do you support?", "can I receive CELO?", "do you support USDT?": the answer is the real list
+ *   of what the wallet holds, from the registry.
  * - FINANCE_QUESTION: a money question Kaada can talk about but has no data for.
  * - OUT_OF_SCOPE: not about money at all (sports, weather, ...).
  * - RATE_GENERAL: a rate question that does not say which pair.
@@ -113,6 +114,7 @@ export const CHAT_TOPICS = [
   "FAREWELL",
   "CAPABILITIES",
   "FUNDING",
+  "SUPPORTED_ASSETS",
   "FINANCE_QUESTION",
   "OUT_OF_SCOPE",
   "RATE_GENERAL",
