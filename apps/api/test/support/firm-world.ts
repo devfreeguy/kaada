@@ -173,6 +173,8 @@ export async function firmWorld(
     directNaira?: { holds: bigint };
     /** The same, for CELO itself: the wallet holds this many CELO and sends 0.3 of them to RECIPIENT_ADDRESS. */
     directCelo?: { holds: bigint };
+    /** Stop before the PIN: the authorization session is open and nothing is authorized (for confirming with the root). */
+    openSession?: boolean;
   } = {},
 ): Promise<FirmWorld> {
   const w = setup({ authorize: true });
@@ -229,9 +231,13 @@ export async function firmWorld(
     throw new Error(`expected AUTHORIZATION_REQUIRED, got ${JSON.stringify(turn.response)}`);
   }
   const token = await w.token(turn.response.authorizationSessionId);
-  const result = await w.auth.payments.authorize(token, PIN);
-  if (result.status !== "AUTHORIZED") throw new Error(`PIN was not accepted: ${result.status}`);
-  const authorization = result.authorization;
+  // Left open for a test that confirms with the wallet's own root instead of a PIN: no authorization exists yet.
+  let authorization = undefined as unknown as PaymentAuthorization;
+  if (!options.openSession) {
+    const result = await w.auth.payments.authorize(token, PIN);
+    if (result.status !== "AUTHORIZED") throw new Error(`PIN was not accepted: ${result.status}`);
+    authorization = result.authorization;
+  }
 
   const transport = new FakeTextileTransport(options.replies ?? []);
   const client = new TextileClient({

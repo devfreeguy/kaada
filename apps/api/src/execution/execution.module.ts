@@ -14,7 +14,11 @@ import { createRepositories, withTransaction } from "@kaada/database";
 import type { Database, Repositories } from "@kaada/database";
 import type { AppConfig } from "@kaada/config";
 
-import { AUTHORIZATION_POLICY_SERVICE } from "../authorization/authorization.tokens.js";
+import {
+  AUTHORIZATION_POLICY_SERVICE,
+  PAYMENT_AUTHORIZATION_SERVICE,
+} from "../authorization/authorization.tokens.js";
+import type { PaymentAuthorizationService } from "../core/authorization/payment-authorization-service.js";
 import { AuthorizationModule } from "../authorization/authorization.module.js";
 import { APP_CONFIG } from "../config/config.module.js";
 import { DATABASE } from "../database/database.module.js";
@@ -25,6 +29,7 @@ import { ExecutionPreparationService } from "../core/execution/preparation-servi
 import type { ExecutionUnitOfWork } from "../core/execution/ports.js";
 import { ExecutionRunner } from "../core/execution/runner.js";
 import { RootActionService } from "../core/execution/root-action-service.js";
+import { RootPaymentService } from "../core/execution/root-payment-service.js";
 import { RunTracker } from "../core/execution/run-tracker.js";
 import { PreparationTracker } from "../core/execution/tracker.js";
 import { ValidatedExecutionSigner } from "../core/execution/validated-signer.js";
@@ -47,6 +52,7 @@ import {
 import { WalletModule } from "../wallet/wallet.module.js";
 import { WALLET_BALANCE_SERVICE, WALLET_SERVICE } from "../wallet/wallet.tokens.js";
 import { ExecutionController } from "./execution.controller.js";
+import { RootPaymentController } from "./root-payment.controller.js";
 import { ExecutionReconciler } from "./execution-reconciler.js";
 import { RootActionController } from "./root-action.controller.js";
 import {
@@ -56,6 +62,7 @@ import {
   KERNEL_EXECUTION_PORT,
   PREPARATION_TRACKER,
   ROOT_ACTION_SERVICE,
+  ROOT_PAYMENT_SERVICE,
   RUN_TRACKER,
 } from "./execution.tokens.js";
 
@@ -86,7 +93,7 @@ export function kernelAdapterConfig(config: AppConfig, bundlerUrl: string) {
 
 @Module({
   imports: [WalletModule, AuthorizationModule, RootsModule],
-  controllers: [ExecutionController, RootActionController],
+  controllers: [ExecutionController, RootActionController, RootPaymentController],
   providers: [
     {
       provide: EXECUTION_REPOSITORIES,
@@ -256,6 +263,56 @@ export function kernelAdapterConfig(config: AppConfig, bundlerUrl: string) {
           onChainId: config.wallet.onChainId,
           ...(validators && { validators }),
           origin: passkey.origin,
+        });
+      },
+    },
+    {
+      // Confirms a direct payment with the wallet's own passkey (or device key and PIN). Off when execution is off.
+      provide: ROOT_PAYMENT_SERVICE,
+      inject: [
+        DATABASE,
+        APP_CONFIG,
+        WALLET_BALANCE_SERVICE,
+        PAYMENT_AUTHORIZATION_SERVICE,
+        EXECUTION_PREPARATION_SERVICE,
+        KERNEL_EXECUTION_PORT,
+        ROOT_CREDENTIAL_SERVICE,
+        ROOT_ADAPTERS,
+      ],
+      useFactory: (
+        database: Database,
+        config: AppConfig,
+        balances: WalletBalanceService | null,
+        payments: PaymentAuthorizationService | null,
+        preparation: ExecutionPreparationService | null,
+        kernel: KernelExecutionPort | null,
+        roots: RootCredentialService | null,
+        adapters: RootAdapters | null,
+      ): RootPaymentService | null => {
+        if (
+          !config.execution.enabled ||
+          !kernel ||
+          !balances ||
+          !payments ||
+          !preparation ||
+          !roots ||
+          !adapters ||
+          config.execution.cipherKeys.length === 0
+        ) {
+          return null;
+        }
+        return new RootPaymentService({
+          log: nestLog("RootPayment"),
+          payments,
+          preparation,
+          unitOfWork: unitOfWork(database),
+          kernel,
+          roots,
+          adapters,
+          cipher: new AesGcmSecretCipher(config.execution.cipherKeys),
+          chain: { balances },
+          minNativeWei: config.execution.minNativeWei,
+          onChainId: config.wallet.onChainId,
         });
       },
     },

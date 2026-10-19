@@ -8,6 +8,8 @@ export const EXECUTION_REPOSITORIES = Symbol("EXECUTION_REPOSITORIES");
 export const KERNEL_EXECUTION_PORT = Symbol("KERNEL_EXECUTION_PORT");
 /** Root (passkey) actions: wallet deployment and permission installation. Null unless execution is enabled. */
 export const ROOT_ACTION_SERVICE = Symbol("ROOT_ACTION_SERVICE");
+/** Confirms a direct payment with the wallet's own root. Null unless execution is enabled. */
+export const ROOT_PAYMENT_SERVICE = Symbol("ROOT_PAYMENT_SERVICE");
 /** Carries an authorized payment out. Null unless execution is enabled. */
 export const EXECUTION_RUNNER = Symbol("EXECUTION_RUNNER");
 /** Background runs and the last outcome of each. */

@@ -63,9 +63,13 @@ export class FakeKernel implements KernelExecutionPort {
   nativeBalance(): Promise<bigint> {
     return Promise.resolve(this.native);
   }
+  /** The calls of every root operation prepared (a root-signed payment carries its transfer here). */
+  rootCalls: AccountCall[][] = [];
   prepareRootOperation(input: {
     permission?: { scope: PermissionScope };
+    calls?: AccountCall[];
   }): ReturnType<KernelExecutionPort["prepareRootOperation"]> {
+    this.rootCalls.push(input.calls ?? []);
     if (input.permission) this.prepared.push(input.permission.scope);
     const key = `0x${randomBytes(32).toString("hex")}`;
     const address = `0x${createHash("sha256").update(key).digest("hex").slice(0, 40)}`;
@@ -336,10 +340,14 @@ export async function attachRunner(
     now,
   });
 
-  const outcome = await world.service.prepare(world.authorization.id);
-  if (outcome.status !== "EXECUTION_READY") throw new Error(`not ready: ${outcome.status}`);
-  const record = await uow.read.executionPlans.findByAuthorization(world.authorization.id);
-  if (!record) throw new Error("no plan record");
+  // A world left at the open authorization session (confirmed later with the wallet's root) has nothing to prepare yet.
+  let record: Awaited<ReturnType<typeof uow.read.executionPlans.findByAuthorization>> = null;
+  if (world.authorization) {
+    const outcome = await world.service.prepare(world.authorization.id);
+    if (outcome.status !== "EXECUTION_READY") throw new Error(`not ready: ${outcome.status}`);
+    record = await uow.read.executionPlans.findByAuthorization(world.authorization.id);
+    if (!record) throw new Error("no plan record");
+  }
 
   const run: RunWorld = {
     ...world,
@@ -349,9 +357,10 @@ export async function attachRunner(
     signer,
     rootActions,
     cipher,
-    executionId: record.id,
+    executionId: record?.id ?? "",
     ...(deviceRoot && { deviceKey: deviceRoot }),
     async confirmRootAction(good = true) {
+      if (!record) throw new Error("no execution yet");
       const session = await uow.read.rootActions.findPendingByExecution(record.id);
       if (!session) throw new Error("no pending root action");
       const { token } = await rootActions.issueLink({

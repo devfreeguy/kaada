@@ -179,13 +179,14 @@ describe("PIN and authorization security review (source scan)", () => {
     assert.equal(/body: JSON\.stringify\(\{ pin: attempt \}\)/.test(flow), true);
     assert.equal(/setPin\(""\)/.test(flow), true, "the digits are cleared before the request");
     assert.equal(/cache: "no-store"/.test(flow), true);
-    // Success is shown only after the server confirms the authorization.
-    assert.equal(/if \(response\.ok\) return setState\(\{ name: "done" \}\)/.test(flow), true);
-    assert.equal(
-      flow.split('setState({ name: "done" })').length - 1,
-      1,
-      "one way to reach success",
-    );
+    // Success is shown only after the server confirms the authorization: the one place that decides is `interpret`, which says
+    // "went through" only for an OK response, and every road to the success screen goes through it.
+    assert.equal(/if \(response\.ok\) return true/.test(flow), true);
+    const successes = flow.match(/setState\(\{ name: "done", method \}\)/g) ?? [];
+    const guarded =
+      flow.match(/if \(interpret\([^)]*\)\) setState\(\{ name: "done", method \}\)/g) ?? [];
+    assert.equal(successes.length, guarded.length, "no road to success skips the server's answer");
+    assert.equal(successes.length, 2, "the PIN road and the wallet-root road, and no other");
   });
 
   it("the secure pages are not cached, framed, indexed or sent as a referrer", () => {

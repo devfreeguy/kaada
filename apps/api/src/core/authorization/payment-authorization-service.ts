@@ -30,6 +30,9 @@ export type AuthorizeResult =
   | { status: "PIN_RESET_REQUIRED" }
   | { status: "INVALID_FORMAT" };
 
+/** Why a PIN was not accepted. */
+export type PinRejection = Exclude<AuthorizeResult, { status: "AUTHORIZED" }>;
+
 /**
  * Turns "this person entered the right PIN for this priced payment" into a durable, immutable
  * PaymentAuthorization, and consumes the one-time session that carried the entry.
@@ -49,22 +52,42 @@ export class PaymentAuthorizationService {
   }
 
   async authorize(token: string, pin: string): Promise<AuthorizeResult> {
+    const { session } = await this.inspect(token);
+    const rejected = await this.verifyPin(session, pin);
+    if (rejected) return rejected;
+    return { status: "AUTHORIZED", authorization: await this.authorizeVerified(session) };
+  }
+
+  /**
+   * The open session behind a link and the payment it is for, re-read just now. Fails fast, before any proof is spent, if the
+   * payment has already moved on (changed, cancelled, or already being carried out).
+   */
+  async inspect(token: string) {
     const session = await this.deps.sessions.resolveOpen(token);
-
-    // Fail fast, before spending a PIN attempt, if the payment has already moved on.
-    await this.assertCurrent(this.uow.read, session);
+    const context = await this.assertCurrent(this.uow.read, session);
     await this.assertNotAlreadyPaid(this.uow.read, session);
+    return { session, ...context };
+  }
 
+  /** Checks the PIN for a session. Undefined when it is right; otherwise the reason it was not accepted (audited, never the PIN). */
+  async verifyPin(
+    session: AuthorizationSession,
+    pin: string,
+  ): Promise<PinRejection | undefined> {
     const verification = await this.deps.pins.verify(session.userId, pin);
-    if (verification.status !== "VERIFIED") {
-      return this.reject(session, verification);
-    }
+    return verification.status === "VERIFIED" ? undefined : this.reject(session, verification);
+  }
 
+  /**
+   * Records the approval once the person has PROVED it, by the PIN (above) or by their wallet's own passkey or device key over the
+   * exact operation (see RootPaymentService). The proof is the caller's to check first: nothing here does.
+   */
+  async authorizeVerified(session: AuthorizationSession): Promise<PaymentAuthorization> {
     // Decide in one transaction: lock the intent so a concurrent edit either lands first (and this
     // is refused) or lands after (and its revocation sees this authorization). The session is
     // consumed in the same transaction by a conditional UPDATE, so a second browser using the same
     // link loses.
-    const authorization = await this.uow.transaction(async (repositories) => {
+    return this.uow.transaction(async (repositories) => {
       await repositories.intents.lockForUpdate(session.intentId);
       const context = await this.assertCurrent(repositories, session);
       // Under the intent lock: a payment that is moving or already sent can never be authorized a second time.
@@ -122,7 +145,6 @@ export class PaymentAuthorizationService {
       });
       return created;
     });
-    return { status: "AUTHORIZED", authorization };
   }
 
   /** The user's current approval for an intent, if one is live and unexpired. */
@@ -211,7 +233,7 @@ export class PaymentAuthorizationService {
   private async reject(
     session: AuthorizationSession,
     verification: Exclude<PinVerification, { status: "VERIFIED" }>,
-  ): Promise<AuthorizeResult> {
+  ): Promise<PinRejection> {
     // The reason is a code; the PIN is not here to be logged.
     await this.uow.read.audit.append({
       id: createId(),

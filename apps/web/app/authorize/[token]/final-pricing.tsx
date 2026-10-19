@@ -37,7 +37,14 @@ async function execution(token: string, path: string, method: "GET" | "POST"): P
  * After the PIN is accepted, asks the server to confirm the final price and follows the result. It
  * only ever shows what the server says; it never claims a payment was sent, because none has been.
  */
-export function FinalPricing({ token }: { token: string }) {
+export function FinalPricing({
+  token,
+  alreadySent = false,
+}: {
+  token: string;
+  /** The wallet's own root already signed and sent the payment: there is no price to confirm, only progress to follow. */
+  alreadySent?: boolean;
+}) {
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [unavailable, setUnavailable] = useState(false);
   // The secure link for wallet setup, when the payment is waiting on the passkey.
@@ -89,6 +96,10 @@ export function FinalPricing({ token }: { token: string }) {
 
     void (async () => {
       try {
+        if (alreadySent) {
+          await followPayment();
+          return;
+        }
         const kickoff = await execution(token, "/prepare", "POST");
         if (kickoff.status === 503) {
           if (!cancelled) setUnavailable(true);
@@ -124,7 +135,7 @@ export function FinalPricing({ token }: { token: string }) {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, alreadySent]);
 
   if (unavailable) return null;
   return (

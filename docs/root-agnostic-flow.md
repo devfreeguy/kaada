@@ -8,7 +8,7 @@ One normal flow for every Kaada wallet, whatever its root signs with.
 | Normal payments | a **six-digit PIN**; it creates a `PaymentAuthorization` only, and is never a wallet or root key                                           |
 | Root            | a **passkey** (WebAuthn) where the device has one, or a **P-256 device key** (`KaadaDeviceKeyValidator`) where it does not                 |
 | Root actions    | whichever root the wallet actually has signs, once, for the thing that needs a root (deploy, install a permission, rotate, enrol a backup) |
-| Repeat payments | PIN only: the installed permission already covers them, so the root is not asked                                                           |
+| Repeat payments | swap payments: PIN, plus a one-time permission step. Direct transfers: the passkey (or device key + PIN) signs each one, see `docs/authorization.md` |
 | Recovery        | verified email + Recovery Code + authenticator code + timelock, for the exact committed new root (`docs/recovery-orchestration.md`)        |
 
 Nothing in the payment, authorization, execution or recovery logic branches on how a root signs. The two root types differ in exactly

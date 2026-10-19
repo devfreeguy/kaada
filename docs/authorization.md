@@ -46,3 +46,24 @@ Textile firm RFQ, execution, signing, token approvals, delegated keys, Telegram/
 The authorization is consumed in the same database transaction that takes the execution lock (`READY -> SIGNING`), after
 every precondition was re-checked, and **not before**: not on quote, plan, account deployment or permission install. A
 failure after that point keeps it consumed. See `docs/execution.md`.
+
+## Confirming a direct payment with the wallet's own root
+
+A direct transfer (the payment is already in the right currency: no swap) is confirmed ONE way, chosen by the server from the wallet's root:
+
+| Wallet root                | What the person does                                                       | What signs                                  |
+| -------------------------- | -------------------------------------------------------------------------- | ------------------------------------------- |
+| Passkey                    | taps "Confirm with passkey" (no PIN)                                       | the passkey, over the transfer's operation  |
+| Device key (no passkey)    | enters the PIN; this device's key then signs in the background             | the device key, over the operation, plus PIN |
+| Anything else / any error  | enters the PIN, as before (`PaymentAuthorizationService.authorize`)        | the server's restricted session key         |
+
+For the first two, `RootPaymentService` (`apps/api/src/core/execution/root-payment-service.ts`) works from storage, never from the browser:
+
+1. `POST /authorization/root/options` reads the payment (recipient address, token, amount) and prepares ONE UserOperation: create the account if it
+   does not exist, then `transfer(recipient, amount)`. It returns the prompt and a sealed copy of the operation (AES-GCM, bound to the session).
+2. `POST /authorization/root/confirm` opens the seal, re-checks the payment is still exactly that, verifies the root's proof over the operation's
+   hash (and the PIN for a device key), then records the approval, takes execution rights (consuming it) and sends the operation the person signed.
+   The runner then follows it to completion like any other direct transfer.
+
+Nothing is installed on chain for Kaada's session key, so the server cannot move these funds on its own. The price of that is that every payment is
+confirmed by the person; see `docs/TODO.md` for what it means for scheduled payments. Swap payments still use the PIN and a one-time permission.
