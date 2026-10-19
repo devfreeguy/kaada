@@ -48,6 +48,7 @@ contract KaadaRecoveryValidator {
     error WrongSender();
     error NotTheCommittedBatch();
     error InvalidRoot();
+    error OperationTooCostly();
 
     // ── events (every state change is auditable) ───────────────────────────────────────────────────
     event Installed(address indexed account, address recoveryKey, uint32 delay);
@@ -95,6 +96,11 @@ contract KaadaRecoveryValidator {
     bytes32 internal constant INITIATE_TYPEHASH = keccak256(
         "Initiate(address account,uint256 nonce,bytes21 rootId,address hook,bytes32 validatorDataHash,bytes32 hookDataHash,uint256 deadline)"
     );
+    /// The most the account may be charged, in wei, for the recovery operation (its maximum gas cost: every gas limit times
+    /// `maxFeePerGas`). The signature field is ignored (see `validateUserOp`), so ANYONE may submit the matured batch and choose its
+    /// gas fields; without this bound a submitter who is also the bundler could set an enormous fee and be paid it out of the
+    /// account's native balance. 2 CELO is a few times the realistic cost of a recovery on Celo (about 1.4M gas at a fee ceiling of several hundred gwei, around 0.5 CELO when gas is expensive) and small if it were ever taken.
+    uint256 internal constant MAX_OPERATION_COST = 2 ether;
     /// secp256k1n / 2: only low-s signatures (no malleable twin).
     uint256 internal constant HALF_N = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
 
@@ -255,6 +261,7 @@ contract KaadaRecoveryValidator {
         if (!p.active) revert NoPendingRecovery();
 
         _verifyBatch(account, userOp.callData, p.commitment);
+        _boundCost(userOp);
 
         // One shot, consumed during validation. The recovery key is burnt and the configuration deleted: this
         // validator is void for the account until the NEW root installs a NEW recovery key.
@@ -267,6 +274,16 @@ contract KaadaRecoveryValidator {
         // validAfter = executeAfter: the EntryPoint refuses the operation before maturity (no TIMESTAMP read in
         // validation, as ERC-4337 requires).
         return uint256(p.executeAfter) << 208;
+    }
+
+    /// Reverts when the operation could cost the account more than MAX_OPERATION_COST. ERC-4337 v0.7 packs the gas fields as
+    /// accountGasLimits = verificationGasLimit(16) || callGasLimit(16) and gasFees = maxPriorityFeePerGas(16) || maxFeePerGas(16).
+    /// Checked arithmetic: an overflowing operation reverts, which also rejects it.
+    function _boundCost(PackedUserOperation calldata userOp) internal pure {
+        uint256 limits = uint256(userOp.accountGasLimits);
+        uint256 gasLimit = (limits >> 128) + (limits & type(uint128).max) + userOp.preVerificationGas;
+        uint256 maxFeePerGas = uint256(userOp.gasFees) & type(uint128).max;
+        if (gasLimit * maxFeePerGas > MAX_OPERATION_COST) revert OperationTooCostly();
     }
 
     /// Reverts unless `cd` is EXACTLY the committed recovery batch for `account`.

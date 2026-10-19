@@ -69,7 +69,9 @@ cannot forge or cancel a recovery and controls no user funds. It is a file, neve
 `RECOVERY_RELAYER_KEY_FILE` at it. At startup the API derives the key's address and refuses to start unless it equals the relayer recorded
 for `RECOVERY_NETWORK` in `packages/config/src/deployments.ts` (the validator only accepts `initiate` from the address it was deployed with).
 Fund that address with a little CELO and watch its balance: if it is empty or the key is lost, nobody can start a recovery.
-No server key can approve a recovery. `RECOVERY_ENABLED=true` also refuses to start while `celo-mainnet` has no deployed addresses.
+No server key can approve a recovery. The mainnet contracts are deployed (addresses in `deployments.ts`, details in `docs/recovery-contracts.md`); the
+relayer there is `0x3274805f27cdb4d83b6Dc20Fec338AA4eb7B2BA4`. `RECOVERY_ENABLED=true` and `DEVICE_KEY_ROOTS_ENABLED=true` also need `RECOVERY_CHALLENGE_SECRET` and
+`RECOVERY_TOTP_SECRET_KEY`, and the relayer also pays for device-key setup, so keep it funded.
 
 ### Recovery email (SMTP)
 

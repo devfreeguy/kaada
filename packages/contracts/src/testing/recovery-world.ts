@@ -281,15 +281,27 @@ export class World {
     return Number(result.value);
   }
 
-  userOp(callData: Hex, sender: Address = this.account) {
+  userOp(
+    callData: Hex,
+    sender: Address = this.account,
+    gas: {
+      verificationGasLimit?: bigint;
+      callGasLimit?: bigint;
+      preVerificationGas?: bigint;
+      maxPriorityFeePerGas?: bigint;
+      maxFeePerGas?: bigint;
+    } = {},
+  ) {
+    const word = (high: bigint, low: bigint): Hex =>
+      `0x${high.toString(16).padStart(32, "0")}${low.toString(16).padStart(32, "0")}`;
     return {
       sender,
       nonce: 0n,
       initCode: "0x" as Hex,
       callData,
-      accountGasLimits: pad("0x", { size: 32 }),
-      preVerificationGas: 0n,
-      gasFees: pad("0x", { size: 32 }),
+      accountGasLimits: word(gas.verificationGasLimit ?? 0n, gas.callGasLimit ?? 0n),
+      preVerificationGas: gas.preVerificationGas ?? 0n,
+      gasFees: word(gas.maxPriorityFeePerGas ?? 0n, gas.maxFeePerGas ?? 0n),
       paymasterAndData: "0x" as Hex,
       signature: "0x" as Hex,
     };
@@ -298,12 +310,16 @@ export class World {
   /** Kernel's call: validator.validateUserOp(userOp, hash) with msg.sender == account. */
   async validate(
     callData: Hex,
-    options: { account?: Address; sender?: Address } = {},
+    options: {
+      account?: Address;
+      sender?: Address;
+      gas?: Parameters<World["userOp"]>[2];
+    } = {},
   ): Promise<Outcome> {
     const account = options.account ?? this.account;
     return this.asAccount(
       this.fn("validateUserOp", [
-        this.userOp(callData, options.sender ?? account),
+        this.userOp(callData, options.sender ?? account, options.gas),
         pad("0x01", { size: 32 }),
       ]),
       account,

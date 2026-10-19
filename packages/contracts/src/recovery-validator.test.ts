@@ -440,6 +440,69 @@ test("exact batch: validation gas stays well inside a normal verification budget
   assert.ok(forwarded.gasUsed < 200_000n, `validation used ${forwarded.gasUsed} gas`);
 });
 
+// ── gas fields: the signature is ignored, so anyone may submit the matured batch and pick them ──
+
+const CAP = 2_000_000_000_000_000_000n; // 2 CELO, the contract MAX_OPERATION_COST
+
+test("gas bound: an ordinary recovery operation is accepted", async () => {
+  const { world, exact } = await matured();
+  // 1.2M gas at a 405 gwei fee ceiling (twice Celo's 202 gwei gas price when this was written) is about 0.49 CELO: inside the bound.
+  const result = await world.validate(batch(exact), {
+    gas: {
+      verificationGasLimit: 600_000n,
+      callGasLimit: 500_000n,
+      preVerificationGas: 100_000n,
+      maxPriorityFeePerGas: 2_000_000_000n,
+      maxFeePerGas: 405_000_000_000n,
+    },
+  });
+  assert.equal(result.ok, true, result.error);
+});
+
+test("gas bound: exactly the maximum cost is accepted, one wei more is refused, and a refusal consumes nothing", async () => {
+  const { world, exact } = await matured();
+  const refused = await world.validate(batch(exact), {
+    gas: { callGasLimit: 1_000_000n, maxFeePerGas: CAP / 1_000_000n + 1n },
+  });
+  assert.equal(refused.error, "OperationTooCostly");
+  assert.equal(
+    (await world.pending()).active,
+    true,
+    "still pending: the honest submitter can go on",
+  );
+  const exactly = await world.validate(batch(exact), {
+    gas: { callGasLimit: 1_000_000n, maxFeePerGas: CAP / 1_000_000n },
+  });
+  assert.equal(exactly.ok, true, exactly.error);
+});
+
+test("gas bound: a huge fee, huge gas limits or a huge pre-verification gas can each be used to drain the account, and each is refused", async () => {
+  for (const gas of [
+    { maxFeePerGas: 10n ** 21n, callGasLimit: 500_000n },
+    { maxFeePerGas: 60_000_000_000n, verificationGasLimit: 10n ** 12n },
+    { maxFeePerGas: 60_000_000_000n, callGasLimit: 10n ** 12n },
+    { maxFeePerGas: 60_000_000_000n, preVerificationGas: 10n ** 12n },
+    // the largest the packed fields can hold: must not wrap around to a small number
+    {
+      maxFeePerGas: 2n ** 128n - 1n,
+      verificationGasLimit: 2n ** 128n - 1n,
+      callGasLimit: 2n ** 128n - 1n,
+      preVerificationGas: 2n ** 255n,
+    },
+  ]) {
+    const { world, exact } = await matured();
+    const result = await world.validate(batch(exact), { gas });
+    assert.equal(
+      result.ok,
+      false,
+      Object.entries(gas)
+        .map(([name, value]) => `${name}=${String(value)}`)
+        .join(" "),
+    );
+    assert.equal((await world.pending()).active, true, "nothing was consumed");
+  }
+});
+
 test("no recovery pending: the exact batch is refused", async () => {
   const world = await installed();
   const exact = world.exactCalls(world.root(), 1);

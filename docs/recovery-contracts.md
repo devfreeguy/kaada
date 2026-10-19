@@ -358,3 +358,39 @@ removal look small): `onInstall` about 138k (first key, cold storage), `addKey` 
   version `paris`); `build`, `typecheck`, `lint` depend on it through Turborepo.
 - Tests run in-process on `@ethereumjs/evm`; no node, no network.
 - `src/recovery.ts` is the shared client/backend definition of the typed data, commitment and install data.
+
+## Deployments
+
+| Network | Recovery validator | Relayer | Passkey factory | Device-key factory |
+| --- | --- | --- | --- | --- |
+| Celo mainnet (42220) | `0xd60997aeaD07583D4325C8dB4c0dc4092F376058` | `0x3274805f27cdb4d83b6Dc20Fec338AA4eb7B2BA4` | `0x959234caAeBA2bbF300B85548C86544A748d7Ee5` | `0x317eAa61c11D660AFaa61451C2fae0e22686766D` |
+| Celo Sepolia (11142220) | `0x959234caAeBA2bbF300B85548C86544A748d7Ee5` | `0x2B48a48785aee12dc03DC36569432c890C1833c6` | `0x0b43FDd477C8bb12C8954A049C1E3b9e019c4503` | `0x01016919722aee4Dca27dC8f490ec1a3f562db89` |
+
+The full set (including the two implementations) is in `packages/config/src/deployments.ts`. Mainnet's passkey implementation is ZeroDev's own
+validator at its canonical address; its code hash is checked at deployment and again by the factory's constructor.
+
+### Gas-cost bound (added before the mainnet deployment)
+
+`validateUserOp` ignores the signature field (authority was established at `initiate`), so anyone may submit the matured batch and choose
+its gas fields. Without a bound, a submitter who is also the bundler could set an enormous fee and be paid it from the account's native
+balance. The validator now refuses (`OperationTooCostly`) an operation whose maximum cost, `(verificationGasLimit + callGasLimit +
+preVerificationGas) * maxFeePerGas`, exceeds `MAX_OPERATION_COST` = 2 CELO. A refusal consumes nothing, so an honest submitter retries with
+fair fees. The relayer's limits (700k + 600k + 60k gas) cost about 0.55 CELO at a 405 gwei fee ceiling (twice Celo's gas price of 202 gwei when
+this was written).
+
+### Deploying and verifying
+
+`packages/blockchain/deploy-recovery-contracts.ts` (an operator tool; nothing imports it):
+
+```
+tsx deploy-recovery-contracts.ts <celo-sepolia|celo-mainnet> <keys-dir> [--dry-run]
+```
+
+`<keys-dir>` holds `deployer.key` and `relayer-<network>.key` (outside the repository). Before spending it checks the chain id, the EntryPoint, the
+P-256 precompile (a valid signature verifies, a forged one does not) and the ZeroDev validator's code hash. After deploying it proves the code
+on chain equals the compiled production code (not the short-delay test build), the relayer and implementations read back as intended, the delay
+floor is 24 hours and a stranger's `initiate` reverts with `NotRelayer`. It resumes from `deployment-<network>.json` and can be re-run at any time
+as a verification.
+
+Before mainnet the Sepolia harnesses (`packages/blockchain/src/testnet`) were run against the same build: recovery validator 24 checks, passkey
+factory 30, device keys 52, device-key reuse 8, no failures.

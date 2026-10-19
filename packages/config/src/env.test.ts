@@ -25,6 +25,12 @@ const deployed: Readonly<Record<RecoveryNetwork, RecoveryContracts | null>> = {
   "celo-sepolia": contracts,
 };
 
+/** A table with no deployed contracts anywhere: what a network that was never deployed looks like. */
+const undeployed: Readonly<Record<RecoveryNetwork, RecoveryContracts | null>> = {
+  "celo-mainnet": null,
+  "celo-sepolia": null,
+};
+
 const kernel = {
   ...base,
   WALLET_PROVIDER: "kernel",
@@ -391,9 +397,30 @@ describe("account recovery", () => {
     }
   });
 
-  it("refuses a network whose contracts are not deployed (the committed table has none yet)", () => {
-    assert.deepEqual(RECOVERY_DEPLOYMENTS, { "celo-mainnet": null, "celo-sepolia": null });
-    assert.throws(() => loadConfig(dev), /not deployed on celo-sepolia/);
+  it("the committed table holds real, well-formed addresses for both networks, and the relayers differ", () => {
+    for (const network of ["celo-mainnet", "celo-sepolia"] as const) {
+      const entry = RECOVERY_DEPLOYMENTS[network];
+      assert.ok(entry, network);
+      const addresses = Object.values(entry);
+      assert.equal(addresses.length, 6, network);
+      for (const value of addresses) assert.match(String(value), /^0x[0-9a-fA-F]{40}$/, network);
+    }
+    // Mainnet's passkey implementation is ZeroDev's canonical validator.
+    assert.equal(
+      RECOVERY_DEPLOYMENTS["celo-mainnet"]?.passkeyImplementation,
+      "0x7ab16Ff354AcB328452F1D445b3Ddee9a91e9e69",
+    );
+    assert.notEqual(
+      RECOVERY_DEPLOYMENTS["celo-mainnet"]?.relayer,
+      RECOVERY_DEPLOYMENTS["celo-sepolia"]?.relayer,
+    );
+  });
+
+  it("refuses a network whose contracts are not deployed", () => {
+    assert.throws(
+      () => loadConfig(dev, { deployments: undeployed }),
+      /not deployed on celo-sepolia/,
+    );
     assert.throws(
       () => loadConfig({ ...dev, RECOVERY_NETWORK: "celo-mainnet" }, { deployments: deployed }),
       /not deployed on celo-mainnet/,
@@ -503,8 +530,11 @@ describe("account recovery", () => {
       RECOVERY_GAS_TOPUP_MAX_WEI: "0",
     };
     const { RECOVERY_EMAIL_OUTBOX_FILE: _o, ...clean } = prodMainnet;
-    // The COMMITTED table (no override) has no mainnet addresses yet: startup must say so.
-    assert.throws(() => loadConfig(clean), /not deployed on celo-mainnet/);
+    // A table with no mainnet addresses: startup must say so.
+    assert.throws(
+      () => loadConfig(clean, { deployments: undeployed }),
+      /not deployed on celo-mainnet/,
+    );
     // Sepolia addresses present must NOT satisfy mainnet.
     assert.throws(
       () =>
@@ -670,7 +700,7 @@ describe("device keys and attestation", () => {
     const config = loadConfig(roots, { deployments: deployed });
     assert.equal(config.wallet.deviceKeyRoots?.contracts.deviceFactory, address(4));
     assert.equal(config.wallet.deviceKeyRoots?.relayerKeyFile, "/secrets/relayer.key");
-    assert.throws(() => loadConfig(roots), /not deployed/);
+    assert.throws(() => loadConfig(roots, { deployments: undeployed }), /not deployed/);
     const { RECOVERY_RELAYER_KEY_FILE: _r, ...noRelayer } = roots;
     assert.throws(() => loadConfig(noRelayer, { deployments: deployed }), ConfigError);
   });
