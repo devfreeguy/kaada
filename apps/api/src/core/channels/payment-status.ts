@@ -89,6 +89,15 @@ export function deriveProgress(facts: PaymentFacts, now: Date): PaymentProgress 
     case "PAYMENT_SENT":
       return { state: "COMPLETED" };
     case "PAYMENT_FAILED":
+      // Preparation refused the payment (nothing ever ran): say what really happened, not a generic failure.
+      if (view.code === "EXECUTION_ROUTE_UNSUPPORTED") return { state: "NO_ROUTE" };
+      if (
+        view.code === "PAYMENT_CHANGED" ||
+        view.code === "WALLET_NOT_ACTIVE" ||
+        view.code === "OUTSIDE_AUTHORIZED_LIMITS"
+      ) {
+        return { state: "REAUTHORIZATION_REQUIRED" };
+      }
       return { state: "FAILED", ...(view.code && { code: view.code }) };
     case "REAUTHORIZATION_REQUIRED":
       return { state: "REAUTHORIZATION_REQUIRED" };
@@ -172,7 +181,7 @@ export function describeProgress(progress: PaymentProgress, seed = ""): string {
     case "GAS_FUNDING_REQUIRED":
       return "Your wallet needs a little CELO to cover network fees before this payment can be sent.";
     case "NO_ROUTE":
-      return "I can't find an available route for this payment right now. Try again in a little while.";
+      return "I can't send this kind of payment yet, so nothing was sent and your funds are safe. You can send to a wallet address in the same currency instead.";
   }
 }
 

@@ -28,6 +28,11 @@ import type { PreparationOutcome } from "./preparation-service.js";
 import type { ChainState, ExecutionUnitOfWork, SecretCipher } from "./ports.js";
 import type { RootActionService } from "./root-action-service.js";
 import { installedScope, plannedSteps, stepKey } from "./steps.js";
+import { freshTransferPlan, isTransferRecord, loadLiveTransfer } from "./transfer.js";
+import type { LiveTransfer } from "./transfer.js";
+
+/** What the audit trail and the shared helpers need of an execution: true of a swap and of a direct transfer alike. */
+type ExecutionContext = Pick<LiveExecution, "record" | "authorization" | "wallet">;
 
 /** What a run reports. NOTHING here claims a payment was sent unless the chain and the provider agree. */
 export type RunOutcome =
@@ -153,9 +158,13 @@ export class ExecutionRunner {
     for (let hop = 0; hop < 12; hop += 1) {
       const record = await this.uow.read.executionPlans.findById(executionId);
       if (!record) return { status: "PAYMENT_FAILED", code: "NOT_FOUND" };
+      // A direct transfer (no swap, no provider) follows the same states by its own, simpler steps.
+      const transfer = isTransferRecord(record);
       switch (record.status) {
         case "READY": {
-          const next = await this.fromReady(record, refreshed);
+          const next = transfer
+            ? await this.transferFromReady(record)
+            : await this.fromReady(record, refreshed);
           if (next === "REFRESHED") {
             refreshed = true;
             continue;
@@ -169,14 +178,16 @@ export class ExecutionRunner {
           return next;
         }
         case "SIGNING": {
-          const next = await this.driveSteps(record);
+          const next = transfer
+            ? await this.driveTransferSteps(record)
+            : await this.driveSteps(record);
           if (next === "CONTINUE") continue;
           return next;
         }
         case "SUBMITTING":
         case "SUBMITTED":
         case "SETTLING": {
-          const next = await this.settle(record);
+          const next = transfer ? await this.settleTransfer(record) : await this.settle(record);
           if (next === "CONTINUE") continue;
           return next;
         }
@@ -348,7 +359,10 @@ export class ExecutionRunner {
   }
 
   /** The chain, not the database, says whether the permission for exactly this payment exists. */
-  private async permissionReadBack(live: LiveExecution, plan: ExecutionPlan): Promise<boolean> {
+  private async permissionReadBack(
+    live: Pick<ExecutionContext, "wallet">,
+    plan: Pick<ExecutionPlan, "permissionRequirement">,
+  ): Promise<boolean> {
     const id = plan.permissionRequirement.existingPermissionId;
     const permission = id ? await this.uow.read.delegatedPermissions.findById(id) : null;
     if (!permission?.sessionKeyAddress) return false;
@@ -397,10 +411,9 @@ export class ExecutionRunner {
     }
 
     // Included. Verify on the chain: the account exists and the permission reads back as installed.
-    const loaded = await loadLiveExecution(repositories, this.deps.wallets, record.id);
+    const loaded = await this.liveWithPlan(record);
     if (!loaded.ok) return { status: "REAUTHORIZATION_REQUIRED", reason: loaded.reason };
-    const { live } = loaded;
-    const plan = await this.plan(live, this.now());
+    const { live, plan, chainId } = loaded;
     const rawPermissionId = tx.metadata?.["permissionId"];
     const permissionId = typeof rawPermissionId === "string" ? rawPermissionId : "";
     const permission = permissionId
@@ -409,7 +422,7 @@ export class ExecutionRunner {
     const installed =
       !!permission?.sessionKeyAddress &&
       (await this.deps.chain.isDeployed({
-        chainId: live.quote.chainId,
+        chainId,
         address: live.wallet.address,
       })) &&
       (await this.deps.kernel.isPermissionInstalled({
@@ -437,12 +450,11 @@ export class ExecutionRunner {
 
   private async rootActionVisibleOnChain(record: ExecutionPlanRecord): Promise<boolean> {
     try {
-      const loaded = await loadLiveExecution(this.uow.read, this.deps.wallets, record.id);
+      const loaded = await this.liveWithPlan(record);
       if (!loaded.ok) return false;
-      const plan = await this.plan(loaded.live, this.now());
+      const { live, plan } = loaded;
       return (
-        !plan.accountRequirements.deploymentRequired &&
-        (await this.permissionReadBack(loaded.live, plan))
+        !plan.accountRequirements.deploymentRequired && (await this.permissionReadBack(live, plan))
       );
     } catch (error) {
       this.log("warn", "execution.readiness_check_failed", { ...errorDetails(error) });
@@ -552,7 +564,7 @@ export class ExecutionRunner {
       (row) =>
         row.type !== "PERMISSION_INSTALL" &&
         (["CREATED", "SUBMITTED", "CONFIRMING", "UNKNOWN"].includes(row.status) ||
-          (row.type === "SWAP" && row.status === "CONFIRMED")),
+          ((row.type === "SWAP" || row.type === "TRANSFER") && row.status === "CONFIRMED")),
     );
   }
 
@@ -566,12 +578,12 @@ export class ExecutionRunner {
           tx.executionPlans.releaseBeforeSubmission(record.id, "BUNDLER_REJECTED", this.now()),
         );
         if (released === "RELEASED") {
-          const loaded = await loadLiveExecution(this.uow.read, this.deps.wallets, record.id);
-          if (loaded.ok) {
+          const context = await this.liveContext(record);
+          if (context) {
             await this.audit(
-              loaded.live,
+              context,
               "authorization.payment_authorization_released",
-              loaded.live.authorization.id,
+              context.authorization.id,
             );
           }
           return { status: "PAYMENT_FAILED", code: "BUNDLER_REJECTED" };
@@ -730,6 +742,195 @@ export class ExecutionRunner {
     return { status: "PAYMENT_SENT" };
   }
 
+  // ── DIRECT TRANSFER: the same states, with no price, no approval, no swap and no provider
+
+  /**
+   * READY for a direct transfer: re-check everything from storage and the chain, then take execution rights (or ask for the
+   * wallet-setup step first). There is no quote to expire, so the only clock is the authorization's own.
+   */
+  private async transferFromReady(record: ExecutionPlanRecord): Promise<RunOutcome | "CONTINUE"> {
+    const loaded = await loadLiveTransfer(this.uow.read, this.deps.wallets, record.id);
+    if (!loaded.ok) return { status: "REAUTHORIZATION_REQUIRED", reason: loaded.reason };
+    const { live } = loaded;
+    const now = this.now();
+
+    if (live.authorization.status !== "ACTIVE") {
+      return { status: "REAUTHORIZATION_REQUIRED", reason: "AUTHORIZATION_NOT_ACTIVE" };
+    }
+    if (live.authorization.expiresAt.getTime() <= now.getTime()) {
+      return { status: "REAUTHORIZATION_REQUIRED", reason: "AUTHORIZATION_EXPIRED" };
+    }
+
+    const plan = await freshTransferPlan(
+      {
+        repositories: this.uow.read,
+        chain: this.deps.chain,
+        infrastructure: this.deps.infrastructure,
+      },
+      live,
+      now,
+    );
+    if (plan.status !== "READY") {
+      await this.uow.read.executionPlans.transition(record.id, ["READY"], "BLOCKED", {
+        failureCode: plan.blockers[0] ?? plan.status,
+      });
+      return { status: "PAYMENT_FAILED", code: plan.blockers[0] ?? plan.status };
+    }
+
+    // Network fees: there is no paymaster, so the account itself must hold native CELO.
+    if ((await this.deps.kernel.nativeBalance(live.wallet.address)) < this.deps.minNativeWei) {
+      return { status: "GAS_FUNDING_REQUIRED" };
+    }
+
+    // Fresh balance of the token being sent.
+    const balances = await this.deps.chain.balances.balancesOf(live.wallet.address, [
+      live.asset.id,
+    ]);
+    if ((balances.get(live.asset.id) ?? 0n) < BigInt(live.amount)) {
+      return { status: "INSUFFICIENT_BALANCE" };
+    }
+
+    // Wallet setup that needs the user's passkey comes first and never involves the payment itself.
+    const permissionReady =
+      plan.permissionRequirement.state === "SATISFIED" &&
+      (await this.permissionReadBack(live, plan));
+    if (plan.accountRequirements.rootSignatureRequired || !permissionReady) {
+      let session;
+      try {
+        session = await this.deps.rootActions.request(live, plan);
+      } catch (error) {
+        if (
+          error instanceof KaadaError &&
+          error.code === "BUNDLER_REJECTED" &&
+          /AA21|prefund/i.test(
+            typeof error.details?.["rpc"] === "string" ? error.details["rpc"] : "",
+          )
+        ) {
+          return { status: "GAS_FUNDING_REQUIRED" };
+        }
+        throw error;
+      }
+      await this.uow.read.executionPlans.transition(record.id, ["READY"], "REQUIRES_USER_ACTION", {
+        userActionKind: session.kind,
+      });
+      await this.audit(live, EXECUTION_AUDIT_EVENTS.rootActionRequested, session.id);
+      return { status: "ROOT_ACTION_REQUIRED", rootActionId: session.id };
+    }
+
+    // Take execution rights: lock, require READY, consume the authorization, move to SIGNING.
+    const acquired = await this.uow.transaction((tx) =>
+      tx.executionPlans.acquire(record.id, this.now()),
+    );
+    if (acquired.status === "NOT_READY") return { status: "PROCESSING_PAYMENT" };
+    if (acquired.status === "AUTHORIZATION_UNAVAILABLE") {
+      return { status: "REAUTHORIZATION_REQUIRED", reason: "AUTHORIZATION_NOT_ACTIVE" };
+    }
+    await this.audit(live, EXECUTION_AUDIT_EVENTS.acquired, record.id);
+    await this.audit(live, "authorization.payment_authorization_consumed", live.authorization.id);
+    return "CONTINUE";
+  }
+
+  /** SIGNING for a direct transfer: await anything already sent, otherwise send the ONE transfer (never twice). */
+  private async driveTransferSteps(record: ExecutionPlanRecord): Promise<RunOutcome | "CONTINUE"> {
+    const repositories = this.uow.read;
+    for (let guard = 0; guard < 4; guard += 1) {
+      const rows = await repositories.executionTransactions.listByExecution(record.id);
+      const awaiting = rows.find((tx) => AWAITING.includes(tx.status));
+      if (awaiting) {
+        const settled = await this.awaitTransaction(awaiting);
+        if (settled === "PENDING") return { status: "PAYMENT_PENDING" };
+        if (settled === "REVERTED") {
+          await this.fail(record, "TRANSFER_REVERTED");
+          return { status: "PAYMENT_FAILED", code: "TRANSFER_REVERTED" };
+        }
+        continue;
+      }
+      if (rows.some((tx) => tx.status === "CREATED")) {
+        // A row that was created but never marked sent: the earlier run died around the send. It may have gone out, so it is
+        // treated as unknown and reconciled, never resent.
+        for (const tx of rows.filter((row) => row.status === "CREATED")) {
+          await repositories.executionTransactions.markUnknown(tx.id, this.now());
+        }
+        return { status: "PAYMENT_PENDING" };
+      }
+      if (
+        rows.some(
+          (tx) => tx.idempotencyKey === stepKey(record.id, "TRANSFER") && tx.status === "CONFIRMED",
+        )
+      ) {
+        await repositories.executionPlans.transition(
+          record.id,
+          ["SIGNING", "SUBMITTING", "SUBMITTED"],
+          "SETTLING",
+        );
+        return "CONTINUE";
+      }
+
+      await repositories.executionPlans.transition(record.id, ["SIGNING"], "SUBMITTING");
+      try {
+        await this.deps.signer.signValidatedExecution(record.id);
+      } catch (error) {
+        return this.afterSignerError(record, error);
+      }
+      await repositories.executionPlans.transition(record.id, ["SUBMITTING"], "SUBMITTED");
+      const context = await this.liveContext(record);
+      if (context) {
+        await this.audit(context, EXECUTION_AUDIT_EVENTS.stepSent, record.id, { step: "TRANSFER" });
+      }
+    }
+    return "CONTINUE";
+  }
+
+  /**
+   * SETTLING for a direct transfer: COMPLETED needs a successful on-chain receipt of the one transfer. There is no provider to
+   * agree with, and the amount settled is the amount the validated call carried (the call is exact, never "at least").
+   */
+  private async settleTransfer(record: ExecutionPlanRecord): Promise<RunOutcome | "CONTINUE"> {
+    const repositories = this.uow.read;
+    const key = stepKey(record.id, "TRANSFER");
+    const transfer = await repositories.executionTransactions.findByKey(key);
+    if (!transfer) {
+      // Rights were taken but nothing was ever recorded: nothing was sent. The authorization stays consumed.
+      await this.fail(record, "TRANSFER_NEVER_SENT");
+      return { status: "PAYMENT_FAILED", code: "TRANSFER_NEVER_SENT" };
+    }
+    if (transfer.status === "CREATED") {
+      await repositories.executionTransactions.markUnknown(transfer.id, this.now());
+      return { status: "PAYMENT_PENDING" };
+    }
+    if (transfer.status === "FAILED") {
+      await this.fail(record, transfer.failureCode ?? "TRANSFER_FAILED");
+      return { status: "PAYMENT_FAILED", code: transfer.failureCode ?? "TRANSFER_FAILED" };
+    }
+    const settled = await this.awaitTransaction(transfer);
+    if (settled === "PENDING") return { status: "PAYMENT_PENDING" };
+    if (settled === "REVERTED") {
+      await this.fail(record, "TRANSFER_REVERTED");
+      return { status: "PAYMENT_FAILED", code: "TRANSFER_REVERTED" };
+    }
+    const confirmed = await repositories.executionTransactions.findByKey(key);
+    if (!confirmed?.hash) return { status: "PAYMENT_PENDING" };
+
+    if (record.status !== "SETTLING") {
+      await repositories.executionPlans.transition(
+        record.id,
+        ["SUBMITTING", "SUBMITTED"],
+        "SETTLING",
+      );
+    }
+    const loaded = await loadLiveTransfer(repositories, this.deps.wallets, record.id);
+    if (!loaded.ok) return { status: "PAYMENT_PENDING" };
+    const { live } = loaded as { live: LiveTransfer };
+
+    await repositories.executionPlans.transition(record.id, ["SETTLING"], "COMPLETED", {
+      settledInputAmount: live.amount,
+      settledOutputAmount: live.amount,
+      completedAt: this.now(),
+    });
+    await this.audit(live, EXECUTION_AUDIT_EVENTS.completed, record.id);
+    return { status: "PAYMENT_SENT" };
+  }
+
   // ── shared helpers
 
   /**
@@ -833,12 +1034,56 @@ export class ExecutionRunner {
       { failureCode: code, failedAt: this.now(), ...extra },
     );
     if (!moved) return;
+    // A direct transfer has no provider claim token to destroy: only the audit entry.
+    if (isTransferRecord(record)) {
+      const context = await this.liveContext(record);
+      if (context) await this.audit(context, EXECUTION_AUDIT_EVENTS.failed, record.id, { code });
+      return;
+    }
     // A failed execution no longer needs the provider's reusable claim token.
     const loaded = await loadLiveExecution(this.uow.read, this.deps.wallets, record.id);
     if (loaded.ok) {
       await this.destroyClaimQuietly(loaded.live);
       await this.audit(loaded.live, EXECUTION_AUDIT_EVENTS.failed, record.id, { code });
     }
+  }
+
+  /** The audit-relevant live facts of an execution of either kind, or null when it can no longer be loaded. */
+  private async liveContext(record: ExecutionPlanRecord): Promise<ExecutionContext | null> {
+    const loaded = isTransferRecord(record)
+      ? await loadLiveTransfer(this.uow.read, this.deps.wallets, record.id)
+      : await loadLiveExecution(this.uow.read, this.deps.wallets, record.id);
+    return loaded.ok ? loaded.live : null;
+  }
+
+  /** The live facts and a fresh plan, for the parts of a run that do not care whether it is a swap or a direct transfer. */
+  private async liveWithPlan(record: ExecutionPlanRecord): Promise<
+    | {
+        ok: true;
+        live: ExecutionContext;
+        plan: Pick<ExecutionPlan, "permissionRequirement" | "accountRequirements">;
+        chainId: number;
+      }
+    | { ok: false; reason: string }
+  > {
+    if (isTransferRecord(record)) {
+      const loaded = await loadLiveTransfer(this.uow.read, this.deps.wallets, record.id);
+      if (!loaded.ok) return loaded;
+      const plan = await freshTransferPlan(
+        {
+          repositories: this.uow.read,
+          chain: this.deps.chain,
+          infrastructure: this.deps.infrastructure,
+        },
+        loaded.live,
+        this.now(),
+      );
+      return { ok: true, live: loaded.live, plan, chainId: loaded.live.wallet.chainId };
+    }
+    const loaded = await loadLiveExecution(this.uow.read, this.deps.wallets, record.id);
+    if (!loaded.ok) return loaded;
+    const plan = await this.plan(loaded.live, this.now());
+    return { ok: true, live: loaded.live, plan, chainId: loaded.live.quote.chainId };
   }
 
   private async destroyClaimQuietly(live: LiveExecution): Promise<void> {
@@ -848,7 +1093,7 @@ export class ExecutionRunner {
   }
 
   private async audit(
-    live: LiveExecution,
+    live: ExecutionContext,
     type: string,
     entityId: string,
     data: Record<string, string> = {},

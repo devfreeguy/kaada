@@ -1,4 +1,5 @@
 import type { Money } from "../money/index.js";
+import type { ExecutionCandidate } from "../authorization/policy.js";
 import type { FirmExecutionCandidate, UnsignedTransaction } from "./firm-quote.js";
 
 /**
@@ -47,13 +48,17 @@ export interface PermissionScope {
    * approval is needed for this payment.
    */
   approval?: { tokenAddress: string; spender: string; limit: Money };
-  /** The one contract the swap call may target, never with native value. */
-  swapTarget: string;
+  /**
+   * The one contract the swap call may target, never with native value. ABSENT for a direct transfer, which has no swap: such a
+   * permission allows the payout transfer and nothing else.
+   */
+  swapTarget?: string;
   /**
    * The ONE function selector (4 bytes, from the provider's own swap calldata) allowed on `swapTarget`.
    * An omitted selector is not a wildcard on-chain (verified on Celo Sepolia): it is a literal 0x00000000.
+   * Present exactly when `swapTarget` is.
    */
-  swapSelector: string;
+  swapSelector?: string;
   validFrom: Date;
   expiresAt: Date;
 }
@@ -131,6 +136,25 @@ export const PLAN_BLOCKERS = [
 export type PlanBlocker = (typeof PLAN_BLOCKERS)[number];
 
 export type ExecutionPlanStatus = "READY" | "BLOCKED" | "EXPIRED";
+
+/**
+ * The plan of a DIRECT transfer: the payment is already in the right currency, so the token goes from the wallet to the recipient
+ * with no swap, no provider and no firm quote. It carries only what that needs, and is told apart from a swap plan by `kind`.
+ * Like every plan it holds no secret, signature or claim token.
+ */
+export interface TransferExecutionPlan {
+  kind: "TRANSFER";
+  candidate: ExecutionCandidate;
+  accountRequirements: AccountRequirements;
+  permissionRequirement: PermissionRequirement;
+  /** The one transfer: the token, the ONE recipient and the exact amount. */
+  payoutRequirement: PayoutRequirement;
+  signingPrerequisites: string[];
+  blockers: PlanBlocker[];
+  /** The authorization's own deadline: a transfer has no quote to expire. */
+  expiresAt: Date;
+  status: ExecutionPlanStatus;
+}
 
 export interface ExecutionPlan {
   candidate: FirmExecutionCandidate;

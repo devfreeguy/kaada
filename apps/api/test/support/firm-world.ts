@@ -7,7 +7,7 @@ import type {
   Wallet,
   WalletCredential,
 } from "@kaada/domain";
-import { SENDER } from "./harness.js";
+import { SENDER, intent } from "./harness.js";
 
 import { AccountReadinessService } from "../../src/core/execution/account-readiness.js";
 import { FirmQuoteService } from "../../src/core/execution/firm-quote-service.js";
@@ -42,6 +42,7 @@ export const WBRL_ADDRESS = `0x${"22".repeat(20)}`;
 export const REACTOR = `0x${"33".repeat(20)}`;
 export const SWAP_TARGET = `0x${"44".repeat(20)}`;
 export const RECIPIENT_ADDRESS = `0x${"77".repeat(20)}`;
+export const CNGN_ADDRESS = `0x${"55".repeat(20)}`;
 export const SECRET_KEY = randomBytes(32).toString("base64");
 export const CLAIM_TOKEN = "rfqc_TEST_CLAIM_TOKEN_must_never_leak_0123456789";
 
@@ -164,6 +165,11 @@ export async function firmWorld(
     held?: number;
     /** Fund only USDC, so the cheapest route is the two-hop USDC -> USDT -> wBRL one. */
     usdcOnly?: boolean;
+    /**
+     * A DIRECT transfer: the wallet holds this many Naira (cNGN) and sends 300 of them to RECIPIENT_ADDRESS. The route is a single
+     * transfer step: no swap, no provider, no firm quote.
+     */
+    directNaira?: { holds: bigint };
   } = {},
 ): Promise<FirmWorld> {
   const w = setup({ authorize: true });
@@ -178,7 +184,21 @@ export async function firmWorld(
   w.r.tokens.wBRL.contractAddress = WBRL_ADDRESS;
   await w.auth.pins.setPin(SENDER, PIN);
 
-  const turn = await w.r.h.say(options.text ?? "pay 500 brl with usdt");
+  let sayText: string = options.text ?? "pay 500 brl with usdt";
+  if (options.directNaira) {
+    w.r.tokens.cNGN.contractAddress = CNGN_ADDRESS;
+    w.port.held.set(w.r.tokens.cNGN.id, options.directNaira.holds * 10n ** 6n);
+    sayText = "send 300 Naira to the address";
+    w.r.h.script.set(
+      sayText,
+      intent({
+        type: "SEND",
+        recipient: { type: "WALLET_ADDRESS", value: RECIPIENT_ADDRESS },
+        amount: { value: "300", currencyOrAsset: "Naira" },
+      } as never),
+    );
+  }
+  const turn = await w.r.h.say(sayText);
   if (turn.response.type !== "AUTHORIZATION_REQUIRED") {
     throw new Error(`expected AUTHORIZATION_REQUIRED, got ${JSON.stringify(turn.response)}`);
   }

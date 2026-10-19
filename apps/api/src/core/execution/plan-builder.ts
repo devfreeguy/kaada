@@ -14,6 +14,7 @@ import type {
   TokenApprovalRequirement,
   UnsignedTransactions,
   TokenPolicy,
+  TransferExecutionPlan,
   Wallet,
 } from "@kaada/domain";
 import { boundLimits } from "@kaada/domain";
@@ -222,7 +223,7 @@ export function buildExecutionPlan(input: PlanInputs): ExecutionPlan {
 }
 
 /** JSON-safe form of a plan for storage and display: dates as ISO text. Contains no secret. */
-export function serializePlan(plan: ExecutionPlan): JsonObject {
+export function serializePlan(plan: ExecutionPlan | TransferExecutionPlan): JsonObject {
   return JSON.parse(
     JSON.stringify(plan, (_key, value: unknown) =>
       value instanceof Date ? value.toISOString() : value,

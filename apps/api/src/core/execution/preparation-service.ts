@@ -10,7 +10,10 @@ import type {
   AuthorizationViolation,
   FirmExecutionCandidate,
   FirmQuote,
+  ExecutionPlanRecord,
+  Intent,
   PaymentAuthorization,
+  PaymentRoute,
   PlanBlocker,
   TokenPolicy,
   Wallet,
@@ -22,6 +25,7 @@ import type { AuthorizationPolicyService } from "../authorization/policy-service
 import type { AccountReadinessService } from "./account-readiness.js";
 import type { FirmQuoteService } from "./firm-quote-service.js";
 import { buildExecutionPlan, serializePlan } from "./plan-builder.js";
+import { buildTransferPlan, isDirectTransferRoute, transferCandidate } from "./transfer.js";
 import { defaultTokenPolicy } from "./token-policy.js";
 import { planExpiresAt } from "./tracker.js";
 import type { ChainState, ExecutionUnitOfWork } from "./ports.js";
@@ -165,6 +169,17 @@ export class ExecutionPreparationService {
       return this.reauthorize(authorization, "WALLET_NOT_ACTIVE");
     }
 
+    // The payment is already in the right currency: a direct transfer. No swap, no provider, no firm quote.
+    if (isDirectTransferRoute(route)) {
+      return this.prepareTransfer({
+        authorization,
+        intent: intent as Intent & { type: "SEND" | "CONVERT" },
+        route,
+        wallet,
+        existing,
+      });
+    }
+
     // MVP restriction: only a single provider hop is executed. A two-hop route would need two firm
     // quotes (two slots, doubled expiry pressure) with no atomicity between them: hop 1 could settle
     // and hop 2 fail. Indicative routing keeps multi-hop; execution refuses it, before any provider call.
@@ -173,6 +188,7 @@ export class ExecutionPreparationService {
       await this.audit(authorization, EXECUTION_AUDIT_EVENTS.routeUnsupported, authorization.id, {
         swaps: String(swaps.length),
       });
+      await this.recordTerminal(authorization, "EXECUTION_ROUTE_UNSUPPORTED");
       return { status: "EXECUTION_ROUTE_UNSUPPORTED" };
     }
 
@@ -218,6 +234,7 @@ export class ExecutionPreparationService {
           violations: preflight.violations.join(","),
         },
       );
+      await this.recordTerminal(authorization, "PAYMENT_CHANGED");
       return {
         status: "REAUTHORIZATION_REQUIRED",
         reason: "PAYMENT_CHANGED",
@@ -409,6 +426,121 @@ export class ExecutionPreparationService {
     return { status: "EXECUTION_BLOCKED", executionId: record.id, blockers: plan.blockers };
   }
 
+  /**
+   * A direct transfer needs no price to confirm: the plan is built from the stored payment alone, and it is READY (or BLOCKED,
+   * for instance without a recipient address) straight away. The transfer itself is sent later, by the runner, under the same
+   * rules as any payment.
+   */
+  private async prepareTransfer(input: {
+    authorization: PaymentAuthorization;
+    intent: Intent & { type: "SEND" | "CONVERT" };
+    route: PaymentRoute;
+    wallet: Wallet & { address: string };
+    existing: ExecutionPlanRecord | null;
+  }): Promise<PreparationOutcome> {
+    const { authorization, intent, route, wallet, existing } = input;
+    const repositories = this.uow.read;
+
+    // A person already confirming wallet setup keeps that step: nothing here may reset it.
+    if (existing?.status === "REQUIRES_USER_ACTION") {
+      return {
+        status: "EXECUTION_READY",
+        executionId: existing.id,
+        expiresAt: authorization.expiresAt,
+        reused: true,
+      };
+    }
+
+    // A transfer cannot change currency or amount.
+    if (
+      route.input.assetId !== route.output.assetId ||
+      route.input.amount !== route.output.amount
+    ) {
+      await this.audit(authorization, EXECUTION_AUDIT_EVENTS.routeUnsupported, authorization.id, {
+        transfer: "input and output differ",
+      });
+      await this.recordTerminal(authorization, "EXECUTION_ROUTE_UNSUPPORTED");
+      return { status: "EXECUTION_ROUTE_UNSUPPORTED" };
+    }
+    const asset = await repositories.assets.findById(route.input.assetId);
+    if (!hasContract(asset)) return this.reauthorize(authorization, "PAYMENT_CHANGED");
+
+    const recipient = intent.recipientId
+      ? await repositories.recipients.findById(intent.recipientId)
+      : null;
+    const candidate = transferCandidate({
+      authorization,
+      intent,
+      walletId: wallet.id,
+      chainId: wallet.chainId,
+      assetId: asset.id,
+      amount: route.input.amount,
+      recipientAddress: recipient?.walletAddress,
+    });
+    // Is this exactly what the person approved? A changed recipient, wallet, asset or amount is refused here.
+    const check = this.deps.policy.check(authorization, candidate);
+    if (!check.ok) {
+      await this.audit(
+        authorization,
+        EXECUTION_AUDIT_EVENTS.reauthorizationRequired,
+        authorization.id,
+        { violations: check.violations.join(",") },
+      );
+      await this.recordTerminal(authorization, "OUTSIDE_AUTHORIZED_LIMITS");
+      return {
+        status: "REAUTHORIZATION_REQUIRED",
+        reason: "OUTSIDE_AUTHORIZED_LIMITS",
+        violations: check.violations,
+      };
+    }
+
+    const record =
+      existing ??
+      (
+        await repositories.executionPlans.begin({
+          id: createId(),
+          userId: authorization.userId,
+          intentId: intent.id,
+          routeId: route.id,
+          paymentAuthorizationId: authorization.id,
+          walletId: wallet.id,
+        })
+      ).record;
+
+    const snapshot = await this.deps.readiness.inspect(wallet);
+    const plan = buildTransferPlan({
+      candidate,
+      authorization,
+      wallet,
+      asset,
+      deployed: snapshot.deployed,
+      rootAvailable: snapshot.rootAvailable,
+      infrastructure: snapshot.infrastructure,
+      permissions: snapshot.permissions,
+      now: this.now(),
+    });
+    const status =
+      plan.status === "READY" ? "READY" : plan.status === "BLOCKED" ? "BLOCKED" : "EXPIRED";
+    await repositories.executionPlans.update(record.id, { status, plan: serializePlan(plan) });
+    if (plan.status === "READY") {
+      await this.audit(authorization, EXECUTION_AUDIT_EVENTS.planReady, record.id, {
+        kind: "TRANSFER",
+      });
+      return {
+        status: "EXECUTION_READY",
+        executionId: record.id,
+        expiresAt: plan.expiresAt,
+        reused: false,
+      };
+    }
+    await this.audit(authorization, EXECUTION_AUDIT_EVENTS.planBlocked, record.id, {
+      kind: "TRANSFER",
+      blockers: plan.blockers.join(","),
+    });
+    if (plan.status === "EXPIRED") return this.reauthorize(authorization, "AUTHORIZATION_EXPIRED");
+    return { status: "EXECUTION_BLOCKED", executionId: record.id, blockers: plan.blockers };
+  }
+
   private async reauthorize(
     authorization: PaymentAuthorization | null,
     reason: ReauthorizationReason,
@@ -423,8 +555,46 @@ export class ExecutionPreparationService {
         },
       );
     }
+    // The payment itself changed (or its wallet did): nothing will ever run for this authorization, and the chat must say so.
+    if (authorization && (reason === "PAYMENT_CHANGED" || reason === "WALLET_NOT_ACTIVE")) {
+      await this.recordTerminal(authorization, reason);
+    }
     this.log("info", "execution.reauthorization_required", { reason });
     return { status: "REAUTHORIZATION_REQUIRED", reason };
+  }
+
+  /**
+   * Remembers, on the execution record, why this payment will not run. The preparation result otherwise lives only in one
+   * process's memory, so without this the chat would say "confirming the final price" for ever. Only a record that has not
+   * started (PREPARING) is changed: a payment that is moving, or finished, is never marked failed here.
+   */
+  private async recordTerminal(authorization: PaymentAuthorization, code: string): Promise<void> {
+    const repositories = this.uow.read;
+    try {
+      const existing = await repositories.executionPlans.findByAuthorization(authorization.id);
+      const record =
+        existing ??
+        (
+          await repositories.executionPlans.begin({
+            id: createId(),
+            userId: authorization.userId,
+            intentId: authorization.intentId,
+            routeId: authorization.routeId,
+            paymentAuthorizationId: authorization.id,
+            walletId: authorization.walletId,
+          })
+        ).record;
+      await repositories.executionPlans.transition(record.id, ["PREPARING"], "FAILED", {
+        failureCode: code,
+      });
+    } catch (error) {
+      // Telling the person is a courtesy on top of the refusal itself: never turn a refusal into a crash.
+      this.log("warn", "execution.terminal_record_failed", {
+        authorizationId: authorization.id,
+        code,
+        error: error instanceof Error ? error.name : "unknown",
+      });
+    }
   }
 
   private async audit(

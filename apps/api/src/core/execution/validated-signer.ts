@@ -15,7 +15,19 @@ import { loadLiveExecution } from "./live-execution.js";
 import type { LiveExecution } from "./live-execution.js";
 import { freshPlan } from "./fresh-plan.js";
 import type { ChainState, ExecutionUnitOfWork, SecretCipher } from "./ports.js";
-import { ALLOWED_SELECTORS, installedScope, plannedSteps } from "./steps.js";
+import {
+  ALLOWED_SELECTORS,
+  TRANSFER_SELECTOR,
+  encodeTransfer,
+  installedScope,
+  plannedSteps,
+} from "./steps.js";
+import {
+  freshTransferPlan,
+  isTransferRecord,
+  loadLiveTransfer,
+  plannedTransferStep,
+} from "./transfer.js";
 import type { PlannedStep } from "./steps.js";
 
 export interface ValidatedSignerDeps {
@@ -76,6 +88,9 @@ export class ValidatedExecutionSigner implements ExecutionSigner {
 
   async signValidatedExecution(executionId: string): Promise<SignedExecution> {
     const repositories = this.deps.unitOfWork.read;
+    // A direct transfer has no firm quote: it is validated and signed by its own path, under the same rules.
+    const stored = await repositories.executionPlans.findById(executionId);
+    if (stored && isTransferRecord(stored)) return this.signTransfer(executionId);
     const loaded = await loadLiveExecution(repositories, this.deps.wallets, executionId);
     if (!loaded.ok) {
       throw refuse(loaded.reason === "NOT_FOUND" ? "PAYMENT_CHANGED" : loaded.reason, {
@@ -154,13 +169,139 @@ export class ValidatedExecutionSigner implements ExecutionSigner {
     }
     this.assertCallsAllowed(next, plan);
 
-    // 5. Persist the attempt FIRST, then send once.
+    return this.sendStep({
+      executionId,
+      step: next,
+      chainId: live.quote.chainId,
+      walletAddress: live.wallet.address,
+      permission,
+    });
+  }
+
+  /**
+   * A DIRECT transfer: re-validated from storage and a fresh plan exactly like a swap, then ONE call is signed:
+   * `transfer(recipient, amount)` on the token, byte for byte what the plan says. The restricted key's on-chain permission is the
+   * same transfer and nothing else, so even a bug here could not send anything more.
+   */
+  private async signTransfer(executionId: string): Promise<SignedExecution> {
+    const repositories = this.deps.unitOfWork.read;
+    const loaded = await loadLiveTransfer(repositories, this.deps.wallets, executionId);
+    if (!loaded.ok) {
+      throw refuse(loaded.reason === "NOT_FOUND" ? "PAYMENT_CHANGED" : loaded.reason, {
+        loaded: loaded.reason,
+      });
+    }
+    const { live } = loaded;
+    const now = this.now();
+
+    // 1. Execution rights, exactly as for a swap.
+    const { record, authorization } = live;
+    if (
+      (record.status !== "SIGNING" && record.status !== "SUBMITTING") ||
+      !record.authorizationConsumedAt
+    ) {
+      throw refuse("EXECUTION_NOT_SIGNING", { status: record.status });
+    }
+    if (authorization.status !== "CONSUMED" || authorization.id !== record.paymentAuthorizationId) {
+      throw refuse("AUTHORIZATION_NOT_CONSUMED_FOR_THIS_EXECUTION");
+    }
+
+    // 2. Still inside what the person approved, judged as of the moment the authorization was consumed.
+    const check = validateExecutionAgainstAuthorization(
+      { ...authorization, status: "ACTIVE" },
+      live.candidate,
+      record.authorizationConsumedAt,
+    );
+    if (!check.ok) throw refuse("OUTSIDE_AUTHORIZATION", { violations: check.violations });
+
+    // 3. A fresh plan, and the permission read back from the chain.
+    const plan = await freshTransferPlan(
+      { repositories, chain: this.deps.chain, infrastructure: this.deps.infrastructure },
+      live,
+      now,
+    );
+    // The authorization is consumed by now, so only a blocker (not its deadline) can stop the plan.
+    if (plan.blockers.length > 0) {
+      throw refuse("PLAN_NOT_READY", { status: plan.status, blockers: plan.blockers });
+    }
+    if (
+      plan.permissionRequirement.state !== "SATISFIED" ||
+      plan.accountRequirements.deploymentRequired
+    ) {
+      throw refuse("PERMISSION_NOT_INSTALLED");
+    }
+    const permissionId = plan.permissionRequirement.existingPermissionId;
+    const permission = permissionId
+      ? ((await repositories.delegatedPermissions.findById(permissionId)) ?? undefined)
+      : undefined;
+    if (
+      !permission ||
+      permission.status !== "ACTIVE" ||
+      !permission.installedAt ||
+      !permission.sessionKeyAddress ||
+      !permission.sessionKeySecretId ||
+      !permission.approvalSecretId
+    ) {
+      throw refuse("PERMISSION_NOT_INSTALLED");
+    }
+    if (
+      !(await this.deps.kernel.isPermissionInstalled({
+        walletAddress: live.wallet.address,
+        sessionKeyAddress: permission.sessionKeyAddress,
+        scope: installedScope(plan.permissionRequirement.scope, permission),
+      }))
+    ) {
+      throw refuse("PERMISSION_NOT_INSTALLED", { readBack: false });
+    }
+
+    // 4. The one step, and a strict check that its call is exactly the planned transfer.
+    const step = plannedTransferStep(executionId, plan);
+    await this.nextStep([step]);
+    const call = step.calls[0];
+    const scopeContracts = plan.permissionRequirement.scope.allowedContracts.map((a) =>
+      a.toLowerCase(),
+    );
+    if (
+      step.calls.length !== 1 ||
+      !call ||
+      call.value !== "0" ||
+      call.to.toLowerCase() !== plan.payoutRequirement.tokenAddress ||
+      !scopeContracts.includes(call.to.toLowerCase()) ||
+      call.data.slice(0, 10).toLowerCase() !== TRANSFER_SELECTOR ||
+      call.data.toLowerCase() !==
+        encodeTransfer(plan.payoutRequirement.recipient, BigInt(plan.payoutRequirement.amount))
+    ) {
+      throw refuse("CALL_NOT_ALLOWED", { step: step.kind });
+    }
+
+    return this.sendStep({
+      executionId,
+      step,
+      chainId: live.wallet.chainId,
+      walletAddress: live.wallet.address,
+      permission,
+    });
+  }
+
+  /**
+   * Persist the attempt FIRST, then send once. Shared by every kind of payment: only the caller that CREATED the step row may
+   * send it, and a step that fails to send is never retried blindly.
+   */
+  private async sendStep(args: {
+    executionId: string;
+    step: PlannedStep;
+    chainId: number;
+    walletAddress: string;
+    permission: { sessionKeySecretId?: string; approvalSecretId?: string };
+  }): Promise<SignedExecution> {
+    const { executionId, step: next, permission } = args;
+    const repositories = this.deps.unitOfWork.read;
     const { transaction, created } = await repositories.executionTransactions.begin({
       idempotencyKey: next.key,
       executionId,
       type: next.type,
-      chainId: live.quote.chainId,
-      fromAddress: live.wallet.address,
+      chainId: args.chainId,
+      fromAddress: args.walletAddress,
       toAddress: next.toAddress,
       assetId: next.assetId,
       amount: next.amount,
@@ -175,14 +316,14 @@ export class ValidatedExecutionSigner implements ExecutionSigner {
 
     // 6. The restricted key and its enable data are decrypted only here, for this one send.
     const [keySecret, approvalSecret] = await Promise.all([
-      repositories.executionSecrets.get(permission.sessionKeySecretId),
-      repositories.executionSecrets.get(permission.approvalSecretId),
+      repositories.executionSecrets.get(String(permission.sessionKeySecretId)),
+      repositories.executionSecrets.get(String(permission.approvalSecretId)),
     ]);
     if (!keySecret || !approvalSecret) throw refuse("SESSION_KEY_UNAVAILABLE");
 
     try {
       const sent = await this.deps.kernel.sendDelegatedCalls({
-        walletAddress: live.wallet.address,
+        walletAddress: args.walletAddress,
         sessionKey: new SecretValue(
           this.deps.cipher.decrypt(keySecret.ciphertext, `session-key:${keySecret.id}`),
         ),

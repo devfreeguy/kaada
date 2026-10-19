@@ -17,7 +17,7 @@ export function encodeTransfer(recipient: string, amount: bigint): string {
   return `${TRANSFER_SELECTOR}${word(recipient)}${word(amount.toString(16))}`;
 }
 
-export type StepKind = "APPROVAL_RESET" | "APPROVAL" | "SWAP";
+export type StepKind = "APPROVAL_RESET" | "APPROVAL" | "SWAP" | "TRANSFER";
 
 /** One on-chain step of a payment: a stable key, what kind of transaction it is, and its calls. */
 export interface PlannedStep {

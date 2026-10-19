@@ -113,6 +113,11 @@ export function outcomeFromRecord(
           return { status: "INSUFFICIENT_BALANCE" };
         case "PROVIDER_CAPACITY_REACHED":
           return { status: "PROVIDER_CAPACITY_REACHED" };
+        case "EXECUTION_ROUTE_UNSUPPORTED":
+          return { status: "EXECUTION_ROUTE_UNSUPPORTED" };
+        case "PAYMENT_CHANGED":
+        case "WALLET_NOT_ACTIVE":
+          return { status: "REAUTHORIZATION_REQUIRED", reason: record.failureCode };
         default:
           return { status: "FINAL_PRICE_UNAVAILABLE", code: record.failureCode ?? "UNKNOWN" };
       }

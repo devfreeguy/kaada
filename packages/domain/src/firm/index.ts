@@ -41,6 +41,7 @@ export { PLAN_BLOCKERS } from "./plan.js";
 export type {
   AccountRequirements,
   ExecutionPlan,
+  TransferExecutionPlan,
   ExecutionPlanStatus,
   PayoutRequirement,
   PermissionRequirement,

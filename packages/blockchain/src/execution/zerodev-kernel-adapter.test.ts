@@ -119,6 +119,36 @@ describe("permission policies", () => {
   });
 });
 
+describe("a direct transfer's permission", () => {
+  // No swap: the permission is the one payout transfer and nothing else.
+  const { swapTarget: _t, swapSelector: _s, approval: _a, ...transferOnly } = scope;
+  const transferScope: PermissionScope = { ...transferOnly, allowedOperations: ["TRANSFER_TOKEN"] };
+
+  it("allows the pinned transfer and NO swap contract, NO approve, and no wildcard", () => {
+    const [call] = policiesForScope(transferScope);
+    const data = call?.getPolicyData().toLowerCase() ?? "";
+    assert.ok(data.includes("a9059cbb"), "the transfer selector");
+    assert.ok(data.includes("77".repeat(20)), "the pinned recipient");
+    assert.equal(data.includes("095ea7b3"), false, "no approve");
+    assert.equal(data.includes("44".repeat(20)), false, "no swap target");
+    assert.equal(data.includes("a1b2c3d4"), false, "no swap selector");
+  });
+
+  it("is a different permission from the swap one (the read-back must not confuse them)", () => {
+    const swapData = policiesForScope(scope)[0]?.getPolicyData();
+    const transferData = policiesForScope(transferScope)[0]?.getPolicyData();
+    assert.notEqual(swapData, transferData);
+  });
+
+  it("never builds a half swap rule: a target without its selector adds nothing", () => {
+    const half: PermissionScope = { ...transferScope, swapTarget: addr("44") };
+    assert.equal(
+      policiesForScope(half)[0]?.getPolicyData(),
+      policiesForScope(transferScope)[0]?.getPolicyData(),
+    );
+  });
+});
+
 describe("the adapter object", () => {
   it("has no method that signs bytes, a transaction or an arbitrary user operation", () => {
     const adapter = createZeroDevKernelAdapter({ bundlerUrl: "https://bundler.invalid" });

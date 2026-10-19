@@ -136,7 +136,7 @@ const unix = (date: Date) => Math.floor(date.getTime() / 1000);
  * The on-chain restrictions of ONE payment, from the validated plan scope:
  *   approve(spender, amount)  only on the sell token, only to the quote's spender, amount <= limit
  *   transfer(to, amount)      only on the buy token, only to the pinned recipient, amount <= limit
- *   the swap target           that one contract (any function), no native value
+ *   the swap target           that one contract (any function), no native value (absent for a direct transfer)
  *   native value              zero everywhere
  *   validity window           [validFrom, expiresAt]
  */
@@ -173,7 +173,11 @@ export function policiesForScope(scope: PermissionScope) {
       ],
     });
   }
-  list.push({ target: scope.swapTarget, selector: scope.swapSelector, valueLimit: 0n });
+  // A direct transfer has no swap: its permission is the payout transfer alone. Never a swap entry without BOTH halves, and
+  // never a wildcard (an omitted selector is a literal 0x00000000 on chain, not "any function").
+  if (scope.swapTarget !== undefined && scope.swapSelector !== undefined) {
+    list.push({ target: scope.swapTarget, selector: scope.swapSelector, valueLimit: 0n });
+  }
   return [
     toCallPolicy({ policyVersion: CallPolicyVersion.V0_0_4, permissions }),
     toTimestampPolicy({ validAfter: unix(scope.validFrom), validUntil: unix(scope.expiresAt) }),

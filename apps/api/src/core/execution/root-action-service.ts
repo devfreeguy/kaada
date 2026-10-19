@@ -74,7 +74,10 @@ export class RootActionService {
    * Prepares (once) the root operation an execution needs and records a session for the person to
    * confirm. Idempotent: a live session for the execution is returned as is. Sends nothing.
    */
-  async request(live: LiveExecution, plan: ExecutionPlan): Promise<RootActionSession> {
+  async request(
+    live: Pick<LiveExecution, "record" | "wallet">,
+    plan: Pick<ExecutionPlan, "permissionRequirement">,
+  ): Promise<RootActionSession> {
     const repositories = this.uow.read;
     const now = this.now();
     const existing = await repositories.rootActions.findPendingByExecution(live.record.id);
