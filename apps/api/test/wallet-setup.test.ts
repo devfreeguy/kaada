@@ -104,7 +104,7 @@ describe("setup sessions", () => {
 
     assert.match(session.token, /^[A-Za-z0-9_-]{43}$/);
     assert.equal(session.url, `${ORIGIN}/setup/${session.token}`);
-    assert.equal(session.expiresAt.getTime() - s.clock.now.getTime(), 15 * 60 * 1000);
+    assert.equal(session.expiresAt.getTime() - s.clock.now.getTime(), 30 * 60 * 1000);
     assert.equal(
       s.world.audit.some((e) => e.type === "wallet.setup_session_created" && e.userId === userId),
       true,
@@ -134,7 +134,7 @@ describe("setup sessions", () => {
   it("rejects an expired session", async () => {
     const s = build();
     const session = await s.setup.createSession(s.newUser());
-    s.clock.now = new Date(s.clock.now.getTime() + 15 * 60 * 1000 + 1);
+    s.clock.now = new Date(s.clock.now.getTime() + 30 * 60 * 1000 + 1);
     await rejectsWith(s.setup.view(session.token), "SETUP_SESSION_INVALID");
     await rejectsWith(s.setup.beginRegistration(session.token), "SETUP_SESSION_INVALID");
   });
@@ -186,7 +186,7 @@ describe("setup sessions", () => {
     assert.equal(view.status, "COMPLETED");
     assert.equal(view.wallet?.status, "ACTIVE");
 
-    s.clock.now = new Date(s.clock.now.getTime() + 16 * 60 * 1000);
+    s.clock.now = new Date(s.clock.now.getTime() + 31 * 60 * 1000);
     await rejectsWith(s.setup.view(r.session.token), "SETUP_SESSION_INVALID");
   });
 });

@@ -1282,7 +1282,7 @@ It's in your ${from.name} balance.`,
 
     if (presented.link) {
       const url = await this.deps.links.setupLink(userId, {
-        existingWallet: presented.link.kind === "PIN_SETUP",
+        existingWallet: presented.link.kind !== "WALLET_SETUP",
       });
       if (url) {
         actions.push({

@@ -207,6 +207,7 @@ export type UserWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   identities?: Prisma.IdentityListRelationFilter
+  emailVerifications?: Prisma.EmailVerificationListRelationFilter
   sessions?: Prisma.SessionListRelationFilter
   wallets?: Prisma.WalletListRelationFilter
   conversations?: Prisma.ConversationListRelationFilter
@@ -249,6 +250,7 @@ export type UserOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   identities?: Prisma.IdentityOrderByRelationAggregateInput
+  emailVerifications?: Prisma.EmailVerificationOrderByRelationAggregateInput
   sessions?: Prisma.SessionOrderByRelationAggregateInput
   wallets?: Prisma.WalletOrderByRelationAggregateInput
   conversations?: Prisma.ConversationOrderByRelationAggregateInput
@@ -294,6 +296,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   identities?: Prisma.IdentityListRelationFilter
+  emailVerifications?: Prisma.EmailVerificationListRelationFilter
   sessions?: Prisma.SessionListRelationFilter
   wallets?: Prisma.WalletListRelationFilter
   conversations?: Prisma.ConversationListRelationFilter
@@ -364,6 +367,7 @@ export type UserCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -406,6 +410,7 @@ export type UserUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -448,6 +453,7 @@ export type UserUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -490,6 +496,7 @@ export type UserUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -952,6 +959,20 @@ export type UserUpdateOneRequiredWithoutRecoveryTotpsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutRecoveryTotpsInput, Prisma.UserUpdateWithoutRecoveryTotpsInput>, Prisma.UserUncheckedUpdateWithoutRecoveryTotpsInput>
 }
 
+export type UserCreateNestedOneWithoutEmailVerificationsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutEmailVerificationsInput, Prisma.UserUncheckedCreateWithoutEmailVerificationsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutEmailVerificationsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutEmailVerificationsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutEmailVerificationsInput, Prisma.UserUncheckedCreateWithoutEmailVerificationsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutEmailVerificationsInput
+  upsert?: Prisma.UserUpsertWithoutEmailVerificationsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutEmailVerificationsInput, Prisma.UserUpdateWithoutEmailVerificationsInput>, Prisma.UserUncheckedUpdateWithoutEmailVerificationsInput>
+}
+
 export type UserCreateNestedOneWithoutAttestationChallengesInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutAttestationChallengesInput, Prisma.UserUncheckedCreateWithoutAttestationChallengesInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutAttestationChallengesInput
@@ -1059,6 +1080,7 @@ export type UserCreateWithoutIdentitiesInput = {
   homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -1100,6 +1122,7 @@ export type UserUncheckedCreateWithoutIdentitiesInput = {
   homeCurrency?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -1157,6 +1180,7 @@ export type UserUpdateWithoutIdentitiesInput = {
   homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -1198,6 +1222,7 @@ export type UserUncheckedUpdateWithoutIdentitiesInput = {
   homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -1240,6 +1265,7 @@ export type UserCreateWithoutSessionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
   ownedRecipients?: Prisma.RecipientCreateNestedManyWithoutOwnerInput
@@ -1281,6 +1307,7 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
   ownedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutOwnerInput
@@ -1338,6 +1365,7 @@ export type UserUpdateWithoutSessionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
   ownedRecipients?: Prisma.RecipientUpdateManyWithoutOwnerNestedInput
@@ -1379,6 +1407,7 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
   ownedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutOwnerNestedInput
@@ -1420,6 +1449,7 @@ export type UserCreateWithoutWalletsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
   ownedRecipients?: Prisma.RecipientCreateNestedManyWithoutOwnerInput
@@ -1461,6 +1491,7 @@ export type UserUncheckedCreateWithoutWalletsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
   ownedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutOwnerInput
@@ -1518,6 +1549,7 @@ export type UserUpdateWithoutWalletsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
   ownedRecipients?: Prisma.RecipientUpdateManyWithoutOwnerNestedInput
@@ -1559,6 +1591,7 @@ export type UserUncheckedUpdateWithoutWalletsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
   ownedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutOwnerNestedInput
@@ -1600,6 +1633,7 @@ export type UserCreateWithoutPasskeyCredentialsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -1641,6 +1675,7 @@ export type UserUncheckedCreateWithoutPasskeyCredentialsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -1698,6 +1733,7 @@ export type UserUpdateWithoutPasskeyCredentialsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -1739,6 +1775,7 @@ export type UserUncheckedUpdateWithoutPasskeyCredentialsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -1780,6 +1817,7 @@ export type UserCreateWithoutWalletSetupSessionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -1821,6 +1859,7 @@ export type UserUncheckedCreateWithoutWalletSetupSessionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -1878,6 +1917,7 @@ export type UserUpdateWithoutWalletSetupSessionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -1919,6 +1959,7 @@ export type UserUncheckedUpdateWithoutWalletSetupSessionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -1960,6 +2001,7 @@ export type UserCreateWithoutTransactionPinInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -2001,6 +2043,7 @@ export type UserUncheckedCreateWithoutTransactionPinInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -2058,6 +2101,7 @@ export type UserUpdateWithoutTransactionPinInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -2099,6 +2143,7 @@ export type UserUncheckedUpdateWithoutTransactionPinInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -2140,6 +2185,7 @@ export type UserCreateWithoutAuthorizationSessionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -2181,6 +2227,7 @@ export type UserUncheckedCreateWithoutAuthorizationSessionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -2238,6 +2285,7 @@ export type UserUpdateWithoutAuthorizationSessionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -2279,6 +2327,7 @@ export type UserUncheckedUpdateWithoutAuthorizationSessionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -2320,6 +2369,7 @@ export type UserCreateWithoutPaymentAuthorizationsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -2361,6 +2411,7 @@ export type UserUncheckedCreateWithoutPaymentAuthorizationsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -2418,6 +2469,7 @@ export type UserUpdateWithoutPaymentAuthorizationsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -2459,6 +2511,7 @@ export type UserUncheckedUpdateWithoutPaymentAuthorizationsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -2500,6 +2553,7 @@ export type UserCreateWithoutFirmQuoteAttemptsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -2541,6 +2595,7 @@ export type UserUncheckedCreateWithoutFirmQuoteAttemptsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -2598,6 +2653,7 @@ export type UserUpdateWithoutFirmQuoteAttemptsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -2639,6 +2695,7 @@ export type UserUncheckedUpdateWithoutFirmQuoteAttemptsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -2680,6 +2737,7 @@ export type UserCreateWithoutRootActionSessionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -2721,6 +2779,7 @@ export type UserUncheckedCreateWithoutRootActionSessionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -2778,6 +2837,7 @@ export type UserUpdateWithoutRootActionSessionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -2819,6 +2879,7 @@ export type UserUncheckedUpdateWithoutRootActionSessionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -2860,6 +2921,7 @@ export type UserCreateWithoutPasskeyChallengesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -2901,6 +2963,7 @@ export type UserUncheckedCreateWithoutPasskeyChallengesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -2958,6 +3021,7 @@ export type UserUpdateWithoutPasskeyChallengesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -2999,6 +3063,7 @@ export type UserUncheckedUpdateWithoutPasskeyChallengesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -3040,6 +3105,7 @@ export type UserCreateWithoutDelegatedPermissionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -3081,6 +3147,7 @@ export type UserUncheckedCreateWithoutDelegatedPermissionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -3138,6 +3205,7 @@ export type UserUpdateWithoutDelegatedPermissionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -3179,6 +3247,7 @@ export type UserUncheckedUpdateWithoutDelegatedPermissionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -3220,6 +3289,7 @@ export type UserCreateWithoutConversationsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   ownedRecipients?: Prisma.RecipientCreateNestedManyWithoutOwnerInput
@@ -3261,6 +3331,7 @@ export type UserUncheckedCreateWithoutConversationsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   ownedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutOwnerInput
@@ -3318,6 +3389,7 @@ export type UserUpdateWithoutConversationsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   ownedRecipients?: Prisma.RecipientUpdateManyWithoutOwnerNestedInput
@@ -3359,6 +3431,7 @@ export type UserUncheckedUpdateWithoutConversationsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   ownedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutOwnerNestedInput
@@ -3400,6 +3473,7 @@ export type UserCreateWithoutIntentsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -3441,6 +3515,7 @@ export type UserUncheckedCreateWithoutIntentsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -3498,6 +3573,7 @@ export type UserUpdateWithoutIntentsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -3539,6 +3615,7 @@ export type UserUncheckedUpdateWithoutIntentsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -3580,6 +3657,7 @@ export type UserCreateWithoutOwnedRecipientsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -3621,6 +3699,7 @@ export type UserUncheckedCreateWithoutOwnedRecipientsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -3667,6 +3746,7 @@ export type UserCreateWithoutLinkedRecipientsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -3708,6 +3788,7 @@ export type UserUncheckedCreateWithoutLinkedRecipientsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -3765,6 +3846,7 @@ export type UserUpdateWithoutOwnedRecipientsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -3806,6 +3888,7 @@ export type UserUncheckedUpdateWithoutOwnedRecipientsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -3858,6 +3941,7 @@ export type UserUpdateWithoutLinkedRecipientsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -3899,6 +3983,7 @@ export type UserUncheckedUpdateWithoutLinkedRecipientsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -3940,6 +4025,7 @@ export type UserCreateWithoutExecutionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -3981,6 +4067,7 @@ export type UserUncheckedCreateWithoutExecutionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -4038,6 +4125,7 @@ export type UserUpdateWithoutExecutionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -4079,6 +4167,7 @@ export type UserUncheckedUpdateWithoutExecutionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -4120,6 +4209,7 @@ export type UserCreateWithoutRampSessionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -4161,6 +4251,7 @@ export type UserUncheckedCreateWithoutRampSessionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -4218,6 +4309,7 @@ export type UserUpdateWithoutRampSessionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -4259,6 +4351,7 @@ export type UserUncheckedUpdateWithoutRampSessionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -4300,6 +4393,7 @@ export type UserCreateWithoutAuditEventsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -4341,6 +4435,7 @@ export type UserUncheckedCreateWithoutAuditEventsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -4398,6 +4493,7 @@ export type UserUpdateWithoutAuditEventsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -4439,6 +4535,7 @@ export type UserUncheckedUpdateWithoutAuditEventsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -4480,6 +4577,7 @@ export type UserCreateWithoutWalletCredentialsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -4521,6 +4619,7 @@ export type UserUncheckedCreateWithoutWalletCredentialsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -4578,6 +4677,7 @@ export type UserUpdateWithoutWalletCredentialsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -4619,6 +4719,7 @@ export type UserUncheckedUpdateWithoutWalletCredentialsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -4660,6 +4761,7 @@ export type UserCreateWithoutRootChangesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -4701,6 +4803,7 @@ export type UserUncheckedCreateWithoutRootChangesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -4758,6 +4861,7 @@ export type UserUpdateWithoutRootChangesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -4799,6 +4903,7 @@ export type UserUncheckedUpdateWithoutRootChangesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -4840,6 +4945,7 @@ export type UserCreateWithoutRecoveryConfigurationsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -4881,6 +4987,7 @@ export type UserUncheckedCreateWithoutRecoveryConfigurationsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -4938,6 +5045,7 @@ export type UserUpdateWithoutRecoveryConfigurationsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -4979,6 +5087,7 @@ export type UserUncheckedUpdateWithoutRecoveryConfigurationsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -5020,6 +5129,7 @@ export type UserCreateWithoutRecoveryAttemptsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -5061,6 +5171,7 @@ export type UserUncheckedCreateWithoutRecoveryAttemptsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -5118,6 +5229,7 @@ export type UserUpdateWithoutRecoveryAttemptsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -5159,6 +5271,7 @@ export type UserUncheckedUpdateWithoutRecoveryAttemptsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -5200,6 +5313,7 @@ export type UserCreateWithoutRecoveryTotpsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -5241,6 +5355,7 @@ export type UserUncheckedCreateWithoutRecoveryTotpsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -5298,6 +5413,7 @@ export type UserUpdateWithoutRecoveryTotpsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -5339,6 +5455,7 @@ export type UserUncheckedUpdateWithoutRecoveryTotpsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -5370,6 +5487,190 @@ export type UserUncheckedUpdateWithoutRecoveryTotpsInput = {
   deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
 }
 
+export type UserCreateWithoutEmailVerificationsInput = {
+  id: string
+  username?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
+  conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
+  ownedRecipients?: Prisma.RecipientCreateNestedManyWithoutOwnerInput
+  linkedRecipients?: Prisma.RecipientCreateNestedManyWithoutLinkedUserInput
+  intents?: Prisma.IntentCreateNestedManyWithoutUserInput
+  executions?: Prisma.ExecutionCreateNestedManyWithoutUserInput
+  rampSessions?: Prisma.RampSessionCreateNestedManyWithoutUserInput
+  auditEvents?: Prisma.AuditEventCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionCreateNestedManyWithoutUserInput
+  walletSetupSessions?: Prisma.WalletSetupSessionCreateNestedManyWithoutUserInput
+  transactionPin?: Prisma.TransactionPinSecurityCreateNestedOneWithoutUserInput
+  authorizationSessions?: Prisma.AuthorizationSessionCreateNestedManyWithoutUserInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationCreateNestedManyWithoutUserInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptCreateNestedManyWithoutUserInput
+  rootActionSessions?: Prisma.RootActionSessionCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialCreateNestedManyWithoutUserInput
+  rootChanges?: Prisma.RootChangeCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptCreateNestedManyWithoutUserInput
+  recoveryTotps?: Prisma.RecoveryTotpCreateNestedManyWithoutUserInput
+  channelActions?: Prisma.ChannelActionCreateNestedManyWithoutUserInput
+  channelPaymentStatuses?: Prisma.ChannelPaymentStatusCreateNestedManyWithoutUserInput
+  userNotifications?: Prisma.UserNotificationCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutEmailVerificationsInput = {
+  id: string
+  username?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  homeCountry?: string | null
+  homeCurrency?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
+  conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
+  ownedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutOwnerInput
+  linkedRecipients?: Prisma.RecipientUncheckedCreateNestedManyWithoutLinkedUserInput
+  intents?: Prisma.IntentUncheckedCreateNestedManyWithoutUserInput
+  executions?: Prisma.ExecutionUncheckedCreateNestedManyWithoutUserInput
+  rampSessions?: Prisma.RampSessionUncheckedCreateNestedManyWithoutUserInput
+  auditEvents?: Prisma.AuditEventUncheckedCreateNestedManyWithoutUserInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedCreateNestedManyWithoutUserInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedCreateNestedManyWithoutUserInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedCreateNestedManyWithoutUserInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUncheckedCreateNestedManyWithoutUserInput
+  transactionPin?: Prisma.TransactionPinSecurityUncheckedCreateNestedOneWithoutUserInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedCreateNestedManyWithoutUserInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedCreateNestedManyWithoutUserInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedCreateNestedManyWithoutUserInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedCreateNestedManyWithoutUserInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedCreateNestedManyWithoutUserInput
+  rootChanges?: Prisma.RootChangeUncheckedCreateNestedManyWithoutUserInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedCreateNestedManyWithoutUserInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedCreateNestedManyWithoutUserInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedCreateNestedManyWithoutUserInput
+  channelActions?: Prisma.ChannelActionUncheckedCreateNestedManyWithoutUserInput
+  channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedCreateNestedManyWithoutUserInput
+  userNotifications?: Prisma.UserNotificationUncheckedCreateNestedManyWithoutUserInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedCreateNestedManyWithoutUserInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedCreateNestedManyWithoutUserInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedCreateNestedManyWithoutUserInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutEmailVerificationsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutEmailVerificationsInput, Prisma.UserUncheckedCreateWithoutEmailVerificationsInput>
+}
+
+export type UserUpsertWithoutEmailVerificationsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutEmailVerificationsInput, Prisma.UserUncheckedUpdateWithoutEmailVerificationsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutEmailVerificationsInput, Prisma.UserUncheckedCreateWithoutEmailVerificationsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutEmailVerificationsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutEmailVerificationsInput, Prisma.UserUncheckedUpdateWithoutEmailVerificationsInput>
+}
+
+export type UserUpdateWithoutEmailVerificationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
+  conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
+  ownedRecipients?: Prisma.RecipientUpdateManyWithoutOwnerNestedInput
+  linkedRecipients?: Prisma.RecipientUpdateManyWithoutLinkedUserNestedInput
+  intents?: Prisma.IntentUpdateManyWithoutUserNestedInput
+  executions?: Prisma.ExecutionUpdateManyWithoutUserNestedInput
+  rampSessions?: Prisma.RampSessionUpdateManyWithoutUserNestedInput
+  auditEvents?: Prisma.AuditEventUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUpdateManyWithoutUserNestedInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUpdateManyWithoutUserNestedInput
+  transactionPin?: Prisma.TransactionPinSecurityUpdateOneWithoutUserNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUpdateManyWithoutUserNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUpdateManyWithoutUserNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUpdateManyWithoutUserNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUpdateManyWithoutUserNestedInput
+  rootChanges?: Prisma.RootChangeUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUpdateManyWithoutUserNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUpdateManyWithoutUserNestedInput
+  channelActions?: Prisma.ChannelActionUpdateManyWithoutUserNestedInput
+  channelPaymentStatuses?: Prisma.ChannelPaymentStatusUpdateManyWithoutUserNestedInput
+  userNotifications?: Prisma.UserNotificationUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutEmailVerificationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCountry?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  homeCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
+  conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
+  ownedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutOwnerNestedInput
+  linkedRecipients?: Prisma.RecipientUncheckedUpdateManyWithoutLinkedUserNestedInput
+  intents?: Prisma.IntentUncheckedUpdateManyWithoutUserNestedInput
+  executions?: Prisma.ExecutionUncheckedUpdateManyWithoutUserNestedInput
+  rampSessions?: Prisma.RampSessionUncheckedUpdateManyWithoutUserNestedInput
+  auditEvents?: Prisma.AuditEventUncheckedUpdateManyWithoutUserNestedInput
+  passkeyCredentials?: Prisma.PasskeyCredentialUncheckedUpdateManyWithoutUserNestedInput
+  passkeyChallenges?: Prisma.PasskeyChallengeUncheckedUpdateManyWithoutUserNestedInput
+  delegatedPermissions?: Prisma.DelegatedPermissionUncheckedUpdateManyWithoutUserNestedInput
+  walletSetupSessions?: Prisma.WalletSetupSessionUncheckedUpdateManyWithoutUserNestedInput
+  transactionPin?: Prisma.TransactionPinSecurityUncheckedUpdateOneWithoutUserNestedInput
+  authorizationSessions?: Prisma.AuthorizationSessionUncheckedUpdateManyWithoutUserNestedInput
+  paymentAuthorizations?: Prisma.PaymentAuthorizationUncheckedUpdateManyWithoutUserNestedInput
+  firmQuoteAttempts?: Prisma.FirmQuoteAttemptUncheckedUpdateManyWithoutUserNestedInput
+  rootActionSessions?: Prisma.RootActionSessionUncheckedUpdateManyWithoutUserNestedInput
+  walletCredentials?: Prisma.WalletCredentialUncheckedUpdateManyWithoutUserNestedInput
+  rootChanges?: Prisma.RootChangeUncheckedUpdateManyWithoutUserNestedInput
+  recoveryConfigurations?: Prisma.RecoveryConfigurationUncheckedUpdateManyWithoutUserNestedInput
+  recoveryAttempts?: Prisma.RecoveryAttemptUncheckedUpdateManyWithoutUserNestedInput
+  recoveryTotps?: Prisma.RecoveryTotpUncheckedUpdateManyWithoutUserNestedInput
+  channelActions?: Prisma.ChannelActionUncheckedUpdateManyWithoutUserNestedInput
+  channelPaymentStatuses?: Prisma.ChannelPaymentStatusUncheckedUpdateManyWithoutUserNestedInput
+  userNotifications?: Prisma.UserNotificationUncheckedUpdateManyWithoutUserNestedInput
+  walletDepositCheckpoints?: Prisma.WalletDepositCheckpointUncheckedUpdateManyWithoutUserNestedInput
+  walletFundingEvents?: Prisma.WalletFundingEventUncheckedUpdateManyWithoutUserNestedInput
+  attestationChallenges?: Prisma.DeviceAttestationChallengeUncheckedUpdateManyWithoutUserNestedInput
+  deviceAttestations?: Prisma.DeviceAttestationUncheckedUpdateManyWithoutUserNestedInput
+}
+
 export type UserCreateWithoutAttestationChallengesInput = {
   id: string
   username?: string | null
@@ -5380,6 +5681,7 @@ export type UserCreateWithoutAttestationChallengesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -5421,6 +5723,7 @@ export type UserUncheckedCreateWithoutAttestationChallengesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -5478,6 +5781,7 @@ export type UserUpdateWithoutAttestationChallengesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -5519,6 +5823,7 @@ export type UserUncheckedUpdateWithoutAttestationChallengesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -5560,6 +5865,7 @@ export type UserCreateWithoutDeviceAttestationsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -5601,6 +5907,7 @@ export type UserUncheckedCreateWithoutDeviceAttestationsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -5658,6 +5965,7 @@ export type UserUpdateWithoutDeviceAttestationsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -5699,6 +6007,7 @@ export type UserUncheckedUpdateWithoutDeviceAttestationsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -5740,6 +6049,7 @@ export type UserCreateWithoutChannelActionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -5781,6 +6091,7 @@ export type UserUncheckedCreateWithoutChannelActionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -5838,6 +6149,7 @@ export type UserUpdateWithoutChannelActionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -5879,6 +6191,7 @@ export type UserUncheckedUpdateWithoutChannelActionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -5920,6 +6233,7 @@ export type UserCreateWithoutChannelPaymentStatusesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -5961,6 +6275,7 @@ export type UserUncheckedCreateWithoutChannelPaymentStatusesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -6018,6 +6333,7 @@ export type UserUpdateWithoutChannelPaymentStatusesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -6059,6 +6375,7 @@ export type UserUncheckedUpdateWithoutChannelPaymentStatusesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -6100,6 +6417,7 @@ export type UserCreateWithoutUserNotificationsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -6141,6 +6459,7 @@ export type UserUncheckedCreateWithoutUserNotificationsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -6198,6 +6517,7 @@ export type UserUpdateWithoutUserNotificationsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -6239,6 +6559,7 @@ export type UserUncheckedUpdateWithoutUserNotificationsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -6280,6 +6601,7 @@ export type UserCreateWithoutWalletDepositCheckpointsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -6321,6 +6643,7 @@ export type UserUncheckedCreateWithoutWalletDepositCheckpointsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -6378,6 +6701,7 @@ export type UserUpdateWithoutWalletDepositCheckpointsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -6419,6 +6743,7 @@ export type UserUncheckedUpdateWithoutWalletDepositCheckpointsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -6460,6 +6785,7 @@ export type UserCreateWithoutWalletFundingEventsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationCreateNestedManyWithoutUserInput
@@ -6501,6 +6827,7 @@ export type UserUncheckedCreateWithoutWalletFundingEventsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   identities?: Prisma.IdentityUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   wallets?: Prisma.WalletUncheckedCreateNestedManyWithoutUserInput
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutUserInput
@@ -6558,6 +6885,7 @@ export type UserUpdateWithoutWalletFundingEventsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUpdateManyWithoutUserNestedInput
@@ -6599,6 +6927,7 @@ export type UserUncheckedUpdateWithoutWalletFundingEventsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   identities?: Prisma.IdentityUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   wallets?: Prisma.WalletUncheckedUpdateManyWithoutUserNestedInput
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutUserNestedInput
@@ -6637,6 +6966,7 @@ export type UserUncheckedUpdateWithoutWalletFundingEventsInput = {
 
 export type UserCountOutputType = {
   identities: number
+  emailVerifications: number
   sessions: number
   wallets: number
   conversations: number
@@ -6670,6 +7000,7 @@ export type UserCountOutputType = {
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   identities?: boolean | UserCountOutputTypeCountIdentitiesArgs
+  emailVerifications?: boolean | UserCountOutputTypeCountEmailVerificationsArgs
   sessions?: boolean | UserCountOutputTypeCountSessionsArgs
   wallets?: boolean | UserCountOutputTypeCountWalletsArgs
   conversations?: boolean | UserCountOutputTypeCountConversationsArgs
@@ -6716,6 +7047,13 @@ export type UserCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensi
  */
 export type UserCountOutputTypeCountIdentitiesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.IdentityWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountEmailVerificationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.EmailVerificationWhereInput
 }
 
 /**
@@ -6932,6 +7270,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   createdAt?: boolean
   updatedAt?: boolean
   identities?: boolean | Prisma.User$identitiesArgs<ExtArgs>
+  emailVerifications?: boolean | Prisma.User$emailVerificationsArgs<ExtArgs>
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
   wallets?: boolean | Prisma.User$walletsArgs<ExtArgs>
   conversations?: boolean | Prisma.User$conversationsArgs<ExtArgs>
@@ -7001,6 +7340,7 @@ export type UserSelectScalar = {
 export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "username" | "displayName" | "avatarUrl" | "homeCountry" | "homeCurrency" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   identities?: boolean | Prisma.User$identitiesArgs<ExtArgs>
+  emailVerifications?: boolean | Prisma.User$emailVerificationsArgs<ExtArgs>
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
   wallets?: boolean | Prisma.User$walletsArgs<ExtArgs>
   conversations?: boolean | Prisma.User$conversationsArgs<ExtArgs>
@@ -7040,6 +7380,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   name: "User"
   objects: {
     identities: Prisma.$IdentityPayload<ExtArgs>[]
+    emailVerifications: Prisma.$EmailVerificationPayload<ExtArgs>[]
     sessions: Prisma.$SessionPayload<ExtArgs>[]
     wallets: Prisma.$WalletPayload<ExtArgs>[]
     conversations: Prisma.$ConversationPayload<ExtArgs>[]
@@ -7481,6 +7822,7 @@ readonly fields: UserFieldRefs;
 export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   identities<T extends Prisma.User$identitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$identitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$IdentityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  emailVerifications<T extends Prisma.User$emailVerificationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$emailVerificationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmailVerificationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   sessions<T extends Prisma.User$sessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$sessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   wallets<T extends Prisma.User$walletsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$walletsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WalletPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   conversations<T extends Prisma.User$conversationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$conversationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ConversationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -7962,6 +8304,30 @@ export type User$identitiesArgs<ExtArgs extends runtime.Types.Extensions.Interna
   take?: number
   skip?: number
   distinct?: Prisma.IdentityScalarFieldEnum | Prisma.IdentityScalarFieldEnum[]
+}
+
+/**
+ * User.emailVerifications
+ */
+export type User$emailVerificationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the EmailVerification
+   */
+  select?: Prisma.EmailVerificationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the EmailVerification
+   */
+  omit?: Prisma.EmailVerificationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.EmailVerificationInclude<ExtArgs> | null
+  where?: Prisma.EmailVerificationWhereInput
+  orderBy?: Prisma.EmailVerificationOrderByWithRelationInput | Prisma.EmailVerificationOrderByWithRelationInput[]
+  cursor?: Prisma.EmailVerificationWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.EmailVerificationScalarFieldEnum | Prisma.EmailVerificationScalarFieldEnum[]
 }
 
 /**

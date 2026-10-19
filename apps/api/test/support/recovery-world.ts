@@ -202,6 +202,7 @@ export function createRecoveryWorld(
     recoveryConfigurations: recovery.repositories.recoveryConfigurations,
     recoveryAttempts: recovery.repositories.recoveryAttempts,
     recoveryEmailChallenges: recovery.repositories.recoveryEmailChallenges,
+    emailVerifications: recovery.repositories.emailVerifications,
     recoveryTotps: recovery.repositories.recoveryTotps,
     recoveryCleanup: recovery.repositories.recoveryCleanup,
     delegatedPermissions: wallet.repositories.delegatedPermissions,
@@ -302,6 +303,8 @@ export function createRecoveryWorld(
       delay?: number;
       /** Armed recovery normally has an authenticator app too; false builds a wallet that never set one up. */
       authenticator?: boolean;
+      /** A person who onboarded through chat and has not registered an email yet. */
+      noEmail?: boolean;
     } = {},
   ): Promise<TestUser> {
     counter += 1;
@@ -310,12 +313,14 @@ export function createRecoveryWorld(
     const email = input.email ?? `person${counter}.${unique.slice(0, 8)}@example.com`;
     const address = `0x${unique}${randomBytes(4).toString("hex")}`.toLowerCase();
     if (db) await db.users.create({ id: userId });
-    await repositories.identities.add({
-      id: randomUUID(),
-      userId,
-      type: "EMAIL",
-      externalId: email,
-    });
+    if (!input.noEmail) {
+      await repositories.identities.add({
+        id: randomUUID(),
+        userId,
+        type: "EMAIL",
+        externalId: email,
+      });
+    }
     if (input.telegram) {
       await repositories.identities.add({
         id: randomUUID(),

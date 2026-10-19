@@ -22,6 +22,7 @@ import { DEFAULT_RECOVERY_POLICY } from "../core/recovery/ports.js";
 import type { RecoveryPolicy, RecoveryUnitOfWork } from "../core/recovery/ports.js";
 import { RecoveryCleanup } from "../core/recovery/recovery-cleanup.js";
 import { RecoveryConfigurationService } from "../core/recovery/recovery-configuration.js";
+import { RecoveryEmailService } from "../core/recovery/recovery-email.js";
 import { RecoveryFinalizer } from "../core/recovery/recovery-finalizer.js";
 import { RecoveryFlowService } from "../core/recovery/recovery-flow.js";
 import { RecoveryTotpService } from "../core/recovery/recovery-totp.js";
@@ -36,6 +37,8 @@ export interface RecoveryRuntime {
   cleanup: RecoveryCleanup;
   finalizer: RecoveryFinalizer;
   configuration: RecoveryConfigurationService;
+  /** Registering and verifying the email a person recovers with. */
+  email: RecoveryEmailService;
 }
 
 import type { RateLimitFactory } from "../rate-limit/rate-limit.module.js";
@@ -124,6 +127,7 @@ export function createRecoveryRuntime(params: RecoveryRuntimeParams): RecoveryRu
       owner: `finalizer:${randomBytes(6).toString("hex")}`,
     }),
     configuration: new RecoveryConfigurationService(context),
+    email: new RecoveryEmailService(context),
   };
 }
 

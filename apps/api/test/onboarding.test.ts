@@ -229,7 +229,15 @@ describe("the chat follows the web setup by itself", () => {
     pinCreated(w.facts);
     await w.announcer().sweep();
     assert.match(w.adapter.last?.text ?? "", /recovery/i);
+    assert.match(w.adapter.last?.text ?? "", /email/i, "it says what recovery needs");
+    assert.match(w.adapter.last?.text ?? "", /authenticator/i);
     assert.doesNotMatch(w.adapter.last?.text ?? "", /all set/i);
+    // The step carries a secure button to the same setup page (an existing wallet), never a typed secret.
+    const open = (w.adapter.last?.actions ?? []).filter((a) => a.type === "OPEN_URL");
+    assert.deepEqual(
+      open.map((a) => a.label),
+      ["Secure my account"],
+    );
     w.facts.recoveryConfigured = true;
     await w.announcer().sweep();
     assert.match(w.adapter.last?.text ?? "", /You're all set ✅/);

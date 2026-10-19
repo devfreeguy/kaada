@@ -10,7 +10,6 @@ import {
   HttpException,
   HttpStatus,
   Inject,
-  Ip,
   Optional,
   Post,
   ServiceUnavailableException,
@@ -27,6 +26,7 @@ import { RATE_LIMIT_FACTORY } from "../rate-limit/rate-limit.tokens.js";
 import type { RateLimitFactory } from "../rate-limit/rate-limit.module.js";
 import { parseRootProof } from "../roots/root-proof.schema.js";
 import { ROOT_PAYMENT_SERVICE } from "./execution.tokens.js";
+import { ClientIp } from "../security/client-ip.js";
 
 const confirmBody = z.strictObject({
   operation: z.string().min(1).max(32_768),
@@ -103,7 +103,10 @@ export class RootPaymentController {
   @Post("options")
   @HttpCode(200)
   @Header("Cache-Control", "no-store")
-  async options(@Headers("authorization") authorization: string | undefined, @Ip() ip: string) {
+  async options(
+    @Headers("authorization") authorization: string | undefined,
+    @ClientIp() ip: string,
+  ) {
     const token = bearer(authorization);
     await this.limit(token, ip);
     const begun = await this.guarded(() => this.active().begin(token));
@@ -119,7 +122,7 @@ export class RootPaymentController {
   async confirm(
     @Body() body: unknown,
     @Headers("authorization") authorization: string | undefined,
-    @Ip() ip: string,
+    @ClientIp() ip: string,
   ) {
     const token = bearer(authorization);
     await this.limit(token, ip);

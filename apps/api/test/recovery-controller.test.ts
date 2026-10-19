@@ -1,3 +1,4 @@
+import { RecoveryEmailService } from "../src/core/recovery/recovery-email.js";
 import "reflect-metadata";
 
 import assert from "node:assert/strict";
@@ -28,6 +29,7 @@ function runtimeOf(world: RecoveryWorld): RecoveryRuntime {
     cleanup: world.cleanup,
     finalizer: world.finalizer(),
     configuration: world.configuration,
+    email: new RecoveryEmailService(world.context),
   };
 }
 

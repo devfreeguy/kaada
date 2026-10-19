@@ -135,7 +135,7 @@ describe("the web device key (source scan)", () => {
   });
 
   it("the setup page passes the opaque key only to signDevicePayload and saveDeviceKey, never into a request", () => {
-    const setup = code(join(root, "apps/web/app/setup/[token]/setup-flow.tsx"));
+    const setup = code(join(root, "apps/web/app/setup/[token]/use-setup.ts"));
     const uses = [...setup.matchAll(/privateKey/g)].length;
     // generate -> sign (1) -> save (1): the key object appears exactly in those three places.
     assert.ok(uses <= 3, String(uses));

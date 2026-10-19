@@ -30,6 +30,7 @@ import type {
   ClarificationChoiceRepository,
   ConversationRepository,
   ExecutionRepository,
+  EmailVerificationRepository,
   IdentityRepository,
   IntentRepository,
   MessageRepository,
@@ -72,6 +73,7 @@ import {
 import { createUserNotificationRepository } from "./user-notifications.js";
 import { createRootChangeRepository } from "./root-change.js";
 import { createExecutionTransactionRepository, createRootActionSessionRepository } from "./run.js";
+import { createEmailVerificationRepository } from "./email-verifications.js";
 import { createIdentityRepository, createUserRepository } from "./identity.js";
 import { createIntentRepository } from "./intents.js";
 import {
@@ -125,6 +127,7 @@ export interface Repositories {
   recoveryConfigurations: RecoveryConfigurationRepository;
   recoveryAttempts: RecoveryAttemptRepository;
   recoveryEmailChallenges: RecoveryEmailChallengeRepository;
+  emailVerifications: EmailVerificationRepository;
   recoveryTotps: RecoveryTotpRepository;
   recoveryCleanup: RecoveryCleanupRepository;
 }
@@ -166,6 +169,7 @@ function buildRepositories(db: Db): Repositories {
     recoveryConfigurations: createRecoveryConfigurationRepository(db),
     recoveryAttempts: createRecoveryAttemptRepository(db),
     recoveryEmailChallenges: createRecoveryEmailChallengeRepository(db),
+    emailVerifications: createEmailVerificationRepository(db),
     recoveryTotps: createRecoveryTotpRepository(db),
     recoveryCleanup: createRecoveryCleanupRepository(db),
   };

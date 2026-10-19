@@ -71,6 +71,11 @@ const envShape = {
   // ── agent and pricing ──
   AGENT_INTERPRETER: z.enum(["none", "mock", "groq"]).default("none"),
   GROQ_API_KEY: optionalSecret,
+  // Shared with the web app's proxy so the API can tell visitors apart (see apps/api/src/security/client-ip.ts). Optional, 32+ characters.
+  PROXY_SHARED_SECRET: optionalSecret.refine(
+    (value) => value === undefined || value.length >= 32,
+    "PROXY_SHARED_SECRET must be at least 32 characters",
+  ),
   FX_PROVIDER: z.enum(["none", "mock", "textile"]).default("none"),
   // Kaada uses Textile's LIVE environment only (Celo exists nowhere else). The test key is for the sandbox smoke script.
   TEXTILE_LIVE_API_KEY: optionalSecret,

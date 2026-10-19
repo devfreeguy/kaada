@@ -85,6 +85,7 @@ export const ModelName = {
   RecoveryConfiguration: 'RecoveryConfiguration',
   RecoveryAttempt: 'RecoveryAttempt',
   RecoveryTotp: 'RecoveryTotp',
+  EmailVerification: 'EmailVerification',
   RecoveryEmailChallenge: 'RecoveryEmailChallenge',
   DeviceAttestationChallenge: 'DeviceAttestationChallenge',
   DeviceAttestation: 'DeviceAttestation',
@@ -807,6 +808,21 @@ export const RecoveryTotpScalarFieldEnum = {
 } as const
 
 export type RecoveryTotpScalarFieldEnum = (typeof RecoveryTotpScalarFieldEnum)[keyof typeof RecoveryTotpScalarFieldEnum]
+
+
+export const EmailVerificationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  email: 'email',
+  codeHash: 'codeHash',
+  expiresAt: 'expiresAt',
+  attempts: 'attempts',
+  maxAttempts: 'maxAttempts',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type EmailVerificationScalarFieldEnum = (typeof EmailVerificationScalarFieldEnum)[keyof typeof EmailVerificationScalarFieldEnum]
 
 
 export const RecoveryEmailChallengeScalarFieldEnum = {

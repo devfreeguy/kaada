@@ -348,16 +348,17 @@ model User {
   createdAt    DateTime @default(now()) @db.Timestamptz(3)
   updatedAt    DateTime @updatedAt @db.Timestamptz(3)
 
-  identities       Identity[]
-  sessions         Session[]
-  wallets          Wallet[]
-  conversations    Conversation[]
-  ownedRecipients  Recipient[]    @relation("RecipientOwner")
-  linkedRecipients Recipient[]    @relation("RecipientLinkedUser")
-  intents          Intent[]
-  executions       Execution[]
-  rampSessions     RampSession[]
-  auditEvents      AuditEvent[]
+  identities         Identity[]
+  emailVerifications EmailVerification[]
+  sessions           Session[]
+  wallets            Wallet[]
+  conversations      Conversation[]
+  ownedRecipients    Recipient[]         @relation("RecipientOwner")
+  linkedRecipients   Recipient[]         @relation("RecipientLinkedUser")
+  intents            Intent[]
+  executions         Execution[]
+  rampSessions       RampSession[]
+  auditEvents        AuditEvent[]
 
   passkeyCredentials   PasskeyCredential[]
   passkeyChallenges    PasskeyChallenge[]
@@ -1376,6 +1377,23 @@ model RecoveryTotp {
   wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Restrict)
 
   @@index([walletId, status])
+}
+
+/// A pending proof that a person controls the email address they will use for account recovery. Only a keyed hash of the code is stored.
+model EmailVerification {
+  id          String    @id @db.Uuid
+  userId      String    @db.Uuid
+  email       String
+  codeHash    String    @db.Char(64)
+  expiresAt   DateTime  @db.Timestamptz(3)
+  attempts    Int       @default(0)
+  maxAttempts Int
+  usedAt      DateTime? @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 
 /// A short-lived email challenge for one recovery attempt. Only a keyed hash of the code is stored.

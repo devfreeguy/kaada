@@ -44,6 +44,8 @@ const webSources = [
   ...files(dir("apps/web/app/authorize")),
   join(dir("apps/web/app/components"), "pin-keypad.tsx"),
   join(dir("apps/web/app/setup/[token]"), "pin-setup.tsx"),
+  join(dir("apps/web/app/setup/[token]"), "use-pin-setup.ts"),
+  join(dir("apps/web/app/lib"), "api.ts"),
 ];
 
 describe("PIN and authorization security review (source scan)", () => {
@@ -170,13 +172,27 @@ describe("PIN and authorization security review (source scan)", () => {
       assert.equal(/console\./.test(text), false, path);
       assert.equal(/\?[a-z]+=|[?&]pin=/i.test(text), false, path);
     }
-    const flow = code(join(dir("apps/web/app/authorize/[token]"), "authorize-flow.tsx"));
+    // The page's logic lives in its controller hook and the one request helper: the rules apply to all three together.
+    const flow = [
+      code(join(dir("apps/web/app/authorize/[token]"), "authorize-flow.tsx")),
+      code(join(dir("apps/web/app/authorize/[token]"), "use-authorization.ts")),
+      code(join(dir("apps/web/app/lib"), "api.ts")),
+    ].join("\n");
     assert.equal(
       /Authorization: `Bearer \$\{token\}`/.test(flow),
       true,
       "the token goes in a header",
     );
-    assert.equal(/body: JSON\.stringify\(\{ pin: attempt \}\)/.test(flow), true);
+    assert.equal(
+      /body: \{ pin: attempt \}/.test(flow),
+      true,
+      "the PIN is only ever the body of one POST",
+    );
+    assert.equal(
+      /JSON\.stringify\(init\.body\)/.test(flow),
+      true,
+      "and is sent as a JSON body, never a URL",
+    );
     assert.equal(/setPin\(""\)/.test(flow), true, "the digits are cleared before the request");
     assert.equal(/cache: "no-store"/.test(flow), true);
     // Success is shown only after the server confirms the authorization: the one place that decides is `interpret`, which says

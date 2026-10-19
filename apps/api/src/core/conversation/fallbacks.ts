@@ -179,9 +179,15 @@ export function fallbackParts(
         body: "Now set up your 6-digit PIN. You'll use it to approve payments without having to confirm with your root credential every time.",
       };
     case "ONBOARDING_RECOVERY_NEEDED":
+      if (facts.context === "RESUMING" || facts.context === "CHECK_IN") {
+        return {
+          acknowledgement: "Your wallet and PIN are ready 👍",
+          body: "Recovery is the one step left: add your email, link an authenticator app and save a Recovery Code, so you can always get back into your wallet if you lose your device.",
+        };
+      }
       return {
         acknowledgement: "Your PIN is set 👍",
-        body: "One last step: set up recovery, so you can get back into your wallet if you ever lose your device.",
+        body: "One last step: set up recovery. You'll add your email, link an authenticator app and save a Recovery Code, so you can always get back into your wallet if you lose your device. It takes a few minutes on the secure page.",
       };
     case "ONBOARDING_COMPLETE":
       return {

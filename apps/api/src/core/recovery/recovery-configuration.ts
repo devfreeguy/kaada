@@ -26,19 +26,24 @@ export class RecoveryConfigurationService {
   constructor(private readonly ctx: RecoveryContext) {}
 
   /** Which account and chain a new Recovery Code must be derived for (the code is bound to both). Public data only. */
-  async describe(
-    userId: string,
-  ): Promise<{ account: string; chainId: number; authenticatorEnrolled: boolean }> {
+  async describe(userId: string): Promise<{
+    account: string;
+    chainId: number;
+    authenticatorEnrolled: boolean;
+    emailRegistered: boolean;
+  }> {
     const wallet = await this.walletOf(userId);
     return {
       account: wallet.address,
       chainId: this.ctx.chain.chainId,
       authenticatorEnrolled: await this.ctx.totp.isEnrolled(wallet.id),
+      emailRegistered: await this.hasEmail(userId),
     };
   }
 
   /** Starts the authenticator-app setup: the secret is returned ONCE here and kept only encrypted. */
   async beginAuthenticator(userId: string): Promise<TotpEnrolment> {
+    await this.requireEmail(userId);
     const wallet = await this.walletOf(userId);
     return this.ctx.totp.begin({
       userId,
@@ -63,6 +68,7 @@ export class RecoveryConfigurationService {
     if (typeof address !== "string" || !ADDRESS.test(address) || ZERO.test(address)) {
       throw new KaadaError("RECOVERY_REJECTED", "the recovery verifier is not a valid address");
     }
+    await this.requireEmail(input.userId);
     const delaySeconds = input.delaySeconds ?? this.ctx.policy.defaultDelaySeconds;
     if (!Number.isInteger(delaySeconds) || delaySeconds < this.ctx.policy.minDelaySeconds) {
       throw new KaadaError("RECOVERY_REJECTED", "the recovery delay is below the minimum");
@@ -269,6 +275,21 @@ export class RecoveryConfigurationService {
   async current(userId: string): Promise<RecoveryConfiguration | null> {
     const wallet = await this.walletOf(userId);
     return this.ctx.uow.read.recoveryConfigurations.findActive(wallet.id);
+  }
+
+  private async hasEmail(userId: string): Promise<boolean> {
+    const identities = await this.ctx.uow.read.identities.listForUser(userId);
+    return identities.some((identity) => identity.type === "EMAIL");
+  }
+
+  /** Recovery starts from an email, so a Recovery Code for an account with none would protect nothing. */
+  private async requireEmail(userId: string): Promise<void> {
+    if (!(await this.hasEmail(userId))) {
+      throw new KaadaError(
+        "RECOVERY_REJECTED",
+        "add and verify your recovery email before setting up recovery",
+      );
+    }
   }
 
   /** The label shown in the authenticator app: the registered email, else a plain name. */

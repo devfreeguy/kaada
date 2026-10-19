@@ -58,11 +58,11 @@ export const SETTINGS = {
   },
 
   /**
-   * What counts as "set up". A wallet and a PIN are always required. Recovery is encouraged but NOT required today (a person with
-   * a wallet and a PIN can already pay), so onboarding does not wait for it. Flip this to make it a required step: the chat then
-   * walks people through it before telling them they are all set.
+   * What counts as "set up": a wallet, a PIN, and recovery (a verified email, an authenticator app and a Recovery Code). Kaada is
+   * non-custodial, so nobody can recover a lost device for a person who never set this up: it is required before onboarding is
+   * complete. It only applies where this deployment has recovery enabled (see the onboarding state reader).
    */
-  onboarding: { requireRecovery: false },
+  onboarding: { requireRecovery: true },
 
   /** Deposit detection. Polling, at the application level (one pass for every wallet, never one timer per chat). */
   funding: {

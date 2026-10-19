@@ -40,7 +40,7 @@ import type { WalletRepositories, WalletUnitOfWork } from "./ports.js";
 import type { WalletService } from "./wallet-service.js";
 
 /** A setup link is good for this long: enough to open a link and touch an authenticator. */
-export const SETUP_SESSION_TTL_MS = 15 * 60 * 1000;
+export const SETUP_SESSION_TTL_MS = 30 * 60 * 1000;
 
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 

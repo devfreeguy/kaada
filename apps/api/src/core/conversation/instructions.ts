@@ -208,10 +208,10 @@ export const STATE_INSTRUCTIONS: Partial<Record<ResponseState, StateInstruction>
   },
   ONBOARDING_RECOVERY_NEEDED: {
     situation:
-      "The wallet and the PIN are set up (trusted). One security step remains: recovery, so the person can get back into the wallet if they lose their device.",
+      "The wallet and the PIN are set up (trusted). One security step remains: recovery (adding their email, linking an authenticator app and saving a Recovery Code), so the person can always get back into the wallet if they lose their device. Nobody, including Kaada, can recover a wallet for someone who skipped it. The application attaches the secure button.",
     objective:
-      "Confirm the PIN is set in a few words and say the last step is setting up recovery.",
-    next: "Finish recovery setup.",
+      "Confirm the PIN is set in a few words and say the last step is setting up recovery, naming the three parts (email, authenticator app, Recovery Code).",
+    next: "Tap the button to set up recovery on the secure page.",
     rules: [
       "Do not claim onboarding is complete; recovery is still needed.",
       "Never ask for a PIN or a recovery code here.",

@@ -228,6 +228,11 @@ export type RecoveryAttempt = Prisma.RecoveryAttemptModel
  */
 export type RecoveryTotp = Prisma.RecoveryTotpModel
 /**
+ * Model EmailVerification
+ * A pending proof that a person controls the email address they will use for account recovery. Only a keyed hash of the code is stored.
+ */
+export type EmailVerification = Prisma.EmailVerificationModel
+/**
  * Model RecoveryEmailChallenge
  * A short-lived email challenge for one recovery attempt. Only a keyed hash of the code is stored.
  */

@@ -1,3 +1,4 @@
+import { createOnboardingStateReader } from "../core/onboarding/facts-reader.js";
 import { Logger, Module } from "@nestjs/common";
 import { createRepositories } from "@kaada/database";
 import type { Database, Repositories } from "@kaada/database";
@@ -139,26 +140,13 @@ function nestLog(): AgentLog {
         config: AppConfig,
       ): OnboardingLifecycleService | null => {
         if (!telegram) return null;
-        const reader: OnboardingStateReader = {
-          async read(userId) {
-            const wallet = await repositories.wallets.findEmbedded(userId, CELO_CHAIN_ID);
-            const walletReady = wallet?.status === "ACTIVE" && wallet.address !== undefined;
-            const pinConfigured =
-              (await repositories.transactionPins.findByUserId(userId)) !== null;
-            // Recovery only applies where this deployment has it; and only a wallet can have it armed.
-            const recoveryConfigured = !config.recovery.enabled
-              ? null
-              : wallet
-                ? (await repositories.recoveryConfigurations.findActive(wallet.id)) !== null
-                : false;
-            return {
-              walletReady,
-              ...(walletReady && wallet?.address && { walletAddress: wallet.address }),
-              pinConfigured,
-              recoveryConfigured,
-            };
-          },
-        };
+        const reader: OnboardingStateReader = createOnboardingStateReader({
+          wallets: repositories.wallets,
+          transactionPins: repositories.transactionPins,
+          identities: repositories.identities,
+          recoveryConfigurations: repositories.recoveryConfigurations,
+          recoveryEnabled: config.recovery.enabled,
+        });
         return new OnboardingLifecycleService({
           notifications: repositories.userNotifications,
           state: reader,

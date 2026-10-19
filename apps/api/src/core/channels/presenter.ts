@@ -16,7 +16,7 @@ export interface PresentedMessage {
   /** Offer a Cancel button (something is in progress that can be dropped). */
   cancellable?: boolean;
   /** A secure page to open (the setup page, or the PIN step), issued by the channel service when it composes the message. */
-  link?: { kind: "WALLET_SETUP" | "PIN_SETUP"; label: string };
+  link?: { kind: "WALLET_SETUP" | "PIN_SETUP" | "RECOVERY_SETUP"; label: string };
   /** Address-like text to show monospace, and a copy button for it (see OutboundChannelMessage.code and COPY_TEXT). */
   code?: string[];
   copy?: { label: string; text: string }[];

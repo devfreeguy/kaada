@@ -4,6 +4,8 @@ import { canTransitionRecovery, isRecoveryAttemptActive } from "@kaada/domain";
 import { createMemoryWalletCredentials } from "./credential-memory.js";
 import type {
   EmailChallengeReservation,
+  EmailVerification,
+  EmailVerificationRepository,
   Identity,
   IdentityRepository,
   RecoveryAttempt,
@@ -50,6 +52,7 @@ export interface RecoveryStores {
     recoveryConfigurations: RecoveryConfigurationRepository;
     recoveryAttempts: RecoveryAttemptRepository;
     recoveryEmailChallenges: RecoveryEmailChallengeRepository;
+    emailVerifications: EmailVerificationRepository;
     recoveryTotps: RecoveryTotpRepository;
     recoveryCleanup: RecoveryCleanupRepository;
   };
@@ -342,6 +345,41 @@ export function createRecoveryStores(now: () => Date): RecoveryStores {
     },
   };
 
+  const verifications: EmailVerification[] = [];
+  const emailVerifications: EmailVerificationRepository = {
+    create: (input) => {
+      const verification: EmailVerification = { ...input, attempts: 0, createdAt: now() };
+      verifications.push(verification);
+      return Promise.resolve(copy(verification));
+    },
+    findLatest: (userId) =>
+      Promise.resolve(copyOrNull([...verifications].reverse().find((v) => v.userId === userId))),
+    countSince: (userId, since) =>
+      Promise.resolve(
+        verifications.filter((v) => v.userId === userId && v.createdAt.getTime() >= since.getTime())
+          .length,
+      ),
+    reserveAttempt: (id, at) => {
+      const found = verifications.find((v) => v.id === id);
+      if (!found) return Promise.resolve({ state: "NONE" as const });
+      if (
+        !found.usedAt &&
+        found.expiresAt.getTime() > at.getTime() &&
+        found.attempts < found.maxAttempts
+      ) {
+        found.attempts += 1;
+        return Promise.resolve({ state: "ADMITTED" as const, verification: copy(found) });
+      }
+      return Promise.resolve({ state: "CLOSED" as const });
+    },
+    markUsed: (id, at) => {
+      const found = verifications.find((v) => v.id === id && !v.usedAt);
+      if (!found) return Promise.resolve(false);
+      found.usedAt = at;
+      return Promise.resolve(true);
+    },
+  };
+
   const recoveryEmailChallenges: RecoveryEmailChallengeRepository = {
     create: (input) => {
       const challenge: RecoveryEmailChallenge = { ...input, attempts: 0, createdAt: now() };
@@ -500,6 +538,7 @@ export function createRecoveryStores(now: () => Date): RecoveryStores {
       recoveryConfigurations,
       recoveryAttempts,
       recoveryEmailChallenges,
+      emailVerifications,
       recoveryTotps,
       recoveryCleanup,
     },

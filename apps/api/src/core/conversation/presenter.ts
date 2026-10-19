@@ -192,7 +192,12 @@ export class ConversationPresenter {
               kind: "PIN_SETUP",
               label: input.context === "RESUMING" ? "Continue setup" : "Set up PIN",
             }
-          : undefined;
+          : state === "ONBOARDING_RECOVERY_NEEDED"
+            ? {
+                kind: "RECOVERY_SETUP",
+                label: input.context === "RESUMING" ? "Continue setup" : "Secure my account",
+              }
+            : undefined;
 
     const phrased =
       STATE_MODE[state] === "DETERMINISTIC" || input.instant === true

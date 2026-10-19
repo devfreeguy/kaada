@@ -1,6 +1,7 @@
 import type {
   AuditRepository,
   DelegatedPermissionRepository,
+  EmailVerificationRepository,
   ExecutionSecretRepository,
   IdentityRepository,
   PasskeyRepository,
@@ -24,6 +25,7 @@ export interface RecoveryRepositories {
   recoveryConfigurations: RecoveryConfigurationRepository;
   recoveryAttempts: RecoveryAttemptRepository;
   recoveryEmailChallenges: RecoveryEmailChallengeRepository;
+  emailVerifications: EmailVerificationRepository;
   recoveryTotps: RecoveryTotpRepository;
   recoveryCleanup: RecoveryCleanupRepository;
   delegatedPermissions: DelegatedPermissionRepository;

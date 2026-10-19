@@ -47,8 +47,16 @@ Payments that need a conversion (a swap through Textile) still use the older flo
 permission. Moving them to a single passkey confirmation means batching approve, swap and payout into one root-signed operation. Do this
 after the direct-transfer path has run on real devices.
 
+## A second way to confirm payments on the same wallet
+
+A wallet has ONE active root (a passkey or a device key). If a passkey stops working (a broken fingerprint sensor, a lost phone), the person
+regains access through account recovery (`/recovery`), and the payment page says so. Letting a wallet with a passkey AND a backup device key
+choose either at payment time needs the payment path to sign with any active backup root, not only the recorded one
+(`RootCredentialService.activeRoot`, `RootPaymentService`, `RootActionService`). Backups can already be added on `/security/<token>`.
+
 ## Other
 
 - Invite flow for people who are not on Kaada yet (a `@username` with no account).
+- Changing the recovery email after it was set (needs its own flow with a root proof; see `docs/onboarding.md`).
 - Index on `Identity.username` if the table grows large (lookups are case-insensitive).
 - Persistent Docker logs on the API host (journald), so logs survive a redeploy.

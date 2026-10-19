@@ -93,7 +93,7 @@ describe("GET /api/v1/stats/public", () => {
     const app = await boot(() => Promise.resolve([GROUP]));
     try {
       const codes: number[] = [];
-      for (let i = 0; i < 65; i += 1) {
+      for (let i = 0; i < 305; i += 1) {
         const response = await app.inject({ method: "GET", url: "/api/v1/stats/public" });
         codes.push(response.statusCode);
       }

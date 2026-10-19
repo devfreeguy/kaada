@@ -10,7 +10,6 @@ import {
   HttpException,
   HttpStatus,
   Inject,
-  Ip,
   NotFoundException,
   Post,
   ServiceUnavailableException,
@@ -33,6 +32,7 @@ import {
   AUTHORIZATION_SESSION_SERVICE,
   PAYMENT_AUTHORIZATION_SERVICE,
 } from "./authorization.tokens.js";
+import { ClientIp } from "../security/client-ip.js";
 
 const authorizeBody = z.strictObject({ pin: z.string().max(16) });
 const devLinkBody = z.strictObject({ sessionId: z.uuid(), userId: z.uuid() });
@@ -110,7 +110,7 @@ export class AuthorizationController {
   @Header("Cache-Control", "no-store")
   async authorize(
     @Body() body: unknown,
-    @Ip() ip: string,
+    @ClientIp() ip: string,
     @Headers("authorization") authorization?: string,
   ) {
     if (!this.payments) throw new ServiceUnavailableException("authorization is not enabled");

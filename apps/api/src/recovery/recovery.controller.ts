@@ -10,7 +10,6 @@ import {
   HttpException,
   HttpStatus,
   Inject,
-  Ip,
   Post,
   ServiceUnavailableException,
   UnauthorizedException,
@@ -28,6 +27,7 @@ import {
   attestationEvidenceSchema,
   challengeView,
 } from "../attestation/attestation.schema.js";
+import { ClientIp } from "../security/client-ip.js";
 
 const hex = (bytes: number) => z.string().regex(new RegExp(`^[0-9a-f]{${bytes * 2}}$`));
 const startBody = z.strictObject({ email: z.string().max(254) });
@@ -56,6 +56,8 @@ const proofBody = z.strictObject({
   authenticatorCode: z.string().regex(/^[0-9]{6}$/),
 });
 const authenticatorConfirmBody = z.strictObject({ code: z.string().regex(/^[0-9]{6}$/) });
+const emailBeginBody = z.strictObject({ email: z.string().max(254) });
+const emailConfirmBody = z.strictObject({ code: z.string().max(12) });
 /** A passkey assertion (an object) or a device signature (a hex string): validated by the chain adapter. */
 const materialBody = z.strictObject({
   material: z.union([
@@ -153,7 +155,7 @@ export class RecoveryController {
   @Post("start")
   @HttpCode(202)
   @Header("Cache-Control", "no-store")
-  async start(@Body() body: unknown, @Ip() ip: string) {
+  async start(@Body() body: unknown, @ClientIp() ip: string) {
     const parsed = startBody.safeParse(body);
     if (!parsed.success) throw new BadRequestException("enter a valid email address");
     try {
@@ -398,6 +400,53 @@ export class RecoveryController {
       return await this.services().configuration.describe(
         await this.identify(bearer(authorization)),
       );
+    } catch (error) {
+      return httpError(error);
+    }
+  }
+
+  /** Whether the person has a verified recovery email (masked), so the page shows the right step. */
+  @Get("configuration/email")
+  @Header("Cache-Control", "no-store")
+  async emailStatus(@Headers("authorization") authorization?: string) {
+    try {
+      return await this.services().email.status(await this.identify(bearer(authorization)));
+    } catch (error) {
+      return httpError(error);
+    }
+  }
+
+  /** Sends a 6-digit code to the address. The answer is the same whether or not the address is free. */
+  @Post("configuration/email/begin")
+  @HttpCode(202)
+  @Header("Cache-Control", "no-store")
+  async emailBegin(@Body() body: unknown, @Headers("authorization") authorization?: string) {
+    const parsed = emailBeginBody.safeParse(body);
+    if (!parsed.success) throw new BadRequestException("enter a valid email address");
+    try {
+      await this.services().email.begin(
+        await this.identify(bearer(authorization)),
+        parsed.data.email,
+      );
+      return { status: "SENT" };
+    } catch (error) {
+      return httpError(error);
+    }
+  }
+
+  /** The address becomes the person's recovery email only when the right code is entered. */
+  @Post("configuration/email/confirm")
+  @HttpCode(200)
+  @Header("Cache-Control", "no-store")
+  async emailConfirm(@Body() body: unknown, @Headers("authorization") authorization?: string) {
+    const parsed = emailConfirmBody.safeParse(body);
+    if (!parsed.success) throw new BadRequestException("enter the 6-digit code from your email");
+    try {
+      const done = await this.services().email.confirm(
+        await this.identify(bearer(authorization)),
+        parsed.data.code,
+      );
+      return { status: "VERIFIED", masked: done.masked };
     } catch (error) {
       return httpError(error);
     }

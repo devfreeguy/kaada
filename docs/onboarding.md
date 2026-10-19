@@ -32,9 +32,15 @@ words is a fresh read of this state.
 | `RECOVERY` | wallet and PIN done, recovery required and not yet armed |
 | `COMPLETE` | everything required is done: the person can use Kaada    |
 
-Recovery is **encouraged, not required** today (a person with a wallet and a PIN can already pay), so `COMPLETE` does not wait for
-it. `SETTINGS.onboarding.requireRecovery` in `packages/config/src/settings.ts` makes it a required step; the chat then walks people
-to it before saying they are all set. The step has no secure-link button yet (see Known limits).
+Recovery is **required**: `SETTINGS.onboarding.requireRecovery` is `true` in `packages/config/src/settings.ts`, so `COMPLETE` waits for it
+and the chat walks people to it before saying they are all set. Kaada is non-custodial: nobody, Kaada included, can restore the wallet
+of a person who never set it up. It applies wherever `RECOVERY_ENABLED=true`; a deployment without recovery skips the step.
+
+"Recovery is set up" means a recovery could really start (`core/onboarding/facts-reader.ts`): a **verified email** (recovery starts from
+it) AND an **armed Recovery Code** (with the authenticator app it needs). Either alone protects nothing, so neither counts alone. The
+step has a secure button, **Secure my account**, that opens the setup page for the existing wallet; its last screen walks through, in
+order: the PIN, the recovery email (a 6-digit code to the address), the authenticator app, and the Recovery Code. People who were
+already set up before this was required are asked the same way on their next message.
 
 ## The notification outbox
 
@@ -104,8 +110,8 @@ There is no QR code or open-wallet action yet because the web experience has non
 
 - **Linking an existing web user to Telegram** is still not built: a Telegram account starts as its own user, so onboarding
   awareness covers people who start in chat. Someone who set up on the web first will not be linked.
-- **Recovery as a required step** has no button (the recovery page needs its own token issuance, not wired to chat). With the
-  default policy this step is never reached.
+- **Changing the recovery email** is not offered on the setup page: whoever holds a setup link could otherwise redirect recovery. A
+  change needs its own, stronger flow (not built).
 - **Progress polling** runs every 4 s from the existing channel timer, so "real time" means a few seconds. An instant push from the
   setup page (an endpoint that triggers a pass) is a possible refinement; the outbox makes it safe to add.
 - The webhook-less tunnel and Telegram's HTTPS-only buttons still apply (see docs/channels.md): over a plain `http://localhost` web

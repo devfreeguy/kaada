@@ -76,12 +76,13 @@ weakened by SHA-1's collision weakness). Verified in `apps/api/src/core/recovery
 
 Shown during setup, before the Recovery Code is confirmed, and on the recovery start page:
 
-> To recover your Kaada wallet, you'll need both:
+> To recover your Kaada wallet, you'll need all three:
 >
+> - your recovery email
 > - your Recovery Code
 > - access to your authenticator app
 >
-> If you lose both recovery methods, Kaada cannot restore your wallet.
+> If you lose your Recovery Code or your authenticator app, Kaada cannot restore your wallet.
 
 ## HTTP flow (`/api/v1/recovery`)
 
@@ -235,3 +236,22 @@ RECOVERY_EMAIL_FROM=Kaada Security <security@kaada.xyz>
   forced for it as well.
 - Key files (`RECOVERY_RELAYER_KEY_FILE=/run/secrets/recovery-relayer.key`, `PLATFORM_WALLET_KEY_FILE=/run/secrets/platform-agent.key`)
   must each hold exactly one `0x`-prefixed 32-byte hex key and are never committed.
+
+## Registering the recovery email (`RecoveryEmailService`)
+
+Recovery starts from an email (`RecoveryFlow.start` looks the address up as an `EMAIL` identity), so a person with no verified address cannot
+recover at all. The setup page and the security page therefore begin recovery setup with the email, using the same bearer token as the
+other `configuration/*` calls:
+
+| Call                                           | Does                                                                                                                  |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `GET  /recovery/configuration/email`           | `{ registered, masked? }` ("j***@gmail.com").                                                                         |
+| `POST /recovery/configuration/email/begin`     | Sends a 6-digit code to the address. 202 whether or not the address is free (no account oracle).                      |
+| `POST /recovery/configuration/email/confirm`   | The right code makes the address the person's `EMAIL` identity. 5 guesses, 10 minutes, single use.                    |
+
+- The code is stored only as a keyed HMAC-SHA-256 (`EmailVerification` table), bound to the verification, never in clear or in a log.
+- An address owned by another account is never registered and nothing is sent to it; the response is identical.
+- At most 5 codes an hour per person and one a minute. A person with an address cannot change it here (a setup link would otherwise be
+  enough to redirect recovery).
+- The authenticator app and the Recovery Code are refused (`RECOVERY_REJECTED`) until an email is verified, so a Recovery Code can never be
+  armed for an account that could not start a recovery.

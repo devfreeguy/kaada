@@ -5,7 +5,6 @@ import {
   HttpStatus,
   Header,
   Inject,
-  Ip,
   Logger,
   Optional,
   ServiceUnavailableException,
@@ -18,6 +17,7 @@ import { errorText } from "../logging/error-text.js";
 import { RATE_LIMIT_FACTORY } from "../rate-limit/rate-limit.tokens.js";
 import type { RateLimitFactory } from "../rate-limit/rate-limit.module.js";
 import { PUBLIC_STATS_SERVICE } from "./stats.tokens.js";
+import { ClientIp } from "../security/client-ip.js";
 
 /**
  * The one PUBLIC, unauthenticated read: totals for the marketing page. It returns aggregates only (see PublicStatsService), takes no
@@ -33,12 +33,12 @@ export class StatsController {
     @Optional() @Inject(RATE_LIMIT_FACTORY) limits?: RateLimitFactory,
   ) {
     const make = limits ?? ((_name, limit, windowMs) => new RateLimiter(limit, windowMs));
-    this.perAddress = make("public-stats:address", 60, 60_000);
+    this.perAddress = make("public-stats:address", 300, 60_000);
   }
 
   @Get("public")
   @Header("Cache-Control", "public, max-age=300, s-maxage=300, stale-while-revalidate=600")
-  async publicStats(@Ip() ip: string): Promise<PublicStats> {
+  async publicStats(@ClientIp() ip: string): Promise<PublicStats> {
     if (!(await this.perAddress.allow(ip || "unknown"))) {
       throw new HttpException("too many requests", HttpStatus.TOO_MANY_REQUESTS);
     }

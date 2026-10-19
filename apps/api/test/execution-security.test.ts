@@ -69,6 +69,7 @@ describe("execution security review (source scan)", () => {
       "device-key.ts",
       // The setup page hands that opaque key to the two functions above and to nothing else (checked there too).
       "setup-flow.tsx",
+      "use-setup.ts",
       // Hands the opaque new key to `saveDeviceKey` and `signDevicePayload` and nothing else (scanned in recovery-security.test.ts).
       "new-root.ts",
     ]);

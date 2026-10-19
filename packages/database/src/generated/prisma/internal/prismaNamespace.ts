@@ -431,6 +431,7 @@ export const ModelName = {
   RecoveryConfiguration: 'RecoveryConfiguration',
   RecoveryAttempt: 'RecoveryAttempt',
   RecoveryTotp: 'RecoveryTotp',
+  EmailVerification: 'EmailVerification',
   RecoveryEmailChallenge: 'RecoveryEmailChallenge',
   DeviceAttestationChallenge: 'DeviceAttestationChallenge',
   DeviceAttestation: 'DeviceAttestation',
@@ -455,7 +456,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "transactionPinSecurity" | "authorizationSession" | "paymentAuthorization" | "executionSecret" | "firmQuoteAttempt" | "rootActionSession" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent" | "walletCredential" | "rootChange" | "recoveryConfiguration" | "recoveryAttempt" | "recoveryTotp" | "recoveryEmailChallenge" | "deviceAttestationChallenge" | "deviceAttestation" | "channelInboundEvent" | "channelAction" | "channelPaymentStatus" | "userNotification" | "walletDepositCheckpoint" | "walletFundingEvent"
+    modelProps: "user" | "identity" | "session" | "wallet" | "passkeyCredential" | "walletSetupSession" | "transactionPinSecurity" | "authorizationSession" | "paymentAuthorization" | "executionSecret" | "firmQuoteAttempt" | "rootActionSession" | "passkeyChallenge" | "delegatedPermission" | "asset" | "conversation" | "message" | "intent" | "clarificationOption" | "recipient" | "provider" | "providerCapability" | "quote" | "route" | "routeStep" | "execution" | "transaction" | "rampSession" | "auditEvent" | "walletCredential" | "rootChange" | "recoveryConfiguration" | "recoveryAttempt" | "recoveryTotp" | "emailVerification" | "recoveryEmailChallenge" | "deviceAttestationChallenge" | "deviceAttestation" | "channelInboundEvent" | "channelAction" | "channelPaymentStatus" | "userNotification" | "walletDepositCheckpoint" | "walletFundingEvent"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2975,6 +2976,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    EmailVerification: {
+      payload: Prisma.$EmailVerificationPayload<ExtArgs>
+      fields: Prisma.EmailVerificationFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.EmailVerificationFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailVerificationPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.EmailVerificationFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailVerificationPayload>
+        }
+        findFirst: {
+          args: Prisma.EmailVerificationFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailVerificationPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.EmailVerificationFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailVerificationPayload>
+        }
+        findMany: {
+          args: Prisma.EmailVerificationFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailVerificationPayload>[]
+        }
+        create: {
+          args: Prisma.EmailVerificationCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailVerificationPayload>
+        }
+        createMany: {
+          args: Prisma.EmailVerificationCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.EmailVerificationCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailVerificationPayload>[]
+        }
+        delete: {
+          args: Prisma.EmailVerificationDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailVerificationPayload>
+        }
+        update: {
+          args: Prisma.EmailVerificationUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailVerificationPayload>
+        }
+        deleteMany: {
+          args: Prisma.EmailVerificationDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.EmailVerificationUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.EmailVerificationUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailVerificationPayload>[]
+        }
+        upsert: {
+          args: Prisma.EmailVerificationUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailVerificationPayload>
+        }
+        aggregate: {
+          args: Prisma.EmailVerificationAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateEmailVerification>
+        }
+        groupBy: {
+          args: Prisma.EmailVerificationGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EmailVerificationGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.EmailVerificationCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EmailVerificationCountAggregateOutputType> | number
+        }
+      }
+    }
     RecoveryEmailChallenge: {
       payload: Prisma.$RecoveryEmailChallengePayload<ExtArgs>
       fields: Prisma.RecoveryEmailChallengeFieldRefs
@@ -4377,6 +4452,21 @@ export const RecoveryTotpScalarFieldEnum = {
 export type RecoveryTotpScalarFieldEnum = (typeof RecoveryTotpScalarFieldEnum)[keyof typeof RecoveryTotpScalarFieldEnum]
 
 
+export const EmailVerificationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  email: 'email',
+  codeHash: 'codeHash',
+  expiresAt: 'expiresAt',
+  attempts: 'attempts',
+  maxAttempts: 'maxAttempts',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type EmailVerificationScalarFieldEnum = (typeof EmailVerificationScalarFieldEnum)[keyof typeof EmailVerificationScalarFieldEnum]
+
+
 export const RecoveryEmailChallengeScalarFieldEnum = {
   id: 'id',
   attemptId: 'attemptId',
@@ -5467,6 +5557,7 @@ export type GlobalOmitConfig = {
   recoveryConfiguration?: Prisma.RecoveryConfigurationOmit
   recoveryAttempt?: Prisma.RecoveryAttemptOmit
   recoveryTotp?: Prisma.RecoveryTotpOmit
+  emailVerification?: Prisma.EmailVerificationOmit
   recoveryEmailChallenge?: Prisma.RecoveryEmailChallengeOmit
   deviceAttestationChallenge?: Prisma.DeviceAttestationChallengeOmit
   deviceAttestation?: Prisma.DeviceAttestationOmit

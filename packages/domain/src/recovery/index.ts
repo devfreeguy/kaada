@@ -40,6 +40,7 @@ export const RECOVERY_AUDIT_EVENTS = {
   newRecoveryCodeRequested: "recovery.new_recovery_code_requested",
   newRecoveryCodeConfigured: "recovery.new_recovery_code_configured",
   credentialRecorded: "recovery.credential_recorded",
+  recoveryEmailRegistered: "recovery.email_registered",
   deviceTierAssigned: "recovery.device_tier_assigned",
 } as const;
 

@@ -73,6 +73,7 @@ const modelNames = [
   "RecoveryConfiguration",
   "RecoveryAttempt",
   "RecoveryEmailChallenge",
+  "EmailVerification",
   "RecoveryTotp",
   "DelegatedPermission",
   "Asset",
