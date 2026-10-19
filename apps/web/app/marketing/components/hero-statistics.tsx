@@ -1,9 +1,9 @@
 import { CutoutCard } from "../../components/ui/cutout-card";
+import { CompletedPayments } from "./completed-payments";
 
 const statistics = [
   { value: "9", label: "Supported currencies", color: "var(--emerald)" },
-  // Replace this placeholder with the real production payment count when available.
-  { value: "X+", label: "Payments completed", color: "var(--lime)" },
+  { value: <CompletedPayments />, label: "Payments completed", color: "var(--lime)" },
 ];
 
 export function HeroStatistics() {

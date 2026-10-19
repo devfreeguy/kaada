@@ -1,7 +1,6 @@
 import { SectionWrapper } from "../../components/section-wrapper";
 import { StartWithKaada } from "./start-with-kaada";
 import { HeroVisual } from "./hero-visual";
-import { BottomCutout } from "../../components/ui/bottom-cutout";
 import {
   CrownParticle,
   PlusParticle,
@@ -92,7 +91,7 @@ export function Hero() {
         <StartWithKaada />
       </SectionWrapper>
       <HeroVisual />
-      <BottomCutout />
+      {/* <BottomCutout /> */}
     </section>
   );
 }

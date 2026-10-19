@@ -1,6 +1,7 @@
 "use client";
 
 import { Logo } from "../../components/logo";
+import { TELEGRAM_BOT_URL } from "../../lib/site";
 import { ButtonArrow } from "../../components/ui/button";
 import {
   Dialog,
@@ -11,12 +12,18 @@ import {
   DialogTrigger,
 } from "../../components/ui/dialog";
 
-const telegramBotUrl = "https://t.me/kaadabot?start=landing";
+const telegramBotUrl = TELEGRAM_BOT_URL;
 
-export function StartWithKaada() {
+export function StartWithKaada({
+  variant = "secondary",
+  className = "mt-3",
+}: {
+  variant?: "primary" | "secondary";
+  className?: string;
+}) {
   return (
     <Dialog>
-      <DialogTrigger className="kaada-button kaada-button--secondary mt-3">
+      <DialogTrigger className={`kaada-button kaada-button--${variant} ${className}`}>
         Start with Kaada
         <ButtonArrow />
       </DialogTrigger>

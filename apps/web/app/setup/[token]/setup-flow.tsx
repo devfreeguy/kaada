@@ -1,284 +1,43 @@
 "use client";
-
-import { browserSupportsWebAuthn, startRegistration } from "@simplewebauthn/browser";
-import { useCallback, useEffect, useState } from "react";
-
-import {
-  deviceKeySupported,
-  generateDeviceKey,
-  saveDeviceKey,
-  signDevicePayload,
-} from "../../lib/device-key";
+import { primaryAction, secondaryAction } from "../../components/application/styles";
+import { RecoveryCodeCreator } from "../../components/recovery-code-creator";
+import { shortenAddress } from "../../lib/display";
 import { PinSetup } from "./pin-setup";
-import { loggedFetch, logFailure } from "../../lib/client-log";
-
-interface WalletInfo {
-  address: string | null;
-  status: string;
-}
-
-interface BalanceLine {
-  symbol: string;
-  formatted: string;
-}
-
-type View =
-  | { name: "loading" }
-  | { name: "invalid" }
-  | { name: "ready"; deviceKeysEnabled: boolean }
-  | { name: "finish" }
-  | { name: "creating" }
-  | { name: "done"; address: string }
-  | { name: "error"; message: string; retry: "create" | "device" | "finish" };
-
-/** Sends the setup token as a bearer header: it is never put in a body, a query string or a log. */
-async function call(token: string, path: string, init: RequestInit = {}): Promise<Response> {
-  return loggedFetch(`/api/v1/wallet${path}`, {
-    ...init,
-    cache: "no-store",
-    headers: {
-      ...(init.body ? { "Content-Type": "application/json" } : {}),
-      Authorization: `Bearer ${token}`,
-    },
-  });
-}
-
-function shorten(address: string): string {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-}
-
+import { useSetup } from "./use-setup";
 export function SetupFlow({ token }: { token: string }) {
-  const [view, setView] = useState<View>({ name: "loading" });
-  const [deviceKeysEnabled, setDeviceKeysEnabled] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [balances, setBalances] = useState<BalanceLine[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      let next: View;
-      try {
-        const response = await call(token, "");
-        if (response.status === 401) {
-          next = { name: "invalid" };
-        } else if (!response.ok) {
-          throw new Error("unavailable");
-        } else {
-          const body = (await response.json()) as {
-            rootRegistered: boolean;
-            deviceKeysEnabled: boolean;
-            wallet: WalletInfo | null;
-          };
-          if (!cancelled) setDeviceKeysEnabled(body.deviceKeysEnabled);
-          next =
-            body.wallet?.status === "ACTIVE" && body.wallet.address
-              ? { name: "done", address: body.wallet.address }
-              : body.rootRegistered
-                ? { name: "finish" }
-                : { name: "ready", deviceKeysEnabled: body.deviceKeysEnabled };
-        }
-      } catch (error) {
-        logFailure("setup.load_failed", error);
-        next = {
-          name: "error",
-          message: "We couldn't reach Kaada. Please try again.",
-          retry: "create",
-        };
-      }
-      if (!cancelled) setView(next);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [token]);
-
-  const address = view.name === "done" ? view.address : null;
-  useEffect(() => {
-    if (!address) return;
-    void (async () => {
-      try {
-        const response = await call(token, "/balances");
-        if (!response.ok) return;
-        const body = (await response.json()) as { balances: BalanceLine[] };
-        setBalances(body.balances.filter((line) => line.formatted !== "0"));
-      } catch (error) {
-        logFailure("setup.balances_failed", error);
-        // Balances are a convenience; the wallet is ready either way.
-      }
-    })();
-  }, [address, token]);
-
-  const finish = useCallback(async () => {
-    setView({ name: "creating" });
-    try {
-      const response = await call(token, "/setup/finalize", { method: "POST" });
-      if (response.status === 401) return setView({ name: "invalid" });
-      if (!response.ok) throw new Error("failed");
-      const body = (await response.json()) as { wallet: WalletInfo | null };
-      if (body.wallet?.address) return setView({ name: "done", address: body.wallet.address });
-      throw new Error("no wallet");
-    } catch (error) {
-      logFailure("setup.finish_failed", error);
-      setView({
-        name: "error",
-        message:
-          "Your passkey is saved, but the wallet could not be created yet. Please try again.",
-        retry: "finish",
-      });
-    }
-  }, [token]);
-
-  /**
-   * The alternative for a browser or phone without passkeys: a P-256 key made by this device. Its private half is
-   * non-extractable and never leaves the browser; Kaada gets the public key and a signature proving the key is held.
-   */
-  const createWithDevice = useCallback(async () => {
-    if (!deviceKeySupported()) {
-      return setView({
-        name: "error",
-        message: "This browser can't keep a device key. Please open the link in Safari or Chrome.",
-        retry: "device",
-      });
-    }
-    setView({ name: "creating" });
-    try {
-      const key = await generateDeviceKey();
-      const optionsResponse = await call(token, "/device-keys/options", {
-        method: "POST",
-        body: JSON.stringify({ publicKeyX: key.publicKeyX, publicKeyY: key.publicKeyY }),
-      });
-      if (optionsResponse.status === 401) return setView({ name: "invalid" });
-      if (!optionsResponse.ok) throw new Error("options");
-      const challenge = (await optionsResponse.json()) as {
-        keyId: string;
-        payload: string;
-        challenge: string;
-      };
-      const { r, s } = await signDevicePayload(key.privateKey, challenge.payload);
-      // Kept BEFORE the server records it: a key lost after the server accepted it would lock the wallet.
-      await saveDeviceKey(challenge.keyId, key.privateKey);
-      const registerResponse = await call(token, "/device-keys/register", {
-        method: "POST",
-        body: JSON.stringify({
-          publicKeyX: key.publicKeyX,
-          publicKeyY: key.publicKeyY,
-          challenge: challenge.challenge,
-          r,
-          s,
-        }),
-      });
-      if (registerResponse.status === 401) return setView({ name: "invalid" });
-      if (registerResponse.status === 502) {
-        return setView({
-          name: "error",
-          message:
-            "Your device key is saved, but the wallet could not be created yet. Please try again.",
-          retry: "finish",
-        });
-      }
-      if (!registerResponse.ok) throw new Error("register");
-      const body = (await registerResponse.json()) as { wallet: WalletInfo | null };
-      if (!body.wallet?.address) throw new Error("no wallet");
-      setView({ name: "done", address: body.wallet.address });
-    } catch (error) {
-      logFailure("setup.device_key_failed", error);
-      setView({
-        name: "error",
-        message: "We couldn't set up your device key. Please try again.",
-        retry: "device",
-      });
-    }
-  }, [token]);
-
-  const create = useCallback(async () => {
-    if (!browserSupportsWebAuthn()) {
-      // Passkeys are preferred but not required: without them, a device key is the way in (when it is enabled).
-      if (deviceKeysEnabled) return createWithDevice();
-      return setView({
-        name: "error",
-        message: "This browser doesn't support passkeys. Please open the link in Safari or Chrome.",
-        retry: "create",
-      });
-    }
-    setView({ name: "creating" });
-    try {
-      const optionsResponse = await call(token, "/passkeys/registration/options", {
-        method: "POST",
-      });
-      if (optionsResponse.status === 401) return setView({ name: "invalid" });
-      if (!optionsResponse.ok) throw new Error("options");
-      const optionsJSON = (await optionsResponse.json()) as Parameters<
-        typeof startRegistration
-      >[0]["optionsJSON"];
-
-      const credential = await startRegistration({ optionsJSON });
-
-      const verifyResponse = await call(token, "/passkeys/registration/verify", {
-        method: "POST",
-        body: JSON.stringify(credential),
-      });
-      if (verifyResponse.status === 401) return setView({ name: "invalid" });
-      if (verifyResponse.status === 502) {
-        return setView({
-          name: "error",
-          message:
-            "Your passkey is saved, but the wallet could not be created yet. Please try again.",
-          retry: "finish",
-        });
-      }
-      if (!verifyResponse.ok) throw new Error("verify");
-      const body = (await verifyResponse.json()) as { wallet: WalletInfo | null };
-      if (!body.wallet?.address) throw new Error("no wallet");
-      setView({ name: "done", address: body.wallet.address });
-    } catch (error) {
-      logFailure("setup.passkey_failed", error);
-      const cancelled = error instanceof Error && error.name === "NotAllowedError";
-      setView({
-        name: "error",
-        message: cancelled
-          ? "Passkey creation was cancelled. You can try again when you're ready."
-          : "We couldn't create your passkey. Please try again.",
-        retry: "create",
-      });
-    }
-  }, [token, deviceKeysEnabled, createWithDevice]);
-
-  const copy = useCallback(async (value: string) => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      logFailure("setup.clipboard_failed", error);
-      // Clipboard access can be refused; the address is still on screen.
-    }
-  }, []);
-
+  const {
+    view,
+    deviceKeysEnabled,
+    copied,
+    balances,
+    finish,
+    createWithDevice,
+    create,
+    copy,
+    reload,
+  } = useSetup({ token });
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 px-6 py-10">
-      <p className="text-sm font-semibold tracking-wide text-neutral-500">Kaada</p>
-
-      {view.name === "loading" && <p className="text-neutral-600">Checking your link...</p>}
-
+    <div className="flex flex-col gap-6">
+      {view.name === "loading" && <p className="text-white/75">Checking your link...</p>}
       {view.name === "invalid" && (
         <section className="flex flex-col gap-3">
           <h1 className="text-2xl font-semibold">This link has expired</h1>
-          <p className="text-neutral-600">
-            For your security, setup links work once and only for a few minutes. Go back to your
-            chat and ask Kaada for a new one.
+          <p className="text-white/75">
+            For your security, setup links work once and only for a short time. Go back to your chat
+            and ask Kaada for a new one.
           </p>
         </section>
       )}
-
       {(view.name === "ready" || view.name === "creating" || view.name === "error") && (
         <section className="flex flex-col gap-4">
           <h1 className="text-2xl font-semibold">Secure your wallet</h1>
-          <p className="text-neutral-600">
-            A passkey protects your Kaada wallet. If your device has no passkeys, a key kept by this
-            device does the same job. No seed phrase is required for normal use.
+          <p className="text-white/75">
+            Choose how you will confirm payments. A passkey uses your fingerprint, face or screen
+            lock. Or keep a key on this device and confirm with your PIN instead. Either works on
+            any device, and you decide: you are never forced into one.
           </p>
           {view.name === "error" && (
-            <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">
+            <p role="alert" className="rounded-lg bg-coral/15 px-4 py-3 text-sm text-white">
               {view.message}
             </p>
           )}
@@ -286,67 +45,66 @@ export function SetupFlow({ token }: { token: string }) {
             type="button"
             disabled={view.name === "creating"}
             onClick={() =>
-              void (view.name === "error" && view.retry === "finish"
-                ? finish()
-                : view.name === "error" && view.retry === "device"
-                  ? createWithDevice()
-                  : create())
+              void (view.name === "error" && view.retry === "load"
+                ? reload()
+                : view.name === "error" && view.retry === "finish"
+                  ? finish()
+                  : view.name === "error" && view.retry === "device"
+                    ? createWithDevice()
+                    : create())
             }
-            className="rounded-xl bg-neutral-900 px-5 py-4 text-base font-medium text-white disabled:opacity-50"
+            className={primaryAction}
           >
             {view.name === "creating"
               ? "Waiting for your device..."
-              : view.name === "error" && view.retry === "finish"
-                ? "Finish setup"
-                : view.name === "error" && view.retry === "device"
-                  ? "Try with this device"
-                  : "Create Passkey"}
+              : view.name === "error" && view.retry === "load"
+                ? "Reload wallet"
+                : view.name === "error" && view.retry === "finish"
+                  ? "Finish setup"
+                  : view.name === "error" && view.retry === "device"
+                    ? "Try with this device"
+                    : "Create Passkey"}
           </button>
           {deviceKeysEnabled && view.name !== "creating" && (
             <button
               type="button"
               onClick={() => void createWithDevice()}
-              className="rounded-xl border border-neutral-300 px-5 py-4 text-base font-medium"
+              className={secondaryAction}
             >
-              No passkey? Use this device
+              Use this device and my PIN instead
             </button>
           )}
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-white/60">
             Your device keeps the passkey or key. Kaada never sees or stores it.
+            {!deviceKeysEnabled && " Choosing a key on this device isn’t available right now."}
           </p>
         </section>
       )}
-
       {view.name === "finish" && (
         <section className="flex flex-col gap-4">
           <h1 className="text-2xl font-semibold">Almost done</h1>
-          <p className="text-neutral-600">
+          <p className="text-white/75">
             Your credential is saved. One more step creates your wallet.
           </p>
-          <button
-            type="button"
-            onClick={() => void finish()}
-            className="rounded-xl bg-neutral-900 px-5 py-4 text-base font-medium text-white"
-          >
+          <button type="button" onClick={() => void finish()} className={primaryAction}>
             Finish setup
           </button>
         </section>
       )}
-
       {view.name === "done" && (
         <section className="flex flex-col gap-4">
           <h1 className="text-2xl font-semibold">Wallet ready</h1>
           <p
-            className="break-all rounded-lg bg-neutral-100 px-4 py-3 font-mono text-sm"
+            className="break-all rounded-lg bg-white/8 px-4 py-3 font-mono text-sm"
             title={view.address}
           >
-            {shorten(view.address)}
+            {shortenAddress(view.address)}
           </p>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-white/60">
             Send supported Celo stablecoins to this address to fund your wallet.
           </p>
           {balances.length > 0 && (
-            <ul className="text-sm text-neutral-700">
+            <ul className="text-sm text-white/80">
               {balances.map((line) => (
                 <li key={line.symbol}>
                   {line.formatted} {line.symbol}
@@ -358,24 +116,30 @@ export function SetupFlow({ token }: { token: string }) {
             <button
               type="button"
               onClick={() => void copy(view.address)}
-              className="flex-1 rounded-xl border border-neutral-300 px-5 py-4 text-base font-medium"
+              className={"flex-1 " + secondaryAction}
             >
               {copied ? "Copied" : "Copy Address"}
             </button>
             <button
               type="button"
               onClick={() => window.close()}
-              className="flex-1 rounded-xl bg-neutral-900 px-5 py-4 text-base font-medium text-white"
+              className={"flex-1 " + primaryAction}
             >
               Done
             </button>
           </div>
-          <p className="text-xs text-neutral-500">
-            You can close this page and return to your chat.
-          </p>
+          <p className="text-xs text-white/60">You can close this page and return to your chat.</p>
           <PinSetup token={token} />
+          <section className="flex flex-col gap-3 border-t border-white/15 pt-6">
+            <h2 className="text-lg font-semibold">Secure your account</h2>
+            <p className="text-sm text-white/75">
+              Kaada never holds your keys, so nobody can restore your wallet for you. Finish these
+              steps now, so you can always get back in if you lose your device.
+            </p>
+          </section>
+          <RecoveryCodeCreator token={token} />
         </section>
       )}
-    </main>
+    </div>
   );
 }

@@ -1,78 +1,21 @@
 "use client";
-
-import { useCallback, useState } from "react";
-
-import { api, describeError, json } from "../lib/api";
 import { groupSecret } from "../lib/recovery-copy";
+import { primaryAction } from "./application/styles";
 import { QrCode } from "./qr-code";
-import { logFailure } from "../lib/client-log";
+import { useAuthenticator } from "./use-authenticator";
+const button = primaryAction;
 
-type Step =
-  | { name: "intro" }
-  | { name: "working" }
-  | { name: "scan"; uri: string; secret: string; wrong: boolean }
-  | { name: "done" }
-  | { name: "error"; message: string };
-
-const button =
-  "rounded-xl bg-neutral-900 px-5 py-4 text-base font-medium text-white disabled:opacity-50";
-
-/**
- * Sets up the authenticator app that guards a recovery. The server makes the secret and shows it ONCE here (as a QR code and as
- * a key to type); it keeps only an encrypted copy. Setup is not finished until the person enters one valid 6-digit code from
- * the app, which proves the app really holds the secret. Works with Google Authenticator, Microsoft Authenticator, Authy,
- * 1Password and any other standard authenticator app.
- */
 export function AuthenticatorEnroller({ token, onDone }: { token: string; onDone: () => void }) {
-  const [step, setStep] = useState<Step>({ name: "intro" });
-  const [code, setCode] = useState("");
-
-  const begin = useCallback(async () => {
-    setStep({ name: "working" });
-    try {
-      const made = await json<{ otpauthUri: string; secret: string }>(
-        await api("/recovery/configuration/authenticator/begin", token, { method: "POST" }),
-      );
-      setCode("");
-      setStep({ name: "scan", uri: made.otpauthUri, secret: made.secret, wrong: false });
-    } catch (error) {
-      logFailure("authenticator.begin_failed", error);
-      setStep({
-        name: "error",
-        message: describeError(error, "We couldn't start the authenticator setup."),
-      });
-    }
-  }, [token]);
-
-  const confirm = useCallback(
-    async (current: Extract<Step, { name: "scan" }>) => {
-      try {
-        await json(
-          await api("/recovery/configuration/authenticator/confirm", token, { body: { code } }),
-        );
-        setCode("");
-        setStep({ name: "done" });
-        onDone();
-      } catch (error) {
-        logFailure("authenticator.confirm_failed", error);
-        const text = describeError(error, "");
-        if (text) {
-          setStep({ name: "error", message: text });
-        } else {
-          setCode("");
-          setStep({ ...current, wrong: true });
-        }
-      }
-    },
-    [code, onDone, token],
-  );
-
+  const { step, code, setCode, setStep, begin, confirm, confirming } = useAuthenticator({
+    token,
+    onDone,
+  });
   return (
     <section className="flex flex-col gap-4">
       <h2 className="text-lg font-semibold">Authenticator app</h2>
       {step.name === "intro" && (
         <>
-          <p className="text-sm text-neutral-600">
+          <p className="text-sm text-white/75">
             First, link an authenticator app (Google Authenticator, Microsoft Authenticator, Authy,
             1Password or similar). It gives you a 6-digit code that changes every 30 seconds, and
             you will need it, together with your Recovery Code, to recover your wallet.
@@ -82,20 +25,20 @@ export function AuthenticatorEnroller({ token, onDone }: { token: string; onDone
           </button>
         </>
       )}
-      {step.name === "working" && <p className="text-sm text-neutral-600">Working...</p>}
+      {step.name === "working" && <p className="text-sm text-white/75">Working...</p>}
       {step.name === "scan" && (
         <>
-          <p className="text-sm text-neutral-600">
+          <p className="text-sm text-white/75">
             Scan this with your authenticator app, or type the key into it. We show it only once.
           </p>
           <QrCode value={step.uri} label="QR code for your authenticator app" />
           <p
             aria-label="Setup key"
-            className="rounded-lg bg-neutral-100 px-4 py-3 text-center font-mono text-sm tracking-wide select-all"
+            className="rounded-lg bg-white/8 px-4 py-3 text-center font-mono text-sm tracking-wide select-all"
           >
             {groupSecret(step.secret)}
           </p>
-          <label className="flex flex-col gap-2 text-sm text-neutral-600">
+          <label className="flex flex-col gap-2 text-sm text-white/75">
             Now type the 6-digit code your app shows
             <input
               value={code}
@@ -103,32 +46,32 @@ export function AuthenticatorEnroller({ token, onDone }: { token: string; onDone
               inputMode="numeric"
               autoComplete="one-time-code"
               aria-label="6-digit code from your authenticator app"
-              className="rounded-lg border border-neutral-300 px-4 py-3 font-mono text-lg tracking-widest"
+              className="rounded-lg border border-white/25 px-4 py-3 font-mono text-lg tracking-widest"
             />
           </label>
           {step.wrong && (
-            <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">
+            <p role="alert" className="rounded-lg bg-coral/15 px-4 py-3 text-sm text-white">
               That code didn&apos;t work. Wait for the next one in your app and try again.
             </p>
           )}
           <button
             type="button"
-            disabled={code.length !== 6}
+            disabled={confirming || code.length !== 6}
             onClick={() => void confirm(step)}
             className={button}
           >
-            Confirm the code
+            {confirming ? "Checking…" : "Confirm the code"}
           </button>
         </>
       )}
       {step.name === "done" && (
-        <p className="rounded-lg bg-neutral-100 px-4 py-3 text-sm text-neutral-800">
+        <p className="rounded-lg bg-white/8 px-4 py-3 text-sm text-white/90">
           Your authenticator app is linked.
         </p>
       )}
       {step.name === "error" && (
         <>
-          <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">
+          <p role="alert" className="rounded-lg bg-coral/15 px-4 py-3 text-sm text-white">
             {step.message}
           </p>
           <button type="button" onClick={() => setStep({ name: "intro" })} className={button}>

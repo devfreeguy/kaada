@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Anton, DM_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 
+import { SITE_URL } from "./lib/site";
 import "./globals.css";
 
 const heading = Anton({
@@ -13,7 +14,7 @@ const heading = Anton({
 const body = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans", display: "swap" });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://kaada.xyz"),
+  metadataBase: new URL(SITE_URL),
   title: "Kaada",
   description: "Agentic cross-border payment router on Celo.",
 };

@@ -8,7 +8,7 @@ export function HeroCurrencyOverview() {
         <li className={`${styles.pill} ${styles.local}`}>Local Currency First</li>
         <li className={`${styles.pill} ${styles.crossBorder}`}>Cross-Border Ready</li>
       </ul>
-      <p className="text-xl font-medium leading-snug text-on-dark uppercase sm:text-2xl">
+      <p className="text-center text-xl font-medium leading-snug text-on-dark uppercase sm:text-2xl xl:text-left">
         KAADA SUPPORTS 9 FAMILIAR CURRENCIES ACROSS AFRICA, LATIN AMERICA AND BEYOND,{" "}
         <span className="text-on-dark/55">MAKING CROSS-BORDER MONEY MOVEMENT FEEL LOCAL.</span>
       </p>

@@ -29,7 +29,7 @@ export function PinKeypad({
     if (!disabled && value.length < PIN_LENGTH) onChange(value + digit);
   };
   const base =
-    "flex h-16 items-center justify-center rounded-2xl text-2xl font-medium select-none disabled:opacity-40";
+    "flex h-16 items-center justify-center rounded-2xl text-2xl font-medium text-white select-none disabled:opacity-40";
 
   return (
     <div className="flex flex-col items-center gap-6">
@@ -41,7 +41,7 @@ export function PinKeypad({
         {Array.from({ length: PIN_LENGTH }, (_, index) => (
           <span
             key={index}
-            className={`h-4 w-4 rounded-full border-2 border-neutral-900 ${index < value.length ? "bg-neutral-900" : "bg-transparent"}`}
+            className={`h-4 w-4 rounded-full border-2 border-lavender ${index < value.length ? "bg-lavender" : "bg-transparent"}`}
           />
         ))}
       </div>
@@ -53,7 +53,7 @@ export function PinKeypad({
             type="button"
             disabled={disabled}
             onClick={() => press(digit)}
-            className={`${base} bg-neutral-100 active:bg-neutral-200`}
+            className={`${base} bg-white/8 hover:bg-white/15 active:bg-lavender/30`}
           >
             {digit}
           </button>
@@ -63,7 +63,7 @@ export function PinKeypad({
           aria-label="Delete"
           disabled={disabled || value.length === 0}
           onClick={() => onChange(value.slice(0, -1))}
-          className={`${base} bg-neutral-100 active:bg-neutral-200`}
+          className={`${base} bg-white/8 hover:bg-white/15 active:bg-lavender/30`}
         >
           ⌫
         </button>
@@ -71,7 +71,7 @@ export function PinKeypad({
           type="button"
           disabled={disabled}
           onClick={() => press("0")}
-          className={`${base} bg-neutral-100 active:bg-neutral-200`}
+          className={`${base} bg-white/8 hover:bg-white/15 active:bg-lavender/30`}
         >
           0
         </button>
@@ -79,7 +79,7 @@ export function PinKeypad({
           type="button"
           disabled={disabled || value.length !== PIN_LENGTH}
           onClick={onSubmit}
-          className={`${base} bg-neutral-900 text-white`}
+          className={`${base} bg-lavender text-navy hover:bg-white`}
         >
           {submitLabel}
         </button>

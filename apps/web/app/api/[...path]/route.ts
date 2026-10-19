@@ -106,6 +106,16 @@ async function proxy(
     if (FORWARDED_REQUEST_HEADERS.has(name.toLowerCase())) headers.set(name, value);
   });
   headers.set("x-request-id", requestId);
+  // Tell the API which visitor this is (its own limits count per visitor), proven by a secret only the two share. The platform's
+  // own address header is the visitor's; a client cannot set these two headers because only the allow-listed ones are forwarded.
+  const proxySecret = process.env["PROXY_SHARED_SECRET"]?.trim();
+  const visitor =
+    request.headers.get("x-real-ip")?.trim() ||
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  if (proxySecret && visitor) {
+    headers.set("x-kaada-client-ip", visitor);
+    headers.set("x-kaada-proxy-auth", proxySecret);
+  }
 
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
   const started = Date.now();

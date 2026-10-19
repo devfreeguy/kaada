@@ -1,13 +1,15 @@
+import { ApplicationShell } from "../../components/application/application-shell";
 import { SecurityFlow } from "./security-flow";
-
-export const metadata = { title: "Kaada wallet security", robots: { index: false } };
-
+export const metadata = {
+  title: "Kaada wallet security",
+  referrer: "no-referrer" as const,
+  robots: { index: false, follow: false },
+};
 export default async function SecurityPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 px-6 py-10">
-      <p className="text-sm font-semibold tracking-wide text-neutral-500">Kaada</p>
+    <ApplicationShell label="You’re always in control.">
       <SecurityFlow token={token} />
-    </main>
+    </ApplicationShell>
   );
 }

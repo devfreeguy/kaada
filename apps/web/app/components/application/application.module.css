@@ -1,0 +1,98 @@
+.shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--navy);
+  color: var(--on-dark);
+  color-scheme: dark;
+}
+.shell a:focus-visible,
+.shell button:focus-visible,
+.shell input:focus-visible {
+  outline: 3px solid var(--lavender);
+  outline-offset: 5px;
+}
+.frame {
+  max-width: 560px;
+  margin-inline: auto;
+}
+.eyebrow {
+  margin-bottom: 24px;
+  color: var(--lavender);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.content {
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 32px;
+  padding: clamp(24px, 5vw, 40px);
+  background: rgb(255 255 255 / 0.035);
+}
+.content h1 {
+  font-family: var(--font-anton);
+  font-size: clamp(32px, 6vw, 48px);
+  line-height: 1.12;
+  font-weight: 400;
+  text-transform: uppercase;
+  text-wrap: balance;
+  letter-spacing: -0.015em;
+}
+.content h2 {
+  font-family: var(--font-anton);
+  font-size: 24px;
+  line-height: 1.25;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+.content p {
+  line-height: 1.65;
+}
+.content input {
+  min-height: 52px;
+  width: 100%;
+  background: var(--navy);
+  color: white;
+  border-color: rgb(255 255 255 / 0.28);
+}
+.content input::placeholder {
+  color: rgb(255 255 255 / 0.5);
+}
+.content button,
+.content a {
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    border-color 0.2s;
+}
+.content button:not(:disabled) {
+  cursor: pointer;
+}
+.content button:disabled {
+  cursor: not-allowed;
+}
+.signature {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 24px;
+}
+.signature span {
+  width: 24px;
+  height: 5px;
+  border-radius: 8px;
+  background: var(--lavender);
+}
+.signature span:nth-child(2) {
+  background: var(--orange);
+}
+.signature span:nth-child(3) {
+  background: var(--emerald);
+}
+@media (prefers-reduced-motion: reduce) {
+  .content button,
+  .content a {
+    transition: none;
+  }
+}
