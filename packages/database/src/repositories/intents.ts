@@ -27,6 +27,15 @@ export function createIntentRepository(db: Db): IntentRepository {
       return row ? toIntent(row) : null;
     },
 
+    async listRecentByConversation(conversationId, limit) {
+      const rows = await db.intent.findMany({
+        where: { conversationId },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: limit,
+      });
+      return rows.map(toIntent);
+    },
+
     async save(intent) {
       return toIntent(
         await db.intent.update({ where: { id: intent.id }, data: intentUpdateData(intent) }),

@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 
 import type {
   DelegatedPermission,
@@ -42,6 +42,7 @@ export const WBRL_ADDRESS = `0x${"22".repeat(20)}`;
 export const REACTOR = `0x${"33".repeat(20)}`;
 export const SWAP_TARGET = `0x${"44".repeat(20)}`;
 export const RECIPIENT_ADDRESS = `0x${"77".repeat(20)}`;
+export const CELO_ADDRESS = "0x471ece3750da237f93b8e339c536989b8978a438";
 export const CNGN_ADDRESS = `0x${"55".repeat(20)}`;
 export const SECRET_KEY = randomBytes(32).toString("base64");
 export const CLAIM_TOKEN = "rfqc_TEST_CLAIM_TOKEN_must_never_leak_0123456789";
@@ -170,6 +171,8 @@ export async function firmWorld(
      * transfer step: no swap, no provider, no firm quote.
      */
     directNaira?: { holds: bigint };
+    /** The same, for CELO itself: the wallet holds this many CELO and sends 0.3 of them to RECIPIENT_ADDRESS. */
+    directCelo?: { holds: bigint };
   } = {},
 ): Promise<FirmWorld> {
   const w = setup({ authorize: true });
@@ -195,6 +198,29 @@ export async function firmWorld(
         type: "SEND",
         recipient: { type: "WALLET_ADDRESS", value: RECIPIENT_ADDRESS },
         amount: { value: "300", currencyOrAsset: "Naira" },
+      } as never),
+    );
+  }
+  if (options.directCelo) {
+    const celo = {
+      id: randomUUID(),
+      symbol: "CELO",
+      name: "Celo",
+      kind: "CRYPTO" as const,
+      decimals: 18,
+      chainId: 42220,
+      contractAddress: CELO_ADDRESS,
+      isActive: true,
+    };
+    w.r.world.addAsset(celo);
+    w.port.held.set(celo.id, options.directCelo.holds * 10n ** 18n);
+    sayText = "send 0.3 CELO to the address";
+    w.r.h.script.set(
+      sayText,
+      intent({
+        type: "SEND",
+        recipient: { type: "WALLET_ADDRESS", value: RECIPIENT_ADDRESS },
+        amount: { value: "0.3", currencyOrAsset: "CELO" },
       } as never),
     );
   }

@@ -3,6 +3,22 @@ import type { Asset, AssetRegistry } from "../assets/index.js";
 /** Celo mainnet. Every settlement asset Kaada routes through today lives on this chain. */
 export const CELO_CHAIN_ID = 42220;
 
+/**
+ * CELO as a token: Celo's native coin is also an ERC-20 at this address, so `transfer` and `balanceOf` move and read the very
+ * balance the account pays its network fee from.
+ */
+export const CELO_TOKEN_ADDRESS = "0x471ece3750da237f93b8e339c536989b8978a438";
+
+/** True for CELO itself (the coin that also pays the fee), as opposed to a stablecoin. */
+export function isNativeCelo(asset: {
+  chainId?: number | undefined;
+  contractAddress?: string | undefined;
+}): boolean {
+  return (
+    asset.chainId === CELO_CHAIN_ID && asset.contractAddress?.toLowerCase() === CELO_TOKEN_ADDRESS
+  );
+}
+
 export const SETTLEMENT_UNSUPPORTED_REASONS = [
   /** No active token on the chain is marked as representing this currency. */
   "NO_SETTLEMENT_ASSET",

@@ -83,7 +83,7 @@ describe("'can I receive CELO?' and 'what do you support?' are answered from the
     const reply = adapter.sent.at(-1);
     assert.match(reply?.text ?? "", /Nigerian Naira/);
     assert.match(reply?.text ?? "", /US Dollar/);
-    assert.match(reply?.text ?? "", /CELO: yes, you can receive a small amount of CELO/);
+    assert.match(reply?.text ?? "", /CELO: yes, you can receive and send CELO/);
     assert.match(reply?.text ?? "", /network fee/);
     assert.doesNotMatch(reply?.text ?? "", /model wording that must not be used/);
     assert.doesNotMatch(reply?.text ?? "", /USDT|USDC|cNGN/, "currencies are named, never tickers");

@@ -14,6 +14,8 @@ export interface IntentRepository {
   lockForUpdate(id: string): Promise<void>;
   /** The most recent intent in the conversation that can still be completed, if any. */
   findOpenByConversation(conversationId: string): Promise<Intent | null>;
+  /** The conversation's latest intents, newest first (any status). */
+  listRecentByConversation(conversationId: string, limit: number): Promise<Intent[]>;
   /** Overwrites every mutable field with the given intent (absent optional fields are cleared). */
   save(intent: Intent): Promise<Intent>;
   /** Applies only the fields present in `update`. */

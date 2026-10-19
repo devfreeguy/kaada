@@ -159,6 +159,13 @@ interface AdvanceArgs {
   mergeKind: string;
 }
 
+/** How long after a payment "him" or "her" still means the person it was for. */
+const PREVIOUS_RECIPIENT_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+const PRONOUN =
+  /^(?:him|her|them|he|she|they|that (?:person|guy|man|woman|one)|the same (?:person|guy|man|woman|one)|same (?:person|guy|man|woman|one)|again)$/i;
+const isPronoun = (value: string): boolean => PRONOUN.test(value.trim().replace(/^to\s+/i, ""));
+
 /** What a still-open payment needs, for matching a deposit against it. Display and comparison only. */
 export interface OpenPaymentNeeds {
   resume: ResumeInfo;
@@ -200,7 +207,12 @@ export class IntentCoordinator {
       return this.applySideQuote(repositories, conversation, interpretation.intent, active);
     }
 
-    const merged = mergeAgentIntent(active?.parsed, interpretation.intent);
+    const intent = await this.withPreviousRecipient(
+      repositories,
+      conversation,
+      interpretation.intent,
+    );
+    const merged = mergeAgentIntent(active?.parsed, intent);
     if (merged.kind === "SIDE_REQUEST") {
       const answered = await this.applySideRequest(
         repositories,
@@ -223,6 +235,34 @@ export class IntentCoordinator {
     });
     const corrected = merging ? correctedFields(active?.parsed, merged.intent) : [];
     return corrected.length > 0 ? { ...applied, corrected } : applied;
+  }
+
+  /**
+   * "Send him 0.3 CELO": a pronoun names whoever this chat was just paying. The model reports it as the word itself; here it
+   * becomes that person's own reference (resolved again like any name, so their wallet is read fresh), or, when this chat has
+   * nobody to point at, nothing at all, and the usual "who is it for?" question is asked. It is never a guess that stays hidden:
+   * the payment summary names the recipient before anything can be authorized.
+   */
+  private async withPreviousRecipient(
+    repositories: AgentRepositories,
+    conversation: Conversation,
+    intent: AgentIntent,
+  ): Promise<AgentIntent> {
+    if (intent.type !== "SEND" || !intent.recipient || !isPronoun(intent.recipient.value)) {
+      return intent;
+    }
+    const cutoff = this.deps.now().getTime() - PREVIOUS_RECIPIENT_WINDOW_MS;
+    const recent = await repositories.intents.listRecentByConversation(conversation.id, 10);
+    const previous = recent.find(
+      (earlier) =>
+        earlier.updatedAt.getTime() >= cutoff &&
+        earlier.parsed?.type === "SEND" &&
+        earlier.parsed.recipient !== undefined &&
+        !isPronoun(earlier.parsed.recipient.value),
+    );
+    const { recipient: _pronoun, ...rest } = intent;
+    if (previous?.parsed?.type !== "SEND" || !previous.parsed.recipient) return rest;
+    return { ...rest, recipient: previous.parsed.recipient };
   }
 
   // ───────────────────────────────── side questions ─────────────────────────────────

@@ -4,6 +4,7 @@ import {
   createId,
   createMoney,
   isKaadaError,
+  isNativeCelo,
   validatePaymentRoute,
 } from "@kaada/domain";
 import { errorDetails } from "../channels/error-details.js";
@@ -68,7 +69,7 @@ export interface RoutingServiceDeps {
    * looks at before it is offered for authorization). `undefined` means "could not tell", which never blocks: the execution
    * step checks again. Gas is the sender's to pay in this MVP; nothing is sponsored.
    */
-  gas?: { enoughForFees(address: string): Promise<boolean | undefined> };
+  gas?: { enoughForFees(address: string, spendingWei?: bigint): Promise<boolean | undefined> };
   /** The person's own default currency (their home currency), when they have chosen one. */
   profile?: { homeCurrency(userId: string): Promise<string | undefined> };
   /**
@@ -215,8 +216,11 @@ export class RoutingService {
           // The money is there. A direct transfer also needs a little CELO for the network fee; if only THAT is missing, say so
           // (and not that the person lacks the currency).
           if (picked.route.kind === "TRANSFER" && this.deps.gas && wallet) {
+            // Sending CELO itself spends the same balance the fee comes out of, so the fee must still be there afterwards.
+            const sent = await this.deps.assets.getById(picked.route.input.assetId);
+            const sendingCelo = sent !== null && isNativeCelo(sent);
             const enough = await this.deps.gas
-              .enoughForFees(wallet.address)
+              .enoughForFees(wallet.address, sendingCelo ? BigInt(picked.route.input.amount) : 0n)
               .catch((error: unknown) => {
                 this.log("warn", "routing.fee_balance_check_failed", { ...errorDetails(error) });
                 return undefined;
@@ -228,7 +232,9 @@ export class RoutingService {
                 response: {
                   type: "ERROR",
                   code: "GAS_FUNDING_REQUIRED",
-                  text: "You need a small amount of CELO to cover the network fee for this transfer.",
+                  text: sendingCelo
+                    ? "That would leave too little CELO to pay the network fee. Send a bit less, or add some CELO to your wallet first."
+                    : "You need a small amount of CELO to cover the network fee for this transfer.",
                 },
               };
             }

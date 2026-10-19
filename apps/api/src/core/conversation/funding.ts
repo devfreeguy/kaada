@@ -41,7 +41,7 @@ export function supportedAssetsMessage(info: FundingInfo): string {
       : `Your Kaada wallet works with the currencies Kaada supports on the ${info.network} network.`;
   return [
     supported,
-    "CELO: yes, you can receive a small amount of CELO at your wallet address. It isn't a currency you can spend or convert in Kaada. It only pays the network fee when a transfer needs it.",
+    "CELO: yes, you can receive and send CELO, Celo's own coin, at your wallet address. It also pays the network fee for every transfer, so keep a little in your wallet.",
     "Anything else, or funds sent on another network, may not appear in Kaada and may be difficult or impossible to recover.",
   ].join("\n\n");
 }

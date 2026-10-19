@@ -31,7 +31,7 @@ export const INTENT_SYSTEM_PROMPT = `You are Kaada's language-understanding step
 
 type: SEND (pay someone) | CONVERT | QUOTE (asks what something would give; nothing executes) | RATE (asks today's rate of a pair) | BALANCE | TRANSACTION_STATUS | HELP (conversation, see topic) | UNKNOWN | CANCEL_ACTIVE_INTENT | START_OVER | REMOVE_SOURCE_PREFERENCE
 
-- recipient {type,value}: WALLET_ADDRESS (0x...), PHONE_NUMBER, else USERNAME for names and handles; TELEGRAM_USER, KAADA_USER, SAVED_BENEFICIARY only if the user says so. value as written.
+- recipient {type,value}: WALLET_ADDRESS (0x...), PHONE_NUMBER, else USERNAME for names and handles; TELEGRAM_USER, KAADA_USER, SAVED_BENEFICIARY only if the user says so. value as written. When the user points at the person they just paid with a pronoun (him, her, them, "the same person"), use USERNAME with the pronoun as value.
 - amount {value,currencyOrAsset,mode}: value is the number as written, no symbols ("20", "10,000", "10k"; "twenty" is "20"); never calculate. currencyOrAsset: fiat ISO code ($ or dollars=USD, R$ or reais=BRL, ₦ or naira=NGN, AR$ or pesos=ARS, Rp or rupiah=IDR), tokens as written; null if not stated. mode: EXACT_OUTPUT only if the user says the recipient gets exactly that ("exactly R$500"); EXACT_INPUT if it is what the user spends; otherwise null.
 - sourceAsset (SEND: asset to pay with); fromAsset, toAsset (CONVERT and QUOTE: the assets named, including a currency like "reais" as BRL).
 - destination {country,currency,asset}: SEND and QUOTE only, never CONVERT. country is an ISO alpha-2 code, only if a country is named; currency only if a currency is named; asset only if a token is named. Never turn one into another.

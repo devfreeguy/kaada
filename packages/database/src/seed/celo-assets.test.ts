@@ -146,6 +146,16 @@ describe("seedCeloAssets", () => {
           "LOCAL_STABLECOIN",
           "0x18bc5bcc660cf2b9ce3cd51a404afe1a0cbd3c22",
         ],
+        // CELO: a coin, not a currency, so no fiat code and no country.
+        [
+          "CELO",
+          18,
+          42220,
+          undefined,
+          undefined,
+          "CRYPTO",
+          "0x471ece3750da237f93b8e339c536989b8978a438",
+        ],
       ],
     );
   });

@@ -33,7 +33,9 @@ export function createRoutingService(
     /** The network routes are planned on (default: Celo mainnet). */
     chainId?: number;
     /** Network-fee check for direct transfers; omit when it is not configured. */
-    gas?: { enoughForFees(address: string): Promise<boolean | undefined> };
+    gas?: {
+      enoughForFees(address: string, spendingWei?: bigint): Promise<boolean | undefined>;
+    };
     /** The person's home currency, for the default way to pay. */
     profile?: { homeCurrency(userId: string): Promise<string | undefined> };
     /** Balance-aware funding for payments; omit when no wallet provider is configured. */

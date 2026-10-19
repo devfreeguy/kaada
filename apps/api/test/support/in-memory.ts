@@ -274,6 +274,13 @@ export function createInMemoryWorld(): InMemoryWorld {
           .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
         return Promise.resolve(open[0] ?? null);
       },
+      listRecentByConversation: (conversationId, limit) =>
+        Promise.resolve(
+          [...intents.values()]
+            .filter((i) => i.conversationId === conversationId)
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+            .slice(0, limit),
+        ),
       save: (intent) => {
         const saved: Intent = { ...intent, updatedAt: stamp() };
         intents.set(saved.id, saved);

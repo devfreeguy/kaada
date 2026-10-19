@@ -1,4 +1,10 @@
-import { CELO_CHAIN_ID, KaadaError, formatSmallestUnit, isWalletActive } from "@kaada/domain";
+import {
+  CELO_CHAIN_ID,
+  KaadaError,
+  formatSmallestUnit,
+  isNativeCelo,
+  isWalletActive,
+} from "@kaada/domain";
 import type { Asset, AssetRepository, Money, Wallet, WalletBalanceReader } from "@kaada/domain";
 
 import { formatHuman } from "../currency/catalog.js";
@@ -82,7 +88,10 @@ export class WalletBalanceService {
         (asset) =>
           asset.chainId === this.chainId &&
           asset.contractAddress !== undefined &&
-          (asset.kind === "USD_STABLECOIN" || asset.kind === "LOCAL_STABLECOIN"),
+          (asset.kind === "USD_STABLECOIN" ||
+            asset.kind === "LOCAL_STABLECOIN" ||
+            // CELO itself: held and sent like any token (it is also the coin that pays the network fee).
+            isNativeCelo(asset)),
       )
       .sort((a, b) => (a.symbol < b.symbol ? -1 : a.symbol > b.symbol ? 1 : 0));
   }
@@ -90,12 +99,13 @@ export class WalletBalanceService {
   /**
    * Whether the wallet holds enough CELO to pay a transfer's network fee (the network-fee balance, which is not one of the
    * currencies a person holds). `undefined` when it cannot be read or no limit is set: nothing is claimed either way.
+   * `spendingWei` is CELO the payment itself is about to send: the fee must still be there afterwards.
    */
-  async enoughForFees(address: string): Promise<boolean | undefined> {
+  async enoughForFees(address: string, spendingWei = 0n): Promise<boolean | undefined> {
     const minimum = this.deps.minNativeWei;
     if (minimum === undefined || !this.deps.reader.readNativeBalance) return undefined;
     const have = await this.deps.reader.readNativeBalance({ chainId: this.chainId, address });
-    return have >= minimum;
+    return have >= minimum + spendingWei;
   }
 
   /** The user's ACTIVE wallet, or WALLET_NOT_ACTIVE. */

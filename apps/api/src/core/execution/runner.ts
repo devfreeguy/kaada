@@ -4,6 +4,7 @@ import {
   SecretValue,
   boundLimits,
   createId,
+  isNativeCelo,
 } from "@kaada/domain";
 import { errorDetails } from "../channels/error-details.js";
 import type {
@@ -777,9 +778,14 @@ export class ExecutionRunner {
       return { status: "PAYMENT_FAILED", code: plan.blockers[0] ?? plan.status };
     }
 
-    // Network fees: there is no paymaster, so the account itself must hold native CELO.
-    if ((await this.deps.kernel.nativeBalance(live.wallet.address)) < this.deps.minNativeWei) {
-      return { status: "GAS_FUNDING_REQUIRED" };
+    // Network fees: there is no paymaster, so the account itself must hold native CELO. When the payment IS CELO, that same
+    // balance is being sent, so the fee has to remain after the amount leaves.
+    const celoSent = isNativeCelo(live.asset) ? BigInt(live.amount) : 0n;
+    if (
+      (await this.deps.kernel.nativeBalance(live.wallet.address)) <
+      this.deps.minNativeWei + celoSent
+    ) {
+      return { status: celoSent > 0n ? "INSUFFICIENT_BALANCE" : "GAS_FUNDING_REQUIRED" };
     }
 
     // Fresh balance of the token being sent.

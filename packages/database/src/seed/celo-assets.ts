@@ -30,6 +30,12 @@ export type CeloSeedClient = Pick<PrismaClient, "asset">;
  * Colombiano, Peso Chileno, Sol Peruano). They are assets only: no provider capability is seeded for them, so nothing can be
  * priced or routed through them until one is verified (see capabilities.ts).
  *
+ * CELO is Celo's native coin AND an ERC-20 at the same address (the "transfer precompile": `transfer`, `balanceOf` and
+ * `decimals` on 0x471EcE3750Da237f93B8E339c536989b8978a438 move and read the native balance). Read on chain 2026-10-19:
+ * symbol "CELO", name "Celo native asset", 18 decimals. It is a CRYPTO asset with no `fiatCode`: it is not a currency, so
+ * it is only ever sent as itself (a direct transfer), never converted or quoted. The account pays its network fee from the
+ * same balance, so a payment in CELO must leave a little behind (see the fee reserve in the executor).
+ *
  * Still not seeded (not verified): USA₮.
  */
 export const celoAssets = [
@@ -121,13 +127,21 @@ export const celoAssets = [
     contractAddress: "0x18Bc5bcC660cf2B9cE3cd51a404aFe1a0cBD3C22",
     decimals: 2,
   },
+  {
+    symbol: "CELO",
+    name: "Celo",
+    kind: "CRYPTO",
+    contractAddress: "0x471EcE3750Da237f93B8E339c536989b8978a438",
+    decimals: 18,
+  },
 ] as const satisfies readonly CeloAssetDefinition[];
 
 export interface CeloAssetDefinition {
   symbol: string;
   name: string;
-  kind: "USD_STABLECOIN" | "LOCAL_STABLECOIN";
-  fiatCode: string;
+  kind: "USD_STABLECOIN" | "LOCAL_STABLECOIN" | "CRYPTO";
+  /** The currency the token represents. Absent for a coin that is not a currency (CELO). */
+  fiatCode?: string;
   countryCode?: string;
   contractAddress: string;
   decimals: number;
@@ -163,7 +177,7 @@ export async function seedCeloAssets(
         where: { id: existing.id },
         data: {
           name: asset.name,
-          fiatCode: asset.fiatCode,
+          fiatCode: asset.fiatCode ?? null,
           countryCode: asset.countryCode ?? null,
         },
       });
@@ -177,7 +191,7 @@ export async function seedCeloAssets(
           chainId: CELO_CHAIN_ID,
           contractAddress,
           decimals: asset.decimals,
-          fiatCode: asset.fiatCode,
+          ...(asset.fiatCode && { fiatCode: asset.fiatCode }),
           ...(asset.countryCode && { countryCode: asset.countryCode }),
         },
       });
