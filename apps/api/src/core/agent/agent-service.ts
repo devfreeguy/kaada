@@ -1,3 +1,4 @@
+import { findActiveIntent } from "../intents/active-intent.js";
 import { createId, defaultCountryDirectory, isTransactionalIntent } from "@kaada/domain";
 import type {
   JsonObject,
@@ -378,7 +379,7 @@ export class AgentService {
     fresh: boolean,
   ): Promise<AgentTurnResult | undefined> {
     const read = this.unitOfWork.read;
-    const open = await read.intents.findOpenByConversation(conversation.id);
+    const open = await findActiveIntent(read, conversation.id);
 
     const focus = activeFocus(conversation.metadata, this.now(), open);
     if (focus) return this.answerRatePair(conversation, message, fresh, focus);

@@ -7,7 +7,7 @@ import { DATABASE } from "../database/database.module.js";
 import { errorText } from "../logging/error-text.js";
 
 /** The tokens every supported flow starts from (the seed's core stablecoins). If these are missing, nothing can be priced. */
-const CORE_SYMBOLS = ["USDT", "USDC", "cNGN"] as const;
+const CORE_SYMBOLS = ["USDT", "USDC", "cNGN", "CELO"] as const;
 
 /**
  * At startup, checks that the reference data the agent depends on is really in the database, and says so in the log if it is

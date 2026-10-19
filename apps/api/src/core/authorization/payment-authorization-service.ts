@@ -7,6 +7,8 @@ import {
 } from "@kaada/domain";
 import type { AuthorizationSession, PaymentAuthorization, Quote } from "@kaada/domain";
 
+import type { AgentLog } from "../agent/ports.js";
+
 import { authorizationBounds, authorizedRoute, totalSlippageBps } from "./bounds.js";
 import type { PinVerification, TransactionPinService } from "./pin-service.js";
 import type { AuthorizationRepositories, AuthorizationUnitOfWork } from "./ports.js";
@@ -18,6 +20,8 @@ export interface PaymentAuthorizationServiceDeps {
   pins: TransactionPinService;
   /** How long an approved payment stays executable. Short on purpose. */
   authorizationTtlMs: number;
+  /** Says WHY a link was cancelled: a payment that goes stale before the person can confirm it must never be a mystery. */
+  log?: AgentLog;
   now?: () => Date;
 }
 
@@ -70,10 +74,7 @@ export class PaymentAuthorizationService {
   }
 
   /** Checks the PIN for a session. Undefined when it is right; otherwise the reason it was not accepted (audited, never the PIN). */
-  async verifyPin(
-    session: AuthorizationSession,
-    pin: string,
-  ): Promise<PinRejection | undefined> {
+  async verifyPin(session: AuthorizationSession, pin: string): Promise<PinRejection | undefined> {
     const verification = await this.deps.pins.verify(session.userId, pin);
     return verification.status === "VERIFIED" ? undefined : this.reject(session, verification);
   }
@@ -174,6 +175,11 @@ export class PaymentAuthorizationService {
     session: AuthorizationSession,
   ): Promise<void> {
     if (!(await repositories.paymentAuthorizations.hasSpendingExecution(session.intentId))) return;
+    this.deps.log?.("warn", "authorization.session_cancelled", {
+      sessionId: session.id,
+      intentId: session.intentId,
+      reason: "ALREADY_PAID",
+    });
     await repositories.authorizationSessions.cancel(session.id, "STALE");
     throw new KaadaError(
       "AUTHORIZATION_SESSION_INVALID",
@@ -185,31 +191,45 @@ export class PaymentAuthorizationService {
     repositories: AuthorizationRepositories,
     session: AuthorizationSession,
   ) {
-    const stale = async (): Promise<never> => {
+    const intent = await repositories.intents.findById(session.intentId);
+    const route = await repositories.routes.findById(session.routeId);
+    const wallet = await repositories.wallets.findById(session.walletId);
+    // Every check that failed, by name, so the log says exactly why the payment can no longer be authorized.
+    const failed: string[] = [];
+    if (!intent) failed.push("INTENT_MISSING");
+    if (!route) failed.push("ROUTE_MISSING");
+    if (!wallet) failed.push("WALLET_MISSING");
+    if (intent) {
+      if (intent.userId !== session.userId) failed.push("INTENT_OTHER_USER");
+      if (intent.revision !== session.intentRevision) {
+        failed.push(
+          `INTENT_REVISED(${String(intent.revision)}!=${String(session.intentRevision)})`,
+        );
+      }
+      if (intent.status !== "RESOLVED") failed.push(`INTENT_${intent.status}`);
+    }
+    if (route) {
+      if (intent && route.intentId !== intent.id) failed.push("ROUTE_OTHER_INTENT");
+      if (route.intentRevision !== session.intentRevision) failed.push("ROUTE_OLD_REVISION");
+      if (route.status !== "VALID") failed.push(`ROUTE_${route.status}`);
+    }
+    if (wallet) {
+      if (wallet.userId !== session.userId) failed.push("WALLET_OTHER_USER");
+      if (!isWalletActive(wallet)) failed.push("WALLET_NOT_ACTIVE");
+      if (wallet.chainId !== CELO_CHAIN_ID) failed.push("WALLET_WRONG_CHAIN");
+    }
+    if (!intent || !route || !wallet || failed.length > 0) {
+      this.deps.log?.("warn", "authorization.session_cancelled", {
+        sessionId: session.id,
+        intentId: session.intentId,
+        reason: "STALE",
+        failed: failed.join(","),
+      });
       await repositories.authorizationSessions.cancel(session.id, "STALE");
       throw new KaadaError(
         "AUTHORIZATION_SESSION_INVALID",
         "this payment changed and can no longer be authorized",
       );
-    };
-    const intent = await repositories.intents.findById(session.intentId);
-    const route = await repositories.routes.findById(session.routeId);
-    const wallet = await repositories.wallets.findById(session.walletId);
-    if (
-      !intent ||
-      !route ||
-      !wallet ||
-      intent.userId !== session.userId ||
-      wallet.userId !== session.userId ||
-      intent.revision !== session.intentRevision ||
-      intent.status !== "RESOLVED" ||
-      route.intentId !== intent.id ||
-      route.intentRevision !== session.intentRevision ||
-      route.status !== "VALID" ||
-      !isWalletActive(wallet) ||
-      wallet.chainId !== CELO_CHAIN_ID
-    ) {
-      return stale();
     }
     const quotes: Quote[] = [];
     for (const step of route.steps) {

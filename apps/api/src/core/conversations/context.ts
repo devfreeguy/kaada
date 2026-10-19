@@ -1,3 +1,4 @@
+import { findActiveIntent } from "../intents/active-intent.js";
 import type { Conversation, ConversationTurn, Intent, Message, MissingField } from "@kaada/domain";
 
 import type { AgentRepositories } from "../agent/ports.js";
@@ -20,13 +21,13 @@ export interface ConversationContext {
 }
 
 export async function loadConversationContext(
-  repositories: Pick<AgentRepositories, "messages" | "intents">,
+  repositories: Pick<AgentRepositories, "messages" | "intents" | "paymentAuthorizations">,
   conversation: Conversation,
   messageLimit: number,
 ): Promise<ConversationContext> {
   const [recentMessages, activeIntent] = await Promise.all([
     repositories.messages.listRecent(conversation.id, messageLimit),
-    repositories.intents.findOpenByConversation(conversation.id),
+    findActiveIntent(repositories, conversation.id),
   ]);
   const pending =
     activeIntent?.status === "AWAITING_DETAILS" ? activeIntent.missingFields[0] : undefined;

@@ -5,6 +5,7 @@ import type { Database } from "@kaada/database";
 import type { AppConfig } from "@kaada/config";
 
 import { APP_CONFIG } from "../config/config.module.js";
+import { nestLog } from "../logging/nest-log.js";
 import { DATABASE } from "../database/database.module.js";
 import { PaymentAuthorizationService } from "../core/authorization/payment-authorization-service.js";
 import { PinEnrollmentService } from "../core/authorization/pin-enrollment.js";
@@ -95,6 +96,7 @@ const enabled = (config: AppConfig) => config.wallet.provider === "kernel";
           sessions,
           pins,
           authorizationTtlMs: config.authorization.paymentTtlMs,
+          log: nestLog("PaymentAuthorization"),
         });
       },
     },

@@ -32,6 +32,7 @@ import { toClarificationResponse } from "../responses/clarifications.js";
 import type { Clarification } from "../responses/clarifications.js";
 import { routingRequiredResponse, summarizeIntent } from "../responses/summaries.js";
 import { resolvedFromStored } from "../recipients/recipient-resolver.js";
+import { findActiveIntent } from "./active-intent.js";
 import { assessIntent } from "./assessment.js";
 import type { TransactionalIntent } from "./assessment.js";
 import { applyAssetChoice, toStoredValue, verifyChoice } from "./choices.js";
@@ -189,7 +190,7 @@ export class IntentCoordinator {
     conversation: Conversation,
     interpretation: Interpretation | ResumeTurn,
   ): Promise<Applied> {
-    const active = await repositories.intents.findOpenByConversation(conversation.id);
+    const active = await findActiveIntent(repositories, conversation.id);
 
     if (interpretation.kind === "RESUME") {
       return this.resumePayment(repositories, conversation, active, interpretation.intentId);
@@ -277,7 +278,7 @@ export class IntentCoordinator {
     userId: string,
     conversationId: string,
   ): Promise<ResumeInfo | undefined> {
-    const active = await repositories.intents.findOpenByConversation(conversationId);
+    const active = await findActiveIntent(repositories, conversationId);
     return this.resumeOf(repositories, { userId }, active);
   }
 
@@ -291,7 +292,7 @@ export class IntentCoordinator {
     userId: string,
     conversationId: string,
   ): Promise<OpenPaymentNeeds | undefined> {
-    const active = await repositories.intents.findOpenByConversation(conversationId);
+    const active = await findActiveIntent(repositories, conversationId);
     const resume = await this.resumeOf(repositories, { userId }, active);
     if (!active || !resume || resume.pending) return undefined;
     const needs: OpenPaymentNeeds = { resume, lastActiveAt: active.updatedAt };
@@ -471,7 +472,7 @@ export class IntentCoordinator {
     conversation: Conversation,
     optionId: string,
   ): Promise<{ active: Intent | null; verdict: ChoiceVerdict }> {
-    const active = await repositories.intents.findOpenByConversation(conversation.id);
+    const active = await findActiveIntent(repositories, conversation.id);
     const verdict = await verifyChoice(repositories, {
       optionId,
       conversationId: conversation.id,
