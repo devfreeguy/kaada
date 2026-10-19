@@ -12,7 +12,14 @@ export class PreparationTracker {
   private readonly running = new Map<string, Promise<void>>();
   private readonly latest = new Map<string, { outcome: PreparationOutcome; at: number }>();
 
-  constructor(private readonly now: () => number = Date.now) {}
+  constructor(
+    private readonly now: () => number = Date.now,
+    /** Told about every finished preparation, and about every one that threw (which is otherwise invisible to everyone). */
+    private readonly report: {
+      outcome?: (authorizationId: string, outcome: PreparationOutcome) => void;
+      error?: (authorizationId: string, error: unknown) => void;
+    } = {},
+  ) {}
 
   /** Starts a run unless one is already in flight for this authorization. Never throws. */
   start(authorizationId: string, run: () => Promise<PreparationOutcome>): "STARTED" | "RUNNING" {
@@ -20,8 +27,10 @@ export class PreparationTracker {
     const job = run()
       .then((outcome) => {
         this.latest.set(authorizationId, { outcome, at: this.now() });
+        this.report.outcome?.(authorizationId, outcome);
       })
-      .catch(() => {
+      .catch((error: unknown) => {
+        this.report.error?.(authorizationId, error);
         this.latest.set(authorizationId, {
           outcome: { status: "FINAL_PRICE_UNAVAILABLE", code: "UNEXPECTED" },
           at: this.now(),

@@ -251,3 +251,36 @@ describe("wired into a real application, the log lines a person debugging would 
     );
   });
 });
+
+describe("a payment that fails to prepare leaves a trace", () => {
+  it("reports a thrown error (it used to vanish) and still tells the page 'price unavailable'", async () => {
+    const { PreparationTracker } = await import("../src/core/execution/tracker.js");
+    const errors: unknown[] = [];
+    const tracker = new PreparationTracker(Date.now, {
+      error: (_id, error) => errors.push(error),
+    });
+    tracker.start("auth-1", () =>
+      Promise.reject(new Error("textile firm quote: 401 unauthorized")),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    assert.equal(errors.length, 1);
+    assert.match(String((errors[0] as Error).message), /401 unauthorized/);
+    assert.deepEqual(tracker.outcome("auth-1"), {
+      status: "FINAL_PRICE_UNAVAILABLE",
+      code: "UNEXPECTED",
+    });
+  });
+
+  it("reports every outcome, so a non-ready one is not silent", async () => {
+    const { PreparationTracker } = await import("../src/core/execution/tracker.js");
+    const seen: string[] = [];
+    const tracker = new PreparationTracker(Date.now, {
+      outcome: (_id, outcome) => seen.push(outcome.status),
+    });
+    tracker.start("auth-2", () =>
+      Promise.resolve({ status: "PROVIDER_CAPACITY_REACHED" as const }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    assert.deepEqual(seen, ["PROVIDER_CAPACITY_REACHED"]);
+  });
+});

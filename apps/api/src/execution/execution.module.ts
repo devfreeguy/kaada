@@ -1,4 +1,6 @@
 import { Logger, Module } from "@nestjs/common";
+import { errorDetails } from "../core/channels/error-details.js";
+import { errorText } from "../logging/error-text.js";
 import { nestLog } from "../logging/nest-log.js";
 import {
   attributionSuffix,
@@ -91,7 +93,36 @@ export function kernelAdapterConfig(config: AppConfig, bundlerUrl: string) {
       inject: [DATABASE],
       useFactory: (database: Database): Repositories => createRepositories(database),
     },
-    { provide: PREPARATION_TRACKER, useFactory: () => new PreparationTracker() },
+    {
+      provide: PREPARATION_TRACKER,
+      useFactory: () => {
+        const log = nestLog("ExecutionPrepare");
+        return new PreparationTracker(Date.now, {
+          outcome: (authorizationId, outcome) => {
+            const ready = outcome.status === "EXECUTION_READY";
+            // Anything but READY ends the page's progress and leaves Telegram on "confirming the price": say exactly why.
+            log(ready ? "info" : "warn", "execution.prepare_outcome", {
+              authorizationId,
+              status: outcome.status,
+              ...("reason" in outcome && { reason: outcome.reason }),
+              ...("code" in outcome && { code: outcome.code }),
+              ...("violations" in outcome &&
+                outcome.violations && { violations: outcome.violations.join(",") }),
+              ...("blockers" in outcome && {
+                blockers: JSON.stringify(outcome.blockers).slice(0, 400),
+              }),
+            });
+          },
+          error: (authorizationId, error) =>
+            log("error", "execution.prepare_threw", {
+              authorizationId,
+              ...errorDetails(error),
+              reason: errorText(error),
+              stack: error instanceof Error ? (error.stack ?? "").slice(0, 1500) : undefined,
+            }),
+        });
+      },
+    },
     {
       provide: EXECUTION_PREPARATION_SERVICE,
       inject: [
