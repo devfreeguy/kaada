@@ -426,3 +426,85 @@ describe("what the person is told", () => {
     await app.close();
   });
 });
+
+describe("a wallet with no CELO for gas", () => {
+  async function prepareOver(configuration: unknown, userId = "user-1") {
+    const runtime = {
+      finalizer: {
+        completedSessionUser: () =>
+          Promise.reject(new KaadaError("RECOVERY_SESSION_INVALID", "no")),
+      },
+      configuration,
+    } as unknown as RecoveryRuntime;
+    const moduleRef = await Test.createTestingModule({
+      controllers: [RecoveryController],
+      providers: [
+        { provide: RECOVERY_RUNTIME, useValue: runtime },
+        {
+          provide: WALLET_SETUP_SERVICE,
+          useValue: { userForView: () => Promise.resolve(userId) },
+        },
+      ],
+    }).compile();
+    const app = moduleRef.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
+    configureApp(app, { corsOrigins: [] } as never);
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/recovery/configuration/prepare",
+      headers: { authorization: "Bearer abc", "content-type": "application/json" },
+      payload: JSON.stringify({ recoveryAddress: "0x00000000000000000000000000000000000000f9" }),
+    });
+    await app.close();
+    return response;
+  }
+
+  it("gets its own error code and a plain message, not a bare 503", async () => {
+    const response = await prepareOver({
+      prepare: () =>
+        Promise.reject(
+          new KaadaError("RECOVERY_BLOCKED", "the wallet needs native gas for this operation", {
+            details: { reason: "GAS_FUNDING_REQUIRED" },
+          }),
+        ),
+    });
+    const body = response.json<{ code: string; message: string }>();
+    assert.equal(response.statusCode, 409);
+    assert.equal(body.code, "GAS_FUNDING_REQUIRED");
+    assert.equal(
+      body.message,
+      "To finish securing your account, add a small amount of CELO to your wallet.",
+    );
+    assert.equal(/native gas|RECOVERY_|BLOCKED/.test(response.body), false, response.body);
+  });
+
+  it("is what the real service produces for a short wallet when nothing sponsors it", async () => {
+    const world = createRecoveryWorld();
+    const user = await world.createUser({ armed: false, authenticator: true });
+    world.chain.funds.set(user.account.toLowerCase(), 0n);
+    const response = await prepareOver(world.configuration, user.userId);
+    assert.equal(response.statusCode, 409);
+    assert.equal(response.json<{ code: string }>().code, "GAS_FUNDING_REQUIRED");
+  });
+
+  it("does not change what other blocked recoveries answer, and leaves the sponsoring answer alone", async () => {
+    const other = await prepareOver({
+      prepare: () =>
+        Promise.reject(
+          new KaadaError("RECOVERY_BLOCKED", "not mature", { details: { reason: "NOT_MATURE" } }),
+        ),
+    });
+    assert.equal(other.statusCode, 503);
+    const sponsoring = await prepareOver({
+      prepare: () =>
+        Promise.reject(
+          new KaadaError("RECOVERY_SPONSORSHIP_REFUSED", "x", {
+            details: { reason: "WALLET_CAP" },
+          }),
+        ),
+    });
+    assert.equal(sponsoring.statusCode, 409);
+    assert.equal(sponsoring.json<{ code: string }>().code, "SPONSORSHIP_UNAVAILABLE");
+  });
+});

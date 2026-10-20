@@ -88,6 +88,14 @@ function bearer(header: string | undefined): string {
   return match[1];
 }
 
+/** The wallet holds too little native CELO (plus EntryPoint deposit) to pay for the operation, and nothing sponsors it. */
+function gasFundingRequired(error: unknown): boolean {
+  return (
+    isKaadaError(error) &&
+    (error.details as { reason?: unknown } | undefined)?.reason === "GAS_FUNDING_REQUIRED"
+  );
+}
+
 function httpError(error: unknown): never {
   if (isKaadaError(error)) {
     switch (error.code) {
@@ -537,6 +545,17 @@ export class RecoveryController {
         ...(parsed.data.delaySeconds !== undefined && { delaySeconds: parsed.data.delaySeconds }),
       });
     } catch (error) {
+      // A wallet with no CELO for gas gets its own answer, not the generic "temporarily unavailable": the person can fix it.
+      if (isKaadaError(error, "RECOVERY_BLOCKED") && gasFundingRequired(error)) {
+        throw new ConflictException(
+          {
+            statusCode: 409,
+            code: "GAS_FUNDING_REQUIRED",
+            message: "To finish securing your account, add a small amount of CELO to your wallet.",
+          },
+          { cause: error },
+        );
+      }
       return httpError(error);
     }
   }

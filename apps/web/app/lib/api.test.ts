@@ -22,6 +22,37 @@ describe("safe API errors", () => {
       },
     );
   });
+  it("tells a wallet with no CELO for gas to add a little, and keeps the sponsoring answer as it was", async () => {
+    await assert.rejects(
+      json(
+        Response.json(
+          { code: "GAS_FUNDING_REQUIRED", message: "internal detail" },
+          { status: 409 },
+        ),
+      ),
+      (error) => {
+        assert.ok(error instanceof ApiError);
+        assert.equal(
+          describeError(error, "fallback"),
+          "To finish securing your account, add a small amount of CELO to your wallet.",
+        );
+        return true;
+      },
+    );
+    await assert.rejects(
+      json(
+        Response.json(
+          { code: "SPONSORSHIP_UNAVAILABLE", message: "internal detail" },
+          { status: 409 },
+        ),
+      ),
+      (error) => {
+        assert.ok(error instanceof ApiError);
+        assert.match(describeError(error, "fallback"), /deposit a larger amount/);
+        return true;
+      },
+    );
+  });
   it("does not surface raw backend messages, including non-JSON proxy failures", async () => {
     for (const response of [
       Response.json({ message: "private provider detail" }, { status: 500 }),

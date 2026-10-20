@@ -55,6 +55,8 @@ export function describeError(error: unknown, fallback: string): string {
     if (error.code === "PIN_LOCKED" || error.status === 423)
       return "Too many wrong PIN attempts. Please try again later.";
     if (error.code === "PIN_NOT_SET") return "Create your payment PIN before continuing.";
+    if (error.code === "GAS_FUNDING_REQUIRED")
+      return "To finish securing your account, add a small amount of CELO to your wallet.";
     if (error.code === "SPONSORSHIP_UNAVAILABLE")
       return "To finish securing your account, add a small amount of CELO to your wallet, or deposit a larger amount.";
     if (error.code === "PIN_RESET_REQUIRED")
