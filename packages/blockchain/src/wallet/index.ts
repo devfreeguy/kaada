@@ -2,7 +2,8 @@ export { createViemAllowanceReader, createViemDeploymentChecker } from "./allowa
 export { ChainBalanceReader } from "./balance-reader.js";
 export type { BalanceReaderOptions, ChainReader } from "./balance-reader.js";
 export { DisabledExecutionSigner } from "./disabled-signer.js";
-export { createKernelAddressDeriver } from "./kernel-deriver.js";
+export { createKernelAddressDeriver, createKernelFactoryCallReader } from "./kernel-deriver.js";
+export type { KernelFactoryCall, KernelFactoryCallReader } from "./kernel-deriver.js";
 export { KERNEL_ENFORCEMENT, KERNEL_PROVIDER, KernelPolicyAdapter } from "./kernel-policy.js";
 export { KernelProvisioningAdapter } from "./kernel-provisioning.js";
 export type { AccountAddressDeriver } from "./kernel-provisioning.js";

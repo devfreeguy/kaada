@@ -29,6 +29,16 @@ export interface RecoveryContext {
   policy: RecoveryPolicy;
   /** Verifies a passkey registration made on the NEW device (never stores it until the recovery completes). */
   passkeyVerifier: PasskeyVerifier;
+  /**
+   * What the platform may spend on one wallet so it can secure itself: opening its account and the gas of its first Recovery Code
+   * setup. Absent (or a zero cap): nothing is spent and a wallet without native gas simply cannot arm.
+   */
+  sponsorship?: {
+    /** The most native CELO (wei) spent on one wallet over its whole life. */
+    perWalletWei: bigint;
+    /** Whether the person's wallet has ever received funds: nobody else is sponsored. */
+    funded: (userId: string) => Promise<boolean>;
+  };
   rpId: string;
   origin: string;
   /** The web app origin used in notification links. */

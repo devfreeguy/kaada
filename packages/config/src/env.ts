@@ -151,6 +151,13 @@ const envShape = {
     .string()
     .regex(/^[0-9]{1,30}$/)
     .default("0"),
+  // The most native CELO (wei) the platform will spend on ONE wallet, over its whole life, to open its account and to pay the gas of
+  // its first Recovery Code setup (so a wallet funded with a stablecoin only can still secure itself). 0 turns sponsoring off. Only
+  // wallets that have received funds are sponsored, and only once their own balance is not enough.
+  RECOVERY_SPONSOR_PER_WALLET_WEI: z
+    .string()
+    .regex(/^[0-9]{1,30}$/)
+    .default("0"),
   // The endpoints that make the recovery relayer spend gas (arming a Recovery Code, registering a device key, cancelling a
   // recovery) are limited per person and per address, per hour, each kind counted on its own. Low on purpose: a person does each
   // of these once or twice. A top-up or a clone deployment is real money, so nobody should be able to repeat one without bound.
@@ -394,6 +401,7 @@ function buildConfig(
       delaySeconds: delays.delaySeconds,
       minDelaySeconds: delays.minDelaySeconds,
       gasTopUpMaxWei: BigInt(env.RECOVERY_GAS_TOPUP_MAX_WEI),
+      sponsorPerWalletWei: BigInt(env.RECOVERY_SPONSOR_PER_WALLET_WEI),
       sweepIntervalMs: SETTINGS.recovery.sweepIntervalSeconds * 1000,
       emailProvider,
       ...(smtp !== undefined &&

@@ -92,6 +92,19 @@ describe("hardening settings", () => {
     }
   });
 
+  it("sponsoring a wallet’s first Recovery Code setup is off unless RECOVERY_SPONSOR_PER_WALLET_WEI is set", () => {
+    assert.equal(loadConfig(base).recovery.sponsorPerWalletWei, 0n);
+    assert.equal(
+      loadConfig({ ...base, RECOVERY_SPONSOR_PER_WALLET_WEI: "500000000000000000" }).recovery
+        .sponsorPerWalletWei,
+      500_000_000_000_000_000n,
+    );
+    assert.throws(
+      () => loadConfig({ ...base, RECOVERY_SPONSOR_PER_WALLET_WEI: "-1" }),
+      /RECOVERY_SPONSOR_PER_WALLET_WEI/,
+    );
+  });
+
   it("gas top-ups stay off unless RECOVERY_GAS_TOPUP_MAX_WEI is set", () => {
     assert.equal(loadConfig(base).recovery.gasTopUpMaxWei, 0n);
   });

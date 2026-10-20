@@ -25,11 +25,13 @@ import type {
   RecoveryTypedData,
   RecoveryTypedMessage,
   RecoveryValidatorState,
+  RootCredential,
   RootCredentialData,
   UserOperationStatus,
   WalletCredentialKind,
 } from "@kaada/domain";
 import { KernelV3_3AccountAbi } from "@zerodev/sdk";
+import { KernelVersionToAddressesMap } from "@zerodev/sdk/constants";
 import {
   concat,
   createPublicClient,
@@ -51,6 +53,7 @@ import { getUserOperationHash } from "viem/account-abstraction";
 import { privateKeyToAccount } from "viem/accounts";
 
 import { encodePasskeyAssertion } from "../execution/zerodev-kernel-adapter.js";
+import type { KernelFactoryCallReader } from "../wallet/kernel-deriver.js";
 
 const ENTRY_POINT: Address = "0x0000000071727De22E5E9d8BAf0edAc6f37da032";
 const SECP256K1_HALF_N = 0x7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0n;
@@ -95,6 +98,11 @@ export interface ViemRecoveryChainOptions {
    * wallet). `maxTopUpWei` caps what one call may send. `none` makes a short account a deferral instead.
    */
   gasSponsor?: { mode: "none" } | { mode: "topup"; maxTopUpWei: bigint };
+  /**
+   * How to read the factory call that opens a wallet's account (see `openAccount`). Absent: the relayer never opens accounts.
+   * The call is only sent when it targets Kernel v3.3's own factory and creates exactly the account asked for.
+   */
+  accountFactoryCall?: KernelFactoryCallReader;
   gas?: { verification: bigint; call: bigint; preVerification: bigint };
 }
 
@@ -571,6 +579,7 @@ export class ViemRecoveryChain implements RecoveryChainPort {
     rootValidator: string;
     rootKind: WalletCredentialKind;
     calls: ChainCall[];
+    sponsorUpToWei?: string;
   }): Promise<PreparedOperation> {
     // The ROOT lane: mode 0x00, type 0x00 (root), no validator address, nonce key 0.
     const key = BigInt(concat(["0x00", "0x00", zeroAddress, "0x0000"]));
@@ -583,6 +592,7 @@ export class ViemRecoveryChain implements RecoveryChainPort {
       nonceKey: key,
       callData: encodeExecute(input.calls),
       signature: stub as Hex,
+      ...(input.sponsorUpToWei && { sponsorUpToWei: BigInt(input.sponsorUpToWei) }),
     });
   }
 
@@ -618,6 +628,8 @@ export class ViemRecoveryChain implements RecoveryChainPort {
     nonceKey: bigint;
     callData: Hex;
     signature: Hex;
+    /** Overrides the configured top-up ceiling for this one operation (0 or absent: the configured one). */
+    sponsorUpToWei?: bigint;
   }): Promise<PreparedOperation> {
     const sender = getAddress(input.account);
     const [nonce, fees] = await Promise.all([
@@ -640,7 +652,7 @@ export class ViemRecoveryChain implements RecoveryChainPort {
       maxPriorityFeePerGas: fees.maxPriorityFeePerGas,
       signature: input.signature,
     };
-    await this.ensureGas(sender, operation);
+    const sponsoredWei = await this.ensureGas(sender, operation, input.sponsorUpToWei);
     const userOpHash = getUserOperationHash({
       userOperation: { ...operation },
       entryPointAddress: ENTRY_POINT,
@@ -650,17 +662,26 @@ export class ViemRecoveryChain implements RecoveryChainPort {
     return {
       userOpHash: userOpHash.toLowerCase(),
       operation: { ...(toJsonSafe({ ...operation, userOpHash }) as JsonObject) },
+      ...(sponsoredWei > 0n && { sponsoredWei: sponsoredWei.toString() }),
     };
   }
 
   /** The account pays the prefund. A short account is topped up by the sponsor, or the step is deferred. */
-  private async ensureGas(account: Address, operation: WireOperation): Promise<void> {
+  private async ensureGas(
+    account: Address,
+    operation: WireOperation,
+    sponsorUpToWei?: bigint,
+  ): Promise<bigint> {
     const required =
       (operation.callGasLimit + operation.verificationGasLimit + operation.preVerificationGas) *
       operation.maxFeePerGas;
     const balance = await this.client.getBalance({ address: account });
-    if (balance >= required) return;
-    const sponsor = this.options.gasSponsor ?? { mode: "none" };
+    if (balance >= required) return 0n;
+    const configured = this.options.gasSponsor ?? { mode: "none" };
+    const sponsor =
+      sponsorUpToWei !== undefined && sponsorUpToWei > 0n
+        ? ({ mode: "topup", maxTopUpWei: sponsorUpToWei } as const)
+        : configured;
     const shortfall = (required * 105n) / 100n - balance;
     if (sponsor.mode === "none" || shortfall > sponsor.maxTopUpWei) {
       throw new KaadaError("RECOVERY_BLOCKED", "the wallet needs native gas for this operation", {
@@ -670,12 +691,54 @@ export class ViemRecoveryChain implements RecoveryChainPort {
     const hash = await this.wallet.sendTransaction({ to: account, value: shortfall });
     await this.client.waitForTransactionReceipt({ hash });
     for (let i = 0; i < 30; i += 1) {
-      if ((await this.client.getBalance({ address: account })) >= required) return;
+      if ((await this.client.getBalance({ address: account })) >= required) return shortfall;
       await new Promise((resolve) => setTimeout(resolve, 1_000));
     }
     throw new KaadaError("RECOVERY_BLOCKED", "the wallet top-up is not visible yet", {
       details: { reason: "GAS_FUNDING_REQUIRED" },
     });
+  }
+
+  /**
+   * Opens the wallet's account on chain when it does not exist yet, paid by the relayer. The only thing sent is the call Kernel v3.3's
+   * own factory defines for this root, to that factory, and only if it creates exactly the account asked for: there is no way to make
+   * this send anything else, and the relayer gains no authority over the account it opens.
+   */
+  async openAccount(input: {
+    account: string;
+    root: RootCredential;
+  }): Promise<{ opened: boolean; costWei: string }> {
+    const reader = this.options.accountFactoryCall;
+    if (!reader) throw new KaadaError("RECOVERY_BLOCKED", "this service cannot open accounts");
+    const account = getAddress(input.account);
+    const existing = await this.client.getCode({ address: account });
+    if (existing && existing !== "0x") return { opened: false, costWei: "0" };
+    const call = await reader(input.root);
+    const pinned = KernelVersionToAddressesMap["0.3.3"].factoryAddress;
+    if (
+      call.address.toLowerCase() !== account.toLowerCase() ||
+      call.factory.toLowerCase() !== pinned.toLowerCase() ||
+      !call.factoryData.startsWith(toFunctionSelector("createAccount(bytes,bytes32)"))
+    ) {
+      throw new KaadaError("RECOVERY_BLOCKED", "the account to open is not the wallet's account");
+    }
+    const hash = await this.wallet.sendTransaction({
+      to: getAddress(call.factory),
+      data: call.factoryData,
+      gas: 600_000n,
+    });
+    const receipt = await this.client.waitForTransactionReceipt({ hash });
+    if (receipt.status !== "success") {
+      throw new KaadaError("RECOVERY_BLOCKED", "opening the account failed on chain");
+    }
+    for (let i = 0; i < 30; i += 1) {
+      const code = await this.client.getCode({ address: account });
+      if (code && code !== "0x") {
+        return { opened: true, costWei: (receipt.gasUsed * receipt.effectiveGasPrice).toString() };
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
+    }
+    throw new KaadaError("RECOVERY_BLOCKED", "the opened account is not visible yet");
   }
 
   /**

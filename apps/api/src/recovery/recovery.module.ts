@@ -3,7 +3,12 @@ import { createRepositories, withTransaction } from "@kaada/database";
 import type { KernelExecutionPort, RootValidatorDeployer } from "@kaada/domain";
 import type { AppConfig } from "@kaada/config";
 import type { Database } from "@kaada/database";
-import { checkRecoveryDeployment, createDeploymentReader } from "@kaada/blockchain";
+import {
+  checkRecoveryDeployment,
+  createDeploymentReader,
+  createKernelFactoryCallReader,
+} from "@kaada/blockchain";
+import type { WalletFundingStore } from "@kaada/domain";
 import { celo, celoSepolia } from "viem/chains";
 
 import { APP_CONFIG } from "../config/config.module.js";
@@ -32,7 +37,7 @@ import {
   ROOT_VALIDATOR_DEPLOYER,
 } from "../roots/roots.tokens.js";
 import { WalletModule } from "../wallet/wallet.module.js";
-import { DEVICE_TIER_SERVICE } from "../wallet/wallet.tokens.js";
+import { DEVICE_TIER_SERVICE, WALLET_FUNDING_STORE } from "../wallet/wallet.tokens.js";
 import type { DeviceTierService } from "../core/attestation/device-tier-service.js";
 import { RecoveryController } from "./recovery.controller.js";
 import {
@@ -86,6 +91,7 @@ import { AesGcmSecretCipher } from "../infrastructure/security/aes-gcm-cipher.js
         TRANSACTION_PIN_SERVICE,
         DEVICE_TIER_SERVICE,
         RATE_LIMIT_FACTORY,
+        WALLET_FUNDING_STORE,
       ],
       useFactory: (
         database: Database,
@@ -93,6 +99,7 @@ import { AesGcmSecretCipher } from "../infrastructure/security/aes-gcm-cipher.js
         pins: TransactionPinService | null,
         deviceTiers: DeviceTierService | null,
         limits: RateLimitFactory,
+        funding: WalletFundingStore,
       ): RecoveryRuntime | null => {
         const recovery = config.recovery;
         const passkey = config.wallet.passkey;
@@ -140,6 +147,9 @@ import { AesGcmSecretCipher } from "../infrastructure/security/aes-gcm-cipher.js
           relayerKeyFile: recovery.setup.relayerKeyFile,
           p256Precompile: true,
           gasTopUpMaxWei: recovery.gasTopUpMaxWei,
+          ...(recovery.sponsorPerWalletWei > 0n && {
+            accountFactoryCall: createKernelFactoryCallReader({ rpcUrl: config.wallet.rpcUrl }),
+          }),
         });
         // Fail closed: the validator only accepts `initiate` from the relayer address it was deployed with, so a key file that
         // derives to any other address could never start a recovery. Refuse to boot instead of failing mid-recovery.
@@ -162,6 +172,12 @@ import { AesGcmSecretCipher } from "../infrastructure/security/aes-gcm-cipher.js
           webUrl: config.webUrl,
           challengeSecret: Buffer.from(recovery.setup.challengeSecret, "base64"),
           ...(deviceTiers && { deviceTiers }),
+          ...(recovery.sponsorPerWalletWei > 0n && {
+            sponsorship: {
+              perWalletWei: recovery.sponsorPerWalletWei,
+              funded: (userId: string) => funding.hasBeenFunded(userId, recovery.chainId),
+            },
+          }),
           policy: {
             defaultDelaySeconds: recovery.delaySeconds,
             minDelaySeconds: recovery.minDelaySeconds,

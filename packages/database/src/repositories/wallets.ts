@@ -279,6 +279,15 @@ export function createAuditRepository(db: Db): AuditRepository {
       });
       return rows.map(toAuditEvent);
     },
+
+    async listByType(userId, type, limit = 200) {
+      const rows = await db.auditEvent.findMany({
+        where: { userId, type },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: limit,
+      });
+      return rows.map(toAuditEvent);
+    },
   };
 }
 

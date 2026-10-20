@@ -7,6 +7,8 @@ export interface AuditRepository {
   append(event: NewAuditEvent): Promise<AuditEvent>;
   /** Newest first. For tests and operators. */
   listForUser(userId: string, limit?: number): Promise<AuditEvent[]>;
+  /** Every event of one type for a person, newest first (not limited by how busy their trail is). */
+  listByType(userId: string, type: string, limit?: number): Promise<AuditEvent[]>;
 }
 
 export const WALLET_AUDIT_EVENTS = {

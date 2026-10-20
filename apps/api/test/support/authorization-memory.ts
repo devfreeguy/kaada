@@ -265,6 +265,8 @@ export function createAuthorizationStores(
       return Promise.resolve(row);
     },
     listForUser: (userId) => Promise.resolve(audit.filter((a) => a.userId === userId).reverse()),
+    listByType: (userId, type) =>
+      Promise.resolve(audit.filter((a) => a.userId === userId && a.type === type).reverse()),
   };
 
   return {

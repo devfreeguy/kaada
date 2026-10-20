@@ -1,6 +1,7 @@
 import type { JsonObject } from "../json.js";
 import type { IdentityType } from "../identity/index.js";
 import type { WalletCredentialKind } from "./credential.js";
+import type { RootCredential } from "../wallets/root.js";
 
 /*
  * Kaada-owned recovery contracts. The chain stack (viem, Kernel, the validators, the bundler) lives behind
@@ -104,6 +105,8 @@ export interface PreparedOperation {
   userOpHash: string;
   /** The unsigned operation, JSON-safe, with no secret in it. */
   operation: JsonObject;
+  /** Native CELO (wei, decimal string) the sponsor sent to the account to pay for this operation; absent when nothing was sent. */
+  sponsoredWei?: string;
 }
 
 export interface UserOperationStatus {
@@ -187,7 +190,17 @@ export interface RecoveryChainPort {
     rootValidator: string;
     rootKind: WalletCredentialKind;
     calls: ChainCall[];
+    /** The most native CELO (wei, decimal string) the sponsor may send to the account to pay for it. Absent or "0": none. */
+    sponsorUpToWei?: string;
   }): Promise<PreparedOperation>;
+  /**
+   * Opens (deploys) the account of `root` on chain, paid by the sponsor, when it does not exist yet. Anyone could do this: it creates
+   * exactly the account the root already commits to and gives the sponsor no authority over it. Idempotent.
+   */
+  openAccount?(input: {
+    account: string;
+    root: RootCredential;
+  }): Promise<{ opened: boolean; costWei: string }>;
   /** Builds the unsigned UserOperation of the EXACT recovery batch for the recovery validator lane. */
   prepareRecoveryBatch(input: {
     account: string;

@@ -59,6 +59,8 @@ export interface RecoveryRuntimeParams {
   challengeSecret: Buffer;
   policy?: Partial<RecoveryPolicy>;
   deviceTiers?: DeviceTierResolver;
+  /** What may be spent on one wallet so it can secure itself (see RecoveryContext.sponsorship). */
+  sponsorship?: RecoveryContext["sponsorship"];
   /** Rate limits for the recovery steps. Absent: per-process limits (development and tests only). */
   limits?: RateLimitFactory;
   messengers?: ChannelMessenger[];
@@ -94,6 +96,7 @@ export function createRecoveryRuntime(params: RecoveryRuntimeParams): RecoveryRu
     }),
     risk: new DefaultRecoveryRiskPolicy(policy),
     policy,
+    ...(params.sponsorship && { sponsorship: params.sponsorship }),
     passkeyVerifier: params.passkeyVerifier,
     rpId: params.rpId,
     origin: params.origin,
@@ -161,6 +164,8 @@ export function createRecoveryChain(input: {
   relayerKeyFile: string;
   p256Precompile: boolean;
   gasTopUpMaxWei: bigint;
+  /** Present only where the platform opens wallets' accounts (RECOVERY_SPONSOR_PER_WALLET_WEI > 0). */
+  accountFactoryCall?: ViemRecoveryChainOptions["accountFactoryCall"];
 }): ViemRecoveryChain {
   const relayerKey: Hex = readKeyFileOutsideRepo(
     input.relayerKeyFile,
@@ -175,6 +180,7 @@ export function createRecoveryChain(input: {
     deployments: input.deployments,
     relayerKey,
     p256Precompile: input.p256Precompile,
+    ...(input.accountFactoryCall && { accountFactoryCall: input.accountFactoryCall }),
     gasSponsor:
       input.gasTopUpMaxWei > 0n
         ? { mode: "topup", maxTopUpWei: input.gasTopUpMaxWei }

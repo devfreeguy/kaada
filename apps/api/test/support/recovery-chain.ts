@@ -86,6 +86,11 @@ export class FakeRecoveryChain implements RecoveryChainPort {
   };
 
   readonly accounts = new Map<string, FakeAccount>();
+  /** Sponsorship knobs: how many accounts were opened, what opening costs, what the next gas top-up is, what budget was offered. */
+  openCalls = 0;
+  openCostWei = 15_000_000_000_000_000n;
+  topUpWei = 0n;
+  lastSponsorUpTo: string | undefined;
   readonly instances = new Map<string, FakeInstance>();
   readonly operations = new Map<string, FakeOperation>();
   readonly log: string[] = [];
@@ -445,12 +450,45 @@ export class FakeRecoveryChain implements RecoveryChainPort {
     ];
   }
 
+  openAccount(input: {
+    account: string;
+    root: {
+      type: WalletCredentialKind;
+      validatorAddress?: string;
+      credentialId?: string;
+      keyId?: string;
+    };
+  }): Promise<{ opened: boolean; costWei: string }> {
+    const address = input.account.toLowerCase();
+    if (this.accounts.get(address)?.deployed)
+      return Promise.resolve({ opened: false, costWei: "0" });
+    this.openCalls += 1;
+    this.seedAccount({
+      address,
+      root: {
+        validator: input.root.validatorAddress ?? "0x00000000000000000000000000000000000000d1",
+        kind: input.root.type,
+        credentialRef: input.root.credentialId ?? input.root.keyId ?? "opened",
+      },
+      currentNonce: 0,
+    });
+    return Promise.resolve({ opened: true, costWei: this.openCostWei.toString() });
+  }
+
   prepareRootOperation(input: {
     account: string;
     rootValidator: string;
     rootKind: WalletCredentialKind;
     calls: ChainCall[];
+    sponsorUpToWei?: string;
   }): Promise<PreparedOperation> {
+    this.lastSponsorUpTo = input.sponsorUpToWei;
+    const sponsored =
+      this.topUpWei > 0n && input.sponsorUpToWei
+        ? this.topUpWei < BigInt(input.sponsorUpToWei)
+          ? this.topUpWei
+          : BigInt(input.sponsorUpToWei)
+        : 0n;
     this.counter += 1;
     const userOpHash = fakeHash(["root", input, this.counter]);
     return Promise.resolve({
@@ -462,6 +500,7 @@ export class FakeRecoveryChain implements RecoveryChainPort {
         calls: input.calls.map((call) => ({ to: call.to, data: call.data })),
         hash: userOpHash,
       },
+      ...(sponsored > 0n && { sponsoredWei: sponsored.toString() }),
     });
   }
 
@@ -615,7 +654,8 @@ export class FakeRecoveryChain implements RecoveryChainPort {
     const acct = this.mustAccount(input.account);
     const revert = (reason: string) =>
       new KaadaError("RECOVERY_REJECTED", "initiate reverted", { details: { reason } });
-    if ((input.sender ?? this.relayerAddress).toLowerCase() !== this.relayerAddress) throw revert("NotRelayer");
+    if ((input.sender ?? this.relayerAddress).toLowerCase() !== this.relayerAddress)
+      throw revert("NotRelayer");
     if (!acct.config) throw revert("NotInitialized");
     if (acct.pending) throw revert("RecoveryActive");
     if (Number(input.deadline) < Math.floor(this.clock().getTime() / 1000)) throw revert("Expired");

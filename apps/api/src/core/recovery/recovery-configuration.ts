@@ -4,6 +4,7 @@ import type { RecoveryConfiguration, Wallet } from "@kaada/domain";
 
 import type { RecoveryContext } from "./context.js";
 import type { TotpEnrolment } from "./recovery-totp.js";
+import { toRootCredential } from "../roots/root-credentials.js";
 import { ensureRootCredential } from "./recovery-flow.js";
 import type { RootSigningRequest } from "./recovery-flow.js";
 
@@ -81,7 +82,14 @@ export class RecoveryConfigurationService {
         "set up your authenticator app before saving a Recovery Code",
       );
     }
-    const account = await this.ctx.chain.accountState(wallet.address);
+    let account = await this.ctx.chain.accountState(wallet.address);
+    // A wallet that was only ever funded has no account on chain yet, and may hold no CELO to pay for one. Where the platform
+    // sponsors, it opens the account and covers the gas of this one step, within a fixed lifetime budget for the wallet.
+    let budget = await this.sponsorshipLeft(wallet);
+    if (!account.deployed) {
+      account = await this.openAccount(wallet, budget);
+      budget = await this.sponsorshipLeft(wallet);
+    }
     if (!account.deployed || !account.rootValidator) {
       throw new KaadaError(
         "RECOVERY_REJECTED",
@@ -108,7 +116,11 @@ export class RecoveryConfigurationService {
       rootValidator: account.rootValidator,
       rootKind: root.kind,
       calls,
+      ...(budget > 0n && { sponsorUpToWei: budget.toString() }),
     });
+    if (prepared.sponsoredWei) {
+      await this.recordSponsored(wallet, BigInt(prepared.sponsoredWei), "gas_topup");
+    }
     const configuration = await this.ctx.uow.transaction(async (tx) => {
       // An unfinished earlier preparation is superseded, never left dangling.
       for (const old of await tx.recoveryConfigurations.listForWallet(wallet.id)) {
@@ -169,6 +181,67 @@ export class RecoveryConfigurationService {
         }),
       },
     };
+  }
+
+  /**
+   * What may still be spent on this wallet: its lifetime budget minus everything already recorded. Zero when sponsoring is off or the
+   * wallet has never received funds (a wallet that was never funded risks nothing and costs the platform nothing).
+   */
+  private async sponsorshipLeft(wallet: Wallet): Promise<bigint> {
+    const sponsorship = this.ctx.sponsorship;
+    if (!sponsorship || sponsorship.perWalletWei <= 0n) return 0n;
+    if (!(await sponsorship.funded(wallet.userId))) return 0n;
+    const spent = (
+      await this.ctx.uow.read.audit.listByType(
+        wallet.userId,
+        RECOVERY_AUDIT_EVENTS.relayerSponsored,
+        1000,
+      )
+    ).reduce((sum, event) => {
+      const wei = (event.data as { wei?: unknown } | undefined)?.wei;
+      return sum + (typeof wei === "string" && /^[0-9]+$/.test(wei) ? BigInt(wei) : 0n);
+    }, 0n);
+    return spent >= sponsorship.perWalletWei ? 0n : sponsorship.perWalletWei - spent;
+  }
+
+  /** Opens the wallet's account on chain, paid by the platform, when the budget allows. Otherwise the account stays as it is. */
+  private async openAccount(wallet: Wallet & { address: string }, budget: bigint) {
+    const chain = this.ctx.chain;
+    if (budget <= 0n || !chain.openAccount) return chain.accountState(wallet.address);
+    const rootRow = await this.ctx.uow.read.walletCredentials.findRoot(wallet.id);
+    if (!rootRow) return chain.accountState(wallet.address);
+    try {
+      const opened = await chain.openAccount({
+        account: wallet.address,
+        root: toRootCredential(rootRow, this.ctx.rpId),
+      });
+      if (opened.opened) {
+        await this.recordSponsored(wallet, BigInt(opened.costWei), "open_account");
+      }
+    } catch (error) {
+      this.ctx.log("error", "recovery.account_open_failed", {
+        walletId: wallet.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+    return chain.accountState(wallet.address);
+  }
+
+  private async recordSponsored(wallet: Wallet, wei: bigint, purpose: string): Promise<void> {
+    await this.ctx.uow.read.audit.append({
+      id: createId(),
+      userId: wallet.userId,
+      type: RECOVERY_AUDIT_EVENTS.relayerSponsored,
+      entityType: "wallet",
+      entityId: wallet.id,
+      data: { wei: wei.toString(), purpose },
+    });
+    this.ctx.log("info", "recovery.relayer_sponsored", {
+      walletId: wallet.id,
+      purpose,
+      wei: wei.toString(),
+    });
   }
 
   /**

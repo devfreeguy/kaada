@@ -1,4 +1,6 @@
 export const RECOVERY_AUDIT_EVENTS = {
+  /** The relayer paid for something on a wallet (opening its account, or gas for its first recovery step); `data.wei` says how much. */
+  relayerSponsored: "recovery.relayer_sponsored",
   configurationRequested: "recovery.configuration_requested",
   configurationActivated: "recovery.configuration_activated",
   configurationSuperseded: "recovery.configuration_superseded",
