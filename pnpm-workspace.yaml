@@ -20,3 +20,7 @@ allowBuilds:
   prisma: true
   esbuild: false
   unrs-resolver: false
+
+minimumReleaseAgeExclude:
+  - framer-motion@14.4.0
+  - motion-dom@14.4.0

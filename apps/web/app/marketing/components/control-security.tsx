@@ -1,5 +1,6 @@
 import { SectionHeading } from "../../components/section-heading";
 import { SectionWrapper } from "../../components/section-wrapper";
+import { SecurityCards } from "./security-cards";
 
 export function ControlSecurity() {
   return (
@@ -15,6 +16,7 @@ export function ControlSecurity() {
           description="Kaada can understand what you want to do, prepare the action, and handle the technical steps behind it. But your account stays protected, your permissions stay limited, and important actions still require your approval."
           titleId="control-security-title"
         />
+        <SecurityCards />
       </SectionWrapper>
     </section>
   );

@@ -1,0 +1,10 @@
+.scrollArea {
+  --security-stack-height: clamp(32rem, 70dvh, 40rem);
+  height: var(--security-stack-height);
+  border-radius: 28px;
+}
+@media (max-width: 1023px) {
+  .scrollArea {
+    --security-stack-height: clamp(40rem, 84dvh, 46rem);
+  }
+}

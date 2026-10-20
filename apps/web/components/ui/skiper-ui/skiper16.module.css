@@ -1,0 +1,28 @@
+.track {
+  position: sticky;
+  top: 0;
+  display: flex;
+  padding-block: 8px;
+  align-items: flex-start;
+  justify-content: center;
+}
+.track:last-child {
+  min-height: var(--security-stack-height);
+}
+.card {
+  width: 100%;
+  transform-origin: center top;
+}
+@media (prefers-reduced-motion: reduce) {
+  .track {
+    position: relative;
+    height: auto;
+    padding-block: 12px;
+  }
+  .card {
+    transform: none !important;
+  }
+  .track:last-child {
+    min-height: 0;
+  }
+}
