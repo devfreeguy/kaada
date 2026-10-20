@@ -90,6 +90,14 @@ export function createWalletFundingStore(database: Database): WalletFundingStore
       );
     },
 
+    async depositItems(userId, chainId) {
+      const rows = await db.walletFundingEvent.findMany({
+        where: { userId, chainId },
+        select: { items: true },
+      });
+      return rows.flatMap((row) => asItems(row.items));
+    },
+
     async checkpoint(chainId, address): Promise<WalletBalanceCheckpoint | null> {
       const row = await db.walletDepositCheckpoint.findUnique({
         where: { chainId_address: { chainId, address } },

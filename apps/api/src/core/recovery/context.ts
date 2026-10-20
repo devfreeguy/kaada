@@ -9,6 +9,8 @@ import type {
   RecoveryEmailSender,
   RecoveryRiskPolicy,
   Wallet,
+  DepositItem,
+  SponsorshipLedger,
 } from "@kaada/domain";
 
 import type { AgentLog } from "../agent/ports.js";
@@ -36,8 +38,16 @@ export interface RecoveryContext {
   sponsorship?: {
     /** The most native CELO (wei) spent on one wallet over its whole life. */
     perWalletWei: bigint;
-    /** Whether the person's wallet has ever received funds: nobody else is sponsored. */
-    funded: (userId: string) => Promise<boolean>;
+    /** The most spent for sponsoring in any rolling 24 hours, across all wallets. Zero means sponsoring is off. */
+    dailyBudgetWei: bigint;
+    /** Sponsoring stops while the relayer holds less than this (wei). */
+    relayerReserveWei: bigint;
+    /** What a wallet must have received (millionths of a US dollar) to be sponsored at all. */
+    minDepositUsdMicros: bigint;
+    /** Every token amount recorded as received by the person's wallet. */
+    depositItems: (userId: string) => Promise<DepositItem[]>;
+    /** Where the caps are checked and spends recorded, atomically. */
+    ledger: SponsorshipLedger;
   };
   rpId: string;
   origin: string;

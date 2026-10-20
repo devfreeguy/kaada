@@ -76,6 +76,8 @@ export interface WalletFundingStore {
    * balance. Once true it stays true (events are never deleted), even if everything is later spent.
    */
   hasBeenFunded(userId: string, chainId: number): Promise<boolean>;
+  /** Every token amount recorded as received by this person's wallet on the chain (dust is never recorded). */
+  depositItems(userId: string, chainId: number): Promise<WalletFundingItem[]>;
   checkpoint(chainId: number, address: string): Promise<WalletBalanceCheckpoint | null>;
   /**
    * Moves the checkpoint (and records the event, if any) when `expectedVersion` still matches. `committed` is false when

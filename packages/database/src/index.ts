@@ -2,6 +2,7 @@ export * from "./client/index.js";
 export {
   createDatabaseAssetRegistry,
   createRepositories,
+  createSponsorshipLedger,
   createWalletFundingStore,
   withTransaction,
 } from "./repositories/index.js";

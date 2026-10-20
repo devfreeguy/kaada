@@ -1,6 +1,9 @@
 export const RECOVERY_AUDIT_EVENTS = {
   /** The relayer paid for something on a wallet (opening its account, or gas for its first recovery step); `data.wei` says how much. */
   relayerSponsored: "recovery.relayer_sponsored",
+  /** The sponsoring ledger: what a spend may cost at most, then what it really cost. See SponsorshipLedger. */
+  sponsorReserved: "recovery.sponsor_reserved",
+  sponsorSettled: "recovery.sponsor_settled",
   configurationRequested: "recovery.configuration_requested",
   configurationActivated: "recovery.configuration_activated",
   configurationSuperseded: "recovery.configuration_superseded",
@@ -86,6 +89,13 @@ export type {
   RecoveryTerminator,
 } from "./attempt.js";
 export { RECOVERY_TOTP_STATUSES } from "./totp.js";
+export { depositValueUsdMicros } from "./sponsorship.js";
+export type {
+  DepositItem,
+  SponsorLimit,
+  SponsorReservation,
+  SponsorshipLedger,
+} from "./sponsorship.js";
 export type {
   NewRecoveryTotp,
   RecoveryTotp,

@@ -105,6 +105,34 @@ describe("hardening settings", () => {
     );
   });
 
+  it("sponsoring needs its daily budget and has safe defaults for the rest", () => {
+    const config = loadConfig(base).recovery;
+    assert.equal(config.sponsorPerWalletWei, 0n);
+    assert.equal(
+      config.sponsorDailyBudgetWei,
+      0n,
+      "unset: sponsoring is off even if the per-wallet value is set",
+    );
+    assert.equal(config.sponsorRelayerReserveWei, 1_000_000_000_000_000_000n);
+    assert.equal(config.sponsorMinDepositUsdMicros, 5_000_000n);
+    const set = loadConfig({
+      ...base,
+      RECOVERY_SPONSOR_DAILY_BUDGET_WEI: "2000000000000000000",
+      RECOVERY_SPONSOR_RELAYER_RESERVE_WEI: "3000000000000000000",
+      RECOVERY_SPONSOR_MIN_DEPOSIT_USD: "12.5",
+    }).recovery;
+    assert.equal(set.sponsorDailyBudgetWei, 2_000_000_000_000_000_000n);
+    assert.equal(set.sponsorRelayerReserveWei, 3_000_000_000_000_000_000n);
+    assert.equal(set.sponsorMinDepositUsdMicros, 12_500_000n);
+    for (const bad of ["-1", "five", "1.1234567", ""]) {
+      assert.throws(
+        () => loadConfig({ ...base, RECOVERY_SPONSOR_MIN_DEPOSIT_USD: bad }),
+        /RECOVERY_SPONSOR_MIN_DEPOSIT_USD/,
+        bad,
+      );
+    }
+  });
+
   it("gas top-ups stay off unless RECOVERY_GAS_TOPUP_MAX_WEI is set", () => {
     assert.equal(loadConfig(base).recovery.gasTopUpMaxWei, 0n);
   });

@@ -193,6 +193,8 @@ export interface RecoveryChainPort {
     /** The most native CELO (wei, decimal string) the sponsor may send to the account to pay for it. Absent or "0": none. */
     sponsorUpToWei?: string;
   }): Promise<PreparedOperation>;
+  /** The relayer's native balance (wei, decimal string). Absent: not readable here. */
+  relayerBalanceWei?(): Promise<string>;
   /**
    * Opens (deploys) the account of `root` on chain, paid by the sponsor, when it does not exist yet. Anyone could do this: it creates
    * exactly the account the root already commits to and gives the sponsor no authority over it. Idempotent.

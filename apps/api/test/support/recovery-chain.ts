@@ -91,6 +91,11 @@ export class FakeRecoveryChain implements RecoveryChainPort {
   openCostWei = 15_000_000_000_000_000n;
   topUpWei = 0n;
   lastSponsorUpTo: string | undefined;
+  relayerBalance = 10n * 10n ** 18n;
+  /** When set, opening an account waits for it: lets a test hold many requests inside the sponsoring step at once. */
+  openGate: Promise<void> | null = null;
+  /** Set to make a wallet without enough native gas refuse an unsponsored operation, as the real adapter does. */
+  gasShortFor = new Set<string>();
   readonly instances = new Map<string, FakeInstance>();
   readonly operations = new Map<string, FakeOperation>();
   readonly log: string[] = [];
@@ -450,7 +455,11 @@ export class FakeRecoveryChain implements RecoveryChainPort {
     ];
   }
 
-  openAccount(input: {
+  relayerBalanceWei(): Promise<string> {
+    return Promise.resolve(this.relayerBalance.toString());
+  }
+
+  async openAccount(input: {
     account: string;
     root: {
       type: WalletCredentialKind;
@@ -459,10 +468,12 @@ export class FakeRecoveryChain implements RecoveryChainPort {
       keyId?: string;
     };
   }): Promise<{ opened: boolean; costWei: string }> {
+    if (this.openGate) await this.openGate;
     const address = input.account.toLowerCase();
     if (this.accounts.get(address)?.deployed)
       return Promise.resolve({ opened: false, costWei: "0" });
     this.openCalls += 1;
+    this.gasShortFor.add(address);
     this.seedAccount({
       address,
       root: {
@@ -483,12 +494,18 @@ export class FakeRecoveryChain implements RecoveryChainPort {
     sponsorUpToWei?: string;
   }): Promise<PreparedOperation> {
     this.lastSponsorUpTo = input.sponsorUpToWei;
-    const sponsored =
-      this.topUpWei > 0n && input.sponsorUpToWei
-        ? this.topUpWei < BigInt(input.sponsorUpToWei)
-          ? this.topUpWei
-          : BigInt(input.sponsorUpToWei)
-        : 0n;
+    const short = this.gasShortFor.has(input.account.toLowerCase());
+    const offered = input.sponsorUpToWei ? BigInt(input.sponsorUpToWei) : 0n;
+    // The real adapter refuses a short account unless it may top it up, and a top-up above the offer.
+    if (short && (offered === 0n || this.topUpWei > offered)) {
+      return Promise.reject(
+        new KaadaError("RECOVERY_BLOCKED", "the wallet needs native gas for this operation", {
+          details: { reason: "GAS_FUNDING_REQUIRED" },
+        }),
+      );
+    }
+    const sponsored = short ? this.topUpWei : 0n;
+    if (short && sponsored > 0n) this.gasShortFor.delete(input.account.toLowerCase());
     this.counter += 1;
     const userOpHash = fakeHash(["root", input, this.counter]);
     return Promise.resolve({

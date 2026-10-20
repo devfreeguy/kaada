@@ -1,5 +1,5 @@
 import { Logger, Module } from "@nestjs/common";
-import { createRepositories, withTransaction } from "@kaada/database";
+import { createRepositories, createSponsorshipLedger, withTransaction } from "@kaada/database";
 import type { KernelExecutionPort, RootValidatorDeployer } from "@kaada/domain";
 import type { AppConfig } from "@kaada/config";
 import type { Database } from "@kaada/database";
@@ -126,6 +126,13 @@ import { AesGcmSecretCipher } from "../infrastructure/security/aes-gcm-cipher.js
               ]
             : []),
         ];
+        // Sponsoring needs BOTH the per-wallet and the daily value: either one at zero keeps it off.
+        const sponsoring = recovery.sponsorPerWalletWei > 0n && recovery.sponsorDailyBudgetWei > 0n;
+        if (recovery.sponsorPerWalletWei > 0n && !sponsoring) {
+          new Logger("Recovery").warn(
+            "recovery.sponsor_off: RECOVERY_SPONSOR_PER_WALLET_WEI is set but RECOVERY_SPONSOR_DAILY_BUDGET_WEI is 0, so sponsoring stays off",
+          );
+        }
         const chain = recovery.chainId === celoSepolia.id ? celoSepolia : celo;
         if (chain.id !== recovery.chainId)
           throw new Error(`unsupported recovery chain ${String(recovery.chainId)}`);
@@ -147,7 +154,7 @@ import { AesGcmSecretCipher } from "../infrastructure/security/aes-gcm-cipher.js
           relayerKeyFile: recovery.setup.relayerKeyFile,
           p256Precompile: true,
           gasTopUpMaxWei: recovery.gasTopUpMaxWei,
-          ...(recovery.sponsorPerWalletWei > 0n && {
+          ...(sponsoring && {
             accountFactoryCall: createKernelFactoryCallReader({ rpcUrl: config.wallet.rpcUrl }),
           }),
         });
@@ -158,6 +165,7 @@ import { AesGcmSecretCipher } from "../infrastructure/security/aes-gcm-cipher.js
         new Logger("Recovery").log(
           `recovery relayer ${viemChain.relayerAddress} on ${recovery.network}`,
         );
+        const ledger = createSponsorshipLedger(database);
         return createRecoveryRuntime({
           database,
           chain: viemChain,
@@ -172,10 +180,14 @@ import { AesGcmSecretCipher } from "../infrastructure/security/aes-gcm-cipher.js
           webUrl: config.webUrl,
           challengeSecret: Buffer.from(recovery.setup.challengeSecret, "base64"),
           ...(deviceTiers && { deviceTiers }),
-          ...(recovery.sponsorPerWalletWei > 0n && {
+          ...(sponsoring && {
             sponsorship: {
               perWalletWei: recovery.sponsorPerWalletWei,
-              funded: (userId: string) => funding.hasBeenFunded(userId, recovery.chainId),
+              dailyBudgetWei: recovery.sponsorDailyBudgetWei,
+              relayerReserveWei: recovery.sponsorRelayerReserveWei,
+              minDepositUsdMicros: recovery.sponsorMinDepositUsdMicros,
+              depositItems: (userId: string) => funding.depositItems(userId, recovery.chainId),
+              ledger,
             },
           }),
           policy: {

@@ -158,6 +158,23 @@ const envShape = {
     .string()
     .regex(/^[0-9]{1,30}$/)
     .default("0"),
+  // Sponsoring also needs a daily cap: the most native CELO (wei) the platform sends for it in any rolling 24 hours, across all
+  // wallets. 0 or unset turns sponsoring off even when the per-wallet value is set.
+  RECOVERY_SPONSOR_DAILY_BUDGET_WEI: z
+    .string()
+    .regex(/^[0-9]{1,30}$/)
+    .default("0"),
+  // Sponsoring stops while the relayer holds less than this (wei): it must always keep enough to start recoveries. Default 1 CELO.
+  RECOVERY_SPONSOR_RELAYER_RESERVE_WEI: z
+    .string()
+    .regex(/^[0-9]{1,30}$/)
+    .default("1000000000000000000"),
+  // A wallet is sponsored only if what it has received is worth at least this many US dollars (stablecoins that stand for dollars,
+  // at face value; nothing else counts). Up to six decimals. Default 5.
+  RECOVERY_SPONSOR_MIN_DEPOSIT_USD: z
+    .string()
+    .regex(/^[0-9]{1,7}(\.[0-9]{1,6})?$/)
+    .default("5"),
   // The endpoints that make the recovery relayer spend gas (arming a Recovery Code, registering a device key, cancelling a
   // recovery) are limited per person and per address, per hour, each kind counted on its own. Low on purpose: a person does each
   // of these once or twice. A top-up or a clone deployment is real money, so nobody should be able to repeat one without bound.
@@ -402,6 +419,9 @@ function buildConfig(
       minDelaySeconds: delays.minDelaySeconds,
       gasTopUpMaxWei: BigInt(env.RECOVERY_GAS_TOPUP_MAX_WEI),
       sponsorPerWalletWei: BigInt(env.RECOVERY_SPONSOR_PER_WALLET_WEI),
+      sponsorDailyBudgetWei: BigInt(env.RECOVERY_SPONSOR_DAILY_BUDGET_WEI),
+      sponsorRelayerReserveWei: BigInt(env.RECOVERY_SPONSOR_RELAYER_RESERVE_WEI),
+      sponsorMinDepositUsdMicros: usdToMicros(env.RECOVERY_SPONSOR_MIN_DEPOSIT_USD),
       sweepIntervalMs: SETTINGS.recovery.sweepIntervalSeconds * 1000,
       emailProvider,
       ...(smtp !== undefined &&
@@ -698,6 +718,12 @@ function crossChecks(
 }
 
 /** Parses and validates environment variables. Throws ConfigError listing every invalid value. */
+/** "12.5" -> 12_500_000n (millionths of a dollar). The pattern in the schema guarantees the shape. */
+function usdToMicros(value: string): bigint {
+  const [whole = "0", fraction = ""] = value.split(".");
+  return BigInt(whole) * 1_000_000n + BigInt(fraction.padEnd(6, "0"));
+}
+
 export function loadConfig(
   env: NodeJS.ProcessEnv = process.env,
   options: LoadOptions = {},

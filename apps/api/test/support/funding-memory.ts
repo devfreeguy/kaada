@@ -1,4 +1,5 @@
 import type {
+  WalletFundingItem,
   BalanceSnapshot,
   FundingCommit,
   WalletBalanceCheckpoint,
@@ -24,6 +25,14 @@ export class MemoryFundingStore implements WalletFundingStore {
 
   walletsToWatch(limit: number): Promise<WalletToWatch[]> {
     return Promise.resolve(this.wallets.slice(0, limit));
+  }
+
+  depositItems(userId: string, chainId: number): Promise<WalletFundingItem[]> {
+    return Promise.resolve(
+      this.events
+        .filter((event) => event.userId === userId && event.chainId === chainId)
+        .flatMap((event) => event.items),
+    );
   }
 
   hasBeenFunded(userId: string, chainId: number): Promise<boolean> {

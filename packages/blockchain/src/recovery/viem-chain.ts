@@ -699,6 +699,11 @@ export class ViemRecoveryChain implements RecoveryChainPort {
     });
   }
 
+  /** The relayer's native balance (wei): sponsoring stops while it is below its reserve. */
+  async relayerBalanceWei(): Promise<string> {
+    return (await this.client.getBalance({ address: this.relayer.address })).toString();
+  }
+
   /**
    * Opens the wallet's account on chain when it does not exist yet, paid by the relayer. The only thing sent is the call Kernel v3.3's
    * own factory defines for this root, to that factory, and only if it creates exactly the account asked for: there is no way to make

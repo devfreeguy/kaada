@@ -204,3 +204,4 @@ export function createDatabaseAssetRegistry(database: Database): AssetRegistry {
 }
 
 export { createWalletFundingStore } from "./wallet-funding.js";
+export { createSponsorshipLedger } from "./sponsorship-ledger.js";

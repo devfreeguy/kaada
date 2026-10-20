@@ -1,5 +1,11 @@
 import { deviceKeyPayload } from "@kaada/contracts";
-import { KaadaError, RECOVERY_AUDIT_EVENTS, createId, isWalletActive } from "@kaada/domain";
+import {
+  KaadaError,
+  RECOVERY_AUDIT_EVENTS,
+  createId,
+  depositValueUsdMicros,
+  isWalletActive,
+} from "@kaada/domain";
 import type { RecoveryConfiguration, Wallet } from "@kaada/domain";
 
 import type { RecoveryContext } from "./context.js";
@@ -10,6 +16,30 @@ import type { RootSigningRequest } from "./recovery-flow.js";
 
 const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 const ZERO = /^0x0{40}$/;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** Opening an account costs about 0.015 CELO; a grant smaller than this cannot be trusted to cover it. */
+const OPEN_COST_CEILING_WEI = 50_000_000_000_000_000n;
+
+type SponsorRefusal =
+  "SPONSORING_OFF" | "BELOW_MINIMUM_DEPOSIT" | "WALLET_CAP" | "DAILY_BUDGET" | "RELAYER_RESERVE";
+interface Grant {
+  id: string;
+  grantedWei: bigint;
+}
+
+const isGasFundingRequired = (error: unknown): boolean =>
+  error instanceof KaadaError &&
+  error.code === "RECOVERY_BLOCKED" &&
+  (error.details as { reason?: unknown } | undefined)?.reason === "GAS_FUNDING_REQUIRED";
+
+/** What the person is told. The reason stays in the log and in `details`; it never reaches them. */
+const sponsorshipRefused = (reason: SponsorRefusal): KaadaError =>
+  new KaadaError(
+    "RECOVERY_SPONSORSHIP_REFUSED",
+    "to finish securing your account, add a small amount of CELO to your wallet, or deposit a larger amount",
+    { details: { reason } },
+  );
 
 export interface ArmRequest {
   configurationId: string;
@@ -82,45 +112,7 @@ export class RecoveryConfigurationService {
         "set up your authenticator app before saving a Recovery Code",
       );
     }
-    let account = await this.ctx.chain.accountState(wallet.address);
-    // A wallet that was only ever funded has no account on chain yet, and may hold no CELO to pay for one. Where the platform
-    // sponsors, it opens the account and covers the gas of this one step, within a fixed lifetime budget for the wallet.
-    let budget = await this.sponsorshipLeft(wallet);
-    if (!account.deployed) {
-      account = await this.openAccount(wallet, budget);
-      budget = await this.sponsorshipLeft(wallet);
-    }
-    if (!account.deployed || !account.rootValidator) {
-      throw new KaadaError(
-        "RECOVERY_REJECTED",
-        "the wallet must be set up on chain before recovery can be armed",
-      );
-    }
-    const validator = await this.ctx.chain.validatorState(wallet.address);
-    if (validator.pending) {
-      throw new KaadaError(
-        "RECOVERY_CONFLICT",
-        "a recovery is pending; it must finish or be cancelled first",
-      );
-    }
-    const root = await ensureRootCredential(this.ctx.uow.read, wallet, account.rootValidator);
-    const calls = this.ctx.chain.armCalls({
-      account: wallet.address,
-      recoveryAddress: address.toLowerCase(),
-      delaySeconds,
-      currentNonce: account.currentNonce,
-      alreadyConfigured: validator.initialized,
-    });
-    const prepared = await this.ctx.chain.prepareRootOperation({
-      account: wallet.address,
-      rootValidator: account.rootValidator,
-      rootKind: root.kind,
-      calls,
-      ...(budget > 0n && { sponsorUpToWei: budget.toString() }),
-    });
-    if (prepared.sponsoredWei) {
-      await this.recordSponsored(wallet, BigInt(prepared.sponsoredWei), "gas_topup");
-    }
+    const { root, validator, prepared } = await this.prepareInstall(wallet, address, delaySeconds);
     const configuration = await this.ctx.uow.transaction(async (tx) => {
       // An unfinished earlier preparation is superseded, never left dangling.
       for (const old of await tx.recoveryConfigurations.listForWallet(wallet.id)) {
@@ -184,40 +176,183 @@ export class RecoveryConfigurationService {
   }
 
   /**
-   * What may still be spent on this wallet: its lifetime budget minus everything already recorded. Zero when sponsoring is off or the
-   * wallet has never received funds (a wallet that was never funded risks nothing and costs the platform nothing).
+   * The chain part of arming: the account (opened first where the platform sponsors it), the validator state, and the install
+   * operation to sign. A wallet that was only ever funded has no account on chain and may hold no CELO. Where the platform sponsors,
+   * it opens the account and pays the gas of this one step, but only for a wallet that has really received money, only within the
+   * wallet's lifetime budget and the platform's daily budget, and never below the relayer's reserve (see reserveSponsorship).
    */
-  private async sponsorshipLeft(wallet: Wallet): Promise<bigint> {
-    const sponsorship = this.ctx.sponsorship;
-    if (!sponsorship || sponsorship.perWalletWei <= 0n) return 0n;
-    if (!(await sponsorship.funded(wallet.userId))) return 0n;
-    const spent = (
-      await this.ctx.uow.read.audit.listByType(
-        wallet.userId,
-        RECOVERY_AUDIT_EVENTS.relayerSponsored,
-        1000,
-      )
-    ).reduce((sum, event) => {
-      const wei = (event.data as { wei?: unknown } | undefined)?.wei;
-      return sum + (typeof wei === "string" && /^[0-9]+$/.test(wei) ? BigInt(wei) : 0n);
-    }, 0n);
-    return spent >= sponsorship.perWalletWei ? 0n : sponsorship.perWalletWei - spent;
+  private async prepareInstall(
+    wallet: Wallet & { address: string },
+    recoveryAddress: string,
+    delaySeconds: number,
+  ) {
+    const chain = this.ctx.chain;
+    let account = await chain.accountState(wallet.address);
+    let grant: Grant | null = null;
+    let spent = 0n;
+    try {
+      if (!account.deployed) {
+        const reservation = await this.reserveSponsorship(wallet, true);
+        if (reservation === "SPONSORING_OFF") {
+          throw new KaadaError(
+            "RECOVERY_REJECTED",
+            "the wallet must be set up on chain before recovery can be armed",
+          );
+        }
+        if (typeof reservation === "string") throw sponsorshipRefused(reservation);
+        grant = reservation;
+        const opened = await this.openAccount(wallet);
+        spent += opened;
+        account = await chain.accountState(wallet.address);
+      }
+      if (!account.deployed || !account.rootValidator) {
+        throw new KaadaError(
+          "RECOVERY_REJECTED",
+          "the wallet must be set up on chain before recovery can be armed",
+        );
+      }
+      const validator = await chain.validatorState(wallet.address);
+      if (validator.pending) {
+        throw new KaadaError(
+          "RECOVERY_CONFLICT",
+          "a recovery is pending; it must finish or be cancelled first",
+        );
+      }
+      const root = await ensureRootCredential(this.ctx.uow.read, wallet, account.rootValidator);
+      const calls = chain.armCalls({
+        account: wallet.address,
+        recoveryAddress: recoveryAddress.toLowerCase(),
+        delaySeconds,
+        currentNonce: account.currentNonce,
+        alreadyConfigured: validator.initialized,
+      });
+      const operation = {
+        account: wallet.address,
+        rootValidator: account.rootValidator,
+        rootKind: root.kind,
+        calls,
+      };
+      let prepared;
+      try {
+        // First without sponsoring: a wallet that holds enough CELO of its own costs the platform nothing.
+        prepared = await chain.prepareRootOperation(operation);
+      } catch (error) {
+        if (!isGasFundingRequired(error) || !this.sponsoringOn()) throw error;
+        if (!grant) {
+          const reservation = await this.reserveSponsorship(wallet, false);
+          if (typeof reservation === "string") throw sponsorshipRefused(reservation);
+          grant = reservation;
+        }
+        const left = grant.grantedWei - spent;
+        if (left <= 0n) throw sponsorshipRefused("WALLET_CAP");
+        try {
+          prepared = await chain.prepareRootOperation({
+            ...operation,
+            sponsorUpToWei: left.toString(),
+          });
+        } catch (second) {
+          if (isGasFundingRequired(second)) throw sponsorshipRefused("WALLET_CAP");
+          throw second;
+        }
+        if (prepared.sponsoredWei) {
+          const topUp = BigInt(prepared.sponsoredWei);
+          spent += topUp;
+          await this.recordSponsored(wallet, topUp, "gas_topup");
+        }
+      }
+      return { root, validator, prepared };
+    } finally {
+      if (grant) {
+        await this.ctx.sponsorship?.ledger.settle({
+          id: grant.id,
+          userId: wallet.userId,
+          walletId: wallet.id,
+          spentWei: spent,
+        });
+        await this.warnIfLow();
+      }
+    }
   }
 
-  /** Opens the wallet's account on chain, paid by the platform, when the budget allows. Otherwise the account stays as it is. */
-  private async openAccount(wallet: Wallet & { address: string }, budget: bigint) {
+  private sponsoringOn() {
+    const s = this.ctx.sponsorship;
+    return s && s.perWalletWei > 0n && s.dailyBudgetWei > 0n ? s : null;
+  }
+
+  /**
+   * Decides whether the platform may spend on this wallet, and reserves the most it may spend, in one atomic step with the caps. A
+   * refusal is a reason (logged, and shown to the person as a plain request to add a little CELO or a larger deposit). Checked in
+   * order: what the wallet has received is worth enough; the relayer keeps its reserve; the wallet's and the day's caps.
+   */
+  private async reserveSponsorship(
+    wallet: Wallet & { address: string },
+    needsOpen: boolean,
+  ): Promise<Grant | SponsorRefusal> {
+    const s = this.sponsoringOn();
+    if (!s) return "SPONSORING_OFF";
+    const refuse = (reason: SponsorRefusal, extra: Record<string, string> = {}): SponsorRefusal => {
+      this.ctx.log("warn", "recovery.sponsor_refused", { walletId: wallet.id, reason, ...extra });
+      return reason;
+    };
+    const received = depositValueUsdMicros(await s.depositItems(wallet.userId));
+    if (received < s.minDepositUsdMicros) {
+      return refuse("BELOW_MINIMUM_DEPOSIT", {
+        receivedUsdMicros: received.toString(),
+        minimumUsdMicros: s.minDepositUsdMicros.toString(),
+      });
+    }
+    // Unreadable is treated as empty: sponsoring never spends when it cannot see what the relayer has left.
+    const balance = this.ctx.chain.relayerBalanceWei
+      ? BigInt(await this.ctx.chain.relayerBalanceWei().catch(() => "0"))
+      : 0n;
+    const affordable = balance > s.relayerReserveWei ? balance - s.relayerReserveWei : 0n;
+    if (affordable === 0n) {
+      return refuse("RELAYER_RESERVE", {
+        relayerBalanceWei: balance.toString(),
+        reserveWei: s.relayerReserveWei.toString(),
+      });
+    }
+    const want = s.perWalletWei < affordable ? s.perWalletWei : affordable;
+    const reservation = await s.ledger.reserve({
+      userId: wallet.userId,
+      walletId: wallet.id,
+      wantWei: want,
+      walletCapWei: s.perWalletWei,
+      dailyCapWei: s.dailyBudgetWei,
+      windowMs: DAY_MS,
+      now: this.ctx.now(),
+    });
+    if (!reservation.granted) return refuse(reservation.reason);
+    if (needsOpen && reservation.grantedWei < OPEN_COST_CEILING_WEI) {
+      await s.ledger.settle({
+        id: reservation.id,
+        userId: wallet.userId,
+        walletId: wallet.id,
+        spentWei: 0n,
+      });
+      return refuse(reservation.limitedBy ?? "RELAYER_RESERVE");
+    }
+    return { id: reservation.id, grantedWei: reservation.grantedWei };
+  }
+
+  /** Opens the wallet's account on chain, paid by the platform. Returns what it cost. */
+  private async openAccount(wallet: Wallet & { address: string }): Promise<bigint> {
     const chain = this.ctx.chain;
-    if (budget <= 0n || !chain.openAccount) return chain.accountState(wallet.address);
     const rootRow = await this.ctx.uow.read.walletCredentials.findRoot(wallet.id);
-    if (!rootRow) return chain.accountState(wallet.address);
+    if (!rootRow || !chain.openAccount) {
+      throw new KaadaError(
+        "RECOVERY_REJECTED",
+        "the wallet must be set up on chain before recovery can be armed",
+      );
+    }
     try {
       const opened = await chain.openAccount({
         account: wallet.address,
         root: toRootCredential(rootRow, this.ctx.rpId),
       });
-      if (opened.opened) {
-        await this.recordSponsored(wallet, BigInt(opened.costWei), "open_account");
-      }
+      const cost = BigInt(opened.costWei);
+      if (opened.opened) await this.recordSponsored(wallet, cost, "open_account");
+      return cost;
     } catch (error) {
       this.ctx.log("error", "recovery.account_open_failed", {
         walletId: wallet.id,
@@ -225,10 +360,14 @@ export class RecoveryConfigurationService {
       });
       throw error;
     }
-    return chain.accountState(wallet.address);
   }
 
-  private async recordSponsored(wallet: Wallet, wei: bigint, purpose: string): Promise<void> {
+  /** A detail record of one spend (what it was for). The caps are enforced from the ledger, not from these. */
+  private async recordSponsored(
+    wallet: Wallet & { address: string },
+    wei: bigint,
+    purpose: string,
+  ): Promise<void> {
     await this.ctx.uow.read.audit.append({
       id: createId(),
       userId: wallet.userId,
@@ -242,6 +381,36 @@ export class RecoveryConfigurationService {
       purpose,
       wei: wei.toString(),
     });
+  }
+
+  /** Tells the operator, at error level, before the money runs out: the day's budget over 80% used, or the relayer near its reserve. */
+  private async warnIfLow(): Promise<void> {
+    const s = this.sponsoringOn();
+    if (!s) return;
+    try {
+      const used = await s.ledger.usedInWindow(this.ctx.now(), DAY_MS);
+      if (used * 100n >= s.dailyBudgetWei * 80n) {
+        this.ctx.log("error", "recovery.sponsor_budget_low", {
+          reason: "DAILY_BUDGET_OVER_80_PERCENT",
+          usedWei: used.toString(),
+          dailyBudgetWei: s.dailyBudgetWei.toString(),
+        });
+      }
+      if (this.ctx.chain.relayerBalanceWei) {
+        const balance = BigInt(await this.ctx.chain.relayerBalanceWei());
+        if (balance * 100n < s.relayerReserveWei * 125n) {
+          this.ctx.log("error", "recovery.sponsor_budget_low", {
+            reason: "RELAYER_NEAR_RESERVE",
+            relayerBalanceWei: balance.toString(),
+            reserveWei: s.relayerReserveWei.toString(),
+          });
+        }
+      }
+    } catch (error) {
+      this.ctx.log("warn", "recovery.sponsor_budget_check_failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   /**

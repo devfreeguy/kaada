@@ -112,6 +112,17 @@ function httpError(error: unknown): never {
       case "WALLET_NOT_ACTIVE":
       case "ROOT_CREDENTIAL_REQUIRED":
         throw new ConflictException(error.message, { cause: error });
+      case "RECOVERY_SPONSORSHIP_REFUSED":
+        // The reason (a cap, the reserve, the deposit) is in the log; the person is only ever told what to do about it.
+        throw new ConflictException(
+          {
+            statusCode: 409,
+            code: "SPONSORSHIP_UNAVAILABLE",
+            message:
+              "To finish securing your account, add a small amount of CELO to your wallet, or deposit a larger amount.",
+          },
+          { cause: error },
+        );
       case "RECOVERY_RELAYER_UNAVAILABLE":
         // Nothing was sent and nobody else may send it: the same proof can be submitted again shortly (with the next authenticator code).
         throw new ServiceUnavailableException(
