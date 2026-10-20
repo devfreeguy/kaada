@@ -153,7 +153,8 @@ const envShape = {
     .default("0"),
   // The most native CELO (wei) the platform will spend on ONE wallet, over its whole life, to open its account and to pay the gas of
   // its first Recovery Code setup (so a wallet funded with a stablecoin only can still secure itself). 0 turns sponsoring off. Only
-  // wallets that have received funds are sponsored, and only once their own balance is not enough.
+  // wallets that have received funds are sponsored, and only once their own balance (plus what the EntryPoint holds for it) is not
+  // enough. One wallet costs about 0.145 CELO at 202.5 gwei (see .env.example); 0.35 CELO is a sensible cap.
   RECOVERY_SPONSOR_PER_WALLET_WEI: z
     .string()
     .regex(/^[0-9]{1,30}$/)

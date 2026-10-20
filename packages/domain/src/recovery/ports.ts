@@ -192,9 +192,18 @@ export interface RecoveryChainPort {
     calls: ChainCall[];
     /** The most native CELO (wei, decimal string) the sponsor may send to the account to pay for it. Absent or "0": none. */
     sponsorUpToWei?: string;
+    /**
+     * Size the operation's gas limits from a live estimate (plus a 25% margin) instead of the fixed generous ones. When no estimate can
+     * be had it throws RECOVERY_BLOCKED with details.reason "ESTIMATE_UNAVAILABLE": it never falls back to the fixed limits.
+     */
+    sizeFromEstimate?: boolean;
   }): Promise<PreparedOperation>;
+  /** Whether live gas estimates can be had (the bundler answers). Absent: not known here. */
+  canEstimateGas?(): Promise<boolean>;
   /** The relayer's native balance (wei, decimal string). Absent: not readable here. */
   relayerBalanceWei?(): Promise<string>;
+  /** What opening an account costs at today's fees, as a ceiling (wei, decimal string): the most it may reasonably come to. */
+  estimateOpenCostWei?(): Promise<string>;
   /**
    * Opens (deploys) the account of `root` on chain, paid by the sponsor, when it does not exist yet. Anyone could do this: it creates
    * exactly the account the root already commits to and gives the sponsor no authority over it. Idempotent.

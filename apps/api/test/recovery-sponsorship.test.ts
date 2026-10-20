@@ -130,12 +130,18 @@ describe("sponsoring a wallet so it can secure itself", () => {
     const world = createRecoveryWorld();
     const user = await undeployedWallet(world);
     const { ledger } = withSponsoring(world);
-    world.chain.topUpWei = CELO / 4n;
+    world.chain.estimateRequiredWei = CELO / 4n;
     const arm = await prepare(world, user);
     assert.ok(arm.configurationId);
     assert.equal(world.chain.openCalls, 1);
+    assert.equal(world.chain.lastSizing, "estimate", "the top-up is sized from the estimate");
     assert.equal(world.chain.lastSponsorUpTo, (HALF - world.chain.openCostWei).toString());
-    const spent = world.chain.openCostWei + CELO / 4n;
+    const topUp = (world.chain.estimateRequiredWei * 105n) / 100n;
+    assert.ok(
+      topUp < (world.chain.fixedRequiredWei * 105n) / 100n,
+      "and is not the fixed ceiling's",
+    );
+    const spent = world.chain.openCostWei + topUp;
     assert.equal(
       await ledger.usedInWindow(world.now(), 24 * 3600_000),
       spent,
@@ -230,7 +236,6 @@ describe("sponsoring a wallet so it can secure itself", () => {
     );
     // Just above the reserve: the grant is cut to what is above it.
     world.chain.relayerBalance = CELO + CELO / 5n;
-    world.chain.topUpWei = CELO / 10n;
     await prepare(world, user);
     assert.ok(BigInt(world.chain.lastSponsorUpTo ?? "0") <= CELO / 5n - world.chain.openCostWei);
   });
@@ -240,7 +245,6 @@ describe("sponsoring a wallet so it can secure itself", () => {
     const users = await Promise.all(Array.from({ length: 6 }, () => undeployedWallet(world)));
     const daily = 13n * (CELO / 10n); // 1.3 CELO: room for 0.5 + 0.5 + 0.3
     const { ledger } = withSponsoring(world, { dailyBudgetWei: daily });
-    world.chain.topUpWei = CELO / 10n;
     // Hold every request inside the sponsoring step, so no early one can settle (and free its reservation) before the rest ask.
     let release: () => void = () => undefined;
     world.chain.openGate = new Promise<void>((resolve) => {
@@ -268,7 +272,8 @@ describe("sponsoring a wallet so it can secure itself", () => {
     const world = createRecoveryWorld();
     const user = await undeployedWallet(world);
     const { logs } = withSponsoring(world, { dailyBudgetWei: HALF, relayerReserveWei: 10n * CELO });
-    world.chain.topUpWei = (HALF * 8n) / 10n - world.chain.openCostWei;
+    world.chain.estimateRequiredWei =
+      (((HALF * 81n) / 100n - world.chain.openCostWei) * 100n) / 105n;
     world.chain.relayerBalance = 10n * CELO + (CELO * 6n) / 10n;
     await prepare(world, user);
     const low = logs.filter((l) => l.event === "recovery.sponsor_budget_low");
@@ -277,6 +282,91 @@ describe("sponsoring a wallet so it can secure itself", () => {
       "RELAYER_NEAR_RESERVE",
     ]);
     assert.ok(low.every((l) => l.level === "error"));
+  });
+
+  it("a second arming attempt on the same wallet sends nothing: what the first top-up left is counted", async () => {
+    const world = createRecoveryWorld();
+    const user = await undeployedWallet(world);
+    const { ledger } = withSponsoring(world);
+    await prepare(world, user);
+    assert.equal(world.chain.topUps, 1);
+    const used = await ledger.usedInWindow(world.now(), 24 * 3600_000);
+    const rows = ledger.rows.length;
+    const opens = world.chain.openCalls;
+    // The first attempt was abandoned before it was signed: the wallet still holds what it was topped up with.
+    await prepare(world, user);
+    assert.equal(world.chain.topUps, 1, "no second top-up");
+    assert.equal(world.chain.openCalls, opens, "no second opening");
+    assert.equal(world.chain.lastSponsorUpTo, undefined, "no budget was even offered");
+    assert.equal(ledger.rows.length, rows, "nothing was reserved or settled");
+    assert.equal(await ledger.usedInWindow(world.now(), 24 * 3600_000), used, "no ledger spend");
+  });
+
+  it("a wallet that already holds enough gets no top-up and no ledger spend, and is not even estimated when the fixed limits fit", async () => {
+    const world = createRecoveryWorld();
+    const user = await world.createUser({ armed: false, authenticator: true });
+    const { ledger } = withSponsoring(world);
+    await prepare(world, user);
+    assert.equal(world.chain.lastSizing, "fixed");
+    assert.equal(world.chain.estimateCalls, 0);
+    assert.equal(world.chain.topUps, 0);
+    assert.equal(ledger.rows.length, 0);
+    // Enough for the sized operation but not for the fixed one: sized from the estimate, still nothing from the platform.
+    world.chain.funds.set(user.account.toLowerCase(), world.chain.estimateRequiredWei);
+    await prepare(world, user);
+    assert.equal(world.chain.lastSizing, "estimate");
+    assert.equal(world.chain.topUps, 0);
+    assert.equal(ledger.rows.length, 0);
+  });
+
+  it("with no estimate there is no sponsoring: refused before the account is opened, logged, never the fixed ceiling", async () => {
+    const world = createRecoveryWorld();
+    const user = await undeployedWallet(world);
+    const { logs } = withSponsoring(world);
+    world.chain.estimateAvailable = false;
+    assert.equal(await refusal(world, user), "ESTIMATE_UNAVAILABLE");
+    assert.equal(
+      world.chain.openCalls,
+      0,
+      "nothing was spent opening an account that could not then be sized",
+    );
+    assert.equal(world.chain.topUps, 0);
+    const logged = logs.find((l) => l.event === "recovery.sponsor_refused");
+    assert.equal(logged?.fields["reason"], "ESTIMATE_UNAVAILABLE");
+    assert.equal(logged?.fields["message"], "estimate unavailable");
+  });
+
+  it("an estimate that fails for an open but short wallet is a refusal too, and the fixed ceiling is never used to top it up", async () => {
+    const world = createRecoveryWorld();
+    const user = await world.createUser({ armed: false, authenticator: true });
+    world.chain.funds.set(user.account.toLowerCase(), 0n);
+    const { logs } = withSponsoring(world);
+    world.chain.estimateAvailable = false;
+    assert.equal(await refusal(world, user), "ESTIMATE_UNAVAILABLE");
+    assert.equal(world.chain.topUps, 0);
+    assert.equal(
+      world.chain.lastSizing,
+      "estimate",
+      "the last thing tried was the estimate, not a fallback",
+    );
+    assert.equal(
+      world.chain.lastSponsorUpTo,
+      undefined,
+      "no budget was ever offered against the fixed limits",
+    );
+    assert.equal(
+      logs.find((l) => l.event === "recovery.sponsor_refused")?.fields["reason"],
+      "ESTIMATE_UNAVAILABLE",
+    );
+  });
+
+  it("with sponsoring off, a short wallet is treated as before: no estimate is asked for", async () => {
+    const world = createRecoveryWorld();
+    const user = await world.createUser({ armed: false, authenticator: true });
+    world.chain.funds.set(user.account.toLowerCase(), 0n);
+    await expectKaada(prepare(world, user), "RECOVERY_BLOCKED");
+    assert.equal(world.chain.estimateCalls, 0);
+    assert.equal(world.chain.topUps, 0);
   });
 
   it("never writes an email, a key or a token into the log", async () => {

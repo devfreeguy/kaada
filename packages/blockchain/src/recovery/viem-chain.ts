@@ -37,6 +37,7 @@ import {
   createPublicClient,
   createWalletClient,
   decodeErrorResult,
+  decodeFunctionData,
   encodeAbiParameters,
   encodeFunctionData,
   getAddress,
@@ -61,12 +62,17 @@ const MODE_SINGLE: Hex = `0x${"00".repeat(32)}`;
 const EXECUTE_SELECTOR = toFunctionSelector("execute(bytes32,bytes)");
 /** The recovery batch is validated by the recovery module, which ignores the UserOperation signature. */
 const IGNORED_SIGNATURE: Hex = `0x${"11".repeat(64)}1b`;
+/** Gas to open a Kernel account through its factory was measured at about 291k on Celo Sepolia; this adds margin. */
+const OPEN_ACCOUNT_GAS_CEILING = 360_000n;
+/** A sponsored operation's limits are the bundler's estimate plus this margin. */
+const ESTIMATE_MARGIN_PERCENT = 125n;
 const BIGINT_PREFIX = "bigint:";
 
 const recoveryAbi = artifacts.KaadaRecoveryValidator.abi as unknown as Abi;
 const factoryAbi = artifacts.KaadaPasskeyValidatorFactory.abi as unknown as Abi;
 const entryPointAbi = parseAbi([
   "function getNonce(address sender, uint192 key) view returns (uint256)",
+  "function balanceOf(address account) view returns (uint256)",
 ]);
 const validatorAbi = parseAbi([
   "function isInitialized(address account) view returns (bool)",
@@ -580,6 +586,7 @@ export class ViemRecoveryChain implements RecoveryChainPort {
     rootKind: WalletCredentialKind;
     calls: ChainCall[];
     sponsorUpToWei?: string;
+    sizeFromEstimate?: boolean;
   }): Promise<PreparedOperation> {
     // The ROOT lane: mode 0x00, type 0x00 (root), no validator address, nonce key 0.
     const key = BigInt(concat(["0x00", "0x00", zeroAddress, "0x0000"]));
@@ -593,6 +600,7 @@ export class ViemRecoveryChain implements RecoveryChainPort {
       callData: encodeExecute(input.calls),
       signature: stub as Hex,
       ...(input.sponsorUpToWei && { sponsorUpToWei: BigInt(input.sponsorUpToWei) }),
+      ...(input.sizeFromEstimate && { sizeFromEstimate: true }),
     });
   }
 
@@ -630,6 +638,8 @@ export class ViemRecoveryChain implements RecoveryChainPort {
     signature: Hex;
     /** Overrides the configured top-up ceiling for this one operation (0 or absent: the configured one). */
     sponsorUpToWei?: bigint;
+    /** Limits from a live estimate plus a margin (see estimateLimits) instead of the fixed ones. */
+    sizeFromEstimate?: boolean;
   }): Promise<PreparedOperation> {
     const sender = getAddress(input.account);
     const [nonce, fees] = await Promise.all([
@@ -641,7 +651,7 @@ export class ViemRecoveryChain implements RecoveryChainPort {
       }),
       this.client.estimateFeesPerGas(),
     ]);
-    const operation: WireOperation = {
+    let operation: WireOperation = {
       sender,
       nonce,
       callData: input.callData,
@@ -652,6 +662,8 @@ export class ViemRecoveryChain implements RecoveryChainPort {
       maxPriorityFeePerGas: fees.maxPriorityFeePerGas,
       signature: input.signature,
     };
+    if (input.sizeFromEstimate)
+      operation = { ...operation, ...(await this.estimateLimits(operation)) };
     const sponsoredWei = await this.ensureGas(sender, operation, input.sponsorUpToWei);
     const userOpHash = getUserOperationHash({
       userOperation: { ...operation },
@@ -666,6 +678,24 @@ export class ViemRecoveryChain implements RecoveryChainPort {
     };
   }
 
+  /**
+   * What the account can pay a UserOperation's prefund with: its native balance plus its deposit held by the EntryPoint. The
+   * EntryPoint takes the prefund from the deposit first and asks the account for only the missing part, and what an operation does not
+   * use is credited back to the DEPOSIT, not to the balance. Counting only the balance would top the same wallet up again and again.
+   */
+  private async availableGas(account: Address): Promise<bigint> {
+    const [native, deposit] = await Promise.all([
+      this.client.getBalance({ address: account }),
+      this.client.readContract({
+        address: ENTRY_POINT,
+        abi: entryPointAbi,
+        functionName: "balanceOf",
+        args: [account],
+      }),
+    ]);
+    return native + deposit;
+  }
+
   /** The account pays the prefund. A short account is topped up by the sponsor, or the step is deferred. */
   private async ensureGas(
     account: Address,
@@ -675,14 +705,14 @@ export class ViemRecoveryChain implements RecoveryChainPort {
     const required =
       (operation.callGasLimit + operation.verificationGasLimit + operation.preVerificationGas) *
       operation.maxFeePerGas;
-    const balance = await this.client.getBalance({ address: account });
-    if (balance >= required) return 0n;
+    const available = await this.availableGas(account);
+    if (available >= required) return 0n;
     const configured = this.options.gasSponsor ?? { mode: "none" };
     const sponsor =
       sponsorUpToWei !== undefined && sponsorUpToWei > 0n
         ? ({ mode: "topup", maxTopUpWei: sponsorUpToWei } as const)
         : configured;
-    const shortfall = (required * 105n) / 100n - balance;
+    const shortfall = (required * 105n) / 100n - available;
     if (sponsor.mode === "none" || shortfall > sponsor.maxTopUpWei) {
       throw new KaadaError("RECOVERY_BLOCKED", "the wallet needs native gas for this operation", {
         details: { reason: "GAS_FUNDING_REQUIRED" },
@@ -691,12 +721,71 @@ export class ViemRecoveryChain implements RecoveryChainPort {
     const hash = await this.wallet.sendTransaction({ to: account, value: shortfall });
     await this.client.waitForTransactionReceipt({ hash });
     for (let i = 0; i < 30; i += 1) {
-      if ((await this.client.getBalance({ address: account })) >= required) return shortfall;
+      if ((await this.availableGas(account)) >= required) return shortfall;
       await new Promise((resolve) => setTimeout(resolve, 1_000));
     }
     throw new KaadaError("RECOVERY_BLOCKED", "the wallet top-up is not visible yet", {
       details: { reason: "GAS_FUNDING_REQUIRED" },
     });
+  }
+
+  /**
+   * The operation's real gas needs, from the bundler's estimate (the operation carries a stub signature of the right shape for its
+   * root type, so a passkey and a device key are each estimated on their own verification path), plus a 25% margin on each limit.
+   * No estimate is a hard stop: the caller is NEVER given the fixed ceiling instead, because that would silently spend several times
+   * what the operation needs.
+   */
+  private async estimateLimits(
+    operation: WireOperation,
+  ): Promise<Pick<WireOperation, "callGasLimit" | "verificationGasLimit" | "preVerificationGas">> {
+    const unavailable = (why: string) =>
+      new KaadaError("RECOVERY_BLOCKED", `the gas estimate is unavailable (${why})`, {
+        details: { reason: "ESTIMATE_UNAVAILABLE" },
+      });
+    let response: { result?: unknown; error?: { message?: string } };
+    try {
+      response = await this.bundler("eth_estimateUserOperationGas", [
+        toRpc(operation),
+        ENTRY_POINT,
+      ]);
+    } catch {
+      throw unavailable("bundler unreachable");
+    }
+    const found = response.result as Record<string, unknown> | null | undefined;
+    if (response.error || !found) throw unavailable("bundler refused");
+    const read = (key: string): bigint => {
+      const value = found[key];
+      if (typeof value !== "string" || !/^0x[0-9a-fA-F]+$/.test(value))
+        throw unavailable(`no ${key}`);
+      const parsed = BigInt(value);
+      if (parsed <= 0n) throw unavailable(`zero ${key}`);
+      return parsed;
+    };
+    const margin = (value: bigint) => (value * ESTIMATE_MARGIN_PERCENT + 99n) / 100n;
+    return {
+      callGasLimit: margin(read("callGasLimit")),
+      verificationGasLimit: margin(read("verificationGasLimit")),
+      preVerificationGas: margin(read("preVerificationGas")),
+    };
+  }
+
+  /** Whether the bundler answers and serves this EntryPoint: checked before anything is spent on a wallet that would need an estimate. */
+  async canEstimateGas(): Promise<boolean> {
+    try {
+      const response = await this.bundler("eth_supportedEntryPoints", []);
+      return (
+        Array.isArray(response.result) &&
+        response.result.some((entry) => String(entry).toLowerCase() === ENTRY_POINT.toLowerCase())
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  /** A ceiling for what opening an account costs now: its measured gas (about 291k on Celo Sepolia) with margin, at the fee ceiling. */
+  async estimateOpenCostWei(): Promise<string> {
+    const fees = await this.client.estimateFeesPerGas();
+    return (OPEN_ACCOUNT_GAS_CEILING * fees.maxFeePerGas).toString();
   }
 
   /** The relayer's native balance (wei): sponsoring stops while it is below its reserve. */
@@ -719,17 +808,47 @@ export class ViemRecoveryChain implements RecoveryChainPort {
     const existing = await this.client.getCode({ address: account });
     if (existing && existing !== "0x") return { opened: false, costWei: "0" };
     const call = await reader(input.root);
-    const pinned = KernelVersionToAddressesMap["0.3.3"].factoryAddress;
+    const versions = KernelVersionToAddressesMap["0.3.3"];
+    const same = (x: string, y: string) => x.toLowerCase() === y.toLowerCase();
+    const initialize = toFunctionSelector("initialize(bytes21,address,bytes,bytes,bytes[])");
+    const factoryAbi = parseAbi([
+      "function createAccount(bytes data, bytes32 salt) payable returns (address)",
+    ]);
+    // The SDK wraps the creation in ZeroDev's staker: deployWithFactory(kernelFactory, initData, salt), where `initData` is the
+    // account's own `initialize(...)` call. Whatever shape it hands over, the only transaction sent is
+    // `createAccount(initData, salt)` to Kernel v3.3's own factory, for this wallet's account.
+    let createData: Hex | undefined;
     if (
-      call.address.toLowerCase() !== account.toLowerCase() ||
-      call.factory.toLowerCase() !== pinned.toLowerCase() ||
-      !call.factoryData.startsWith(toFunctionSelector("createAccount(bytes,bytes32)"))
+      same(call.factory, versions.metaFactoryAddress ?? zeroAddress) &&
+      call.factoryData.startsWith(toFunctionSelector("deployWithFactory(address,bytes,bytes32)"))
     ) {
+      const decoded = decodeFunctionData({
+        abi: parseAbi([
+          "function deployWithFactory(address factory, bytes createData, bytes32 salt)",
+        ]),
+        data: call.factoryData,
+      });
+      const [inner, initData, salt] = decoded.args;
+      if (same(inner, versions.factoryAddress) && initData.startsWith(initialize)) {
+        createData = encodeFunctionData({
+          abi: factoryAbi,
+          functionName: "createAccount",
+          args: [initData, salt],
+        });
+      }
+    } else if (
+      same(call.factory, versions.factoryAddress) &&
+      call.factoryData.startsWith(toFunctionSelector("createAccount(bytes,bytes32)"))
+    ) {
+      const [initData] = decodeFunctionData({ abi: factoryAbi, data: call.factoryData }).args;
+      if (initData.startsWith(initialize)) createData = call.factoryData;
+    }
+    if (!createData || !same(call.address, account)) {
       throw new KaadaError("RECOVERY_BLOCKED", "the account to open is not the wallet's account");
     }
     const hash = await this.wallet.sendTransaction({
-      to: getAddress(call.factory),
-      data: call.factoryData,
+      to: getAddress(versions.factoryAddress),
+      data: createData,
       gas: 600_000n,
     });
     const receipt = await this.client.waitForTransactionReceipt({ hash });
@@ -886,6 +1005,7 @@ export class ViemRecoveryChain implements RecoveryChainPort {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+      signal: AbortSignal.timeout(20_000),
     });
     return (await response.json()) as { result?: unknown; error?: { message?: string } };
   }

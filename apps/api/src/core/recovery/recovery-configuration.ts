@@ -18,15 +18,28 @@ const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 const ZERO = /^0x0{40}$/;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-/** Opening an account costs about 0.015 CELO; a grant smaller than this cannot be trusted to cover it. */
-const OPEN_COST_CEILING_WEI = 50_000_000_000_000_000n;
+/**
+ * Opening an account takes about 291k gas (measured on Celo Sepolia): roughly 0.06 CELO at 200 gwei. Used when the chain cannot give
+ * a current ceiling: a grant smaller than this cannot be trusted to cover the opening.
+ */
+const OPEN_COST_CEILING_WEI = 150_000_000_000_000_000n;
 
 type SponsorRefusal =
-  "SPONSORING_OFF" | "BELOW_MINIMUM_DEPOSIT" | "WALLET_CAP" | "DAILY_BUDGET" | "RELAYER_RESERVE";
+  | "SPONSORING_OFF"
+  | "BELOW_MINIMUM_DEPOSIT"
+  | "WALLET_CAP"
+  | "DAILY_BUDGET"
+  | "RELAYER_RESERVE"
+  | "ESTIMATE_UNAVAILABLE";
 interface Grant {
   id: string;
   grantedWei: bigint;
 }
+
+const isEstimateUnavailable = (error: unknown): boolean =>
+  error instanceof KaadaError &&
+  error.code === "RECOVERY_BLOCKED" &&
+  (error.details as { reason?: unknown } | undefined)?.reason === "ESTIMATE_UNAVAILABLE";
 
 const isGasFundingRequired = (error: unknown): boolean =>
   error instanceof KaadaError &&
@@ -201,6 +214,10 @@ export class RecoveryConfigurationService {
         }
         if (typeof reservation === "string") throw sponsorshipRefused(reservation);
         grant = reservation;
+        // An account that is opened but cannot then be sized would have cost the platform for nothing: check the estimator first.
+        if (chain.canEstimateGas && !(await chain.canEstimateGas().catch(() => false))) {
+          throw this.estimateRefused(wallet);
+        }
         const opened = await this.openAccount(wallet);
         spent += opened;
         account = await chain.accountState(wallet.address);
@@ -234,30 +251,40 @@ export class RecoveryConfigurationService {
       };
       let prepared;
       try {
-        // First without sponsoring: a wallet that holds enough CELO of its own costs the platform nothing.
+        // First with the fixed limits and no sponsoring: a wallet that holds enough of its own (native balance plus what the
+        // EntryPoint already holds for it) costs the platform nothing.
         prepared = await chain.prepareRootOperation(operation);
       } catch (error) {
         if (!isGasFundingRequired(error) || !this.sponsoringOn()) throw error;
-        if (!grant) {
-          const reservation = await this.reserveSponsorship(wallet, false);
-          if (typeof reservation === "string") throw sponsorshipRefused(reservation);
-          grant = reservation;
-        }
-        const left = grant.grantedWei - spent;
-        if (left <= 0n) throw sponsorshipRefused("WALLET_CAP");
         try {
-          prepared = await chain.prepareRootOperation({
-            ...operation,
-            sponsorUpToWei: left.toString(),
-          });
+          // Sized from a live gas estimate: a wallet that already holds enough for THAT still needs nothing from the platform.
+          prepared = await chain.prepareRootOperation({ ...operation, sizeFromEstimate: true });
         } catch (second) {
-          if (isGasFundingRequired(second)) throw sponsorshipRefused("WALLET_CAP");
-          throw second;
-        }
-        if (prepared.sponsoredWei) {
-          const topUp = BigInt(prepared.sponsoredWei);
-          spent += topUp;
-          await this.recordSponsored(wallet, topUp, "gas_topup");
+          if (isEstimateUnavailable(second)) throw this.estimateRefused(wallet);
+          if (!isGasFundingRequired(second)) throw second;
+          if (!grant) {
+            const reservation = await this.reserveSponsorship(wallet, false);
+            if (typeof reservation === "string") throw sponsorshipRefused(reservation);
+            grant = reservation;
+          }
+          const left = grant.grantedWei - spent;
+          if (left <= 0n) throw sponsorshipRefused("WALLET_CAP");
+          try {
+            prepared = await chain.prepareRootOperation({
+              ...operation,
+              sizeFromEstimate: true,
+              sponsorUpToWei: left.toString(),
+            });
+          } catch (third) {
+            if (isEstimateUnavailable(third)) throw this.estimateRefused(wallet);
+            if (isGasFundingRequired(third)) throw sponsorshipRefused("WALLET_CAP");
+            throw third;
+          }
+          if (prepared.sponsoredWei) {
+            const topUp = BigInt(prepared.sponsoredWei);
+            spent += topUp;
+            await this.recordSponsored(wallet, topUp, "gas_topup");
+          }
         }
       }
       return { root, validator, prepared };
@@ -272,6 +299,16 @@ export class RecoveryConfigurationService {
         await this.warnIfLow();
       }
     }
+  }
+
+  /** Sponsoring needs a live gas estimate and there is none: refuse (logged), never fall back to the fixed ceiling. */
+  private estimateRefused(wallet: Wallet & { address: string }): KaadaError {
+    this.ctx.log("warn", "recovery.sponsor_refused", {
+      walletId: wallet.id,
+      reason: "ESTIMATE_UNAVAILABLE",
+      message: "estimate unavailable",
+    });
+    return sponsorshipRefused("ESTIMATE_UNAVAILABLE");
   }
 
   private sponsoringOn() {
@@ -323,7 +360,15 @@ export class RecoveryConfigurationService {
       now: this.ctx.now(),
     });
     if (!reservation.granted) return refuse(reservation.reason);
-    if (needsOpen && reservation.grantedWei < OPEN_COST_CEILING_WEI) {
+    const openCeiling =
+      needsOpen && this.ctx.chain.estimateOpenCostWei
+        ? BigInt(
+            await this.ctx.chain
+              .estimateOpenCostWei()
+              .catch(() => OPEN_COST_CEILING_WEI.toString()),
+          )
+        : OPEN_COST_CEILING_WEI;
+    if (needsOpen && reservation.grantedWei < openCeiling) {
       await s.ledger.settle({
         id: reservation.id,
         userId: wallet.userId,
