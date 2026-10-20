@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Anton, DM_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 
+import { PageScrollArea } from "./components/page-scroll-area";
 import { SITE_URL } from "./lib/site";
 import "./globals.css";
 
@@ -25,7 +26,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body
         className={`${heading.variable} ${body.variable} min-h-screen bg-background font-sans text-foreground antialiased`}
       >
-        {children}
+        <PageScrollArea>{children}</PageScrollArea>
       </body>
     </html>
   );

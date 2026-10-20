@@ -1,6 +1,6 @@
 .track {
   position: sticky;
-  top: 0;
+  top: var(--security-stack-top, 16px);
   display: flex;
   padding-block: 8px;
   align-items: flex-start;

@@ -14,22 +14,21 @@ export function StickyCard_001({
   progress,
   range,
   targetScale,
+  fitScale = 1,
   children,
 }: {
   i: number;
   progress: MotionValue<number>;
   range: [number, number];
   targetScale: number;
+  fitScale?: number;
   children: ReactNode;
 }) {
-  const scale = useTransform(progress, range, [1, targetScale]);
+  const scale = useTransform(progress, range, [fitScale, targetScale * fitScale]);
   const reducedMotion = useReducedMotion();
   return (
     <div className={styles.track} role="listitem">
-      <motion.div
-        className={styles.card}
-        style={{ scale: reducedMotion ? 1 : scale, y: i * 12 }}
-      >
+      <motion.div className={styles.card} style={{ scale: reducedMotion ? 1 : scale, y: i * 12 }}>
         {children}
       </motion.div>
     </div>

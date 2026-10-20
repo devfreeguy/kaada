@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { SecurityCard, type SecurityCardProps } from "./security-card";
 import { SecurityStack } from "./security-stack";
 
@@ -32,9 +33,9 @@ const protections: SecurityCardProps[] = [
   },
 ];
 
-export function SecurityCards() {
+export function SecurityCards({ heading }: { heading: ReactNode }) {
   return (
-    <SecurityStack>
+    <SecurityStack heading={heading}>
       {protections.map((protection) => (
         <SecurityCard key={protection.feature} {...protection} />
       ))}
