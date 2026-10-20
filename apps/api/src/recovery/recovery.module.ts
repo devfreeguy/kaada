@@ -3,6 +3,7 @@ import { createRepositories, withTransaction } from "@kaada/database";
 import type { KernelExecutionPort, RootValidatorDeployer } from "@kaada/domain";
 import type { AppConfig } from "@kaada/config";
 import type { Database } from "@kaada/database";
+import { checkRecoveryDeployment, createDeploymentReader } from "@kaada/blockchain";
 import { celo, celoSepolia } from "viem/chains";
 
 import { APP_CONFIG } from "../config/config.module.js";
@@ -40,6 +41,9 @@ import {
   createRecoveryRuntime,
 } from "./recovery.runtime.js";
 import type { RecoveryRuntime } from "./recovery.runtime.js";
+import { DeploymentGuard } from "./deployment-guard.js";
+import { RECOVERY_SWITCH } from "./recovery-switch.js";
+import type { RecoverySwitch } from "./recovery-switch.js";
 import { RecoverySweeper } from "./recovery-sweeper.js";
 import { RECOVERY_RUNTIME } from "./recovery.tokens.js";
 import { AesGcmSecretCipher } from "../infrastructure/security/aes-gcm-cipher.js";
@@ -53,6 +57,27 @@ import { AesGcmSecretCipher } from "../infrastructure/security/aes-gcm-cipher.js
   imports: [WalletModule, AuthorizationModule, RootsModule, ExecutionModule],
   controllers: [RecoveryController, RootChangeController],
   providers: [
+    {
+      // Compares the configured contracts with the chain at startup (see DeploymentGuard). Inert when neither recovery nor device-key
+      // wallets are on.
+      provide: DeploymentGuard,
+      inject: [APP_CONFIG, RECOVERY_SWITCH],
+      useFactory: (config: AppConfig, off: RecoverySwitch): DeploymentGuard => {
+        const contracts =
+          config.recovery.setup?.contracts ?? config.wallet.deviceKeyRoots?.contracts;
+        if (!contracts) return new DeploymentGuard({ check: null });
+        const chain = config.recovery.chainId === celoSepolia.id ? celoSepolia : celo;
+        const reader = createDeploymentReader({ chain, rpcUrl: config.wallet.rpcUrl });
+        return new DeploymentGuard({
+          onLateMismatch: (message) => off.disable(message),
+          check: () =>
+            checkRecoveryDeployment(reader, {
+              ...contracts,
+              minDelaySeconds: config.recovery.minDelaySeconds,
+            }),
+        });
+      },
+    },
     {
       provide: RECOVERY_RUNTIME,
       inject: [

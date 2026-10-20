@@ -10,6 +10,7 @@ import {
   HttpCode,
   Inject,
   NotFoundException,
+  Optional,
   Post,
   ServiceUnavailableException,
   UnauthorizedException,
@@ -28,6 +29,11 @@ import {
   WALLET_REPOSITORIES,
   WALLET_SETUP_SERVICE,
 } from "./wallet.tokens.js";
+import { ClientIp } from "../security/client-ip.js";
+import { RECOVERY_SWITCH } from "../recovery/recovery-switch.js";
+import type { RecoverySwitch } from "../recovery/recovery-switch.js";
+import { RELAYER_SPEND_LIMITER } from "../security/relayer-spend-limiter.js";
+import type { RelayerSpendLimiter } from "../security/relayer-spend-limiter.js";
 
 /** What a browser may see of a wallet. No provider identifiers, no internal reasons. */
 export interface WalletView {
@@ -137,7 +143,20 @@ export class WalletController {
     @Inject(WALLET_BALANCE_SERVICE) private readonly balances: WalletBalanceService | null,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     @Inject(WALLET_REPOSITORIES) private readonly repositories: Repositories,
+    @Optional() @Inject(RELAYER_SPEND_LIMITER) private readonly spend?: RelayerSpendLimiter,
+    @Optional() @Inject(RECOVERY_SWITCH) private readonly off?: RecoverySwitch,
   ) {}
+
+  /** Device keys are on only if configured and the deployed contracts were not found to be wrong after startup. */
+  private deviceKeysOn(service: WalletSetupService): boolean {
+    return service.deviceKeysEnabled && !this.off?.off;
+  }
+
+  /** Registering a device key deploys a validator clone paid by the relayer: counted per address, then per person. */
+  private async limitDeviceKey(service: WalletSetupService, token: string, ip: string) {
+    await this.spend?.checkIp("device-key", ip);
+    await this.spend?.checkUser("device-key", await service.userForView(token));
+  }
 
   private service(): WalletSetupService {
     if (!this.setup) throw new ServiceUnavailableException("wallets are not enabled");
@@ -189,7 +208,7 @@ export class WalletController {
   async deviceKeyOptions(@Body() body: unknown, @Headers("authorization") authorization?: string) {
     const token = bearer(authorization);
     const service = this.service();
-    if (!service.deviceKeysEnabled)
+    if (!this.deviceKeysOn(service))
       throw new ServiceUnavailableException("device keys are not enabled");
     const parsed = deviceOptionsSchema.safeParse(body);
     if (!parsed.success) throw new BadRequestException("invalid request");
@@ -204,14 +223,19 @@ export class WalletController {
   @Post("device-keys/register")
   @HttpCode(200)
   @Header("Cache-Control", "no-store")
-  async deviceKeyRegister(@Body() body: unknown, @Headers("authorization") authorization?: string) {
+  async deviceKeyRegister(
+    @Body() body: unknown,
+    @Headers("authorization") authorization?: string,
+    @ClientIp() ip = "",
+  ) {
     const token = bearer(authorization);
     const service = this.service();
-    if (!service.deviceKeysEnabled)
+    if (!this.deviceKeysOn(service))
       throw new ServiceUnavailableException("device keys are not enabled");
     const parsed = deviceRegisterSchema.safeParse(body);
     if (!parsed.success) throw new BadRequestException("invalid request");
     try {
+      await this.limitDeviceKey(service, token, ip);
       const done = await service.completeDeviceKeyRegistration(token, parsed.data);
       return {
         status: done.status,
@@ -236,7 +260,7 @@ export class WalletController {
   ) {
     const token = bearer(authorization);
     const service = this.service();
-    if (!service.deviceKeysEnabled)
+    if (!this.deviceKeysOn(service))
       throw new ServiceUnavailableException("device keys are not enabled");
     const parsed = attestationChallengeSchema.safeParse(body);
     if (!parsed.success) throw new BadRequestException("invalid request");
@@ -258,14 +282,16 @@ export class WalletController {
   async nativeDeviceKeyRegister(
     @Body() body: unknown,
     @Headers("authorization") authorization?: string,
+    @ClientIp() ip = "",
   ) {
     const token = bearer(authorization);
     const service = this.service();
-    if (!service.deviceKeysEnabled)
+    if (!this.deviceKeysOn(service))
       throw new ServiceUnavailableException("device keys are not enabled");
     const parsed = nativeDeviceRegisterSchema.safeParse(body);
     if (!parsed.success) throw new BadRequestException("invalid request");
     try {
+      await this.limitDeviceKey(service, token, ip);
       const done = await service.completeDeviceKeyRegistration(token, parsed.data, "native");
       return {
         status: done.status,
@@ -301,7 +327,7 @@ export class WalletController {
         rootRegistered: view.rootRegistered,
         rootType: view.rootType,
         passkeyRegistered: view.passkeyRegistered,
-        deviceKeysEnabled: service.deviceKeysEnabled,
+        deviceKeysEnabled: this.deviceKeysOn(service),
         wallet: view.wallet ? walletView(view.wallet) : null,
       };
     } catch (error) {

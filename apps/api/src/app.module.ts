@@ -18,6 +18,7 @@ import { DatabaseModule } from "./database/database.module.js";
 import { HealthModule } from "./health/health.module.js";
 import { StatsModule } from "./stats/stats.module.js";
 import { RateLimitModule } from "./rate-limit/rate-limit.module.js";
+import { RecoverySwitchModule } from "./recovery/recovery-switch.js";
 import { PlatformModule } from "./platform/platform.module.js";
 import { RecoveryModule } from "./recovery/recovery.module.js";
 import { WalletModule } from "./wallet/wallet.module.js";
@@ -27,6 +28,7 @@ import { WalletModule } from "./wallet/wallet.module.js";
     AppConfigModule,
     DatabaseModule,
     RateLimitModule,
+    RecoverySwitchModule,
     PlatformModule,
     LoggerModule.forRootAsync({
       inject: [APP_CONFIG],

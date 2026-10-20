@@ -10,6 +10,7 @@ import {
   HttpException,
   HttpStatus,
   Inject,
+  Optional,
   Post,
   ServiceUnavailableException,
   UnauthorizedException,
@@ -28,6 +29,11 @@ import {
   challengeView,
 } from "../attestation/attestation.schema.js";
 import { ClientIp } from "../security/client-ip.js";
+import { hashOpaqueToken } from "../core/authorization/token.js";
+import { RECOVERY_SWITCH } from "./recovery-switch.js";
+import type { RecoverySwitch } from "./recovery-switch.js";
+import { RELAYER_SPEND_LIMITER } from "../security/relayer-spend-limiter.js";
+import type { RelayerSpendLimiter } from "../security/relayer-spend-limiter.js";
 
 const hex = (bytes: number) => z.string().regex(new RegExp(`^[0-9a-f]{${bytes * 2}}$`));
 const startBody = z.strictObject({ email: z.string().max(254) });
@@ -143,10 +149,14 @@ export class RecoveryController {
   constructor(
     @Inject(RECOVERY_RUNTIME) private readonly runtime: RecoveryRuntime | null,
     @Inject(WALLET_SETUP_SERVICE) private readonly setup: WalletSetupService | null,
+    @Optional() @Inject(RELAYER_SPEND_LIMITER) private readonly spend?: RelayerSpendLimiter,
+    @Optional() @Inject(RECOVERY_SWITCH) private readonly off?: RecoverySwitch,
   ) {}
 
   private services(): RecoveryRuntime {
     if (!this.runtime) throw new ServiceUnavailableException("account recovery is not enabled");
+    if (this.off?.off)
+      throw new ServiceUnavailableException("account recovery is temporarily unavailable");
     return this.runtime;
   }
 
@@ -369,9 +379,13 @@ export class RecoveryController {
   @Post("cancel/prepare")
   @HttpCode(200)
   @Header("Cache-Control", "no-store")
-  async cancelPrepare(@Headers("authorization") authorization?: string) {
+  async cancelPrepare(@Headers("authorization") authorization?: string, @ClientIp() ip = "") {
     try {
-      return await this.services().flow.prepareCancel(bearer(authorization));
+      // The cancel link is bound to one recovery attempt, so its hash stands for the person here.
+      const token = bearer(authorization);
+      await this.spend?.checkIp("cancel", ip);
+      await this.spend?.checkUser("cancel", hashOpaqueToken(token));
+      return await this.services().flow.prepareCancel(token);
     } catch (error) {
       return httpError(error);
     }
@@ -380,11 +394,18 @@ export class RecoveryController {
   @Post("cancel")
   @HttpCode(200)
   @Header("Cache-Control", "no-store")
-  async cancel(@Body() body: unknown, @Headers("authorization") authorization?: string) {
+  async cancel(
+    @Body() body: unknown,
+    @Headers("authorization") authorization?: string,
+    @ClientIp() ip = "",
+  ) {
     const parsed = materialBody.safeParse(body);
     if (!parsed.success) throw new BadRequestException("invalid request");
     try {
-      return await this.services().flow.submitCancel(bearer(authorization), parsed.data.material);
+      const token = bearer(authorization);
+      await this.spend?.checkIp("cancel", ip);
+      await this.spend?.checkUser("cancel", hashOpaqueToken(token));
+      return await this.services().flow.submitCancel(token, parsed.data.material);
     } catch (error) {
       return httpError(error);
     }
@@ -491,11 +512,14 @@ export class RecoveryController {
   async configurationPrepare(
     @Body() body: unknown,
     @Headers("authorization") authorization?: string,
+    @ClientIp() ip = "",
   ) {
     const parsed = configurationPrepareBody.safeParse(body);
     if (!parsed.success) throw new BadRequestException("invalid request");
     try {
+      await this.spend?.checkIp("arming", ip);
       const userId = await this.identify(bearer(authorization));
+      await this.spend?.checkUser("arming", userId);
       return await this.services().configuration.prepare({
         userId,
         recoveryAddress: parsed.data.recoveryAddress,

@@ -32,6 +32,7 @@ import { DeviceTierService } from "../core/attestation/device-tier-service.js";
 import { GoogleRevocationList } from "../infrastructure/attestation/google-revocation-list.js";
 import { applicationRoots } from "../security/application-roots.js";
 import { ROOT_VALIDATOR_DEPLOYER } from "../roots/roots.tokens.js";
+import { assertRelayerMatchesDeployment } from "../recovery/recovery.runtime.js";
 import { WalletController } from "./wallet.controller.js";
 import {
   BALANCE_READER,
@@ -107,7 +108,12 @@ function unitOfWork(database: Database): WalletUnitOfWork {
           throw new Error(`unsupported chain ${String(config.wallet.onChainId)}`);
         }
         const { contracts } = deviceKeyRoots;
-        return new ViemValidatorDeployer({
+        const relayerKey = readKeyFileOutsideRepo(
+          deviceKeyRoots.relayerKeyFile,
+          applicationRoots(),
+          "RECOVERY_RELAYER_KEY_FILE",
+        );
+        const deployer = new ViemValidatorDeployer({
           chain,
           rpcUrl: config.wallet.rpcUrl,
           deployments: {
@@ -120,12 +126,17 @@ function unitOfWork(database: Database): WalletUnitOfWork {
               implementation: contracts.deviceImplementation as `0x${string}`,
             },
           },
-          relayerKey: readKeyFileOutsideRepo(
-            deviceKeyRoots.relayerKeyFile,
-            applicationRoots(),
-            "RECOVERY_RELAYER_KEY_FILE",
-          ),
+          relayerKey,
         });
+        // The same check the recovery path makes: the key must be the relayer the contracts were deployed with, or every clone
+        // deployment would be paid by an address the deployment does not know. Refuse to boot instead.
+        assertRelayerMatchesDeployment(deployer.relayerAddress, contracts.relayer);
+        // The PUBLIC address only; the key never reaches a log.
+        nestLog("Recovery")("info", "recovery.device_key_relayer", {
+          relayer: deployer.relayerAddress,
+          network: config.recovery.network,
+        });
+        return deployer;
       },
     },
     {

@@ -10,6 +10,7 @@ import { Logger } from "nestjs-pino";
 import { AppModule } from "./app.module.js";
 import { configureApp } from "./app.setup.js";
 import { APP_CONFIG } from "./config/config.module.js";
+import { startedFields } from "./started-log.js";
 
 // Repo-root .env is optional; real environment variables always win.
 try {
@@ -52,21 +53,7 @@ async function bootstrap(): Promise<void> {
 
   // What this instance is actually configured to do, with no secret in it. A web page that cannot reach or verify against
   // this API is almost always a mismatch between these values and the web host's, so they are the first thing to read.
-  const passkey = config.wallet.passkey;
-  fallbackLog.info(
-    {
-      event: "app.started",
-      nodeEnv: config.nodeEnv,
-      listening: `${config.apiHost}:${String(config.port)}`,
-      webUrl: config.webUrl,
-      corsOrigins: config.corsOrigins,
-      passkeyRpId: passkey?.rpId ?? null,
-      passkeyOrigin: passkey?.origin ?? null,
-      walletProvider: config.wallet.provider,
-      executionEnabled: config.execution.enabled,
-    },
-    "Kaada API started",
-  );
+  fallbackLog.info(startedFields(config), "Kaada API started");
   warnOnMisconfiguration(config);
 }
 

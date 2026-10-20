@@ -151,6 +151,11 @@ const envShape = {
     .string()
     .regex(/^[0-9]{1,30}$/)
     .default("0"),
+  // The endpoints that make the recovery relayer spend gas (arming a Recovery Code, registering a device key, cancelling a
+  // recovery) are limited per person and per address, per hour, each kind counted on its own. Low on purpose: a person does each
+  // of these once or twice. A top-up or a clone deployment is real money, so nobody should be able to repeat one without bound.
+  RELAYER_SPEND_LIMIT_PER_USER_PER_HOUR: z.coerce.number().int().min(1).max(1_000).default(5),
+  RELAYER_SPEND_LIMIT_PER_IP_PER_HOUR: z.coerce.number().int().min(1).max(10_000).default(20),
   // The Telegram bot. With a token alone the bot can only SEND (recovery alerts). With the webhook secret too, people can talk
   // to Kaada in Telegram: Telegram echoes the secret in a header on every webhook call and Kaada rejects any call without it.
   TELEGRAM_BOT_TOKEN: optionalSecret,
@@ -378,6 +383,10 @@ function buildConfig(
           address: env.PLATFORM_WALLET_ADDRESS,
         },
       }),
+    relayerSpend: {
+      perUserPerHour: env.RELAYER_SPEND_LIMIT_PER_USER_PER_HOUR,
+      perIpPerHour: env.RELAYER_SPEND_LIMIT_PER_IP_PER_HOUR,
+    },
     recovery: {
       enabled: env.RECOVERY_ENABLED,
       network: env.RECOVERY_NETWORK,
@@ -478,6 +487,12 @@ function crossChecks(
     );
   if (production && env.WALLET_NETWORK !== "celo-mainnet")
     add("WALLET_NETWORK", "production reads balances on celo-mainnet only");
+  // Recovery (and device-key roots) act on the wallets' chain: contracts of another network would arm recovery that can never run.
+  if (production && env.RECOVERY_NETWORK !== env.WALLET_NETWORK)
+    add(
+      "RECOVERY_NETWORK",
+      `in production RECOVERY_NETWORK (${env.RECOVERY_NETWORK}) must equal WALLET_NETWORK (${env.WALLET_NETWORK})`,
+    );
   if (production && kernel && (env.PIN_PEPPER === undefined || env.PIN_PEPPER.length < 32))
     add("PIN_PEPPER", "production wallets need a PIN_PEPPER of at least 32 characters");
   // The platform wallet: both settings together or neither; production wallets need it (no silent generation of a new wallet).

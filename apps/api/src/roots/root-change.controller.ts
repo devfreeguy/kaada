@@ -8,6 +8,7 @@ import {
   Headers,
   HttpCode,
   Inject,
+  Optional,
   Param,
   Post,
   ServiceUnavailableException,
@@ -22,6 +23,11 @@ import type { WalletSetupService } from "../core/wallets/setup-service.js";
 import { WALLET_SETUP_SERVICE } from "../wallet/wallet.tokens.js";
 import { rootProofSchema } from "./root-proof.schema.js";
 import { ROOT_CHANGE_SERVICE } from "./roots.tokens.js";
+import { ClientIp } from "../security/client-ip.js";
+import { RECOVERY_SWITCH } from "../recovery/recovery-switch.js";
+import type { RecoverySwitch } from "../recovery/recovery-switch.js";
+import { RELAYER_SPEND_LIMITER } from "../security/relayer-spend-limiter.js";
+import type { RelayerSpendLimiter } from "../security/relayer-spend-limiter.js";
 
 import { attestationEvidenceSchema, challengeView } from "../attestation/attestation.schema.js";
 
@@ -114,12 +120,24 @@ export class RootChangeController {
   constructor(
     @Inject(WALLET_SETUP_SERVICE) private readonly setup: WalletSetupService | null,
     @Inject(ROOT_CHANGE_SERVICE) private readonly changes: RootChangeService | null,
+    @Optional() @Inject(RELAYER_SPEND_LIMITER) private readonly spend?: RelayerSpendLimiter,
+    @Optional() @Inject(RECOVERY_SWITCH) private readonly off?: RecoverySwitch,
   ) {}
+
+  /** Preparing a root change can deploy a validator clone paid by the relayer: counted per address, then per person. */
+  private async limitChange(setup: WalletSetupService, token: string, ip: string): Promise<string> {
+    await this.spend?.checkIp("device-key", ip);
+    const userId = await setup.userForView(token);
+    await this.spend?.checkUser("device-key", userId);
+    return userId;
+  }
 
   private services() {
     if (!this.setup || !this.changes) {
       throw new ServiceUnavailableException("root changes are not enabled");
     }
+    if (this.off?.off)
+      throw new ServiceUnavailableException("root changes are temporarily unavailable");
     return { setup: this.setup, changes: this.changes };
   }
 
@@ -155,13 +173,17 @@ export class RootChangeController {
   @Post("changes")
   @HttpCode(200)
   @Header("Cache-Control", "no-store")
-  async prepare(@Body() body: unknown, @Headers("authorization") authorization?: string) {
+  async prepare(
+    @Body() body: unknown,
+    @Headers("authorization") authorization?: string,
+    @ClientIp() ip = "",
+  ) {
     const { setup, changes } = this.services();
     const parsed = prepareBody.safeParse(body);
     if (!parsed.success) throw new BadRequestException("invalid request");
     try {
       const prepared = await changes.prepare(
-        await setup.userForView(bearer(authorization)),
+        await this.limitChange(setup, bearer(authorization), ip),
         parsed.data.kind,
         parsed.data.credential,
       );
@@ -199,13 +221,17 @@ export class RootChangeController {
   @Post("native/changes")
   @HttpCode(200)
   @Header("Cache-Control", "no-store")
-  async prepareNative(@Body() body: unknown, @Headers("authorization") authorization?: string) {
+  async prepareNative(
+    @Body() body: unknown,
+    @Headers("authorization") authorization?: string,
+    @ClientIp() ip = "",
+  ) {
     const { setup, changes } = this.services();
     const parsed = nativePrepareBody.safeParse(body);
     if (!parsed.success) throw new BadRequestException("invalid request");
     try {
       const prepared = await changes.prepare(
-        await setup.userForView(bearer(authorization)),
+        await this.limitChange(setup, bearer(authorization), ip),
         parsed.data.kind,
         parsed.data.credential,
         "native",

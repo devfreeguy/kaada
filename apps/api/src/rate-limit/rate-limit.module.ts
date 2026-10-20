@@ -6,6 +6,7 @@ import type { RateLimit } from "../core/authorization/rate-limiter.js";
 import { APP_CONFIG } from "../config/config.module.js";
 import { createRedis } from "../infrastructure/redis/connection.js";
 import { RedisRateLimiter } from "../infrastructure/redis/redis-rate-limiter.js";
+import { RELAYER_SPEND_LIMITER, RelayerSpendLimiter } from "../security/relayer-spend-limiter.js";
 import { RATE_LIMIT_FACTORY } from "./rate-limit.tokens.js";
 
 export type RateLimitFactory = (name: string, limit: number, windowMs: number) => RateLimit;
@@ -34,7 +35,13 @@ export type RateLimitFactory = (name: string, limit: number, windowMs: number) =
           });
       },
     },
+    {
+      provide: RELAYER_SPEND_LIMITER,
+      inject: [APP_CONFIG, RATE_LIMIT_FACTORY],
+      useFactory: (config: AppConfig, make: RateLimitFactory): RelayerSpendLimiter =>
+        new RelayerSpendLimiter(config.relayerSpend, make),
+    },
   ],
-  exports: [RATE_LIMIT_FACTORY],
+  exports: [RATE_LIMIT_FACTORY, RELAYER_SPEND_LIMITER],
 })
 export class RateLimitModule {}

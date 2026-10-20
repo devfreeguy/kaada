@@ -27,6 +27,7 @@ const deployer = code(join(dir, "validator-deployer.ts"));
 describe("recovery signer boundary (source scan)", () => {
   it("scans the recovery adapter files: no attestor or signer-service file exists", () => {
     assert.deepEqual(sources.sort(), [
+      "deployment-check.ts",
       "index.ts",
       "key-file.ts",
       "validator-deployer.ts",

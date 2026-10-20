@@ -25,6 +25,8 @@ export interface ViemValidatorDeployerOptions {
 export class ViemValidatorDeployer implements RootValidatorDeployer {
   private readonly client;
   private readonly wallet;
+  /** The relayer's PUBLIC address (lowercase), so the caller can compare it with the deployment without handling the key. */
+  readonly relayerAddress: string;
 
   constructor(private readonly options: ViemValidatorDeployerOptions) {
     this.client = createPublicClient({ chain: options.chain, transport: http(options.rpcUrl) });
@@ -33,6 +35,7 @@ export class ViemValidatorDeployer implements RootValidatorDeployer {
       chain: options.chain,
       transport: http(options.rpcUrl),
     });
+    this.relayerAddress = this.wallet.account.address.toLowerCase();
   }
 
   async ensureDeployed(

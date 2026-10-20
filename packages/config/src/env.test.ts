@@ -25,6 +25,12 @@ const deployed: Readonly<Record<RecoveryNetwork, RecoveryContracts | null>> = {
   "celo-sepolia": contracts,
 };
 
+/** A table where both networks have contracts (the committed table, as it is now). */
+const deployedEverywhere: Readonly<Record<RecoveryNetwork, RecoveryContracts | null>> = {
+  "celo-mainnet": contracts,
+  "celo-sepolia": contracts,
+};
+
 /** A table with no deployed contracts anywhere: what a network that was never deployed looks like. */
 const undeployed: Readonly<Record<RecoveryNetwork, RecoveryContracts | null>> = {
   "celo-mainnet": null,
@@ -47,6 +53,49 @@ const production = {
   PLATFORM_WALLET_KEY_FILE: "/run/secrets/platform-agent.key",
   PLATFORM_WALLET_ADDRESS: `0x${"ab".repeat(20)}`,
 };
+
+describe("hardening settings", () => {
+  it("in production, RECOVERY_NETWORK must equal WALLET_NETWORK", () => {
+    // The default (celo-mainnet) agrees with a production wallet network.
+    assert.doesNotThrow(() => loadConfig(production));
+    assert.throws(
+      () => loadConfig({ ...production, RECOVERY_NETWORK: "celo-sepolia" }),
+      /RECOVERY_NETWORK \(celo-sepolia\) must equal WALLET_NETWORK \(celo-mainnet\)/,
+    );
+    // Outside production, a test network for recovery is allowed (that is how it is tried).
+    assert.doesNotThrow(() => loadConfig({ ...kernel, RECOVERY_NETWORK: "celo-sepolia" }));
+  });
+
+  it("the relayer-spend limits default low and can be overridden by environment variables", () => {
+    const defaults = loadConfig(base).relayerSpend;
+    assert.deepEqual(defaults, { perUserPerHour: 5, perIpPerHour: 20 });
+    const custom = loadConfig({
+      ...base,
+      RELAYER_SPEND_LIMIT_PER_USER_PER_HOUR: "2",
+      RELAYER_SPEND_LIMIT_PER_IP_PER_HOUR: "9",
+    }).relayerSpend;
+    assert.deepEqual(custom, { perUserPerHour: 2, perIpPerHour: 9 });
+  });
+
+  it("refuses limits that are zero, negative, fractional or absurd", () => {
+    for (const bad of ["0", "-1", "1.5", "abc", "100000"]) {
+      assert.throws(
+        () => loadConfig({ ...base, RELAYER_SPEND_LIMIT_PER_USER_PER_HOUR: bad }),
+        ConfigError,
+        bad,
+      );
+      assert.throws(
+        () => loadConfig({ ...base, RELAYER_SPEND_LIMIT_PER_IP_PER_HOUR: bad }),
+        ConfigError,
+        bad,
+      );
+    }
+  });
+
+  it("gas top-ups stay off unless RECOVERY_GAS_TOPUP_MAX_WEI is set", () => {
+    assert.equal(loadConfig(base).recovery.gasTopUpMaxWei, 0n);
+  });
+});
 
 describe("loadConfig", () => {
   it("applies defaults and nests database settings", () => {
@@ -442,7 +491,7 @@ describe("account recovery", () => {
     const prod = {
       ...dev,
       ...production,
-      RECOVERY_NETWORK: "celo-sepolia",
+      RECOVERY_NETWORK: "celo-mainnet",
       BUNDLER_URL: "https://bundler.example/rpc",
       RECOVERY_ENABLED: "true",
       RECOVERY_RELAYER_KEY_FILE: "/secrets/relayer.key",
@@ -453,35 +502,45 @@ describe("account recovery", () => {
     };
     const { RECOVERY_EMAIL_OUTBOX_FILE: _o, ...clean } = prod;
     // Production starts with no KMS key id and no attestor key file: neither exists in the design any more.
-    const config = loadConfig(clean, { deployments: deployed });
+    const config = loadConfig(clean, { deployments: deployedEverywhere });
     assert.equal(config.recovery.setup?.contracts.validator, address(1));
     assert.equal(config.recovery.emailProvider, "smtp");
     assert.equal(config.recovery.smtp?.from, "Kaada <no-reply@kaada.app>");
     assert.equal(config.redis?.url, "rediss://redis.example:6380");
 
     const { REDIS_URL: _r, ...noRedis } = clean;
-    assert.throws(() => loadConfig(noRedis, { deployments: deployed }), /REDIS_URL/);
+    assert.throws(() => loadConfig(noRedis, { deployments: deployedEverywhere }), /REDIS_URL/);
     const { RECOVERY_SMTP_URL: _s, RECOVERY_EMAIL_FROM: _f, ...noSmtp } = clean;
     assert.throws(
       () =>
-        loadConfig({ ...noSmtp, RECOVERY_EMAIL_OUTBOX_FILE: "/tmp/o" }, { deployments: deployed }),
+        loadConfig(
+          { ...noSmtp, RECOVERY_EMAIL_OUTBOX_FILE: "/tmp/o" },
+          { deployments: deployedEverywhere },
+        ),
       /development/,
     );
     // The authenticator key is the one secret recovery adds: production without it does not start.
     const { RECOVERY_TOTP_SECRET_KEY: _t, ...noTotp } = clean;
-    assert.throws(() => loadConfig(noTotp, { deployments: deployed }), /RECOVERY_TOTP_SECRET_KEY/);
+    assert.throws(
+      () => loadConfig(noTotp, { deployments: deployedEverywhere }),
+      /RECOVERY_TOTP_SECRET_KEY/,
+    );
   });
 
   it("the authenticator key is a dedicated 32-byte key, never the execution key, and rotates like it", () => {
     assert.throws(
-      () => loadConfig({ ...dev, RECOVERY_TOTP_SECRET_KEY: "short" }, { deployments: deployed }),
+      () =>
+        loadConfig(
+          { ...dev, RECOVERY_TOTP_SECRET_KEY: "short" },
+          { deployments: deployedEverywhere },
+        ),
       /32 random bytes/,
     );
     assert.throws(
       () =>
         loadConfig(
           { ...dev, EXECUTION_SECRET_KEY: totpKey, RECOVERY_TOTP_SECRET_KEY: totpKey },
-          { deployments: deployed },
+          { deployments: deployedEverywhere },
         ),
       /its own key/,
     );
@@ -565,7 +624,7 @@ describe("account recovery", () => {
     const base2 = {
       ...dev,
       ...production,
-      RECOVERY_NETWORK: "celo-sepolia",
+      RECOVERY_NETWORK: "celo-mainnet",
       RECOVERY_ENABLED: "true",
       RECOVERY_RELAYER_KEY_FILE: "/run/secrets/recovery-relayer.key",
       RECOVERY_CHALLENGE_SECRET: key,
@@ -574,7 +633,7 @@ describe("account recovery", () => {
       RECOVERY_EMAIL_FROM: "Kaada <no-reply@kaada.xyz>",
     };
     const { RECOVERY_EMAIL_OUTBOX_FILE: _o, ...ok } = base2;
-    assert.doesNotThrow(() => loadConfig(ok, { deployments: deployed }));
+    assert.doesNotThrow(() => loadConfig(ok, { deployments: deployedEverywhere }));
     for (const drop of [
       "RECOVERY_RELAYER_KEY_FILE",
       "RECOVERY_CHALLENGE_SECRET",
@@ -583,7 +642,11 @@ describe("account recovery", () => {
       "RECOVERY_EMAIL_FROM",
     ]) {
       const { [drop]: _gone, ...without } = ok as Record<string, string>;
-      assert.throws(() => loadConfig(without, { deployments: deployed }), ConfigError, drop);
+      assert.throws(
+        () => loadConfig(without, { deployments: deployedEverywhere }),
+        ConfigError,
+        drop,
+      );
     }
   });
 
@@ -627,7 +690,7 @@ describe("account recovery", () => {
   });
 
   it("the platform wallet: production needs both settings, they come together, and the config is a path plus a public address only", () => {
-    const prod = { ...dev, ...production, RECOVERY_NETWORK: "celo-sepolia" };
+    const prod = { ...dev, ...production, RECOVERY_NETWORK: "celo-mainnet" };
     const { RECOVERY_EMAIL_OUTBOX_FILE: _o, RECOVERY_ENABLED: _e, ...base3 } = prod;
     const ok = { ...base3, RECOVERY_ENABLED: "false" };
     const config = loadConfig(ok);
@@ -732,11 +795,12 @@ describe("device keys and attestation", () => {
     const prod = {
       ...roots,
       ...production,
+      RECOVERY_NETWORK: "celo-mainnet",
       DEVICE_KEY_ROOTS_ENABLED: "true",
       ATTESTATION_IOS_APP_IDS: "ABCDE12345.app.kaada.wallet",
       ATTESTATION_IOS_ALLOW_DEVELOPMENT: "true",
     };
-    const config = loadConfig(prod, { deployments: deployed });
+    const config = loadConfig(prod, { deployments: deployedEverywhere });
     assert.equal(config.wallet.deviceAttestation?.iosAllowDevelopment, false);
   });
 
@@ -828,7 +892,7 @@ describe("recovery SMTP settings", () => {
     PASSKEY_RP_ID: "kaada.app",
     BUNDLER_URL: "https://bundler.example/rpc",
     RECOVERY_ENABLED: "true",
-    RECOVERY_NETWORK: "celo-sepolia",
+    RECOVERY_NETWORK: "celo-mainnet",
     RECOVERY_RELAYER_KEY_FILE: "/run/secrets/recovery-relayer.key",
     RECOVERY_CHALLENGE_SECRET: key,
     RECOVERY_TOTP_SECRET_KEY: totpKey,
@@ -840,7 +904,8 @@ describe("recovery SMTP settings", () => {
     RECOVERY_SMTP_USER: "mailer",
     RECOVERY_SMTP_PASSWORD_FILE: "/run/secrets/recovery-smtp-password",
   };
-  const load = (env: Record<string, string>) => loadConfig(env, { deployments: deployed });
+  const load = (env: Record<string, string>) =>
+    loadConfig(env, { deployments: deployedEverywhere });
   const without = (env: Record<string, string>, name: string) => {
     const { [name]: _gone, ...rest } = env;
     return rest;
