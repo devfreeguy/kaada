@@ -1,0 +1,72 @@
+.connections {
+  pointer-events: none;
+}
+.route {
+  opacity: 0;
+  animation: route-visibility 72s linear infinite;
+}
+.thread,
+.pulse,
+.light {
+  fill: none;
+  stroke-linecap: round;
+}
+.thread {
+  stroke: var(--primary);
+  stroke-width: 0.65;
+  opacity: 0.55;
+}
+.pulse,
+.light {
+  stroke-dasharray: 0.025 1;
+  stroke-dashoffset: 0.025;
+  animation: delivery 72s ease-in-out infinite;
+  animation-delay: var(--route-delay);
+}
+.pulse {
+  stroke: var(--primary);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 3px var(--primary));
+}
+.light {
+  stroke: var(--on-dark);
+  stroke-width: 0.9;
+}
+@keyframes route-visibility {
+  0%,
+  0.5% {
+    opacity: 0;
+  }
+  1.5%,
+  8.5% {
+    opacity: 1;
+  }
+  10%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes delivery {
+  0%,
+  1.5% {
+    stroke-dashoffset: 0.025;
+  }
+  4.5%,
+  5% {
+    stroke-dashoffset: -1;
+  }
+  8.5%,
+  100% {
+    stroke-dashoffset: 0.025;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .connections {
+    display: none;
+  }
+  .route,
+  .pulse,
+  .light {
+    animation: none;
+  }
+}

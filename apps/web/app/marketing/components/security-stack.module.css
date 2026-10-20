@@ -4,6 +4,9 @@
 .heading {
   z-index: 5;
   background: var(--background);
+  background-clip: content-box;
+  padding-bottom: var(--security-heading-reserve, 0px);
+  pointer-events: none;
 }
 .section .heading {
   position: sticky;
@@ -11,17 +14,22 @@
 }
 .stack {
   --security-stack-height: calc(100dvh - var(--security-stack-top) - 48px);
-  margin-top: 40px;
+  margin-top: calc(48px - var(--security-heading-reserve, 0px));
   padding-bottom: 48px;
 }
 @media (min-width: 640px) {
   .stack {
-    margin-top: 56px;
+    margin-top: calc(64px - var(--security-heading-reserve, 0px));
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .section .heading {
     position: relative;
     top: auto;
+    padding-bottom: 0;
+    margin-bottom: 0;
+  }
+  .stack {
+    margin-top: 48px;
   }
 }

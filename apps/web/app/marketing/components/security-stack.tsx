@@ -18,7 +18,13 @@ export function SecurityStack({ children, heading }: { children: ReactNode; head
   const stack = useRef<HTMLDivElement>(null);
   const section = useRef<HTMLDivElement>(null);
   const header = useRef<HTMLDivElement>(null);
-  const [layout, setLayout] = useState({ top: 16, headingTop: 48, fitScale: 1 });
+  const [layout, setLayout] = useState({
+    top: 16,
+    headingTop: 48,
+    fitScale: 1,
+    cardHeight: 0,
+    desktop: false,
+  });
   useLayoutEffect(() => {
     const root = section.current;
     const headingElement = header.current;
@@ -27,34 +33,55 @@ export function SecurityStack({ children, heading }: { children: ReactNode; head
     const measure = () => {
       const scroller = viewport.current;
       if (!scroller) return;
+      const desktop = scroller.clientWidth >= 1024;
       const tallestCard = Math.max(
-        ...Array.from(list.querySelectorAll("article"), (card) => card.offsetHeight),
+        ...Array.from(list.querySelectorAll("article"), (card) => {
+          const css = getComputedStyle(card);
+          const contentHeights = Array.from(
+            card.children,
+            (child) => (child as HTMLElement).offsetHeight,
+          );
+          return Math.ceil(
+            parseFloat(css.paddingTop) +
+              parseFloat(css.paddingBottom) +
+              (desktop
+                ? Math.max(...contentHeights)
+                : contentHeights.reduce((sum, value) => sum + value, 0) + parseFloat(css.rowGap)),
+          );
+        }),
       );
-      const headingHeight = headingElement.offsetHeight;
+      const headingHeight = (headingElement.firstElementChild as HTMLElement).offsetHeight;
       const height = scroller.clientHeight;
-      const headingTop = scroller.clientWidth >= 1024 ? 96 : 48;
-      const gap = scroller.clientWidth >= 1024 ? 40 : 24;
-      const top = headingTop + headingHeight + gap;
-      const fitScale = Math.min(1, Math.max(0.1, (height - top - 60) / tallestCard));
+      const desktopHeadingTop = 96;
+      const gap = desktop ? 64 : 48;
+      const top = desktop
+        ? desktopHeadingTop + headingHeight + gap
+        : Math.max(24, height - tallestCard - 96);
+      const headingTop = desktop ? desktopHeadingTop : top - headingHeight - gap;
+      const fitScale = desktop ? Math.min(1, Math.max(0.1, (height - top - 60) / tallestCard)) : 1;
       setLayout((previous) =>
-        previous.top === top && previous.headingTop === headingTop && previous.fitScale === fitScale
+        previous.top === top &&
+        previous.headingTop === headingTop &&
+        previous.fitScale === fitScale &&
+        previous.cardHeight === tallestCard &&
+        previous.desktop === desktop
           ? previous
-          : { top, headingTop, fitScale },
+          : { top, headingTop, fitScale, cardHeight: tallestCard, desktop },
       );
     };
     const observer = new ResizeObserver(measure);
     observer.observe(root);
     if (viewport.current) observer.observe(viewport.current);
-    observer.observe(headingElement);
-    list.querySelectorAll("article").forEach((card) => observer.observe(card));
+    if (headingElement.firstElementChild) observer.observe(headingElement.firstElementChild);
+    list.querySelectorAll("article > div").forEach((content) => observer.observe(content));
     measure();
     return () => observer.disconnect();
   }, [viewport]);
   const cards = Children.toArray(children);
   const { scrollYProgress } = useScroll({
     container: viewport,
-    target: section,
-    offset: [`start ${layout.headingTop}px`, "end end"],
+    target: layout.desktop ? section : stack,
+    offset: [`start ${layout.desktop ? layout.headingTop : layout.top}px`, "end end"],
   });
   return (
     <div
@@ -64,6 +91,8 @@ export function SecurityStack({ children, heading }: { children: ReactNode; head
         {
           "--security-stack-top": `${layout.top}px`,
           "--security-heading-top": `${layout.headingTop}px`,
+          "--security-card-height": `${layout.cardHeight}px`,
+          "--security-heading-reserve": `${layout.cardHeight + (layout.desktop ? 64 : 48) + 64}px`,
         } as CSSProperties
       }
     >
@@ -78,7 +107,7 @@ export function SecurityStack({ children, heading }: { children: ReactNode; head
             progress={scrollYProgress}
             range={[index / cards.length, 1]}
             fitScale={layout.fitScale}
-            targetScale={1 - (cards.length - index - 1) * 0.04}
+            targetScale={layout.desktop ? 1 - (cards.length - index - 1) * 0.04 : 1}
           >
             {card}
           </StickyCard_001>

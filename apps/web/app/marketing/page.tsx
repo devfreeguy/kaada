@@ -4,6 +4,9 @@ import { Header } from "./components/header";
 import { Hero } from "./components/hero";
 import { HowItWorks } from "./components/how-it-works";
 import { ControlSecurity } from "./components/control-security";
+import { GlobalReach } from "./components/global-reach";
+import { Channels } from "./components/channels";
+import { RealPayments } from "./components/real-payments";
 
 const title = "Kaada | Cross-border money, made conversational";
 const description =
@@ -44,6 +47,9 @@ export default function MarketingPage() {
       <Hero />
       <HowItWorks />
       <ControlSecurity />
+      <GlobalReach />
+      <Channels />
+      <RealPayments />
     </main>
   );
 }

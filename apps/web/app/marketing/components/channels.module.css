@@ -1,0 +1,203 @@
+.cards {
+  display: grid;
+  gap: 24px;
+  margin-top: 48px;
+}
+.cards > article {
+  min-width: 0;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.content {
+  padding: 28px 24px 0;
+  color: var(--on-dark);
+}
+.content[data-live="true"] {
+  color: var(--navy);
+}
+.topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: rgb(255 255 255 / 16%);
+}
+.icon svg {
+  width: 32px;
+  height: 32px;
+  stroke-width: 1.7;
+}
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.statusDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--navy);
+}
+.name {
+  margin-top: 28px;
+  font-family: var(--font-anton);
+  font-size: clamp(44px, 5vw, 64px);
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+.description {
+  max-width: 400px;
+  min-height: 78px;
+  margin-top: 16px;
+  font-size: 16px;
+  line-height: 1.6;
+}
+.action {
+  margin-top: 24px;
+}
+.action > * {
+  max-width: 100%;
+}
+.telegramButton:hover {
+  background: var(--on-dark);
+  border-color: var(--on-dark);
+  color: var(--navy);
+}
+.telegramVisual {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 360px;
+  margin-top: 36px;
+  padding-top: 28px;
+  overflow: hidden;
+}
+.telegramVisual::before {
+  content: "";
+  position: absolute;
+  top: 64px;
+  left: 50%;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: rgb(255 255 255 / 18%);
+}
+.mockup {
+  flex-shrink: 0;
+  position: relative;
+  display: block;
+  width: 260px;
+  height: auto;
+  max-width: 85%;
+}
+.whatsappVisual {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 360px;
+  margin-top: auto;
+  overflow: hidden;
+  isolation: isolate;
+}
+.orbit {
+  position: absolute;
+  top: 48px;
+  width: 280px;
+  height: 280px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 32px rgb(255 255 255 / 3%),
+    0 0 0 64px rgb(255 255 255 / 2%);
+}
+.whatsappMark {
+  display: grid;
+  place-items: center;
+  width: 140px;
+  height: 140px;
+  border-radius: 40px;
+  background: var(--emerald);
+  color: var(--on-dark);
+  transform: rotate(-8deg);
+  box-shadow: 0 14px 0 color-mix(in srgb, var(--emerald) 55%, var(--navy));
+}
+.whatsappMark svg {
+  width: 96px;
+  height: 96px;
+}
+.floatingLabel {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--navy);
+}
+.sendLabel {
+  top: 64px;
+  left: 16px;
+  background: var(--lime);
+  transform: rotate(-9deg);
+}
+.readyLabel {
+  right: 12px;
+  bottom: 64px;
+  background: var(--primary);
+  transform: rotate(7deg);
+}
+.whatsappCaption {
+  position: absolute;
+  bottom: 22px;
+  color: var(--on-dark);
+  font-size: 12px;
+  opacity: 0.7;
+}
+@media (min-width: 640px) {
+  .cards {
+    margin-top: 64px;
+  }
+  .content {
+    padding: 40px 36px 0;
+  }
+  .mockup {
+    flex-shrink: 0;
+    width: 320px;
+  }
+  .telegramVisual,
+  .whatsappVisual {
+    height: 400px;
+  }
+  .sendLabel {
+    left: 28px;
+  }
+  .readyLabel {
+    right: 28px;
+  }
+}
+@media (min-width: 1024px) {
+  .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
