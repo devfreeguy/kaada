@@ -284,3 +284,51 @@ describe("a payment that fails to prepare leaves a trace", () => {
     assert.deepEqual(seen, ["PROVIDER_CAPACITY_REACHED"]);
   });
 });
+
+describe("a bundler refusal that becomes a 500 says why in the log", () => {
+  it("carries the bundler's code, the AA code and a redacted reason, and the answer is unchanged", () => {
+    const h = harness("/api/v1/recovery/configuration");
+    const signature = `0x${"ab".repeat(65)}`;
+    h.run(
+      new KaadaError("BUNDLER_REJECTED", "the bundler refused the operation", {
+        details: { rpc: `AA24 signature error ${signature}`, rpcCode: -32500, aaCode: "AA24" },
+      }),
+    );
+    const [entry] = h.entries;
+    assert.equal(entry?.level, "error");
+    assert.equal(entry?.fields["errorCode"], "BUNDLER_REJECTED");
+    assert.equal(entry?.fields["bundlerRpcCode"], -32500);
+    assert.equal(entry?.fields["bundlerAaCode"], "AA24");
+    assert.match(String(entry?.fields["bundlerReason"]), /AA24 signature error/);
+    assert.equal(JSON.stringify(entry).includes("abab"), false, "no signature in the log");
+    assert.deepEqual(h.sent, {
+      status: 500,
+      body: { statusCode: 500, message: "Internal server error" },
+    });
+  });
+
+  it("finds the reason in the cause of a refusal that arrived wrapped, and says so when there is none", () => {
+    const wrapped = harness();
+    wrapped.run(
+      new KaadaError("BUNDLER_REJECTED", "the bundler refused the operation", {
+        cause: new Error("outer", {
+          cause: { shortMessage: "RPC failed", details: "AA21 didn't pay prefund" },
+        }),
+      }),
+    );
+    assert.equal(wrapped.entries[0]?.fields["bundlerAaCode"], "AA21");
+
+    const empty = harness();
+    empty.run(new KaadaError("BUNDLER_REJECTED", "the bundler refused the operation"));
+    assert.equal(empty.entries[0]?.fields["bundlerReason"], "reason not available");
+  });
+
+  it("adds nothing to the log line of any other error", () => {
+    const h = harness();
+    h.run(new KaadaError("EXECUTION_FAILED", "boom"));
+    assert.equal(
+      Object.keys(h.entries[0]?.fields ?? {}).some((k) => k.startsWith("bundler")),
+      false,
+    );
+  });
+});

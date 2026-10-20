@@ -1019,17 +1019,40 @@ export class ViemRecoveryChain implements RecoveryChainPort {
  * "AA" code if the message carries one (AA21 prefund, AA24 signature, AA25 nonce, ...), and a short message with any long hex run
  * removed (a signature or calldata that a bundler echoes back must never reach a log). Never the operation itself.
  */
-export function describeBundlerRefusal(error: { code?: unknown; message?: unknown }): {
+export function describeBundlerRefusal(error: unknown): {
   rpc: string;
   rpcCode?: number;
   aaCode?: string;
+  rpcData?: string;
 } {
-  const raw = typeof error.message === "string" ? error.message : "";
-  const aa = /\bAA\d{2}\b/.exec(raw)?.[0];
+  const record = (typeof error === "object" && error !== null ? error : {}) as {
+    code?: unknown;
+    message?: unknown;
+    data?: unknown;
+  };
+  const text = (value: unknown): string =>
+    typeof value === "string"
+      ? value
+      : typeof value === "object" && value !== null
+        ? Object.values(value)
+            .filter((v): v is string => typeof v === "string")
+            .join(" ")
+        : "";
+  // An answer that is only a string (an HTTP-style refusal) is the message.
+  const raw =
+    typeof error === "string" ? error : typeof record.message === "string" ? record.message : "";
+  const data = text(record.data);
+  const aa = /\bAA\d{2}\b/.exec(`${raw} ${data}`)?.[0];
+  const redact = (value: string) =>
+    value
+      .replace(/0x[0-9a-fA-F]{64,}/g, "0x[hex omitted]")
+      .replace(/https?:\/\/\S+/g, "[url]")
+      .slice(0, 200);
   return {
-    rpc: raw.replace(/0x[0-9a-fA-F]{64,}/g, "0x[hex omitted]").slice(0, 200),
-    ...(typeof error.code === "number" && { rpcCode: error.code }),
+    rpc: redact(raw),
+    ...(typeof record.code === "number" && { rpcCode: record.code }),
     ...(aa && { aaCode: aa }),
+    ...(data && { rpcData: redact(data) }),
   };
 }
 

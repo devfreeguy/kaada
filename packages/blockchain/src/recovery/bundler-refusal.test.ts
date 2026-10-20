@@ -18,7 +18,11 @@ const account = "0x2222222222222222222222222222222222222222";
 const GWEI = 10n ** 9n;
 const SIGNATURE = `0x${"ab".repeat(65)}`;
 
-async function refusedWith(refusal: { code?: unknown; message: string }) {
+/** The reply the mock bundler gives to eth_sendUserOperation: a JSON-RPC `error` member, or a raw body (and status) of any kind. */
+type Reply = { error: unknown } | { raw: string; status?: number };
+
+async function refusedWith(reply: Reply | { code?: unknown; message: string }) {
+  const refusal: Reply = "error" in reply || "raw" in reply ? reply : { error: reply };
   const server = createServer((request, response) => {
     let body = "";
     request.on("data", (chunk: Buffer) => (body += chunk.toString()));
@@ -48,7 +52,13 @@ async function refusedWith(refusal: { code?: unknown; message: string }) {
         case "eth_maxPriorityFeePerGas":
           return reply(`0x${(2n * GWEI).toString(16)}`);
         case "eth_sendUserOperation":
-          return response.end(JSON.stringify({ jsonrpc: "2.0", id: message.id, error: refusal }));
+          if ("raw" in refusal) {
+            response.statusCode = refusal.status ?? 200;
+            return response.end(refusal.raw);
+          }
+          return response.end(
+            JSON.stringify({ jsonrpc: "2.0", id: message.id, error: refusal.error }),
+          );
         default:
           return response.end(
             JSON.stringify({
@@ -125,4 +135,44 @@ test("describeBundlerRefusal caps the message and ignores non-text input", () =>
   assert.equal(describeBundlerRefusal({ message: "x".repeat(500) }).rpc.length, 200);
   assert.deepEqual(describeBundlerRefusal({ code: 1, message: 42 }), { rpc: "", rpcCode: 1 });
   assert.equal(describeBundlerRefusal({ message: "no AAA24 here, but AA25 nonce" }).aaCode, "AA25");
+});
+
+// ── the shapes real bundlers answer with ─────────────────────────────────────────────────────────
+
+test("the AA code in the error's `data` (a string) is found when the message is generic", async () => {
+  const error = await refusedWith({
+    error: {
+      code: -32500,
+      message: "UserOperation reverted during simulation",
+      data: "AA24 signature error",
+    },
+  });
+  assert.ok(error instanceof KaadaError);
+  const details = error.details as { aaCode?: string; rpcCode?: number };
+  assert.equal(details.aaCode, "AA24");
+  assert.equal(details.rpcCode, -32500);
+});
+
+test("the AA code in the error's `data` (an object) is found too", async () => {
+  const error = await refusedWith({
+    error: {
+      code: -32500,
+      message: "validation failed",
+      data: { reason: "AA21 didn't pay prefund", entryPoint: "0xEP" },
+    },
+  });
+  assert.ok(error instanceof KaadaError);
+  assert.equal((error.details as { aaCode?: string }).aaCode, "AA21");
+});
+
+test("an error that is just a string (an HTTP-style answer) still leaves its words", async () => {
+  const error = await refusedWith({ error: "rate limit exceeded" });
+  assert.ok(error instanceof KaadaError);
+  assert.equal((error.details as { rpc?: string }).rpc, "rate limit exceeded");
+});
+
+test("a non-JSON body is not a BUNDLER_REJECTED at all: it escapes as a plain error", async () => {
+  const error = await refusedWith({ raw: "<html>502 Bad Gateway</html>", status: 502 });
+  assert.ok(error instanceof Error);
+  assert.equal(error instanceof KaadaError, false);
 });

@@ -1,4 +1,5 @@
 import { Logger, Module } from "@nestjs/common";
+import { nestLog } from "../logging/nest-log.js";
 import { createRepositories, createSponsorshipLedger, withTransaction } from "@kaada/database";
 import type { KernelExecutionPort, RootValidatorDeployer } from "@kaada/domain";
 import type { AppConfig } from "@kaada/config";
@@ -167,6 +168,8 @@ import { AesGcmSecretCipher } from "../infrastructure/security/aes-gcm-cipher.js
         );
         const ledger = createSponsorshipLedger(database);
         return createRecoveryRuntime({
+          // Without a logger every recovery event (a bundler refusal, a refused sponsoring, a failed email) is swallowed by a no-op.
+          log: nestLog("Recovery"),
           database,
           chain: viemChain,
           totpCipher: new AesGcmSecretCipher(recovery.setup.totpCipherKeys),

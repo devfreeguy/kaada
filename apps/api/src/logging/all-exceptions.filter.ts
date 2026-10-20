@@ -3,6 +3,8 @@ import { APP_FILTER } from "@nestjs/core";
 import type { ArgumentsHost, ExceptionFilter } from "@nestjs/common";
 import { PinoLogger } from "nestjs-pino";
 
+import { findBundlerReason, isBundlerRejection } from "../core/recovery/bundler-reason.js";
+
 /** The little of the HTTP request and reply this filter touches (the Fastify types are not a direct dependency). */
 interface FilterRequest {
   method: string;
@@ -67,6 +69,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const cause =
       exception instanceof Error && exception.cause ? describeThrown(exception.cause) : undefined;
 
+    // A bundler refusal says why in its details or its causes; the 500 it becomes must carry that too (redacted, never the operation).
+    const bundlerSource = isBundlerRejection(exception)
+      ? exception
+      : exception instanceof Error && isBundlerRejection(exception.cause)
+        ? exception.cause
+        : undefined;
+    const bundler = bundlerSource === undefined ? undefined : findBundlerReason(bundlerSource);
+
     const details = {
       event: isHttp ? "http.request_refused" : "http.unhandled_exception",
       status,
@@ -83,6 +93,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ...(status >= 500 && { causeStack: cause.stack }),
       }),
       ...(status >= 500 && { stack: thrown.stack }),
+      ...(bundler && {
+        ...(bundler.rpcCode !== undefined && { bundlerRpcCode: bundler.rpcCode }),
+        ...(bundler.aaCode !== undefined && { bundlerAaCode: bundler.aaCode }),
+        bundlerReason: bundler.reason ?? "reason not available",
+      }),
       // An unexpected error's own message is for the log only; the caller is never shown it.
       ...(!isHttp && { errorMessage: thrown.message, errorCode: thrown.code }),
     };

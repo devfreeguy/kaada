@@ -14,6 +14,7 @@ import type {
 } from "@kaada/domain";
 
 import type { AgentLog } from "../agent/ports.js";
+import { findBundlerReason, isBundlerRejection } from "./bundler-reason.js";
 import { OPAQUE_TOKEN_PATTERN, hashOpaqueToken } from "../authorization/token.js";
 import type { RecoveryNotifier } from "./notifier.js";
 import type { RecoveryTotpService } from "./recovery-totp.js";
@@ -95,8 +96,10 @@ export interface RecoveryStatusView {
 }
 
 /**
- * Tells the log, at error level, WHY a bundler refused an operation: its JSON-RPC code, the AA code if it has one and its short
- * message, all already reduced by the chain adapter (no signature, no calldata, no key). The person is told the same as before.
+ * Tells the log, at error level, WHY a bundler refused an operation: its JSON-RPC code, the AA code and its short reason, found in
+ * the error or anywhere in its causes (see findBundlerReason), already redacted (no signature, no calldata, no URL). A refusal with no
+ * reason anywhere is still logged, with the class of the error and a note saying so: this event is never silent. The person is told
+ * the same as before.
  */
 export function logBundlerRejection(
   ctx: Pick<RecoveryContext, "log">,
@@ -104,14 +107,15 @@ export function logBundlerRejection(
   error: unknown,
   extra: Record<string, string> = {},
 ): void {
-  if (!(error instanceof KaadaError) || error.code !== "BUNDLER_REJECTED") return;
-  const d = error.details as { rpc?: unknown; rpcCode?: unknown; aaCode?: unknown } | undefined;
+  if (!isBundlerRejection(error)) return;
+  const found = findBundlerReason(error);
   ctx.log("error", "recovery.bundler_rejected", {
     where,
     ...extra,
-    ...(typeof d?.rpcCode === "number" && { rpcCode: d.rpcCode }),
-    ...(typeof d?.aaCode === "string" && { aaCode: d.aaCode }),
-    ...(typeof d?.rpc === "string" && { rpc: d.rpc.slice(0, 200) }),
+    errorClass: found.errorClass,
+    ...(found.rpcCode !== undefined && { rpcCode: found.rpcCode }),
+    ...(found.aaCode !== undefined && { aaCode: found.aaCode }),
+    ...(found.reason !== undefined ? { rpc: found.reason } : { note: "reason not available" }),
   });
 }
 
