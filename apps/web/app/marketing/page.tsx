@@ -7,6 +7,9 @@ import { ControlSecurity } from "./components/control-security";
 import { GlobalReach } from "./components/global-reach";
 import { Channels } from "./components/channels";
 import { RealPayments } from "./components/real-payments";
+import { Faq } from "./components/faq";
+import { FinalCta } from "./components/final-cta";
+import { Footer } from "./components/footer";
 
 const title = "Kaada | Cross-border money, made conversational";
 const description =
@@ -42,14 +45,19 @@ export const metadata: Metadata = {
 
 export default function MarketingPage() {
   return (
-    <main className="relative">
-      <Header />
-      <Hero />
-      <HowItWorks />
-      <ControlSecurity />
-      <GlobalReach />
-      <Channels />
-      <RealPayments />
-    </main>
+    <>
+      <main className="relative">
+        <Header />
+        <Hero />
+        <HowItWorks />
+        <ControlSecurity />
+        <GlobalReach />
+        <Channels />
+        <RealPayments />
+        <Faq />
+        <FinalCta />
+      </main>
+      <Footer />
+    </>
   );
 }

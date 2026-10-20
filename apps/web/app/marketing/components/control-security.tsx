@@ -15,7 +15,7 @@ export function ControlSecurity() {
             <SectionHeading
               sectionName="Control & Security"
               title="YOU’RE ALWAYS THE ONE IN CONTROL."
-              description="Kaada can understand what you want to do, prepare the action, and handle the technical steps behind it. But your account stays protected, your permissions stay limited, and important actions still require your approval."
+              description="Kaada gets your payment ready. You check the details and approve it before any money is sent. Your account stays under your control."
               titleId="control-security-title"
             />
           }

@@ -42,7 +42,7 @@ export function StartWithKaada({
             Good things start with a chat.
           </DialogTitle>
           <DialogDescription>
-            Send money in familiar currencies, right from your chat. Pick where you want to start.
+            Send money right from your chat. Choose where to start.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3">
@@ -66,7 +66,7 @@ export function StartWithKaada({
                 Start on Telegram
               </span>
               <span className="mt-1 block text-sm opacity-75">
-                Kaada Bot is live. Let’s make a move.
+                Open the bot and send your first message.
               </span>
             </span>
             <ButtonArrow />

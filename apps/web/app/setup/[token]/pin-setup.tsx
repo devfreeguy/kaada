@@ -2,11 +2,19 @@
 import { secondaryAction } from "../../components/application/styles";
 import { PinKeypad } from "../../components/pin-keypad";
 import { usePinSetup } from "./use-pin-setup";
-export function PinSetup({ token }: { token: string }) {
-  const { step, value, setValue, setStep, next, reload } = usePinSetup({ token });
-  if (step.name === "loading") return null;
+export function PinSetup({ token, onDone }: { token: string; onDone?: (() => void) | undefined }) {
+  const { step, value, setValue, setStep, next, reload } = usePinSetup({ token, onDone });
+  if (step.name === "loading") return <p className="text-white/75">Checking your PIN setup...</p>;
+  if (step.name === "set") return null;
   return (
-    <section className="flex flex-col gap-4 border-t border-white/15 pt-6">
+    <section className="flex flex-col gap-4">
+      <h1>
+        {step.name === "confirm"
+          ? "Confirm your payment PIN"
+          : step.name === "saved"
+            ? "PIN saved"
+            : "Create your payment PIN"}
+      </h1>
       {step.name === "load-error" && (
         <>
           <p role="alert">{step.message}</p>
@@ -15,8 +23,9 @@ export function PinSetup({ token }: { token: string }) {
           </button>
         </>
       )}
-      {step.name === "set" && <p className="text-sm text-white/75">Your payment PIN is set.</p>}
-      {step.name === "saved" && <p className="text-sm text-white/90">PIN saved.</p>}
+      {step.name === "saved" && (
+        <p className="text-sm text-white/90">You can return to your chat.</p>
+      )}
       {step.name === "working" && <p className="text-sm text-white/75">Confirming it is you...</p>}
       {step.name === "error" && (
         <>
@@ -34,9 +43,6 @@ export function PinSetup({ token }: { token: string }) {
       )}
       {(step.name === "enter" || step.name === "confirm") && (
         <>
-          <h2 className="text-lg font-semibold">
-            {step.name === "enter" ? "Create your 6-digit PIN" : "Enter it again"}
-          </h2>
           <p className="text-sm text-white/75">
             Your PIN approves payments on Kaada. It is not a recovery code and does not unlock your
             wallet.

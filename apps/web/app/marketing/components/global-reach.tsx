@@ -12,9 +12,9 @@ export function GlobalReach() {
       <SectionWrapper className="px-6 sm:px-10">
         <SectionHeading
           centered
-          sectionName="Global Reach"
+          sectionName="Where Your Money Can Go"
           title="BUILT FOR MORE THAN ONE BORDER."
-          description="Kaada supports multiple currencies across Africa, Latin America and beyond, so one account can work across different markets without changing how you interact with it."
+          description="Send money in 9 currencies across Africa, Latin America and beyond. You use the same Kaada chat each time."
           titleId="global-reach-title"
         />
         <GlobalReachCarousel />

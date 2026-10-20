@@ -19,14 +19,14 @@ export function Channels() {
           sectionName="Where You Use Kaada"
           title="KAADA MEETS YOU WHERE YOU ALREADY CHAT."
           titleId="channels-title"
-          description="Start on Telegram today and manage payments without learning a new interface. More channels are coming as Kaada grows."
+          description="Send money from Telegram today. No new app to learn. WhatsApp is coming next."
         />
         <div className={styles.cards}>
           <ChannelCard
             name="Telegram"
             status="Live now"
             live
-            description="Send money, check balances, ask for rates and manage payments. All in a familiar chat."
+            description="Send money, check your balance and ask how much your money is worth in another currency. All in one chat."
             icon={<IconBrandTelegram />}
             visual={<TelegramChannelVisual />}
             action={
@@ -39,7 +39,7 @@ export function Channels() {
           <ChannelCard
             name="WhatsApp"
             status="Coming next"
-            description="The same Kaada experience, inside the app you already use to keep in touch. One more place to make your next move."
+            description="Soon, you’ll be able to send money and check your balance in WhatsApp too."
             icon={<IconBrandWhatsapp />}
             visual={<WhatsappChannelVisual />}
             action={

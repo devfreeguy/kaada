@@ -11,8 +11,8 @@ const steps = [
   { title: "You ask", icon: IconMessageCircle },
   { title: "Kaada understands", icon: IconSparkles },
   { title: "You approve", icon: IconShieldCheck },
-  { title: "Kaada routes", icon: IconRoute },
-  { title: "Payment settles", icon: IconCircleCheck },
+  { title: "Kaada sends", icon: IconRoute },
+  { title: "Money arrives", icon: IconCircleCheck },
 ];
 
 export function PaymentFlow() {

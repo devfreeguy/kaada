@@ -5,30 +5,29 @@ import { SecurityStack } from "./security-stack";
 const protections: SecurityCardProps[] = [
   {
     feature: "passkey",
-    title: "Passkey-secured account",
-    description:
-      "Your account is protected with a modern root credential designed to stay under your control.",
+    title: "Your account, your key",
+    description: "Your passkey or device key protects your account. Kaada cannot use it for you.",
     color: "var(--lavender)",
   },
   {
     feature: "pin",
-    title: "PIN-approved payments",
+    title: "Your PIN, your approval",
     description:
-      "Kaada can prepare a payment, but you still approve the action before it goes through.",
+      "Check the details, then enter your payment PIN on the secure Kaada page to approve.",
     color: "var(--orange)",
   },
   {
     feature: "permissions",
-    title: "Limited permissions",
+    title: "You set the limits",
     description:
-      "Kaada only gets the permissions it needs. It does not receive unrestricted control over your account.",
+      "Kaada can only send the payment you approve, to the person and for the amount you agreed to.",
     color: "var(--emerald)",
   },
   {
     feature: "recovery",
-    title: "Protected recovery",
+    title: "A way back in",
     description:
-      "Recovery requires multiple independent checks, including your email, Recovery Code, authenticator, and a waiting period.",
+      "Set up recovery before you need it. Getting back in takes your email, Recovery Code, a code from your authenticator app and a waiting period.",
     color: "var(--navy)",
   },
 ];

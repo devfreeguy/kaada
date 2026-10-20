@@ -4,7 +4,7 @@ import { SectionWrapper } from "../../components/section-wrapper";
 import { MobileNavigation } from "./mobile-navigation";
 import { navigationItems } from "./navigation-items";
 
-export function Header() {
+export function Header({ anchorPrefix = "" }: { anchorPrefix?: string }) {
   return (
     <header className="absolute inset-x-0 top-0 z-20 bg-transparent text-on-dark">
       <SectionWrapper className="flex items-center justify-between gap-6 px-6 py-8 sm:px-10">
@@ -16,12 +16,12 @@ export function Header() {
             <ul className="flex items-center gap-6 xl:gap-8">
               {navigationItems.map(({ label, href }) => (
                 <li key={href}>
-                  <a
-                    href={href}
+                  <Link
+                    href={`${anchorPrefix}${href}`}
                     className="inline-flex min-h-11 items-center text-base font-medium uppercase transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
                   >
                     {label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -50,7 +50,7 @@ export function Header() {
               </svg>
             </button>
           </span>
-          <MobileNavigation />
+          <MobileNavigation anchorPrefix={anchorPrefix} />
         </div>
       </SectionWrapper>
     </header>

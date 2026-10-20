@@ -16,6 +16,7 @@ export function GlobalReachCountryCard({ country }: { country: SupportedCountry 
           width={72}
           height={72}
           sizes="72px"
+          draggable={false}
           className={styles.coin}
         />
       </div>

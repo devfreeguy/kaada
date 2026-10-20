@@ -3,9 +3,12 @@
 import { StaggeredMenu } from "../../components/ui/staggered-menu";
 import { navigationItems } from "./navigation-items";
 
-const items = navigationItems.map(({ label, href }) => ({ label, link: href }));
 const socialPlaceholders = [{ label: "X" }, { label: "Instagram" }, { label: "LinkedIn" }];
 
-export function MobileNavigation() {
+export function MobileNavigation({ anchorPrefix = "" }: { anchorPrefix?: string }) {
+  const items = navigationItems.map(({ label, href }) => ({
+    label,
+    link: `${anchorPrefix}${href}`,
+  }));
   return <StaggeredMenu items={items} socialItems={socialPlaceholders} />;
 }

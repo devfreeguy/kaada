@@ -85,8 +85,8 @@ export function Hero() {
           </h1>
         </div>
         <p className="max-w-2xl text-lg leading-relaxed sm:text-xl opacity-80">
-          Send money across countries in the currencies you already know, without worrying about the
-          rails behind it, all from your chat.
+          Send money to another country in the currencies you know. Just tell Kaada what you want to
+          do in chat.
         </p>
         <StartWithKaada />
       </SectionWrapper>

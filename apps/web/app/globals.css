@@ -27,6 +27,17 @@
   --navy: #051a2f;
   --lime: #e9fa49;
   --on-dark: #ffffff;
+  --page-background: var(--background);
+  --page-foreground: var(--foreground);
+  background-color: var(--page-background);
+  color-scheme: light;
+}
+
+/* Follow the rendered route on the server and during client navigation. */
+:root:has([data-application-shell]) {
+  --page-background: var(--navy);
+  --page-foreground: var(--on-dark);
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -64,6 +75,11 @@
 }
 
 @layer base {
+  body {
+    background-color: var(--page-background);
+    color: var(--page-foreground);
+  }
+
   h1,
   h2,
   h3,

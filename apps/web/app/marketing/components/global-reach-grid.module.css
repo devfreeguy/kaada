@@ -8,6 +8,8 @@
 }
 .card {
   --country-accent: var(--primary);
+  -webkit-user-select: none;
+  user-select: none;
   display: flex;
   height: 100%;
   flex-direction: column;
