@@ -58,9 +58,10 @@ export const SETTINGS = {
   },
 
   /**
-   * What counts as "set up": a wallet, a PIN, and recovery (a verified email, an authenticator app and a Recovery Code). Kaada is
-   * non-custodial, so nobody can recover a lost device for a person who never set this up: it is required before onboarding is
-   * complete. It only applies where this deployment has recovery enabled (see the onboarding state reader).
+   * What counts as "set up": a wallet, a PIN, and, once the wallet has received its first funds, recovery (a verified email, an
+   * authenticator app and a Recovery Code). Kaada is non-custodial, so nobody can recover a lost device for a person who never set
+   * this up; but until funds arrive nothing is at risk and the wallet may not exist on chain yet, so nobody is asked before then.
+   * It only applies where this deployment has recovery enabled (see the onboarding state reader).
    */
   onboarding: { requireRecovery: true },
 

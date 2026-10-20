@@ -29,6 +29,7 @@ function world(options: { home?: { country: string; currency: string } } = {}) {
   const facts: OnboardingFacts = {
     walletReady: false,
     pinConfigured: false,
+    walletFunded: true,
     recoveryConfigured: null,
   };
   h.world.addIdentity({ id: createId(), userId: SENDER, type: "TELEGRAM", externalId: "424242" });

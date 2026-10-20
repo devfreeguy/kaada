@@ -14,14 +14,19 @@ export interface OnboardingFacts {
   /** Public address of that wallet. Never a secret. */
   walletAddress?: string;
   pinConfigured: boolean;
+  /**
+   * Whether the wallet has ever received funds. Until it has, nothing is at risk and the wallet may not even exist on chain yet, so
+   * recovery is neither asked for nor counted against onboarding.
+   */
+  walletFunded: boolean;
   /** Whether the wallet's recovery is armed; null when this deployment has no recovery, so the step cannot apply. */
   recoveryConfigured: boolean | null;
 }
 
 export interface OnboardingPolicy {
   /**
-   * Whether arming recovery must happen before onboarding counts as complete. A product decision kept in code (see
-   * SETTINGS.onboarding): today recovery is encouraged, not required, so a person with a wallet and a PIN can already pay.
+   * Whether arming recovery must happen before onboarding counts as complete, once the wallet has received its first funds (see
+   * SETTINGS.onboarding). Before that nobody is asked.
    */
   requireRecovery: boolean;
 }
@@ -37,7 +42,7 @@ export function deriveOnboarding(
 ): OnboardingState {
   if (!facts.walletReady) return { step: "WALLET", facts };
   if (!facts.pinConfigured) return { step: "PIN", facts };
-  if (policy.requireRecovery && facts.recoveryConfigured === false)
+  if (policy.requireRecovery && facts.walletFunded && facts.recoveryConfigured === false)
     return { step: "RECOVERY", facts };
   return { step: "COMPLETE", facts };
 }

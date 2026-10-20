@@ -73,6 +73,23 @@ export function createWalletFundingStore(database: Database): WalletFundingStore
       );
     },
 
+    async hasBeenFunded(userId, chainId) {
+      const event = await db.walletFundingEvent.findFirst({
+        where: { userId, chainId },
+        select: { id: true },
+      });
+      if (event) return true;
+      const checkpoints = await db.walletDepositCheckpoint.findMany({
+        where: { userId, chainId },
+        select: { observed: true },
+      });
+      return checkpoints.some((row) =>
+        Object.values(asSnapshot(row.observed)).some(
+          (amount) => /^[0-9]+$/.test(amount) && BigInt(amount) > 0n,
+        ),
+      );
+    },
+
     async checkpoint(chainId, address): Promise<WalletBalanceCheckpoint | null> {
       const row = await db.walletDepositCheckpoint.findUnique({
         where: { chainId_address: { chainId, address } },

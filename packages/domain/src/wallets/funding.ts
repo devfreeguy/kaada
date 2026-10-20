@@ -71,6 +71,11 @@ export interface WalletFundingStore {
    * watched. (A wallet's address is the same on every network; which network is read is the caller's setting.)
    */
   walletsToWatch(limit: number): Promise<WalletToWatch[]>;
+  /**
+   * Whether this person's wallet has ever held funds: a funding event was recorded for it, or its last observation shows a positive
+   * balance. Once true it stays true (events are never deleted), even if everything is later spent.
+   */
+  hasBeenFunded(userId: string, chainId: number): Promise<boolean>;
   checkpoint(chainId: number, address: string): Promise<WalletBalanceCheckpoint | null>;
   /**
    * Moves the checkpoint (and records the event, if any) when `expectedVersion` still matches. `committed` is false when

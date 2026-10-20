@@ -133,11 +133,12 @@ function nestLog(): AgentLog {
     {
       // Where each person is on the way to a working wallet, read from the services' own records (wallet, PIN, recovery).
       provide: ONBOARDING_LIFECYCLE,
-      inject: [CHANNEL_REPOSITORIES, TELEGRAM_ADAPTER, APP_CONFIG],
+      inject: [CHANNEL_REPOSITORIES, TELEGRAM_ADAPTER, APP_CONFIG, WALLET_FUNDING_STORE],
       useFactory: (
         repositories: Repositories,
         telegram: TelegramAdapter | null,
         config: AppConfig,
+        funding: WalletFundingStore,
       ): OnboardingLifecycleService | null => {
         if (!telegram) return null;
         const reader: OnboardingStateReader = createOnboardingStateReader({
@@ -145,6 +146,7 @@ function nestLog(): AgentLog {
           transactionPins: repositories.transactionPins,
           identities: repositories.identities,
           recoveryConfigurations: repositories.recoveryConfigurations,
+          funding,
           recoveryEnabled: config.recovery.enabled,
         });
         return new OnboardingLifecycleService({

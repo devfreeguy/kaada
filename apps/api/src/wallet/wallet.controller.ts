@@ -18,7 +18,7 @@ import {
 import type { AppConfig } from "@kaada/config";
 import type { Repositories } from "@kaada/database";
 import { createId, isKaadaError } from "@kaada/domain";
-import type { Wallet } from "@kaada/domain";
+import type { Wallet, WalletFundingStore } from "@kaada/domain";
 import { z } from "zod";
 
 import { APP_CONFIG } from "../config/config.module.js";
@@ -26,6 +26,7 @@ import type { WalletBalanceService } from "../core/wallets/balance-service.js";
 import type { WalletSetupService } from "../core/wallets/setup-service.js";
 import {
   WALLET_BALANCE_SERVICE,
+  WALLET_FUNDING_STORE,
   WALLET_REPOSITORIES,
   WALLET_SETUP_SERVICE,
 } from "./wallet.tokens.js";
@@ -145,6 +146,7 @@ export class WalletController {
     @Inject(WALLET_REPOSITORIES) private readonly repositories: Repositories,
     @Optional() @Inject(RELAYER_SPEND_LIMITER) private readonly spend?: RelayerSpendLimiter,
     @Optional() @Inject(RECOVERY_SWITCH) private readonly off?: RecoverySwitch,
+    @Optional() @Inject(WALLET_FUNDING_STORE) private readonly funding?: WalletFundingStore,
   ) {}
 
   /** Device keys are on only if configured and the deployed contracts were not found to be wrong after startup. */
@@ -328,6 +330,10 @@ export class WalletController {
         rootType: view.rootType,
         passkeyRegistered: view.passkeyRegistered,
         deviceKeysEnabled: this.deviceKeysOn(service),
+        // Recovery is asked for only once the wallet has received its first funds.
+        funded: view.wallet
+          ? ((await this.funding?.hasBeenFunded(view.wallet.userId, view.wallet.chainId)) ?? false)
+          : false,
         wallet: view.wallet ? walletView(view.wallet) : null,
       };
     } catch (error) {

@@ -48,6 +48,7 @@ function world(options: Options = {}) {
   const facts: OnboardingFacts = {
     walletReady: false,
     pinConfigured: false,
+    walletFunded: true,
     recoveryConfigured: options.recoveryAvailable ? false : null,
   };
   if (!options.newcomer) {

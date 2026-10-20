@@ -23,6 +23,7 @@ function reader(
     identities?: Identity[];
     armed?: boolean;
     enabled?: boolean;
+    funded?: boolean;
   } = {},
 ) {
   return createOnboardingStateReader({
@@ -36,6 +37,7 @@ function reader(
     recoveryConfigurations: {
       findActive: () => Promise.resolve(options.armed ? ({} as never) : null),
     },
+    funding: { hasBeenFunded: () => Promise.resolve(options.funded ?? true) },
     recoveryEnabled: options.enabled ?? true,
   });
 }
@@ -80,5 +82,35 @@ describe("what 'recovery is set up' means", () => {
   it("without a PIN the PIN step still comes first", async () => {
     const facts = await reader({ pin: false }).read(USER);
     assert.equal(deriveOnboarding(facts, { requireRecovery: true }).step, "PIN");
+  });
+});
+
+describe("recovery is asked for only after the first funds", () => {
+  const policy = { requireRecovery: true };
+  it("a wallet that has never been funded is complete without recovery, and reports it", async () => {
+    const facts = await reader({ identities: [telegram, email], armed: false, funded: false }).read(
+      USER,
+    );
+    assert.equal(facts.walletFunded, false);
+    assert.equal(deriveOnboarding(facts, policy).step, "COMPLETE");
+  });
+
+  it("once funds have arrived, an unarmed wallet is sent to the recovery step", async () => {
+    const facts = await reader({ identities: [telegram, email], armed: false, funded: true }).read(
+      USER,
+    );
+    assert.equal(facts.walletFunded, true);
+    assert.equal(deriveOnboarding(facts, policy).step, "RECOVERY");
+  });
+
+  it("an armed wallet stays complete, funded or not", async () => {
+    const facts = await reader({ identities: [telegram, email], armed: true, funded: true }).read(
+      USER,
+    );
+    assert.equal(deriveOnboarding(facts, policy).step, "COMPLETE");
+  });
+
+  it("without a wallet there is nothing to have funded", async () => {
+    assert.equal((await reader({ wallet: null, funded: true }).read(USER)).walletFunded, false);
   });
 });

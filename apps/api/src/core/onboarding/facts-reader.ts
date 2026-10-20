@@ -3,6 +3,7 @@ import type {
   IdentityRepository,
   RecoveryConfigurationRepository,
   TransactionPinRepository,
+  WalletFundingStore,
   WalletRepository,
 } from "@kaada/domain";
 
@@ -13,6 +14,7 @@ export interface OnboardingFactsDeps {
   transactionPins: Pick<TransactionPinRepository, "findByUserId">;
   identities: Pick<IdentityRepository, "listForUser">;
   recoveryConfigurations: Pick<RecoveryConfigurationRepository, "findActive">;
+  funding: Pick<WalletFundingStore, "hasBeenFunded">;
   /** Whether this deployment has account recovery at all. Where it does not, the step cannot apply. */
   recoveryEnabled: boolean;
 }
@@ -41,6 +43,7 @@ export function createOnboardingStateReader(deps: OnboardingFactsDeps): Onboardi
         walletReady,
         ...(walletReady && wallet?.address && { walletAddress: wallet.address }),
         pinConfigured,
+        walletFunded: walletReady ? await deps.funding.hasBeenFunded(userId, CELO_CHAIN_ID) : false,
         recoveryConfigured,
       };
     },

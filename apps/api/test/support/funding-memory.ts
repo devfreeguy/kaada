@@ -26,6 +26,18 @@ export class MemoryFundingStore implements WalletFundingStore {
     return Promise.resolve(this.wallets.slice(0, limit));
   }
 
+  hasBeenFunded(userId: string, chainId: number): Promise<boolean> {
+    return Promise.resolve(
+      this.events.some((event) => event.userId === userId && event.chainId === chainId) ||
+        [...this.checkpoints.values()].some(
+          (c) =>
+            c.userId === userId &&
+            c.chainId === chainId &&
+            Object.values(c.balances).some((amount) => BigInt(amount) > 0n),
+        ),
+    );
+  }
+
   checkpoint(chainId: number, address: string): Promise<WalletBalanceCheckpoint | null> {
     return Promise.resolve(this.checkpoints.get(`${String(chainId)}:${address}`) ?? null);
   }

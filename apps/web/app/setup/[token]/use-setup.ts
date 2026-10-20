@@ -27,10 +27,13 @@ type View =
   | { name: "error"; message: string; retry: "load" | "create" | "device" | "finish" };
 /** Sends the setup token as a bearer header: it is never put in a body, a query string or a log. */
 import { observeRequest } from "../../lib/observe-request";
-async function loadSetup(token: string): Promise<{ deviceKeysEnabled: boolean; view: View }> {
+async function loadSetup(
+  token: string,
+): Promise<{ deviceKeysEnabled: boolean; funded: boolean; view: View }> {
   const body = await json<{
     rootRegistered: boolean;
     deviceKeysEnabled: boolean;
+    funded?: boolean;
     wallet: WalletInfo | null;
   }>(await api("/wallet", token));
   const view: View =
@@ -39,7 +42,7 @@ async function loadSetup(token: string): Promise<{ deviceKeysEnabled: boolean; v
       : body.rootRegistered
         ? { name: "finish" }
         : { name: "ready", deviceKeysEnabled: body.deviceKeysEnabled };
-  return { deviceKeysEnabled: body.deviceKeysEnabled, view };
+  return { deviceKeysEnabled: body.deviceKeysEnabled, funded: body.funded === true, view };
 }
 async function loadBalances(token: string): Promise<BalanceLine[]> {
   const body = await json<{ balances: BalanceLine[] }>(await api("/wallet/balances", token));
@@ -48,6 +51,8 @@ async function loadBalances(token: string): Promise<BalanceLine[]> {
 export function useSetup({ token }: { token: string }) {
   const [view, setView] = useState<View>({ name: "loading" });
   const [deviceKeysEnabled, setDeviceKeysEnabled] = useState(false);
+  // Securing the account is asked for only once the wallet has received its first funds.
+  const [funded, setFunded] = useState(false);
   const [copied, setCopied] = useState(false);
   const [balances, setBalances] = useState<BalanceLine[]>([]);
   const [revision, setRevision] = useState(0);
@@ -61,6 +66,7 @@ export function useSetup({ token }: { token: string }) {
         () => loadSetup(token),
         (result) => {
           setDeviceKeysEnabled(result.deviceKeysEnabled);
+          setFunded(result.funded);
           setView(result.view);
         },
         (error) => {
@@ -234,6 +240,7 @@ export function useSetup({ token }: { token: string }) {
     }
   }, []);
   return {
+    funded,
     view,
     deviceKeysEnabled,
     copied,

@@ -8,6 +8,7 @@ export function SetupFlow({ token }: { token: string }) {
   const {
     view,
     deviceKeysEnabled,
+    funded,
     copied,
     balances,
     finish,
@@ -130,6 +131,8 @@ export function SetupFlow({ token }: { token: string }) {
           </div>
           <p className="text-xs text-white/60">You can close this page and return to your chat.</p>
           <PinSetup token={token} />
+          {funded && (
+            <>
           <section className="flex flex-col gap-3 border-t border-white/15 pt-6">
             <h2 className="text-lg font-semibold">Secure your account</h2>
             <p className="text-sm text-white/75">
@@ -138,6 +141,8 @@ export function SetupFlow({ token }: { token: string }) {
             </p>
           </section>
           <RecoveryCodeCreator token={token} />
+            </>
+          )}
         </section>
       )}
     </div>
