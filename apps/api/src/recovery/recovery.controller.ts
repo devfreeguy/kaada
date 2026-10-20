@@ -121,7 +121,23 @@ function httpError(error: unknown): never {
       case "ROOT_CREDENTIAL_REQUIRED":
         throw new ConflictException(error.message, { cause: error });
       case "RECOVERY_SPONSORSHIP_REFUSED":
-        // The reason (a cap, the reserve, the deposit) is in the log; the person is only ever told what to do about it.
+        // No gas estimate is OUR fault, not the wallet's: nothing the person can add fixes it, so it is a retryable 503 with its own
+        // code (and the service has already logged it at error level).
+        if (
+          (error.details as { reason?: unknown } | undefined)?.reason === "ESTIMATE_UNAVAILABLE"
+        ) {
+          throw new ServiceUnavailableException(
+            {
+              statusCode: 503,
+              code: "GAS_ESTIMATE_UNAVAILABLE",
+              message:
+                "We can't finish securing your account right now. Please try again in a few minutes.",
+              retryable: true,
+            },
+            { cause: error },
+          );
+        }
+        // The real refusals (a cap, the reserve, the deposit): the reason is in the log; the person is only ever told what to do.
         throw new ConflictException(
           {
             statusCode: 409,

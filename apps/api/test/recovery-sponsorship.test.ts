@@ -333,6 +333,7 @@ describe("sponsoring a wallet so it can secure itself", () => {
     assert.equal(world.chain.topUps, 0);
     const logged = logs.find((l) => l.event === "recovery.sponsor_refused");
     assert.equal(logged?.fields["reason"], "ESTIMATE_UNAVAILABLE");
+    assert.equal(logged?.level, "error", "the bundler failing must reach whoever is on call");
     assert.equal(logged?.fields["message"], "estimate unavailable");
   });
 
@@ -427,39 +428,38 @@ describe("what the person is told", () => {
   });
 });
 
-describe("a wallet with no CELO for gas", () => {
-  async function prepareOver(configuration: unknown, userId = "user-1") {
-    const runtime = {
-      finalizer: {
-        completedSessionUser: () =>
-          Promise.reject(new KaadaError("RECOVERY_SESSION_INVALID", "no")),
+async function prepareOver(configuration: unknown, userId = "user-1") {
+  const runtime = {
+    finalizer: {
+      completedSessionUser: () => Promise.reject(new KaadaError("RECOVERY_SESSION_INVALID", "no")),
+    },
+    configuration,
+  } as unknown as RecoveryRuntime;
+  const moduleRef = await Test.createTestingModule({
+    controllers: [RecoveryController],
+    providers: [
+      { provide: RECOVERY_RUNTIME, useValue: runtime },
+      {
+        provide: WALLET_SETUP_SERVICE,
+        useValue: { userForView: () => Promise.resolve(userId) },
       },
-      configuration,
-    } as unknown as RecoveryRuntime;
-    const moduleRef = await Test.createTestingModule({
-      controllers: [RecoveryController],
-      providers: [
-        { provide: RECOVERY_RUNTIME, useValue: runtime },
-        {
-          provide: WALLET_SETUP_SERVICE,
-          useValue: { userForView: () => Promise.resolve(userId) },
-        },
-      ],
-    }).compile();
-    const app = moduleRef.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
-    configureApp(app, { corsOrigins: [] } as never);
-    await app.init();
-    await app.getHttpAdapter().getInstance().ready();
-    const response = await app.inject({
-      method: "POST",
-      url: "/api/v1/recovery/configuration/prepare",
-      headers: { authorization: "Bearer abc", "content-type": "application/json" },
-      payload: JSON.stringify({ recoveryAddress: "0x00000000000000000000000000000000000000f9" }),
-    });
-    await app.close();
-    return response;
-  }
+    ],
+  }).compile();
+  const app = moduleRef.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
+  configureApp(app, { corsOrigins: [] } as never);
+  await app.init();
+  await app.getHttpAdapter().getInstance().ready();
+  const response = await app.inject({
+    method: "POST",
+    url: "/api/v1/recovery/configuration/prepare",
+    headers: { authorization: "Bearer abc", "content-type": "application/json" },
+    payload: JSON.stringify({ recoveryAddress: "0x00000000000000000000000000000000000000f9" }),
+  });
+  await app.close();
+  return response;
+}
 
+describe("a wallet with no CELO for gas", () => {
   it("gets its own error code and a plain message, not a bare 503", async () => {
     const response = await prepareOver({
       prepare: () =>
@@ -506,5 +506,64 @@ describe("a wallet with no CELO for gas", () => {
     });
     assert.equal(sponsoring.statusCode, 409);
     assert.equal(sponsoring.json<{ code: string }>().code, "SPONSORSHIP_UNAVAILABLE");
+  });
+});
+
+describe("when the gas estimate is down, and when sponsoring is really refused", () => {
+  it("a failing bundler is a retryable 503 with its own code and message, never the 'add CELO' advice", async () => {
+    const response = await prepareOver({
+      prepare: () =>
+        Promise.reject(
+          new KaadaError("RECOVERY_SPONSORSHIP_REFUSED", "internal", {
+            details: { reason: "ESTIMATE_UNAVAILABLE" },
+          }),
+        ),
+    });
+    const body = response.json<{ code: string; message: string; retryable: boolean }>();
+    assert.equal(response.statusCode, 503);
+    assert.equal(body.code, "GAS_ESTIMATE_UNAVAILABLE");
+    assert.equal(body.retryable, true);
+    assert.equal(
+      body.message,
+      "We can't finish securing your account right now. Please try again in a few minutes.",
+    );
+    assert.equal(/CELO|deposit|internal|RECOVERY_|ESTIMATE/.test(body.message), false);
+  });
+
+  it("is what the real service produces when the estimate is down, logged at error level", async () => {
+    const world = createRecoveryWorld();
+    const user = await undeployedWallet(world);
+    const { logs } = withSponsoring(world);
+    world.chain.estimateAvailable = false;
+    const response = await prepareOver(world.configuration, user.userId);
+    assert.equal(response.statusCode, 503);
+    assert.equal(response.json<{ code: string }>().code, "GAS_ESTIMATE_UNAVAILABLE");
+    const logged = logs.find((l) => l.event === "recovery.sponsor_refused");
+    assert.equal(logged?.fields["reason"], "ESTIMATE_UNAVAILABLE");
+    assert.equal(logged?.level, "error");
+  });
+
+  it("the real refusals keep the SPONSORSHIP_UNAVAILABLE answer and its message", async () => {
+    for (const reason of [
+      "BELOW_MINIMUM_DEPOSIT",
+      "WALLET_CAP",
+      "DAILY_BUDGET",
+      "RELAYER_RESERVE",
+    ]) {
+      const response = await prepareOver({
+        prepare: () =>
+          Promise.reject(
+            new KaadaError("RECOVERY_SPONSORSHIP_REFUSED", "internal", { details: { reason } }),
+          ),
+      });
+      const body = response.json<{ code: string; message: string }>();
+      assert.equal(response.statusCode, 409, reason);
+      assert.equal(body.code, "SPONSORSHIP_UNAVAILABLE", reason);
+      assert.equal(
+        body.message,
+        "To finish securing your account, add a small amount of CELO to your wallet, or deposit a larger amount.",
+        reason,
+      );
+    }
   });
 });

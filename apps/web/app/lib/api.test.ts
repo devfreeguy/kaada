@@ -53,6 +53,34 @@ describe("safe API errors", () => {
       },
     );
   });
+  it("tells a wallet to try again later, not to add CELO, when the platform's own gas estimate is down", async () => {
+    await assert.rejects(
+      json(
+        Response.json(
+          { code: "GAS_ESTIMATE_UNAVAILABLE", message: "internal detail", retryable: true },
+          { status: 503 },
+        ),
+      ),
+      (error) => {
+        assert.ok(error instanceof ApiError);
+        const text = describeError(error, "fallback");
+        assert.equal(
+          text,
+          "We can't finish securing your account right now. Please try again in a few minutes.",
+        );
+        assert.doesNotMatch(text, /CELO|deposit/);
+        return true;
+      },
+    );
+    // A plain 503 with no such code still gets the generic wording.
+    await assert.rejects(json(Response.json({ message: "x" }, { status: 503 })), (error) => {
+      assert.equal(
+        describeError(error, "fallback"),
+        "Kaada is temporarily unavailable. Please try again.",
+      );
+      return true;
+    });
+  });
   it("does not surface raw backend messages, including non-JSON proxy failures", async () => {
     for (const response of [
       Response.json({ message: "private provider detail" }, { status: 500 }),

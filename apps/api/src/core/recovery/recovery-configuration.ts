@@ -303,7 +303,8 @@ export class RecoveryConfigurationService {
 
   /** Sponsoring needs a live gas estimate and there is none: refuse (logged), never fall back to the fixed ceiling. */
   private estimateRefused(wallet: Wallet & { address: string }): KaadaError {
-    this.ctx.log("warn", "recovery.sponsor_refused", {
+    // Error level, unlike the refusals that are the wallet's doing: this is the platform's bundler failing, and someone must hear it.
+    this.ctx.log("error", "recovery.sponsor_refused", {
       walletId: wallet.id,
       reason: "ESTIMATE_UNAVAILABLE",
       message: "estimate unavailable",
