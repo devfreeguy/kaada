@@ -16,6 +16,7 @@ export function HeroStatistics() {
         <CutoutCard
           key={label}
           color={color}
+          style={{ color: "var(--navy)" }}
           className="flex min-h-[180px] flex-col justify-center gap-3 px-5 py-8"
         >
           <svg

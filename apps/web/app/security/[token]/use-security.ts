@@ -150,5 +150,6 @@ export function useSecurity({ token }: { token: string }) {
     [token],
   );
   const busy = progress.name === "working" || progress.name === "pending";
-  return { progress, change, check, busy, capabilities };
+  const reset = useCallback(() => setProgress({ name: "idle" }), []);
+  return { progress, change, check, busy, capabilities, reset };
 }

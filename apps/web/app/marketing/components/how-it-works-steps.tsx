@@ -15,7 +15,7 @@ const steps: HowItWorksStepProps[] = [
   {
     number: 2,
     title: "Review the details",
-    description: "Kaada works out the route, amount and recipient outcome.",
+    description: "Check who you’re paying, how much you’re sending and what they’ll get.",
     color: "var(--emerald)",
     foreground: "var(--on-dark)",
     children: <ReviewStepChat />,
@@ -23,7 +23,7 @@ const steps: HowItWorksStepProps[] = [
   {
     number: 3,
     title: "Approve and send",
-    description: "You authorize the payment, and Kaada handles the rest.",
+    description: "You approve the payment. Kaada sends it.",
     color: "var(--navy)",
     foreground: "var(--on-dark)",
     children: <PaymentStepChat />,

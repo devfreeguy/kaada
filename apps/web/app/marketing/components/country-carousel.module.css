@@ -1,10 +1,12 @@
 .viewport {
+  position: relative;
   overflow: hidden;
 }
 .carousel {
   margin-top: 48px;
 }
 .track {
+  position: relative;
   display: flex;
   margin: 0 0 0 -20px;
   padding: 0;

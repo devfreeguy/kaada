@@ -5,7 +5,7 @@ const details: Record<SecurityFeature, { label: string; title: string; lines: st
   passkey: {
     label: "Your account",
     title: "Secured by you.",
-    lines: ["Your passkey", "Your control"],
+    lines: ["Your account key", "Your control"],
   },
   pin: {
     label: "Payment approval",
@@ -13,14 +13,14 @@ const details: Record<SecurityFeature, { label: string; title: string; lines: st
     lines: ["Review the details", "Approve on your secure page"],
   },
   permissions: {
-    label: "Permission boundaries",
+    label: "Your limits",
     title: "Only what’s needed.",
-    lines: ["Prepare your payment", "Request your approval", "No unrestricted access"],
+    lines: ["Prepare your payment", "Request your approval", "Only what you approve"],
   },
   recovery: {
     label: "Recovery checks",
     title: "More than one check.",
-    lines: ["Email verification", "Recovery Code", "Authenticator", "Waiting period"],
+    lines: ["Check your email", "Recovery Code", "Authenticator app", "Waiting period"],
   },
 };
 

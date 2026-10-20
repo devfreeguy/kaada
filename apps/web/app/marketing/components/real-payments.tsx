@@ -13,9 +13,9 @@ export function RealPayments() {
       <SectionWrapper className="px-6 sm:px-10">
         <SectionHeading
           sectionName="Built for Real Payments"
-          title="NOT JUST A CHATBOT. A REAL PAYMENT EXPERIENCE."
+          title="REAL PAYMENTS. RIGHT FROM YOUR CHAT."
           titleId="real-payments-title"
-          description="Kaada connects conversation, authorization, routing and settlement into one flow. What starts as a message can end as a real transaction."
+          description="This is more than a chat demo. Tell Kaada who to pay, check the details and approve. Kaada sends the money."
         />
         <PaymentProofCards />
         <PaymentInfrastructure />

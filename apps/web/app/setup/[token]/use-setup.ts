@@ -13,16 +13,12 @@ interface WalletInfo {
   address: string | null;
   status: string;
 }
-interface BalanceLine {
-  symbol: string;
-  formatted: string;
-}
 type View =
   | { name: "loading" }
   | { name: "invalid" }
   | { name: "ready"; deviceKeysEnabled: boolean }
   | { name: "finish" }
-  | { name: "creating" }
+  | { name: "creating"; action: "create" | "device" | "finish" }
   | { name: "done"; address: string }
   | { name: "error"; message: string; retry: "load" | "create" | "device" | "finish" };
 /** Sends the setup token as a bearer header: it is never put in a body, a query string or a log. */
@@ -44,17 +40,11 @@ async function loadSetup(
         : { name: "ready", deviceKeysEnabled: body.deviceKeysEnabled };
   return { deviceKeysEnabled: body.deviceKeysEnabled, funded: body.funded === true, view };
 }
-async function loadBalances(token: string): Promise<BalanceLine[]> {
-  const body = await json<{ balances: BalanceLine[] }>(await api("/wallet/balances", token));
-  return body.balances.filter((line) => line.formatted !== "0");
-}
 export function useSetup({ token }: { token: string }) {
   const [view, setView] = useState<View>({ name: "loading" });
   const [deviceKeysEnabled, setDeviceKeysEnabled] = useState(false);
   // Securing the account is asked for only once the wallet has received its first funds.
   const [funded, setFunded] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [balances, setBalances] = useState<BalanceLine[]>([]);
   const [revision, setRevision] = useState(0);
   const reload = () => {
     setView({ name: "loading" });
@@ -84,17 +74,8 @@ export function useSetup({ token }: { token: string }) {
       ),
     [token, revision],
   );
-  const address = view.name === "done" ? view.address : null;
-  useEffect(() => {
-    if (!address) return;
-    return observeRequest(
-      () => loadBalances(token),
-      setBalances,
-      (error) => logFailure("setup.balances_failed", error),
-    );
-  }, [address, token]);
   const finish = useCallback(async () => {
-    setView({ name: "creating" });
+    setView({ name: "creating", action: "finish" });
     try {
       const response = await api("/wallet/setup/finalize", token, { method: "POST" });
       if (response.status === 401) return setView({ name: "invalid" });
@@ -124,7 +105,7 @@ export function useSetup({ token }: { token: string }) {
         retry: "device",
       });
     }
-    setView({ name: "creating" });
+    setView({ name: "creating", action: "device" });
     try {
       const key = await generateDeviceKey();
       const optionsResponse = await api("/wallet/device-keys/options", token, {
@@ -186,7 +167,7 @@ export function useSetup({ token }: { token: string }) {
         retry: "create",
       });
     }
-    setView({ name: "creating" });
+    setView({ name: "creating", action: "create" });
     try {
       const optionsResponse = await api("/wallet/passkeys/registration/options", token, {
         method: "POST",
@@ -229,26 +210,13 @@ export function useSetup({ token }: { token: string }) {
       });
     }
   }, [token, deviceKeysEnabled, createWithDevice]);
-  const copy = useCallback(async (value: string) => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      logFailure("setup.clipboard_failed", error);
-      // Clipboard access can be refused; the address is still on screen.
-    }
-  }, []);
   return {
     funded,
     view,
     deviceKeysEnabled,
-    copied,
-    balances,
     finish,
     createWithDevice,
     create,
-    copy,
     reload,
   };
 }

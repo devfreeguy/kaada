@@ -23,7 +23,13 @@ async function loadPinStatus(token: string) {
   const body = await json<{ isSet: boolean }>(await api("/wallet/pin", token));
   return body.isSet;
 }
-export function usePinSetup({ token }: { token: string }) {
+export function usePinSetup({
+  token,
+  onDone,
+}: {
+  token: string;
+  onDone?: (() => void) | undefined;
+}) {
   const [step, setStep] = useState<Step>({ name: "loading" });
   const [value, setValue] = useState("");
   const [revision, setRevision] = useState(0);
@@ -35,7 +41,10 @@ export function usePinSetup({ token }: { token: string }) {
     () =>
       observeRequest(
         () => loadPinStatus(token),
-        (isSet) => setStep(isSet ? { name: "set" } : { name: "enter" }),
+        (isSet) => {
+          setStep(isSet ? { name: "set" } : { name: "enter" });
+          if (isSet) onDone?.();
+        },
         (error) => {
           logFailure("setup.pin_state_failed", error);
           setStep({
@@ -44,7 +53,7 @@ export function usePinSetup({ token }: { token: string }) {
           });
         },
       ),
-    [token, revision],
+    [token, revision, onDone],
   );
   const save = useCallback(
     async (pin: string) => {
@@ -60,6 +69,7 @@ export function usePinSetup({ token }: { token: string }) {
         });
         await json(response);
         setStep({ name: "saved" });
+        onDone?.();
       } catch (error) {
         logFailure("setup.pin_failed", error);
         const cancelled = error instanceof Error && error.name === "NotAllowedError";
@@ -77,7 +87,7 @@ export function usePinSetup({ token }: { token: string }) {
         });
       }
     },
-    [token],
+    [token, onDone],
   );
   const next = useCallback(() => {
     if (step.name === "enter") {

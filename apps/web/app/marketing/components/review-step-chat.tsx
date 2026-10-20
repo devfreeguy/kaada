@@ -23,7 +23,7 @@ export function ReviewStepChat() {
         <p>Everything look right? Confirm on your secure Kaada page.</p>
         <p className={styles.note}>Never share your PIN in this chat.</p>
         <p className={styles.reviewFooter}>
-          Review &amp; authorize payment
+          Review &amp; approve payment
           <svg aria-hidden="true" viewBox="0 0 20 20" width="16" height="16" fill="none">
             <path
               d="M5 15 15 5M5 5h10v10"

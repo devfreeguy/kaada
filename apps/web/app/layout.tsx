@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body
-        className={`${heading.variable} ${body.variable} min-h-screen bg-background font-sans text-foreground antialiased`}
+        className={`${heading.variable} ${body.variable} min-h-screen font-sans antialiased`}
       >
         <PageScrollArea>{children}</PageScrollArea>
       </body>
