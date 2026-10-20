@@ -11,7 +11,7 @@ import {
 } from "@kaada/domain";
 import type { RecoveryAttempt, RecoveryAttemptStatus, Wallet } from "@kaada/domain";
 
-import { audit, resolveAttempt, statusView } from "./context.js";
+import { audit, logBundlerRejection, resolveAttempt, statusView } from "./context.js";
 import type { RecoveryContext, RecoveryStatusView } from "./context.js";
 import { recoveryCompletedMessage } from "./messages.js";
 import type { RecoveryCleanup } from "./recovery-cleanup.js";
@@ -223,6 +223,7 @@ export class RecoveryFinalizer {
       await this.ctx.chain.submitOperation({ operation: prepared.operation });
     } catch (error) {
       if (isKaadaError(error, "BUNDLER_REJECTED")) {
+        logBundlerRejection(this.ctx, "recovery_batch", error, { attemptId: attempt.id });
         await read.recoveryAttempts.patch(
           attempt.id,
           {},

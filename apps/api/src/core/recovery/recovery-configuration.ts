@@ -8,6 +8,7 @@ import {
 } from "@kaada/domain";
 import type { RecoveryConfiguration, Wallet } from "@kaada/domain";
 
+import { logBundlerRejection } from "./context.js";
 import type { RecoveryContext } from "./context.js";
 import type { TotpEnrolment } from "./recovery-totp.js";
 import { toRootCredential } from "../roots/root-credentials.js";
@@ -496,7 +497,15 @@ export class RecoveryConfigurationService {
     });
     if (!valid) throw new KaadaError("CREDENTIAL_REJECTED", "the signature was not accepted");
 
-    await this.ctx.chain.submitOperation({ operation: configuration.preparedOperation, signature });
+    try {
+      await this.ctx.chain.submitOperation({
+        operation: configuration.preparedOperation,
+        signature,
+      });
+    } catch (error) {
+      logBundlerRejection(this.ctx, "arming", error, { configurationId: configuration.id });
+      throw error;
+    }
     return (await this.confirm(configuration.id)) ?? configuration;
   }
 

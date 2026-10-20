@@ -903,7 +903,7 @@ export class ViemRecoveryChain implements RecoveryChainPort {
     const response = await this.bundler("eth_sendUserOperation", [toRpc(signed), ENTRY_POINT]);
     if (response.error) {
       throw new KaadaError("BUNDLER_REJECTED", "the bundler refused the operation", {
-        details: { rpc: String(response.error.message ?? "").slice(0, 200) },
+        details: describeBundlerRefusal(response.error),
       });
     }
     return {
@@ -1000,15 +1000,37 @@ export class ViemRecoveryChain implements RecoveryChainPort {
   private async bundler(
     method: string,
     params: unknown[],
-  ): Promise<{ result?: unknown; error?: { message?: string } }> {
+  ): Promise<{ result?: unknown; error?: { code?: number; message?: string } }> {
     const response = await fetch(this.options.bundlerUrl, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
       signal: AbortSignal.timeout(20_000),
     });
-    return (await response.json()) as { result?: unknown; error?: { message?: string } };
+    return (await response.json()) as {
+      result?: unknown;
+      error?: { code?: number; message?: string };
+    };
   }
+}
+
+/**
+ * What a bundler said when it refused an operation, reduced to what is useful and safe in a log: its JSON-RPC error code, the ERC-4337
+ * "AA" code if the message carries one (AA21 prefund, AA24 signature, AA25 nonce, ...), and a short message with any long hex run
+ * removed (a signature or calldata that a bundler echoes back must never reach a log). Never the operation itself.
+ */
+export function describeBundlerRefusal(error: { code?: unknown; message?: unknown }): {
+  rpc: string;
+  rpcCode?: number;
+  aaCode?: string;
+} {
+  const raw = typeof error.message === "string" ? error.message : "";
+  const aa = /\bAA\d{2}\b/.exec(raw)?.[0];
+  return {
+    rpc: raw.replace(/0x[0-9a-fA-F]{64,}/g, "0x[hex omitted]").slice(0, 200),
+    ...(typeof error.code === "number" && { rpcCode: error.code }),
+    ...(aa && { aaCode: aa }),
+  };
 }
 
 function toRpc(operation: WireOperation) {

@@ -94,6 +94,27 @@ export interface RecoveryStatusView {
   tokenExpiresAt: string;
 }
 
+/**
+ * Tells the log, at error level, WHY a bundler refused an operation: its JSON-RPC code, the AA code if it has one and its short
+ * message, all already reduced by the chain adapter (no signature, no calldata, no key). The person is told the same as before.
+ */
+export function logBundlerRejection(
+  ctx: Pick<RecoveryContext, "log">,
+  where: string,
+  error: unknown,
+  extra: Record<string, string> = {},
+): void {
+  if (!(error instanceof KaadaError) || error.code !== "BUNDLER_REJECTED") return;
+  const d = error.details as { rpc?: unknown; rpcCode?: unknown; aaCode?: unknown } | undefined;
+  ctx.log("error", "recovery.bundler_rejected", {
+    where,
+    ...extra,
+    ...(typeof d?.rpcCode === "number" && { rpcCode: d.rpcCode }),
+    ...(typeof d?.aaCode === "string" && { aaCode: d.aaCode }),
+    ...(typeof d?.rpc === "string" && { rpc: d.rpc.slice(0, 200) }),
+  });
+}
+
 export const sha256Hex = (value: string): string =>
   createHash("sha256").update(value, "utf8").digest("hex");
 

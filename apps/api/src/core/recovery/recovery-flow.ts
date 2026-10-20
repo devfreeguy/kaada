@@ -35,6 +35,7 @@ import {
   sha256Hex,
   statusView,
 } from "./context.js";
+import { logBundlerRejection } from "./context.js";
 import type { RecoveryContext, RecoveryStatusView } from "./context.js";
 import {
   EMAIL_CODE_PATTERN,
@@ -863,10 +864,16 @@ export class RecoveryFlowService {
     });
     if (!valid) throw new KaadaError("CREDENTIAL_REJECTED", "the signature was not accepted");
 
-    const { userOpHash } = await this.ctx.chain.submitOperation({
-      operation: attempt.cancelPrepared,
-      signature,
-    });
+    let userOpHash: string;
+    try {
+      ({ userOpHash } = await this.ctx.chain.submitOperation({
+        operation: attempt.cancelPrepared,
+        signature,
+      }));
+    } catch (error) {
+      logBundlerRejection(this.ctx, "cancel", error, { attemptId: attempt.id });
+      throw error;
+    }
     const stored = await this.ctx.uow.read.recoveryAttempts.patch(
       attempt.id,
       { cancelUserOpHash: userOpHash.toLowerCase() },
