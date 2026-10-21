@@ -13,21 +13,24 @@ export interface BundlerReason {
   aaCode?: string;
   /** A short reason, redacted and capped; absent when nothing useful was found. */
   reason?: string;
+  /** The bundler refused because the operation's fee is below its floor (the floor can rise between prepare and send). */
+  feeTooLow: boolean;
 }
 
 const GENERIC = "the bundler refused the operation";
 const MAX_DEPTH = 6;
+// The error's own `message` comes LAST: for a wrapped error it is the generic words, while `details` and `data` carry the reason.
 const TEXT_KEYS = [
+  "details",
   "rpc",
   "rpcData",
   "shortMessage",
   "reason",
-  "message",
   "data",
-  "details",
   "cause",
   "error",
   "body",
+  "message",
 ] as const;
 
 export function redactForLog(text: string): string {
@@ -62,10 +65,14 @@ export function findBundlerReason(error: unknown): BundlerReason {
   };
   visit(error, 0);
 
-  const aaCode = /\bAA\d{2}\b/.exec(texts.join(" "))?.[0];
+  const all = texts.join(" ");
+  const aaCode = /\bAA\d{2}\b/.exec(all)?.[0];
+  const feeTooLow =
+    /max(Priority)?FeePerGas must be at least|fee per gas (is )?too low|underpriced/i.test(all);
   const best = (aaCode && texts.find((t) => t.includes(aaCode))) || texts[0];
   return {
     errorClass,
+    feeTooLow,
     ...(rpcCode !== undefined && { rpcCode }),
     ...(aaCode && { aaCode }),
     ...(best && { reason: redactForLog(best) }),
@@ -79,4 +86,19 @@ export function isBundlerRejection(error: unknown): boolean {
     error !== null &&
     (error as { code?: unknown }).code === "BUNDLER_REJECTED"
   );
+}
+
+/** The chain adapter could not read the bundler's fee floor: it never prices an operation without it. */
+export function isFeeUnavailable(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { code?: unknown }).code === "RECOVERY_BLOCKED" &&
+    (error as { details?: { reason?: unknown } }).details?.reason === "FEE_UNAVAILABLE"
+  );
+}
+
+/** A refusal because the fee is below the bundler's floor, which can rise between the moment an operation is priced and sent. */
+export function isFeeTooLow(error: unknown): boolean {
+  return isBundlerRejection(error) && findBundlerReason(error).feeTooLow;
 }

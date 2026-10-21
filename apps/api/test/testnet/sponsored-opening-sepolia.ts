@@ -230,7 +230,23 @@ interface EstimateRecord {
   signatureBytes: number;
 }
 const estimates: EstimateRecord[] = [];
-const shim = { down: false, url: "http://127.0.0.1:9" };
+const shim = { down: false, url: "http://127.0.0.1:9", boost: 100n };
+
+/**
+ * The stand-in bundler's fee floor, as a real bundler has one: 1.5 times what the chain reports (the real refusal was a floor of 360
+ * gwei against a chain price of 240), scaled by `shim.boost` percent so a test can raise it. An operation priced below it is refused,
+ * and the floor is published the way Pimlico does, with `pimlico_getUserOperationGasPrice`.
+ */
+async function currentFloor(): Promise<{ maxFeePerGas: bigint; maxPriorityFeePerGas: bigint }> {
+  const chainFees = await pub.estimateFeesPerGas();
+  return {
+    maxFeePerGas: (chainFees.maxFeePerGas * 3n * shim.boost) / 200n,
+    maxPriorityFeePerGas: (chainFees.maxPriorityFeePerGas * 3n * shim.boost) / 200n + 1_500_000n,
+  };
+}
+
+const floorRefusal = (floor: bigint, current: bigint) =>
+  `maxFeePerGas must be at least ${floor} (current maxFeePerGas: ${current}) - use pimlico_getUserOperationGasPrice to get the current gas price`;
 
 /** What signs for each wallet's address, so the stand-in can estimate with a REAL signature (a stub would fail validation here). */
 const signers = new Map<string, (userOpHash: Hex) => Hex>();
@@ -346,15 +362,31 @@ async function startEstimatorShim(): Promise<() => Promise<void>> {
         );
       if (shim.down) return response.destroy();
       if (message.method === "eth_supportedEntryPoints") return reply([EP]);
+      if (message.method === "pimlico_getUserOperationGasPrice") {
+        void currentFloor().then((floor) => {
+          const tier = {
+            maxFeePerGas: `0x${floor.maxFeePerGas.toString(16)}`,
+            maxPriorityFeePerGas: `0x${floor.maxPriorityFeePerGas.toString(16)}`,
+          };
+          reply({ slow: tier, standard: tier, fast: tier });
+        });
+        return;
+      }
       if (message.method === "eth_estimateUserOperationGas") {
-        estimateFromChain(message.params?.[0] as Record<string, string>).then(
-          reply,
-          (error: unknown) => {
+        const operation = message.params?.[0] as Record<string, string>;
+        void currentFloor()
+          .then(async (floor) => {
+            const priced = BigInt(operation["maxFeePerGas"] as string);
+            if (priced < floor.maxFeePerGas) {
+              throw new Error(floorRefusal(floor.maxFeePerGas, priced));
+            }
+            return estimateFromChain(operation);
+          })
+          .then(reply, (error: unknown) => {
             const text = error instanceof Error ? error.message : String(error);
-            console.log("  (estimator stand-in failed:", text.split("\n")[0], ")");
+            console.log("  (estimator stand-in refused:", text.split("\n")[0], ")");
             fail(text);
-          },
-        );
+          });
         return;
       }
       fail(`not served here: ${message.method}`);
@@ -400,6 +432,15 @@ class HarnessChain extends ViemRecoveryChain {
   override async submitOperation(input: { operation: JsonObject; signature?: string }) {
     const wire = fromJsonSafe(input.operation) as Record<string, unknown>;
     delete wire["userOpHash"];
+    const floor = await currentFloor();
+    if ((wire["maxFeePerGas"] as bigint) < floor.maxFeePerGas) {
+      throw new KaadaError("BUNDLER_REJECTED", "the bundler refused the operation", {
+        details: {
+          rpc: floorRefusal(floor.maxFeePerGas, wire["maxFeePerGas"] as bigint),
+          rpcCode: -32602,
+        },
+      });
+    }
     const signed = { ...wire, ...(input.signature && { signature: input.signature as Hex }) };
     const packed = toPackedUserOperation(signed as never);
     const { request } = await pub.simulateContract({
@@ -554,10 +595,10 @@ async function main(): Promise<void> {
   console.log(
     `relayer balance ${celo(startRelayer)}, deployer ${celo(await pub.getBalance({ address: deployer.address }))}`,
   );
-  if (startRelayer < parseEther("0.07")) {
+  if (startRelayer < parseEther("0.2")) {
     const hash = await deployerWallet.sendTransaction({
       to: relayer.address,
-      value: parseEther("0.12") - startRelayer,
+      value: parseEther("0.3") - startRelayer,
     });
     await pub.waitForTransactionReceipt({ hash });
     await sleep(3_000);
@@ -930,6 +971,7 @@ async function main(): Promise<void> {
     estimate: EstimateRecord;
     armingGas: bigint;
     armingCost: bigint;
+    openGas: bigint;
   }
   const sponsoredSpent = async (w: Wallet, purpose: string) =>
     (await world.repositories.audit.listByType(w.userId, RECOVERY_AUDIT_EVENTS.relayerSponsored))
@@ -963,6 +1005,7 @@ async function main(): Promise<void> {
     );
     check(`${tag} the relayer opened the account on chain`, await hasCode(w.address));
     const relayerAfter = await relayerBalance();
+    const openGas = (await relayerTxTo(KERNEL_FACTORY))?.gasUsed ?? 0n;
     const openCost = await sponsoredSpent(w, "open_account");
     const topUpValue = await sponsoredSpent(w, "gas_topup");
 
@@ -977,6 +1020,12 @@ async function main(): Promise<void> {
       pre: op["preVerificationGas"] as bigint,
     };
     const maxFee = op["maxFeePerGas"] as bigint;
+    const floorNow = await currentFloor();
+    check(
+      `${tag} the fee is at least the bundler's floor plus 20%, never the chain's price alone`,
+      maxFee >= floorNow.maxFeePerGas && maxFee * 100n >= floorNow.maxFeePerGas * 115n,
+      `fee ${maxFee} against a floor of ${floorNow.maxFeePerGas}`,
+    );
     const estimate = estimates[estimates.length - 1] as EstimateRecord;
     check(
       `${tag} the estimator was asked (with a stub signature of the ${kind} shape)`,
@@ -1028,11 +1077,54 @@ async function main(): Promise<void> {
       signing?: { challenge: string; device?: { payload: Hex } };
     }>();
 
+    // The floor rises past the fee that was signed (here: to five times what it was). The bundler refuses, nothing is sent, and the
+    // person gets the retryable answer; asking again prices the operation afresh, above the new floor.
+    shim.boost = 500n;
+    const nonceBeforeRise = await relayerNonce();
+    const rejected = await world.configuration
+      .submit({
+        userId: w.userId,
+        configurationId: retriedBody.configurationId as string,
+        material: w.signRequest(
+          retriedBody.signing as { challenge: string; device?: { payload: Hex } },
+        ),
+      })
+      .then(
+        () => undefined,
+        (e: unknown) => e,
+      );
+    check(
+      `${tag} a floor that rose past the signed fee is a retryable RECOVERY_BLOCKED/FEE_TOO_LOW and nothing was sent`,
+      rejected instanceof KaadaError &&
+        rejected.code === "RECOVERY_BLOCKED" &&
+        (rejected.details as { reason?: string } | undefined)?.reason === "FEE_TOO_LOW" &&
+        (await relayerNonce()) === nonceBeforeRise,
+    );
+    check(
+      `${tag} and the bundler's own words are in the log`,
+      world.logs.some(
+        (l) =>
+          l.event === "recovery.bundler_rejected" &&
+          /maxFeePerGas must be at least/.test(String(l.fields["rpc"])),
+      ),
+    );
+    shim.boost = 100n;
+    const repriced = await arm(w);
+    check(
+      `${tag} once it settles, a fresh preparation is priced at the new floor`,
+      repriced.statusCode === 200,
+      `status ${repriced.statusCode}`,
+    );
+    const repricedBody = repriced.json<{
+      configurationId?: string;
+      signing?: { challenge: string; device?: { payload: Hex } };
+    }>();
+
     let armed = await world.configuration.submit({
       userId: w.userId,
-      configurationId: retriedBody.configurationId as string,
+      configurationId: repricedBody.configurationId as string,
       material: w.signRequest(
-        retriedBody.signing as { challenge: string; device?: { payload: Hex } },
+        repricedBody.signing as { challenge: string; device?: { payload: Hex } },
       ),
     });
     // The chain node may lag a moment behind the receipt: the reconciler path (confirm) reads the validator again until it is ACTIVE.
@@ -1067,6 +1159,7 @@ async function main(): Promise<void> {
       estimate,
       armingGas,
       armingCost: lastArming?.cost ?? 0n,
+      openGas,
     };
   }
 
@@ -1268,9 +1361,9 @@ async function main(): Promise<void> {
     (l) => l.event === "recovery.sponsor_refused" && l.fields["walletId"] === w8.walletId,
   );
   check(
-    "the bundler is unreachable: refused with 409 SPONSORSHIP_UNAVAILABLE, logged as ESTIMATE_UNAVAILABLE",
-    r8.statusCode === 409 &&
-      r8.json<{ code?: string }>().code === "SPONSORSHIP_UNAVAILABLE" &&
+    "the bundler is unreachable: a retryable 503 GAS_ESTIMATE_UNAVAILABLE, logged as ESTIMATE_UNAVAILABLE",
+    r8.statusCode === 503 &&
+      r8.json<{ code?: string }>().code === "GAS_ESTIMATE_UNAVAILABLE" &&
       logged8?.fields["reason"] === "ESTIMATE_UNAVAILABLE" &&
       logged8.fields["message"] === "estimate unavailable",
     `status ${r8.statusCode}, logged ${String(logged8?.fields["reason"])}`,
@@ -1308,8 +1401,12 @@ async function main(): Promise<void> {
     console.log(
       `  at ${MAINNET_GAS_GWEI} gwei: prefund sized ${celo(atMainnet(ceiling))} -> top-up ${celo((atMainnet(ceiling) * 105n) / 100n)}; fixed ${celo(atMainnet(1_360_000n))} -> ${celo((atMainnet(1_360_000n) * 105n) / 100n)}; arming really costs ${celo(atMainnet(m.armingGas))}`,
     );
+    const atFloor = (gas: bigint) => (gas * gwei(360) * 120n) / 100n; // the 360 gwei floor plus the 20% margin
     console.log(
-      `  per signup out of the relayer at ${MAINNET_GAS_GWEI} gwei: open ${celo(atMainnet(openTx?.gasUsed ?? 0n))} + top-up fee ${celo(atMainnet(topUpFeeGas))} + top-up ${celo((atMainnet(ceiling) * 105n) / 100n)} = ${celo(atMainnet(openTx?.gasUsed ?? 0n) + atMainnet(topUpFeeGas) + (atMainnet(ceiling) * 105n) / 100n)}`,
+      `  at the 360 gwei floor (priced at 432 gwei): prefund sized ${celo(atFloor(ceiling))} -> top-up ${celo((atFloor(ceiling) * 105n) / 100n)}; per signup out of the relayer: open ${celo(atMainnet(m.openGas))} + top-up fee ${celo(atMainnet(topUpFeeGas))} + top-up ${celo((atFloor(ceiling) * 105n) / 100n)} = ${celo(atMainnet(m.openGas) + atMainnet(topUpFeeGas) + (atFloor(ceiling) * 105n) / 100n)}`,
+    );
+    console.log(
+      `  per signup out of the relayer at ${MAINNET_GAS_GWEI} gwei: open ${celo(atMainnet(m.openGas))} + top-up fee ${celo(atMainnet(topUpFeeGas))} + top-up ${celo((atMainnet(ceiling) * 105n) / 100n)} = ${celo(atMainnet(m.openGas) + atMainnet(topUpFeeGas) + (atMainnet(ceiling) * 105n) / 100n)}`,
     );
   }
 

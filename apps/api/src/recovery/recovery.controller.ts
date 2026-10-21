@@ -96,6 +96,27 @@ function gasFundingRequired(error: unknown): boolean {
   );
 }
 
+/** The one retryable answer for "the platform cannot price or send this right now": nothing the person can add or change fixes it. */
+function tryAgainLater(error: unknown): ServiceUnavailableException {
+  return new ServiceUnavailableException(
+    {
+      statusCode: 503,
+      code: "GAS_ESTIMATE_UNAVAILABLE",
+      message:
+        "We can't finish securing your account right now. Please try again in a few minutes.",
+      retryable: true,
+    },
+    { cause: error },
+  );
+}
+
+/** The bundler's fee could not be read, or rose past the one the operation was priced at: retryable, the next try prices afresh. */
+function feeProblem(error: unknown): boolean {
+  if (!isKaadaError(error, "RECOVERY_BLOCKED")) return false;
+  const reason = (error.details as { reason?: unknown } | undefined)?.reason;
+  return reason === "FEE_UNAVAILABLE" || reason === "FEE_TOO_LOW";
+}
+
 function httpError(error: unknown): never {
   if (isKaadaError(error)) {
     switch (error.code) {
@@ -126,16 +147,7 @@ function httpError(error: unknown): never {
         if (
           (error.details as { reason?: unknown } | undefined)?.reason === "ESTIMATE_UNAVAILABLE"
         ) {
-          throw new ServiceUnavailableException(
-            {
-              statusCode: 503,
-              code: "GAS_ESTIMATE_UNAVAILABLE",
-              message:
-                "We can't finish securing your account right now. Please try again in a few minutes.",
-              retryable: true,
-            },
-            { cause: error },
-          );
+          throw tryAgainLater(error);
         }
         // The real refusals (a cap, the reserve, the deposit): the reason is in the log; the person is only ever told what to do.
         throw new ConflictException(
@@ -561,6 +573,7 @@ export class RecoveryController {
         ...(parsed.data.delaySeconds !== undefined && { delaySeconds: parsed.data.delaySeconds }),
       });
     } catch (error) {
+      if (feeProblem(error)) throw tryAgainLater(error);
       // A wallet with no CELO for gas gets its own answer, not the generic "temporarily unavailable": the person can fix it.
       if (isKaadaError(error, "RECOVERY_BLOCKED") && gasFundingRequired(error)) {
         throw new ConflictException(
@@ -594,6 +607,7 @@ export class RecoveryController {
       });
       return { status: configuration.status, delaySeconds: configuration.delaySeconds };
     } catch (error) {
+      if (feeProblem(error)) throw tryAgainLater(error);
       return httpError(error);
     }
   }

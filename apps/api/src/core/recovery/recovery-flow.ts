@@ -35,7 +35,7 @@ import {
   sha256Hex,
   statusView,
 } from "./context.js";
-import { logBundlerRejection } from "./context.js";
+import { feeTooLowToRetryable, logBundlerRejection, logFeeUnavailable } from "./context.js";
 import type { RecoveryContext, RecoveryStatusView } from "./context.js";
 import {
   EMAIL_CODE_PATTERN,
@@ -822,12 +822,18 @@ export class RecoveryFlowService {
       );
     }
     const root = await this.rootCredentialFor(wallet, state.rootValidator);
-    const prepared = await this.ctx.chain.prepareRootOperation({
-      account: wallet.address,
-      rootValidator: state.rootValidator,
-      rootKind: root.kind,
-      calls: this.ctx.chain.cancelCalls(),
-    });
+    let prepared;
+    try {
+      prepared = await this.ctx.chain.prepareRootOperation({
+        account: wallet.address,
+        rootValidator: state.rootValidator,
+        rootKind: root.kind,
+        calls: this.ctx.chain.cancelCalls(),
+      });
+    } catch (error) {
+      logFeeUnavailable(this.ctx, "cancel", error, { attemptId: attempt.id });
+      throw error;
+    }
     const stored = await this.ctx.uow.read.recoveryAttempts.patch(
       attempt.id,
       { cancelChallenge: prepared.userOpHash.toLowerCase(), cancelPrepared: prepared.operation },
@@ -872,7 +878,7 @@ export class RecoveryFlowService {
       }));
     } catch (error) {
       logBundlerRejection(this.ctx, "cancel", error, { attemptId: attempt.id });
-      throw error;
+      throw feeTooLowToRetryable(error);
     }
     const stored = await this.ctx.uow.read.recoveryAttempts.patch(
       attempt.id,

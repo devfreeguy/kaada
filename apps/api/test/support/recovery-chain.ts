@@ -464,8 +464,19 @@ export class FakeRecoveryChain implements RecoveryChainPort {
     ];
   }
 
-  estimateOpenCostWei(): Promise<string> {
-    return Promise.resolve((5n * 10n ** 16n).toString());
+  /** Whether the bundler's fee floor can be read: when not, no operation is priced and no setup cost can be quoted. */
+  feeAvailable = true;
+  setupCostWei = 5n * 10n ** 16n;
+
+  estimateSetupCostWei(): Promise<string> {
+    if (!this.feeAvailable) return Promise.reject(this.feeUnavailable());
+    return Promise.resolve(this.setupCostWei.toString());
+  }
+
+  private feeUnavailable(): KaadaError {
+    return new KaadaError("RECOVERY_BLOCKED", "the bundler's fee floor is unavailable", {
+      details: { reason: "FEE_UNAVAILABLE", rpc: "method not found", rpcCode: -32601 },
+    });
   }
 
   relayerBalanceWei(): Promise<string> {
@@ -512,6 +523,7 @@ export class FakeRecoveryChain implements RecoveryChainPort {
     sizeFromEstimate?: boolean;
   }): Promise<PreparedOperation> {
     this.lastSponsorUpTo = input.sponsorUpToWei;
+    if (!this.feeAvailable) return Promise.reject(this.feeUnavailable());
     const address = input.account.toLowerCase();
     this.lastSizing = input.sizeFromEstimate ? "estimate" : "fixed";
     if (input.sizeFromEstimate) {

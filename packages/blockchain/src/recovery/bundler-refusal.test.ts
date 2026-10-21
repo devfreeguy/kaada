@@ -51,6 +51,13 @@ async function refusedWith(reply: Reply | { code?: unknown; message: string }) {
           });
         case "eth_maxPriorityFeePerGas":
           return reply(`0x${(2n * GWEI).toString(16)}`);
+        case "pimlico_getUserOperationGasPrice":
+          return reply({
+            standard: {
+              maxFeePerGas: `0x${(360n * GWEI).toString(16)}`,
+              maxPriorityFeePerGas: `0x${(2n * GWEI).toString(16)}`,
+            },
+          });
         case "eth_sendUserOperation":
           if ("raw" in refusal) {
             response.statusCode = refusal.status ?? 200;

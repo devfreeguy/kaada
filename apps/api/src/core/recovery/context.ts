@@ -14,7 +14,12 @@ import type {
 } from "@kaada/domain";
 
 import type { AgentLog } from "../agent/ports.js";
-import { findBundlerReason, isBundlerRejection } from "./bundler-reason.js";
+import {
+  findBundlerReason,
+  isBundlerRejection,
+  isFeeTooLow,
+  isFeeUnavailable,
+} from "./bundler-reason.js";
 import { OPAQUE_TOKEN_PATTERN, hashOpaqueToken } from "../authorization/token.js";
 import type { RecoveryNotifier } from "./notifier.js";
 import type { RecoveryTotpService } from "./recovery-totp.js";
@@ -117,6 +122,42 @@ export function logBundlerRejection(
     ...(found.aaCode !== undefined && { aaCode: found.aaCode }),
     ...(found.reason !== undefined ? { rpc: found.reason } : { note: "reason not available" }),
   });
+}
+
+/**
+ * Tells the log, at error level, that the bundler's fee floor could not be read, so an operation could not be priced and was refused
+ * (the person is told to try again in a few minutes). Never a fall back to the chain's price.
+ */
+export function logFeeUnavailable(
+  ctx: Pick<RecoveryContext, "log">,
+  where: string,
+  error: unknown,
+  extra: Record<string, string> = {},
+): void {
+  if (!isFeeUnavailable(error)) return;
+  const found = findBundlerReason(error);
+  ctx.log("error", "recovery.fee_unavailable", {
+    where,
+    ...extra,
+    ...(found.rpcCode !== undefined && { rpcCode: found.rpcCode }),
+    ...(found.reason !== undefined ? { rpc: found.reason } : { note: "reason not available" }),
+  });
+}
+
+/**
+ * The bundler refused an operation because its fee is now below the floor (it rose after the operation was priced). Nothing was
+ * sent; the person asks again and a fresh operation is priced at the new floor. Anything else is returned unchanged.
+ */
+export function feeTooLowToRetryable(error: unknown): unknown {
+  if (!isFeeTooLow(error)) return error;
+  return new KaadaError(
+    "RECOVERY_BLOCKED",
+    "the bundler's fee floor rose before the operation was sent",
+    {
+      details: { reason: "FEE_TOO_LOW" },
+      cause: error,
+    },
+  );
 }
 
 export const sha256Hex = (value: string): string =>

@@ -202,8 +202,12 @@ export interface RecoveryChainPort {
   canEstimateGas?(): Promise<boolean>;
   /** The relayer's native balance (wei, decimal string). Absent: not readable here. */
   relayerBalanceWei?(): Promise<string>;
-  /** What opening an account costs at today's fees, as a ceiling (wei, decimal string): the most it may reasonably come to. */
-  estimateOpenCostWei?(): Promise<string>;
+  /**
+   * The most that setting a wallet up for recovery can cost the sponsor at today's fees (wei, decimal string): opening its account
+   * (paid at the chain's price) plus the prefund of its arming operation (paid at the bundler's fee floor, with margin). Throws
+   * RECOVERY_BLOCKED with details.reason "FEE_UNAVAILABLE" when the bundler's fee cannot be read: it never guesses.
+   */
+  estimateSetupCostWei?(): Promise<string>;
   /**
    * Opens (deploys) the account of `root` on chain, paid by the sponsor, when it does not exist yet. Anyone could do this: it creates
    * exactly the account the root already commits to and gives the sponsor no authority over it. Idempotent.

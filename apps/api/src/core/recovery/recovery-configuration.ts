@@ -1,4 +1,5 @@
 import { deviceKeyPayload } from "@kaada/contracts";
+import { isFeeUnavailable } from "./bundler-reason.js";
 import {
   KaadaError,
   RECOVERY_AUDIT_EVENTS,
@@ -8,7 +9,7 @@ import {
 } from "@kaada/domain";
 import type { RecoveryConfiguration, Wallet } from "@kaada/domain";
 
-import { logBundlerRejection } from "./context.js";
+import { feeTooLowToRetryable, logBundlerRejection, logFeeUnavailable } from "./context.js";
 import type { RecoveryContext } from "./context.js";
 import type { TotpEnrolment } from "./recovery-totp.js";
 import { toRootCredential } from "../roots/root-credentials.js";
@@ -289,6 +290,10 @@ export class RecoveryConfigurationService {
         }
       }
       return { root, validator, prepared };
+    } catch (error) {
+      // No fee floor means no price: the person is asked to try again, and the log says so at error level.
+      logFeeUnavailable(this.ctx, "arming", error, { walletId: wallet.id });
+      throw error;
     } finally {
       if (grant) {
         await this.ctx.sponsorship?.ledger.settle({
@@ -340,6 +345,21 @@ export class RecoveryConfigurationService {
         minimumUsdMicros: s.minDepositUsdMicros.toString(),
       });
     }
+    // What setting this wallet up can cost NOW, at the bundler's fee: read before anything is reserved or spent, so a bundler that
+    // cannot price an operation is found while it still costs nothing. No fee, no sponsoring (and never a guess).
+    let setupCeiling = OPEN_COST_CEILING_WEI;
+    if (needsOpen && this.ctx.chain.estimateSetupCostWei) {
+      try {
+        setupCeiling = BigInt(await this.ctx.chain.estimateSetupCostWei());
+      } catch (error) {
+        if (isFeeUnavailable(error)) {
+          logFeeUnavailable(this.ctx, "sponsoring", error, { walletId: wallet.id });
+          this.estimateRefused(wallet);
+          return "ESTIMATE_UNAVAILABLE";
+        }
+        throw error;
+      }
+    }
     // Unreadable is treated as empty: sponsoring never spends when it cannot see what the relayer has left.
     const balance = this.ctx.chain.relayerBalanceWei
       ? BigInt(await this.ctx.chain.relayerBalanceWei().catch(() => "0"))
@@ -362,22 +382,16 @@ export class RecoveryConfigurationService {
       now: this.ctx.now(),
     });
     if (!reservation.granted) return refuse(reservation.reason);
-    const openCeiling =
-      needsOpen && this.ctx.chain.estimateOpenCostWei
-        ? BigInt(
-            await this.ctx.chain
-              .estimateOpenCostWei()
-              .catch(() => OPEN_COST_CEILING_WEI.toString()),
-          )
-        : OPEN_COST_CEILING_WEI;
-    if (needsOpen && reservation.grantedWei < openCeiling) {
+    if (needsOpen && reservation.grantedWei < setupCeiling) {
       await s.ledger.settle({
         id: reservation.id,
         userId: wallet.userId,
         walletId: wallet.id,
         spentWei: 0n,
       });
-      return refuse(reservation.limitedBy ?? "RELAYER_RESERVE");
+      return refuse(
+        reservation.limitedBy ?? (want === s.perWalletWei ? "WALLET_CAP" : "RELAYER_RESERVE"),
+      );
     }
     return { id: reservation.id, grantedWei: reservation.grantedWei };
   }
@@ -504,7 +518,8 @@ export class RecoveryConfigurationService {
       });
     } catch (error) {
       logBundlerRejection(this.ctx, "arming", error, { configurationId: configuration.id });
-      throw error;
+      // A fee floor that rose after the operation was priced is not a failure of the wallet: asking again prices it afresh.
+      throw feeTooLowToRetryable(error);
     }
     return (await this.confirm(configuration.id)) ?? configuration;
   }

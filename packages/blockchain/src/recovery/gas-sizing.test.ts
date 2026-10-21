@@ -4,7 +4,8 @@ import type { AddressInfo } from "node:net";
 import test from "node:test";
 
 import { KaadaError } from "@kaada/domain";
-import { toFunctionSelector } from "viem";
+import { parseTransaction, toFunctionSelector } from "viem";
+import type { Hex } from "viem";
 import { generatePrivateKey } from "viem/accounts";
 import { celoSepolia } from "viem/chains";
 
@@ -26,6 +27,12 @@ interface World {
   deposit: bigint;
   estimate: Record<string, unknown> | { error: string } | "down";
   supported: string[];
+  /** The chain's base fee: the chain's own price is about 1.2 times this plus its tip. */
+  baseFee: bigint;
+  /** Raw transactions the relayer sent (a top-up), as the value each carried. */
+  sentValues: bigint[];
+  /** The bundler's published fee floor (its standard tier), or what it answers instead. */
+  floor: { maxFeePerGas: bigint; maxPriorityFeePerGas: bigint } | { error: string } | "down";
   methods: string[];
   estimateRequests: Array<{ signature: string }>;
 }
@@ -43,6 +50,9 @@ async function withChain(
       preVerificationGas: "0xc350",
     },
     supported: [ENTRY_POINT],
+    baseFee: 100n * GWEI,
+    sentValues: [],
+    floor: { maxFeePerGas: 360n * GWEI, maxPriorityFeePerGas: 2n * GWEI },
     methods: [],
     estimateRequests: [],
     ...setup,
@@ -86,13 +96,52 @@ async function withChain(
             timestamp: "0x1",
             gasLimit: "0x1c9c380",
             gasUsed: "0x0",
-            baseFeePerGas: `0x${(100n * GWEI).toString(16)}`,
+            baseFeePerGas: `0x${world.baseFee.toString(16)}`,
             transactions: [],
           });
         case "eth_maxPriorityFeePerGas":
           return reply(`0x${(2n * GWEI).toString(16)}`);
         case "eth_gasPrice":
           return reply(`0x${(100n * GWEI).toString(16)}`);
+        case "pimlico_getUserOperationGasPrice": {
+          if (world.floor === "down") return response.destroy();
+          if ("error" in world.floor) return fail(world.floor.error);
+          const hex = (v: bigint) => `0x${v.toString(16)}`;
+          return reply({
+            standard: {
+              maxFeePerGas: hex(world.floor.maxFeePerGas),
+              maxPriorityFeePerGas: hex(world.floor.maxPriorityFeePerGas),
+            },
+          });
+        }
+        case "eth_estimateGas":
+          return reply("0x5208");
+        case "eth_getTransactionCount":
+          return reply("0x0");
+        case "eth_sendRawTransaction": {
+          // A top-up: what it carries lands in the wallet.
+          const sent = parseTransaction(message.params?.[0] as Hex);
+          world.sentValues.push(sent.value ?? 0n);
+          world.native += sent.value ?? 0n;
+          return reply(`0x${"ee".repeat(32)}`);
+        }
+        case "eth_getTransactionReceipt":
+          return reply({
+            transactionHash: `0x${"ee".repeat(32)}`,
+            transactionIndex: "0x0",
+            blockHash: `0x${"11".repeat(32)}`,
+            blockNumber: "0x10",
+            from: account,
+            to: account,
+            status: "0x1",
+            gasUsed: "0x5208",
+            cumulativeGasUsed: "0x5208",
+            effectiveGasPrice: "0x1",
+            logs: [],
+            logsBloom: `0x${"00".repeat(256)}`,
+            contractAddress: null,
+            type: "0x2",
+          });
         case "eth_supportedEntryPoints":
           return reply(world.supported);
         case "eth_estimateUserOperationGas": {
@@ -268,4 +317,142 @@ test("whether estimates can be had is asked of the bundler", async () => {
   await withChain({ supported: ["0x0000000000000000000000000000000000000001"] }, async (chain) =>
     assert.equal(await chain.canEstimateGas(), false),
   );
+});
+
+// ── the fee: the bundler's floor plus 20%, never the chain's price alone ─────────────────────────
+
+const requiredOf = (op: Record<string, unknown>) =>
+  (field(op, "callGasLimit") +
+    field(op, "verificationGasLimit") +
+    field(op, "preVerificationGas")) *
+  field(op, "maxFeePerGas");
+
+test("every operation is priced at the bundler's floor plus 20%, whatever the chain says", async () => {
+  // Chain price about 122 gwei, floor 360: the floor wins. Floor 360.0015 gwei (the real refusal) -> 432.0018 gwei.
+  await withChain(
+    {
+      native: 10n * CELO,
+      floor: { maxFeePerGas: 360_001_500_000n, maxPriorityFeePerGas: 1_500_000n },
+    },
+    async (chain) => {
+      const op = (await arm(chain)).operation;
+      assert.equal(field(op, "maxFeePerGas"), (360_001_500_000n * 120n + 99n) / 100n);
+      assert.ok(field(op, "maxFeePerGas") >= 360_001_500_000n, "never below the floor");
+      assert.ok(field(op, "maxPriorityFeePerGas") >= (1_500_000n * 120n + 99n) / 100n);
+      assert.ok(field(op, "maxPriorityFeePerGas") <= field(op, "maxFeePerGas"));
+    },
+  );
+});
+
+test("when the chain is dearer than the floor, the chain's price (plus the margin) is used: never below either", async () => {
+  await withChain({ native: 10n * CELO, baseFee: 400n * GWEI }, async (chain) => {
+    const op = (await arm(chain)).operation;
+    const chainMax = (400n * GWEI * 12n) / 10n + 2n * GWEI; // base * 1.2 + tip, as the chain reports it
+    assert.ok(
+      field(op, "maxFeePerGas") >= chainMax,
+      `${field(op, "maxFeePerGas")} vs chain ${chainMax}`,
+    );
+    assert.ok(field(op, "maxFeePerGas") >= 360n * GWEI);
+  });
+});
+
+test("the floor applies to a sized operation, to the recovery batch and to a cancel alike (they share one pricing)", async () => {
+  await withChain({ native: 10n * CELO }, async (chain) => {
+    const floorWithMargin = (360n * GWEI * 120n) / 100n;
+    assert.ok(
+      field((await arm(chain, { sizeFromEstimate: true })).operation, "maxFeePerGas") >=
+        floorWithMargin,
+    );
+    const root = chain.proposeRoot({
+      account,
+      credential: {
+        kind: "DEVICE_KEY",
+        keyId: `0x${"ab".repeat(32)}`,
+        publicKeyX: "11".repeat(32),
+        publicKeyY: "22".repeat(32),
+      },
+      attemptId: "attempt-1",
+    });
+    const batch = await chain.prepareRecoveryBatch({ account, root, nonceBefore: 0 });
+    assert.ok(field(batch.operation, "maxFeePerGas") >= floorWithMargin);
+    const cancel = await chain.prepareRootOperation({
+      account,
+      rootValidator: "0x00000000000000000000000000000000000000d1",
+      rootKind: "DEVICE_KEY",
+      calls: chain.cancelCalls(),
+    });
+    assert.ok(field(cancel.operation, "maxFeePerGas") >= floorWithMargin);
+  });
+});
+
+test("the prefund check judges the wallet at the SAME fee the operation carries: one wei short is short", async () => {
+  await withChain({ native: 10n * CELO }, async (chain, world) => {
+    const required = requiredOf((await arm(chain)).operation);
+    assert.equal(
+      required,
+      1_360_000n * ((360n * GWEI * 120n) / 100n),
+      "the fixed limits at the floor plus 20%",
+    );
+    world.native = required;
+    assert.equal((await arm(chain)).sponsoredWei, undefined);
+    world.native = required - 1n;
+    assert.equal(await code(arm(chain)), "RECOVERY_BLOCKED/GAS_FUNDING_REQUIRED");
+  });
+});
+
+test("the top-up is sized at that same fee: 5% over the operation's own prefund, and it lands in the wallet", async () => {
+  await withChain({ native: 0n }, async (chain, world) => {
+    const prepared = await arm(chain, {
+      sponsorUpToWei: (10n * CELO).toString(),
+      sizeFromEstimate: true,
+    });
+    const required = requiredOf(prepared.operation);
+    assert.equal(prepared.sponsoredWei, ((required * 105n) / 100n).toString());
+    assert.deepEqual(
+      world.sentValues,
+      [(required * 105n) / 100n],
+      "exactly one top-up, of that amount",
+    );
+  });
+});
+
+test("no fee floor, no operation: unreachable, refused, empty or zero is a hard stop and nothing is sent", async () => {
+  for (const floor of ["down", { error: "method not found" }] as const) {
+    await withChain({ native: 10n * CELO, floor }, async (chain, world) => {
+      assert.equal(
+        await code(arm(chain)),
+        "RECOVERY_BLOCKED/FEE_UNAVAILABLE",
+        JSON.stringify(floor),
+      );
+      assert.equal(
+        await code(arm(chain, { sizeFromEstimate: true })),
+        "RECOVERY_BLOCKED/FEE_UNAVAILABLE",
+      );
+      assert.deepEqual(sent(world.methods), []);
+    });
+  }
+  await withChain(
+    { native: 10n * CELO, floor: { maxFeePerGas: 0n, maxPriorityFeePerGas: 0n } },
+    async (chain) => {
+      assert.equal(
+        await code(arm(chain)),
+        "RECOVERY_BLOCKED/FEE_UNAVAILABLE",
+        "a zero floor is not a floor",
+      );
+    },
+  );
+});
+
+test("the cost ceiling for sponsoring a wallet uses the floor too, and fails when the floor is unreadable", async () => {
+  await withChain({}, async (chain) => {
+    const ceiling = BigInt(await chain.estimateSetupCostWei());
+    const armingAtFloor = (500_000n * ((360n * GWEI * 120n) / 100n) * 105n) / 100n;
+    assert.ok(
+      ceiling > armingAtFloor,
+      `${ceiling} must cover the arming prefund ${armingAtFloor} and the opening`,
+    );
+  });
+  await withChain({ floor: "down" }, async (chain) => {
+    await assert.rejects(chain.estimateSetupCostWei(), /fee floor is unavailable/);
+  });
 });

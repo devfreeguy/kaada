@@ -64,6 +64,13 @@ const EXECUTE_SELECTOR = toFunctionSelector("execute(bytes32,bytes)");
 const IGNORED_SIGNATURE: Hex = `0x${"11".repeat(64)}1b`;
 /** Gas to open a Kernel account through its factory was measured at about 291k on Celo Sepolia; this adds margin. */
 const OPEN_ACCOUNT_GAS_CEILING = 360_000n;
+/** The most gas a sized arming has needed (441,673 for a passkey root on Celo Sepolia), rounded up: for the cost ceiling only. */
+const ARMING_GAS_CEILING = 500_000n;
+/**
+ * The bundler publishes a fee FLOOR and refuses an operation below it. The fee is fixed inside the operation the person signs and the
+ * floor can rise before it is sent, so every operation is priced this far above the floor.
+ */
+const FEE_MARGIN_PERCENT = 120n;
 /** A sponsored operation's limits are the bundler's estimate plus this margin. */
 const ESTIMATE_MARGIN_PERCENT = 125n;
 const BIGINT_PREFIX = "bigint:";
@@ -649,7 +656,7 @@ export class ViemRecoveryChain implements RecoveryChainPort {
         functionName: "getNonce",
         args: [sender, input.nonceKey],
       }),
-      this.client.estimateFeesPerGas(),
+      this.operationFees(),
     ]);
     let operation: WireOperation = {
       sender,
@@ -782,10 +789,76 @@ export class ViemRecoveryChain implements RecoveryChainPort {
     }
   }
 
-  /** A ceiling for what opening an account costs now: its measured gas (about 291k on Celo Sepolia) with margin, at the fee ceiling. */
-  async estimateOpenCostWei(): Promise<string> {
-    const fees = await this.client.estimateFeesPerGas();
-    return (OPEN_ACCOUNT_GAS_CEILING * fees.maxFeePerGas).toString();
+  /**
+   * The bundler's fee floor (its "standard" tier of `pimlico_getUserOperationGasPrice`, the same one the execution adapter reads).
+   * Unlike the execution adapter, an unreadable floor is a hard stop here: pricing from the chain alone is what got an arming operation
+   * refused ("maxFeePerGas must be at least ..."), so there is no fallback to the chain's price.
+   */
+  private async bundlerFeeFloor(): Promise<{ maxFeePerGas: bigint; maxPriorityFeePerGas: bigint }> {
+    const unavailable = (why: string, refusal?: unknown) =>
+      new KaadaError("RECOVERY_BLOCKED", `the bundler's fee floor is unavailable (${why})`, {
+        details: {
+          reason: "FEE_UNAVAILABLE",
+          ...(refusal !== undefined && describeBundlerRefusal(refusal)),
+        },
+      });
+    let response: { result?: unknown; error?: unknown };
+    try {
+      response = await this.bundler("pimlico_getUserOperationGasPrice", []);
+    } catch {
+      throw unavailable("bundler unreachable");
+    }
+    if (response.error !== undefined) throw unavailable("bundler refused", response.error);
+    const standard = (response.result as { standard?: Record<string, unknown> } | null | undefined)
+      ?.standard;
+    const hex = /^0x[0-9a-fA-F]{1,32}$/;
+    const maxFee = standard?.["maxFeePerGas"];
+    const priority = standard?.["maxPriorityFeePerGas"];
+    if (
+      typeof maxFee !== "string" ||
+      typeof priority !== "string" ||
+      !hex.test(maxFee) ||
+      !hex.test(priority) ||
+      BigInt(maxFee) <= 0n
+    ) {
+      throw unavailable("no fee floor in the answer");
+    }
+    return { maxFeePerGas: BigInt(maxFee), maxPriorityFeePerGas: BigInt(priority) };
+  }
+
+  /**
+   * The fee every operation is priced at: the higher of the chain's price and the bundler's floor, plus a 20% margin. This is the one
+   * fee: the prefund check, the top-up and the cost ceiling all read it from the operation (or from here), never from the chain alone.
+   */
+  private async operationFees(): Promise<{ maxFeePerGas: bigint; maxPriorityFeePerGas: bigint }> {
+    const [chain, floor] = await Promise.all([
+      this.client.estimateFeesPerGas(),
+      this.bundlerFeeFloor(),
+    ]);
+    const higher = (a: bigint, b: bigint) => (a > b ? a : b);
+    const margin = (value: bigint) => (value * FEE_MARGIN_PERCENT + 99n) / 100n;
+    const maxFeePerGas = margin(higher(chain.maxFeePerGas, floor.maxFeePerGas));
+    const priority = margin(higher(chain.maxPriorityFeePerGas, floor.maxPriorityFeePerGas));
+    return {
+      maxFeePerGas,
+      maxPriorityFeePerGas: priority > maxFeePerGas ? maxFeePerGas : priority,
+    };
+  }
+
+  /**
+   * A ceiling for what setting one wallet up can cost the sponsor now: opening its account (a direct transaction, at the chain's price)
+   * plus the prefund of its arming operation (at the bundler's fee, with margin) plus the top-up's own fee. The fee floor is read
+   * here, so a bundler that cannot price an operation is found BEFORE anything is spent on the wallet.
+   */
+  async estimateSetupCostWei(): Promise<string> {
+    const [chain, operation] = await Promise.all([
+      this.client.estimateFeesPerGas(),
+      this.operationFees(),
+    ]);
+    const open = OPEN_ACCOUNT_GAS_CEILING * chain.maxFeePerGas;
+    const topUp = (ARMING_GAS_CEILING * operation.maxFeePerGas * 105n) / 100n;
+    const topUpFee = 30_000n * chain.maxFeePerGas;
+    return (open + topUp + topUpFee).toString();
   }
 
   /** The relayer's native balance (wei): sponsoring stops while it is below its reserve. */

@@ -11,7 +11,13 @@ import {
 } from "@kaada/domain";
 import type { RecoveryAttempt, RecoveryAttemptStatus, Wallet } from "@kaada/domain";
 
-import { audit, logBundlerRejection, resolveAttempt, statusView } from "./context.js";
+import {
+  audit,
+  logBundlerRejection,
+  logFeeUnavailable,
+  resolveAttempt,
+  statusView,
+} from "./context.js";
 import type { RecoveryContext, RecoveryStatusView } from "./context.js";
 import { recoveryCompletedMessage } from "./messages.js";
 import type { RecoveryCleanup } from "./recovery-cleanup.js";
@@ -201,6 +207,7 @@ export class RecoveryFinalizer {
       });
     } catch (error) {
       if (isKaadaError(error, "RECOVERY_BLOCKED")) {
+        logFeeUnavailable(this.ctx, "recovery_batch", error, { attemptId: attempt.id });
         const detail = error.details?.["reason"];
         const reason = typeof detail === "string" ? detail : "BLOCKED";
         await audit(read, attempt, RECOVERY_AUDIT_EVENTS.finalizationDeferred, { reason });
