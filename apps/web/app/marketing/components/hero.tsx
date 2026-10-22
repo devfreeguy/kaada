@@ -1,3 +1,5 @@
+import { HeadingText, DescriptionText, Reveal } from "./landing-motion";
+import { HeroHeadingEntrance } from "./hero-heading-entrance";
 import { SectionWrapper } from "../../components/section-wrapper";
 import { StartWithKaada } from "./start-with-kaada";
 import { HeroVisual } from "./hero-visual";
@@ -16,8 +18,8 @@ export function Hero() {
     >
       <SectionWrapper className="flex min-h-[78dvh] flex-col items-center justify-center gap-6 px-6 pb-10 pt-32 text-center sm:px-10 sm:pb-12 sm:pt-36 lg:min-h-[80dvh]">
         <div className="relative isolate mb-4 w-full max-w-6xl">
-          <h1 className="relative max-w-6xl font-heading text-5xl leading-[1.05] sm:text-7xl lg:text-8xl">
-            MOVING{" "}
+          <HeroHeadingEntrance className="relative max-w-6xl font-heading text-5xl leading-[1.05] sm:text-7xl lg:text-8xl">
+            <HeadingText text="MOVING" load />{" "}
             <span className="relative inline-block">
               <SparkleParticle
                 color="var(--lavender)"
@@ -27,7 +29,7 @@ export function Hero() {
                 delay={-16}
                 className="absolute top-[-0.12em] left-1/2 -translate-x-1/2"
               />
-              MONEY
+              <HeadingText text="MONEY" load />
             </span>
             <br />
             <span className="text-primary">
@@ -38,28 +40,34 @@ export function Hero() {
                   animation="spin"
                   className="absolute top-[-0.25em] -left-0.45 z-10"
                 />
-                A
+                <HeadingText text="A" load />
               </span>
-              CROSS BORDERS
+              <HeadingText text="CROSS BORDERS" load />
             </span>{" "}
             <span className="relative inline-block h-[1.05em] w-[2.1em] align-middle">
-              <Image
-                src={womanSatisfied}
-                alt=""
-                className="h-full w-full rounded-full object-cover"
-                sizes="202px"
-              />
-              <PlusParticle
-                color="var(--emerald)"
-                size="0.35em"
-                animation="horizontal"
-                duration={10}
-                distance={24}
-                delay={-9}
-                className="absolute bottom-0 left-1/2 z-10 -translate-x-1/2 translate-y-1/2"
-              />
+              <Reveal kind="pop" load className="h-full">
+                <Image
+                  src={womanSatisfied}
+                  alt=""
+                  className="h-full w-full rounded-full object-cover"
+                  sizes="202px"
+                  loading="eager"
+                  fetchPriority="high"
+                />
+                <PlusParticle
+                  color="var(--emerald)"
+                  size="0.35em"
+                  animation="horizontal"
+                  duration={10}
+                  distance={24}
+                  delay={-9}
+                  className="absolute bottom-0 left-1/2 z-10 -translate-x-1/2 translate-y-1/2"
+                />
+              </Reveal>
             </span>{" "}
-            <span className="text-orange">SHOULD</span>
+            <span className="text-orange">
+              <HeadingText text="SHOULD" load />
+            </span>
             <br />
             <span className="relative inline-block">
               <CrownParticle
@@ -67,13 +75,13 @@ export function Hero() {
                 size="0.52em"
                 className="absolute bottom-[0.9em] left-1/2 z-10 -translate-x-1/2"
               />
-              F
+              <HeadingText text="F" load />
             </span>
-            EEL THIS{" "}
+            <HeadingText text="EEL THIS" load />{" "}
             <span className="inline-block whitespace-nowrap">
-              SIMPL
+              <HeadingText text="SIMPL" load />
               <span className="relative inline-block">
-                E
+                <HeadingText text="E" load />
                 <StarParticle
                   color="var(--primary)"
                   animation="spin"
@@ -82,12 +90,13 @@ export function Hero() {
                 />
               </span>
             </span>
-          </h1>
+          </HeroHeadingEntrance>
         </div>
-        <p className="max-w-2xl text-lg leading-relaxed sm:text-xl opacity-80">
-          Send money to another country in the currencies you know. Just tell Kaada what you want to
-          do in chat.
-        </p>
+        <DescriptionText
+          load
+          className="max-w-2xl justify-center text-lg leading-relaxed sm:text-xl opacity-80"
+          text="Send money to another country in the currencies you know. Just tell Kaada what you want to do in chat."
+        />
         <StartWithKaada />
       </SectionWrapper>
       <HeroVisual />

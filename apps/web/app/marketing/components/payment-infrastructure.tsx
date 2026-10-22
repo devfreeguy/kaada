@@ -1,3 +1,4 @@
+import { Reveal } from "./landing-motion";
 import Image from "next/image";
 import celoLogo from "../../../assets/partners/celo.webp";
 import textileLogo from "../../../assets/partners/textile.webp";
@@ -17,22 +18,24 @@ const infrastructure = [
 
 export function PaymentInfrastructure() {
   return (
-    <div className={styles.infrastructure}>
-      <p className={styles.poweredBy}>The services behind your payments</p>
-      <ul className={styles.partners} aria-label="Services behind Kaada payments">
-        {infrastructure.map(({ name, logo, role, coming }) => (
-          <li key={name}>
-            <Image src={logo} alt="" width={64} height={64} className={styles.partnerLogo} />
-            <div className={styles.partnerDetails}>
-              <div className={styles.partnerName}>
-                <h3>{name}</h3>
-                {coming && <span>Coming next</span>}
+    <Reveal delay={0.12}>
+      <div className={styles.infrastructure}>
+        <p className={styles.poweredBy}>The services behind your payments</p>
+        <ul className={styles.partners} aria-label="Services behind Kaada payments">
+          {infrastructure.map(({ name, logo, role, coming }) => (
+            <li key={name}>
+              <Image src={logo} alt="" width={64} height={64} className={styles.partnerLogo} />
+              <div className={styles.partnerDetails}>
+                <div className={styles.partnerName}>
+                  <h3>{name}</h3>
+                  {coming && <span>Coming next</span>}
+                </div>
+                <p>{role}</p>
               </div>
-              <p>{role}</p>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </Reveal>
   );
 }

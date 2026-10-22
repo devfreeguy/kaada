@@ -1,3 +1,4 @@
+import { RevealBoundary, Reveal, HeadingText, DescriptionText } from "./landing-motion";
 import { SectionWrapper } from "../../components/section-wrapper";
 import Image from "next/image";
 import manPointing from "../../../assets/stock-images/man-pointing.webp";
@@ -19,7 +20,7 @@ export function FinalCta() {
       className="bg-background px-6 pb-10 pt-6 sm:px-10 sm:pb-16"
     >
       <SectionWrapper>
-        <div className={styles.panel}>
+        <RevealBoundary className={styles.panel ?? ""}>
           <svg className={styles.notch} viewBox="0 0 120 52" aria-hidden="true" focusable="false">
             <path d="M0 -2H120V0C87 0 60 20 60 52C60 20 33 0 0 0Z" fill="var(--background)" />
           </svg>
@@ -49,28 +50,35 @@ export function FinalCta() {
             <h2 id="final-cta-title" className={styles.title}>
               <span className={styles.firstLine}>
                 <CrownParticle color="var(--lime)" size="0.4em" className={styles.crown ?? ""} />
-                READY WHEN
+                <HeadingText text="READY WHEN" />
                 <span className={styles.inlinePortrait}>
-                  <Image
-                    src={manPointing}
-                    alt=""
-                    sizes="(min-width: 1354px) 159px, (min-width: 493px) 12vw, 58px"
-                    className={styles.portrait}
-                  />
-                  <PlusParticle
-                    color="var(--emerald)"
-                    size="0.35em"
-                    animation="horizontal"
-                    duration={10}
-                    distance={24}
-                    delay={-9}
-                    className="absolute bottom-0 left-1/2 z-10 -translate-x-1/2 translate-y-1/2"
-                  />
+                  <Reveal kind="pop" delay={0.18} className="h-full">
+                    <Image
+                      src={manPointing}
+                      alt=""
+                      sizes="(min-width: 1354px) 159px, (min-width: 493px) 12vw, 58px"
+                      className={styles.portrait}
+                    />
+                    <PlusParticle
+                      color="var(--emerald)"
+                      size="0.35em"
+                      animation="horizontal"
+                      duration={10}
+                      distance={24}
+                      delay={-9}
+                      className="absolute bottom-0 left-1/2 z-10 -translate-x-1/2 translate-y-1/2"
+                    />
+                  </Reveal>
                 </span>
               </span>
-              <span className={styles.accent}>YOU ARE.</span>
+              <span className={styles.accent}>
+                <HeadingText text="YOU ARE." />
+              </span>
             </h2>
-            <p className={styles.description}>Open Kaada, send a message, and start from there.</p>
+            <DescriptionText
+              className={`${styles.description ?? ""} justify-center`}
+              text="Open Kaada, send a message, and start from there."
+            />
             <StartWithKaada variant="secondary" className="" />
           </div>
           <span className={styles.tag} aria-hidden="true">
@@ -126,7 +134,7 @@ export function FinalCta() {
             distance={6}
             className={styles.sideStar ?? ""}
           />
-        </div>
+        </RevealBoundary>
       </SectionWrapper>
     </section>
   );

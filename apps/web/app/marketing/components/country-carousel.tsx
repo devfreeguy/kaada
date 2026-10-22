@@ -4,16 +4,18 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import AutoScroll from "embla-carousel-auto-scroll";
 import { IconArrowLeft, IconArrowRight } from "@tabler/icons-react";
+import { usePageScrollViewport } from "../../components/page-scroll-area";
 import styles from "./country-carousel.module.css";
 
 export function CountryCarousel({ children, count }: { children: ReactNode; count: number }) {
   const root = useRef<HTMLDivElement>(null);
+  const pageViewport = usePageScrollViewport();
   const plugins = useMemo(
     () => [
       AutoScroll({
         speed: 0.7,
         direction: "forward",
-        startDelay: 600,
+        startDelay: 0,
         playOnInit: false,
         stopOnInteraction: true,
         stopOnFocusIn: false,
@@ -38,14 +40,19 @@ export function CountryCarousel({ children, count }: { children: ReactNode; coun
     media.addEventListener("change", update);
     const observer = new IntersectionObserver(
       ([entry]) => setVisible(entry?.isIntersecting ?? false),
-      { threshold: 0.2 },
+      {
+        root: pageViewport.current,
+        // Already moving one screen before the carousel comes into view.
+        rootMargin: `${pageViewport.current?.clientHeight ?? window.innerHeight}px 0px`,
+        threshold: 0,
+      },
     );
     if (root.current) observer.observe(root.current);
     return () => {
       media.removeEventListener("change", update);
       observer.disconnect();
     };
-  }, []);
+  }, [pageViewport]);
   useEffect(() => {
     if (!api) return;
     const select = () => setIndex(api.selectedScrollSnap());
@@ -79,15 +86,20 @@ export function CountryCarousel({ children, count }: { children: ReactNode; coun
       role="region"
       aria-roledescription="carousel"
       aria-label="Supported countries and currencies"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       onFocusCapture={() => setFocused(true)}
       onBlurCapture={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
       }}
     >
       <div ref={viewportRef} className={styles.viewport}>
-        <ul className={styles.track} aria-label="Countries">
+        <ul
+          className={styles.track}
+          aria-label="Countries"
+          onMouseOver={(event) => {
+            setHovered(event.target instanceof Element && !!event.target.closest("article"));
+          }}
+          onMouseLeave={() => setHovered(false)}
+        >
           {children}
         </ul>
       </div>

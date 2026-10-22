@@ -1,5 +1,6 @@
 "use client";
 
+import CountUp from "../../components/animations/text/count-up";
 import { useEffect, useState } from "react";
 
 const refreshInterval = 5 * 60 * 1000;
@@ -65,7 +66,7 @@ export function CompletedPayments() {
 
   return (
     <span aria-live="polite" aria-label={label} title={label}>
-      {count === null ? "—" : formatter.format(count)}
+      {count === null ? "—" : <CountUp to={count} separator="," duration={1.4} />}
     </span>
   );
 }

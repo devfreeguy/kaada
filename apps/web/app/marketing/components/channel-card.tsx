@@ -1,3 +1,4 @@
+import { RevealBoundary, Reveal, HeadingText, DescriptionText } from "./landing-motion";
 import type { ReactNode } from "react";
 import { CutoutCard } from "../../components/ui/cutout-card";
 import styles from "./channels.module.css";
@@ -22,7 +23,7 @@ export function ChannelCard({
   action,
 }: ChannelCardProps) {
   return (
-    <article aria-labelledby={`channel-${name.toLowerCase()}`}>
+    <RevealBoundary as="article" aria-labelledby={`channel-${name.toLowerCase()}`}>
       <CutoutCard
         color={live ? "var(--primary)" : "var(--navy)"}
         cutoutColor="var(--background)"
@@ -30,23 +31,27 @@ export function ChannelCard({
         className={styles.card}
       >
         <div className={styles.content} data-live={live}>
-          <div className={styles.topline}>
-            <span className={styles.icon} aria-hidden="true">
-              {icon}
-            </span>
-            <span className={styles.badge}>
-              {live && <span className={styles.statusDot} />}
-              {status}
-            </span>
-          </div>
+          <Reveal kind="fade">
+            <div className={styles.topline}>
+              <span className={styles.icon} aria-hidden="true">
+                {icon}
+              </span>
+              <span className={styles.badge}>
+                {live && <span className={styles.statusDot} />}
+                {status}
+              </span>
+            </div>
+          </Reveal>
           <h3 id={`channel-${name.toLowerCase()}`} className={styles.name}>
-            {name}
+            <HeadingText text={name} />
           </h3>
-          <p className={styles.description}>{description}</p>
-          <div className={styles.action}>{action}</div>
+          <DescriptionText className={styles.description ?? ""} text={description} />
+          <Reveal delay={0.24} className={styles.action ?? ""}>
+            {action}
+          </Reveal>
         </div>
-        {visual}
+        <Reveal delay={0.16}>{visual}</Reveal>
       </CutoutCard>
-    </article>
+    </RevealBoundary>
   );
 }

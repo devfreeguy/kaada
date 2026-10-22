@@ -1,5 +1,6 @@
 "use client";
 
+import { Reveal } from "./landing-motion";
 import { Logo } from "../../components/logo";
 import { TELEGRAM_BOT_URL } from "../../lib/site";
 import { ButtonArrow } from "../../components/ui/button";
@@ -23,10 +24,12 @@ export function StartWithKaada({
 }) {
   return (
     <Dialog>
-      <DialogTrigger className={`kaada-button kaada-button--${variant} ${className}`}>
-        Start with Kaada
-        <ButtonArrow />
-      </DialogTrigger>
+      <Reveal delay={0.22}>
+        <DialogTrigger className={`kaada-button kaada-button--${variant} ${className}`}>
+          Start with Kaada
+          <ButtonArrow />
+        </DialogTrigger>
+      </Reveal>
       <DialogContent className="max-w-[520px] gap-7 p-6 sm:p-9">
         <div
           className="flex size-16 items-center justify-center rounded-2xl bg-primary/15"

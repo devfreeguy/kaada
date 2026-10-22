@@ -1,3 +1,4 @@
+import { Reveal, HeadingText, DescriptionText } from "./landing-motion";
 import { IconWorld, IconWallet, IconRoute, IconFingerprint } from "@tabler/icons-react";
 import { CutoutCard } from "../../components/ui/cutout-card";
 import styles from "./real-payments.module.css";
@@ -36,21 +37,25 @@ const proofs = [
 export function PaymentProofCards() {
   return (
     <ul className={styles.proofs} aria-label="Built for real payments">
-      {proofs.map(({ title, description, icon: Icon, color, foreground }) => (
+      {proofs.map(({ title, description, icon: Icon, color, foreground }, index) => (
         <li key={title}>
-          <CutoutCard
-            color={color}
-            cutoutColor="var(--background)"
-            cutoutSize={40}
-            className={styles.proofCard}
-            style={{ color: foreground }}
-          >
-            <span className={styles.proofIcon}>
-              <Icon size={32} stroke={1.6} aria-hidden="true" />
-            </span>
-            <h3>{title}</h3>
-            <p>{description}</p>
-          </CutoutCard>
+          <Reveal delay={index * 0.1} className="h-full">
+            <CutoutCard
+              color={color}
+              cutoutColor="var(--background)"
+              cutoutSize={40}
+              className={styles.proofCard}
+              style={{ color: foreground }}
+            >
+              <span className={styles.proofIcon}>
+                <Icon size={32} stroke={1.6} aria-hidden="true" />
+              </span>
+              <h3>
+                <HeadingText text={title} />
+              </h3>
+              <DescriptionText text={description} />
+            </CutoutCard>
+          </Reveal>
         </li>
       ))}
     </ul>

@@ -1,3 +1,4 @@
+import { RevealBoundary, DescriptionText } from "./landing-motion";
 import { SecurityIcon, type SecurityFeature } from "./security-icon";
 import { SecurityIllustration } from "./security-illustration";
 
@@ -10,7 +11,8 @@ export type SecurityCardProps = {
 
 export function SecurityCard({ feature, title, description, color }: SecurityCardProps) {
   return (
-    <article
+    <RevealBoundary
+      as="article"
       className="grid w-full items-center gap-6 rounded-[28px] p-5 text-white sm:gap-8 sm:p-8 lg:grid-cols-2 lg:gap-14 lg:p-12"
       style={{ backgroundColor: color, minHeight: "var(--security-card-height)" }}
     >
@@ -20,14 +22,16 @@ export function SecurityCard({ feature, title, description, color }: SecurityCar
         </div>
         <div className="contents sm:block">
           <h3 className="font-heading text-[28px] leading-[1.15] uppercase sm:text-4xl lg:text-[42px]">
-            {title}
+            <DescriptionText tag="span" text={title} delay={0.08} />
           </h3>
-          <p className="col-span-2 max-w-md text-base leading-relaxed text-white sm:mt-5">
-            {description}
-          </p>
+          <DescriptionText
+            className="col-span-2 max-w-md text-base leading-relaxed text-white sm:mt-5"
+            text={description}
+            delay={0.18}
+          />
         </div>
       </div>
       <SecurityIllustration feature={feature} />
-    </article>
+    </RevealBoundary>
   );
 }

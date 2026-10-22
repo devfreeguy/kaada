@@ -1,3 +1,9 @@
+import {
+  Reveal,
+  RevealBoundary,
+  HeadingText,
+  DescriptionText,
+} from "../marketing/components/landing-motion";
 type SectionHeadingProps = {
   sectionName: string;
   title: string;
@@ -18,7 +24,7 @@ export function SectionHeading({
   inverse = false,
 }: SectionHeadingProps) {
   return (
-    <div
+    <RevealBoundary
       className={
         centered
           ? "flex flex-col items-center gap-6 text-center"
@@ -26,14 +32,16 @@ export function SectionHeading({
       }
     >
       <div className="max-w-4xl">
-        <p className="mb-5 font-heading text-xl leading-none text-coral uppercase sm:text-2xl">
-          {sectionName}
-        </p>
+        <Reveal kind="fade">
+          <p className="mb-5 font-heading text-xl leading-none text-coral uppercase sm:text-2xl">
+            {sectionName}
+          </p>
+        </Reveal>
         <h2
           id={titleId}
           className={`font-heading text-4xl leading-[1.05] uppercase sm:text-6xl lg:text-7xl ${inverse ? "text-on-dark" : "text-navy"}`}
         >
-          {title}
+          <HeadingText text={title} />
         </h2>
       </div>
       {(description || action) && (
@@ -45,16 +53,15 @@ export function SectionHeading({
           }
         >
           {description && (
-            <p
-              className={`text-base leading-relaxed lg:text-lg ${inverse ? "text-on-dark/80" : "text-navy"}`}
-            >
-              {description}
-            </p>
+            <DescriptionText
+              text={description}
+              className={`${centered ? "justify-center text-center" : ""} text-base leading-relaxed lg:text-lg ${inverse ? "text-on-dark/80" : "text-navy"}`}
+            />
           )}
           {action}
         </div>
       )}
-    </div>
+    </RevealBoundary>
   );
 }
 import type { ReactNode } from "react";

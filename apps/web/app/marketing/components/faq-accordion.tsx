@@ -1,3 +1,4 @@
+import { RevealGroup, RevealItem, DescriptionText } from "./landing-motion";
 import {
   Accordion,
   AccordionItem,
@@ -51,17 +52,21 @@ const questions = [
 
 export function FaqAccordion() {
   return (
-    <Accordion defaultValue={[questions[0]!.question]} className={styles.accordion}>
-      {questions.map(({ question, answer }) => (
-        <AccordionItem key={question} value={question} className={styles.item}>
-          <AccordionTrigger className={styles.question}>
-            <span>{question}</span>
-          </AccordionTrigger>
-          <AccordionContent>
-            <p className={styles.answer}>{answer}</p>
-          </AccordionContent>
-        </AccordionItem>
-      ))}
-    </Accordion>
+    <RevealGroup>
+      <Accordion defaultValue={[questions[0]!.question]} className={styles.accordion}>
+        {questions.map(({ question, answer }, index) => (
+          <AccordionItem key={question} value={question} className={styles.item}>
+            <RevealItem delay={index * 0.075}>
+              <AccordionTrigger className={styles.question}>
+                <span>{question}</span>
+              </AccordionTrigger>
+              <AccordionContent>
+                <DescriptionText className={styles.answer ?? ""} text={answer} />
+              </AccordionContent>
+            </RevealItem>
+          </AccordionItem>
+        ))}
+      </Accordion>
+    </RevealGroup>
   );
 }

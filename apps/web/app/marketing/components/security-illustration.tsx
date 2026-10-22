@@ -1,3 +1,4 @@
+import { Reveal } from "./landing-motion";
 import { IconCheck } from "@tabler/icons-react";
 import { SecurityIcon, type SecurityFeature } from "./security-icon";
 
@@ -33,32 +34,39 @@ export function SecurityIllustration({ feature }: { feature: SecurityFeature }) 
     >
       <div className="absolute -top-12 -right-12 size-52 rounded-full border border-current opacity-10" />
       <div className="absolute -bottom-20 -left-12 size-64 rounded-full border border-current opacity-10" />
-      <div className="relative w-full max-w-72 rounded-3xl bg-white p-4 text-navy shadow-[0_16px_0_-8px_rgba(5,26,47,0.12)] sm:p-6 lg:p-7">
-        <div className="mb-3 flex items-center justify-between gap-3 lg:mb-5">
-          <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-navy/60">
-            {detail.label}
-          </span>
-          <SecurityIcon feature={feature} className="size-7 shrink-0 text-navy" />
-        </div>
-        <p className="font-heading text-2xl leading-tight uppercase lg:text-3xl">{detail.title}</p>
-        {feature === "pin" && (
-          <div className="my-3 flex gap-2 lg:my-5">
-            {Array.from({ length: 6 }, (_, index) => (
-              <span key={index} className="size-3 rounded-full bg-lavender" />
+      <Reveal kind="fade" delay={0.2} className="relative w-full max-w-72">
+        <div className="relative w-full rounded-3xl bg-white p-4 text-navy shadow-[0_16px_0_-8px_rgba(5,26,47,0.12)] sm:p-6 lg:p-7">
+          <div className="mb-3 flex items-center justify-between gap-3 lg:mb-5">
+            <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-navy/60">
+              {detail.label}
+            </span>
+            <SecurityIcon feature={feature} className="size-7 shrink-0 text-navy" />
+          </div>
+          <p className="font-heading text-2xl leading-tight uppercase lg:text-3xl">
+            {detail.title}
+          </p>
+          {feature === "pin" && (
+            <div className="my-3 flex gap-2 lg:my-5">
+              {Array.from({ length: 6 }, (_, index) => (
+                <span key={index} className="size-3 rounded-full bg-lavender" />
+              ))}
+            </div>
+          )}
+          <div className="mt-3 grid gap-2 lg:mt-5 lg:gap-3">
+            {detail.lines.map((line) => (
+              <p
+                key={line}
+                className="flex items-center gap-2.5 text-xs font-medium leading-relaxed"
+              >
+                <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-emerald/15">
+                  <IconCheck aria-hidden="true" size={10} stroke={1.5} />
+                </span>
+                {line}
+              </p>
             ))}
           </div>
-        )}
-        <div className="mt-3 grid gap-2 lg:mt-5 lg:gap-3">
-          {detail.lines.map((line) => (
-            <p key={line} className="flex items-center gap-2.5 text-xs font-medium leading-relaxed">
-              <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-emerald/15">
-                <IconCheck aria-hidden="true" size={10} stroke={1.5} />
-              </span>
-              {line}
-            </p>
-          ))}
         </div>
-      </div>
+      </Reveal>
     </div>
   );
 }

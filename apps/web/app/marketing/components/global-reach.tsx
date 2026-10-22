@@ -17,8 +17,8 @@ export function GlobalReach() {
           description="Send money in 9 currencies across Africa, Latin America and beyond. You use the same Kaada chat each time."
           titleId="global-reach-title"
         />
-        <GlobalReachCarousel />
       </SectionWrapper>
+      <GlobalReachCarousel />
     </section>
   );
 }
