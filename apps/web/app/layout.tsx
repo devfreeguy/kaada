@@ -23,9 +23,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body
-        className={`${heading.variable} ${body.variable} min-h-screen font-sans antialiased`}
-      >
+      <body className={`${heading.variable} ${body.variable} min-h-screen font-sans antialiased`}>
+        <noscript>
+          <style>{`[data-animated-text], [data-text-reveal], [data-component-transition] { opacity: 1 !important; transform: none !important; filter: none !important; }`}</style>
+        </noscript>
         <PageScrollArea>{children}</PageScrollArea>
       </body>
     </html>

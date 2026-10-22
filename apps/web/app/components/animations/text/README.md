@@ -34,7 +34,7 @@ import CountUp from "@/app/components/animations/text/count-up";
 - `easing` supports `easeOut`, `linear`, `expo`, and `spring`. `duration` and `delay` are seconds.
 - `replayOnHover` also supports Enter/Space. `onStart` and `onEnd` run once per animation; pass callbacks from a client component.
 - Server HTML displays the final number. Screen readers receive the final formatted value without repeated digit announcements. Reduced motion settles immediately, including when the preference changes during playback.
-- Uses the installed Motion implementation through `framer-motion`; no additional number-animation dependency is needed. The hero statistics use CountUp.
+- Uses the installed Motion implementation through `framer-motion`; no additional number-animation dependency is needed. The live completed-payment figure uses CountUp after its data arrives; the static currency total stays server-rendered.
 
 ## SplitText
 
@@ -76,3 +76,9 @@ The root layout already supplies the required `PageScrollArea` provider. Use an 
 `SplitText` and `BlurText` accept `startWhen` to gate a container-controlled reveal and `initialDelay` in seconds before the first piece. The shared landing adapters coordinate these automatically.
 
 `restoreAfterReveal` lets one-shot SplitText headings remove their temporary split markup after completion. The landing adapter enables it and uses inline roots to preserve the original baselines and wrapping.
+
+## Lightweight landing text
+
+`text-reveal.tsx` powers landing descriptions with one native browser animation per block. It keeps normal text flow, has no per-word DOM or blur filters, and removes its animation when finished. Inline text fades without a transform so it preserves wrapping. Parent reveal timing, reduced motion, and no-JavaScript fallbacks are retained.
+
+The standalone React Bits BlurText component remains available for deliberate use outside the landing page. The hero uses server-rendered words and CSS keyframes, with no font-ready or hydration gate. Split headings in later sections reveal only after their pieces are prepared.

@@ -1,6 +1,7 @@
 "use client";
 
 import { Reveal } from "./landing-motion";
+import entranceStyles from "./hero-entrance.module.css";
 import { Logo } from "../../components/logo";
 import { TELEGRAM_BOT_URL } from "../../lib/site";
 import { ButtonArrow } from "../../components/ui/button";
@@ -18,18 +19,29 @@ const telegramBotUrl = TELEGRAM_BOT_URL;
 export function StartWithKaada({
   variant = "secondary",
   className = "mt-3",
+  entrance = "scroll",
 }: {
   variant?: "primary" | "secondary";
   className?: string;
+  entrance?: "scroll" | "hero";
 }) {
   return (
     <Dialog>
-      <Reveal delay={0.22}>
-        <DialogTrigger className={`kaada-button kaada-button--${variant} ${className}`}>
-          Start with Kaada
-          <ButtonArrow />
-        </DialogTrigger>
-      </Reveal>
+      {entrance === "hero" ? (
+        <div className={entranceStyles.button}>
+          <DialogTrigger className={`kaada-button kaada-button--${variant} ${className}`}>
+            Start with Kaada
+            <ButtonArrow />
+          </DialogTrigger>
+        </div>
+      ) : (
+        <Reveal delay={0.22}>
+          <DialogTrigger className={`kaada-button kaada-button--${variant} ${className}`}>
+            Start with Kaada
+            <ButtonArrow />
+          </DialogTrigger>
+        </Reveal>
+      )}
       <DialogContent className="max-w-[520px] gap-7 p-6 sm:p-9">
         <div
           className="flex size-16 items-center justify-center rounded-2xl bg-primary/15"

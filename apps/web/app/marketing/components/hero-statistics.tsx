@@ -1,11 +1,11 @@
-import CountUp from "../../components/animations/text/count-up";
-import { Reveal } from "./landing-motion";
+import type { CSSProperties } from "react";
+import entrance from "./hero-entrance.module.css";
 import { CutoutCard } from "../../components/ui/cutout-card";
 import { CompletedPayments } from "./completed-payments";
 
 const statistics = [
   {
-    value: <CountUp to={9} duration={1.2} />,
+    value: "9",
     label: "Supported currencies",
     color: "var(--emerald)",
   },
@@ -19,7 +19,11 @@ export function HeroStatistics() {
       className="order-1 grid w-full max-w-sm grid-cols-2 gap-4 self-end justify-self-center pb-12 xl:order-3 xl:justify-self-end xl:pb-16"
     >
       {statistics.map(({ value, label, color }, index) => (
-        <Reveal key={label} kind="pop" delay={index * 0.14}>
+        <div
+          key={label}
+          className={entrance.stat}
+          style={{ "--hero-order": index } as CSSProperties}
+        >
           <CutoutCard
             color={color}
             style={{ color: "var(--navy)" }}
@@ -42,7 +46,7 @@ export function HeroStatistics() {
             <p className="font-heading text-[clamp(3.5rem,6vw,5rem)] leading-none">{value}</p>
             <p className="text-xs font-semibold leading-snug uppercase sm:text-sm">{label}</p>
           </CutoutCard>
-        </Reveal>
+        </div>
       ))}
     </aside>
   );

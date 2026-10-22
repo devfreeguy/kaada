@@ -101,7 +101,7 @@ export function TransitionItem({
       className={className}
       style={style ?? {}}
       data-component-transition={kind}
-      initial={false}
+      initial={states.hidden}
       animate={controls}
       transition={transition}
       exit={{

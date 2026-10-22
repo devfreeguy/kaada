@@ -21,9 +21,12 @@ export function SecurityCard({ feature, title, description, color }: SecurityCar
           <SecurityIcon feature={feature} className="size-7 sm:size-8" />
         </div>
         <div className="contents sm:block">
-          <h3 className="font-heading text-[28px] leading-[1.15] uppercase sm:text-4xl lg:text-[42px]">
-            <DescriptionText tag="span" text={title} delay={0.08} />
-          </h3>
+          <DescriptionText
+            tag="h3"
+            delay={0}
+            className="font-heading text-[28px] leading-[1.15] uppercase sm:text-4xl lg:text-[42px]"
+            text={title}
+          />
           <DescriptionText
             className="col-span-2 max-w-md text-base leading-relaxed text-white sm:mt-5"
             text={description}

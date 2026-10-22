@@ -1,4 +1,4 @@
-import { RevealBoundary, Reveal, HeadingText, DescriptionText } from "./landing-motion";
+import { RevealBoundary, Reveal, DescriptionText } from "./landing-motion";
 import { SectionWrapper } from "../../components/section-wrapper";
 import Image from "next/image";
 import manPointing from "../../../assets/stock-images/man-pointing.webp";
@@ -50,7 +50,7 @@ export function FinalCta() {
             <h2 id="final-cta-title" className={styles.title}>
               <span className={styles.firstLine}>
                 <CrownParticle color="var(--lime)" size="0.4em" className={styles.crown ?? ""} />
-                <HeadingText text="READY WHEN" />
+                <DescriptionText tag="span" delay={0} text="READY WHEN" />
                 <span className={styles.inlinePortrait}>
                   <Reveal kind="pop" delay={0.18} className="h-full">
                     <Image
@@ -72,7 +72,7 @@ export function FinalCta() {
                 </span>
               </span>
               <span className={styles.accent}>
-                <HeadingText text="YOU ARE." />
+                <DescriptionText tag="span" delay={0} text="YOU ARE." />
               </span>
             </h2>
             <DescriptionText

@@ -75,11 +75,15 @@ const SplitText = ({
       };
 
       if (reducedMotion || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        el.style.opacity = "1";
         finish();
         return;
       }
 
-      if (restoreAfterReveal && completedTextRef.current === text) return;
+      if (restoreAfterReveal && completedTextRef.current === text) {
+        el.style.opacity = "1";
+        return;
+      }
 
       if (!startWhen) {
         gsap.set(el, { opacity: 0 });
@@ -357,14 +361,17 @@ const SplitText = ({
                 !loop &&
                 hoverEffect === "none" &&
                 (trigger === "load" || trigger === "view")
-              )
+              ) {
                 splitInstance.revert();
+                el.style.opacity = "1";
+              }
             },
           });
           busy = intro;
           return intro;
         },
       });
+      el.style.opacity = "1";
       if (revealed) queue();
 
       el.addEventListener("pointerenter", onEnter);
@@ -433,6 +440,7 @@ const SplitText = ({
         ref.current = node;
       }}
       className={`split-parent ${className}`}
+      data-animated-text
       tabIndex={trigger === "click" || trigger === "hover" ? 0 : undefined}
       role={trigger === "click" && (tag === "p" || tag === "span") ? "button" : undefined}
       aria-description={
@@ -441,6 +449,7 @@ const SplitText = ({
           : undefined
       }
       style={{
+        opacity: 0,
         textAlign,
         overflow: restoreAfterReveal ? "visible" : clip ? "hidden" : "visible",
         display: restoreAfterReveal && tag === "span" ? "inline" : "inline-block",

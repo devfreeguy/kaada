@@ -1,4 +1,4 @@
-import { RevealBoundary, Reveal, HeadingText, DescriptionText } from "./landing-motion";
+import { RevealBoundary, Reveal, DescriptionText } from "./landing-motion";
 import type { ReactNode } from "react";
 import { CutoutCard } from "../../components/ui/cutout-card";
 import styles from "./channels.module.css";
@@ -42,9 +42,13 @@ export function ChannelCard({
               </span>
             </div>
           </Reveal>
-          <h3 id={`channel-${name.toLowerCase()}`} className={styles.name}>
-            <HeadingText text={name} />
-          </h3>
+          <DescriptionText
+            tag="h3"
+            delay={0}
+            id={`channel-${name.toLowerCase()}`}
+            className={styles.name ?? ""}
+            text={name}
+          />
           <DescriptionText className={styles.description ?? ""} text={description} />
           <Reveal delay={0.24} className={styles.action ?? ""}>
             {action}

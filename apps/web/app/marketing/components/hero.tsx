@@ -1,5 +1,5 @@
-import { HeadingText, DescriptionText, Reveal } from "./landing-motion";
-import { HeroHeadingEntrance } from "./hero-heading-entrance";
+import { HeroText } from "./hero-text";
+import entrance from "./hero-entrance.module.css";
 import { SectionWrapper } from "../../components/section-wrapper";
 import { StartWithKaada } from "./start-with-kaada";
 import { HeroVisual } from "./hero-visual";
@@ -18,8 +18,8 @@ export function Hero() {
     >
       <SectionWrapper className="flex min-h-[78dvh] flex-col items-center justify-center gap-6 px-6 pb-10 pt-32 text-center sm:px-10 sm:pb-12 sm:pt-36 lg:min-h-[80dvh]">
         <div className="relative isolate mb-4 w-full max-w-6xl">
-          <HeroHeadingEntrance className="relative max-w-6xl font-heading text-5xl leading-[1.05] sm:text-7xl lg:text-8xl">
-            <HeadingText text="MOVING" load />{" "}
+          <h1 className="relative max-w-6xl font-heading text-5xl leading-[1.05] sm:text-7xl lg:text-8xl">
+            <HeroText text="MOVING" />{" "}
             <span className="relative inline-block">
               <SparkleParticle
                 color="var(--lavender)"
@@ -29,7 +29,7 @@ export function Hero() {
                 delay={-16}
                 className="absolute top-[-0.12em] left-1/2 -translate-x-1/2"
               />
-              <HeadingText text="MONEY" load />
+              <HeroText text="MONEY" order={1} />
             </span>
             <br />
             <span className="text-primary">
@@ -40,12 +40,12 @@ export function Hero() {
                   animation="spin"
                   className="absolute top-[-0.25em] -left-0.45 z-10"
                 />
-                <HeadingText text="A" load />
+                <HeroText text="A" order={2} />
               </span>
-              <HeadingText text="CROSS BORDERS" load />
+              <HeroText text="CROSS BORDERS" order={2} />
             </span>{" "}
             <span className="relative inline-block h-[1.05em] w-[2.1em] align-middle">
-              <Reveal kind="pop" load className="h-full">
+              <span className={entrance.portrait}>
                 <Image
                   src={womanSatisfied}
                   alt=""
@@ -63,10 +63,10 @@ export function Hero() {
                   delay={-9}
                   className="absolute bottom-0 left-1/2 z-10 -translate-x-1/2 translate-y-1/2"
                 />
-              </Reveal>
+              </span>
             </span>{" "}
             <span className="text-orange">
-              <HeadingText text="SHOULD" load />
+              <HeroText text="SHOULD" order={4} />
             </span>
             <br />
             <span className="relative inline-block">
@@ -75,13 +75,13 @@ export function Hero() {
                 size="0.52em"
                 className="absolute bottom-[0.9em] left-1/2 z-10 -translate-x-1/2"
               />
-              <HeadingText text="F" load />
+              <HeroText text="F" order={5} />
             </span>
-            <HeadingText text="EEL THIS" load />{" "}
+            <HeroText text="EEL THIS" order={5} />{" "}
             <span className="inline-block whitespace-nowrap">
-              <HeadingText text="SIMPL" load />
+              <HeroText text="SIMPL" order={7} />
               <span className="relative inline-block">
-                <HeadingText text="E" load />
+                <HeroText text="E" order={7} />
                 <StarParticle
                   color="var(--primary)"
                   animation="spin"
@@ -90,14 +90,15 @@ export function Hero() {
                 />
               </span>
             </span>
-          </HeroHeadingEntrance>
+          </h1>
         </div>
-        <DescriptionText
-          load
-          className="max-w-2xl justify-center text-lg leading-relaxed sm:text-xl opacity-80"
-          text="Send money to another country in the currencies you know. Just tell Kaada what you want to do in chat."
-        />
-        <StartWithKaada />
+        <p
+          className={`${entrance.description} max-w-2xl text-lg leading-relaxed sm:text-xl opacity-80`}
+        >
+          Send money to another country in the currencies you know. Just tell Kaada what you want to
+          do in chat.
+        </p>
+        <StartWithKaada entrance="hero" />
       </SectionWrapper>
       <HeroVisual />
       {/* <BottomCutout /> */}

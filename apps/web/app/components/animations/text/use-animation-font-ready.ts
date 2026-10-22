@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useState, type RefObject } from "react";
+import { useLayoutEffect, useState, type RefObject } from "react";
 
 /** Wait for this element's font, rather than blocking on every font used by the page. */
-export function useAnimationFontReady(ref: RefObject<HTMLElement | null>, text: string) {
+export function useAnimationFontReady(
+  ref: RefObject<HTMLElement | null>,
+  text: string,
+  selector?: string,
+) {
   const [ready, setReady] = useState(false);
-  useEffect(() => {
-    const element = ref.current;
+  useLayoutEffect(() => {
+    const element = selector ? ref.current?.querySelector<HTMLElement>(selector) : ref.current;
     if (!element) return;
     let active = true;
     const style = getComputedStyle(element);
@@ -18,6 +22,6 @@ export function useAnimationFontReady(ref: RefObject<HTMLElement | null>, text: 
     return () => {
       active = false;
     };
-  }, [ref, text]);
+  }, [ref, text, selector]);
   return ready;
 }

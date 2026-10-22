@@ -1,4 +1,4 @@
-import { Reveal, HeadingText, DescriptionText } from "./landing-motion";
+import { Reveal, DescriptionText } from "./landing-motion";
 import type { CSSProperties, ReactNode } from "react";
 import { CutoutCard } from "../../components/ui/cutout-card";
 
@@ -32,9 +32,12 @@ export function HowItWorksStep({
             <p className="mb-5 text-xs font-bold tracking-[0.16em] uppercase">
               Step {String(number).padStart(2, "0")}
             </p>
-            <h3 className="font-heading text-3xl leading-[1.15] uppercase sm:text-4xl">
-              <HeadingText text={title} />
-            </h3>
+            <DescriptionText
+              tag="h3"
+              delay={0}
+              className="font-heading text-3xl leading-[1.15] uppercase sm:text-4xl"
+              text={title}
+            />
             <DescriptionText className="mt-4 text-base leading-relaxed" text={description} />
           </div>
           <div className="mt-auto flex min-h-72 flex-col justify-center pt-2 lg:min-h-80">

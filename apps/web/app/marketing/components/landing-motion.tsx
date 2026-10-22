@@ -12,7 +12,7 @@ import { RevealContext } from "../../components/animations/reveal-context";
 import { motion, useAnimationControls, useInView } from "framer-motion";
 import { ComponentTransition } from "../../components/animations/components/component-transition";
 import SplitText from "../../components/animations/text/split-text";
-import BlurText from "../../components/animations/text/blur-text";
+import { TextReveal } from "../../components/animations/text/text-reveal";
 import { useTextReducedMotion } from "../../components/animations/text/use-text-reduced-motion";
 import { useRevealMargin } from "../../components/animations/use-reveal-margin";
 import { usePageScrollViewport } from "../../components/page-scroll-area";
@@ -165,33 +165,27 @@ export function HeadingText({
 export function DescriptionText({
   text,
   className,
+  id,
   load = false,
   delay = 0.1,
   tag = "p",
 }: {
   text: string;
   className?: string;
+  id?: string;
   load?: boolean;
   delay?: number;
-  tag?: "p" | "span";
+  tag?: "p" | "span" | "h2" | "h3" | "h4";
 }) {
-  const rootMargin = useRevealMargin();
   const parent = useContext(RevealContext);
   return (
-    <BlurText
+    <TextReveal
       tag={tag}
       text={text}
       className={className ?? ""}
-      trigger={parent || load ? "load" : "view"}
-      startWhen={parent?.active ?? true}
-      rootMargin={rootMargin}
-      threshold={0}
-      delay={15}
-      initialDelay={delay + (parent?.delay ?? 0)}
-      stepDuration={0.14}
-      blur={6}
-      distance={14}
-      direction="bottom"
+      id={id}
+      active={parent ? parent.active : load ? true : undefined}
+      delay={delay + (parent?.delay ?? 0)}
     />
   );
 }

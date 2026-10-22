@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+@media (prefers-reduced-motion: reduce) {
+  [data-animated-text],
+  [data-text-reveal],
+  [data-component-transition] {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #051a2f;

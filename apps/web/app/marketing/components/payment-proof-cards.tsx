@@ -1,4 +1,4 @@
-import { Reveal, HeadingText, DescriptionText } from "./landing-motion";
+import { Reveal, DescriptionText } from "./landing-motion";
 import { IconWorld, IconWallet, IconRoute, IconFingerprint } from "@tabler/icons-react";
 import { CutoutCard } from "../../components/ui/cutout-card";
 import styles from "./real-payments.module.css";
@@ -50,9 +50,7 @@ export function PaymentProofCards() {
               <span className={styles.proofIcon}>
                 <Icon size={32} stroke={1.6} aria-hidden="true" />
               </span>
-              <h3>
-                <HeadingText text={title} />
-              </h3>
+              <DescriptionText tag="h3" delay={0} text={title} />
               <DescriptionText text={description} />
             </CutoutCard>
           </Reveal>
