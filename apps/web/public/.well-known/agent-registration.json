@@ -1,0 +1,14 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "Kaada",
+  "description": "Agentic cross-border payment router on Celo. A person describes a payment in a chat app; Kaada prepares it and the person confirms it with their own wallet key.",
+  "services": [
+    { "name": "web", "endpoint": "https://kaada.xyz" },
+    { "name": "Telegram", "endpoint": "https://t.me/kaadabot" },
+    { "name": "wallet", "endpoint": "eip155:42220:0x92fd470fC469585749a3CedA736A1e426F7D85D5" }
+  ],
+  "x402Support": false,
+  "active": true,
+  "supportedTrust": [],
+  "registrations": []
+}
