@@ -67,6 +67,27 @@ export function assertRegistrationLimits(plan: RegistrationPlan): void {
     );
 }
 
+/**
+ * Runs a read until it answers, up to `attempts` times with `waitMs` between them, and returns `undefined` if it never does. A node
+ * that has not caught up with the block of a transaction that already succeeded can fail a read; that is not a failure of the
+ * transaction, so the caller reports it instead of aborting. `sleep` is replaceable for tests.
+ */
+export async function readWithRetry<T>(
+  read: () => Promise<T>,
+  attempts = 5,
+  waitMs = 2_000,
+  sleep: (ms: number) => Promise<void> = (ms) => new Promise((done) => setTimeout(done, ms)),
+): Promise<T | undefined> {
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await read();
+    } catch {
+      if (attempt < attempts) await sleep(waitMs);
+    }
+  }
+  return undefined;
+}
+
 export interface RegistrationFile {
   type: string;
   name: string;

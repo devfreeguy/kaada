@@ -27,6 +27,7 @@ import {
   assertRegistrationLimits,
   fetchRegistrationFile,
   identityRegistryAbi,
+  readWithRetry,
   registrationCostWei,
 } from "./src/platform/agent-identity.js";
 import { PlatformWallet } from "./src/platform/platform-wallet.js";
@@ -151,24 +152,35 @@ try {
   console.log(`agent ID:    ${agentId}`);
   console.log(`identity:    https://celoscan.io/nft/${IDENTITY_REGISTRY}/${agentId}`);
 
+  // The transaction has succeeded: a read that the node cannot answer yet is reported, never an abort.
   const [stored, owner] = await Promise.all([
-    client.readContract({
-      address: IDENTITY_REGISTRY,
-      abi: identityRegistryAbi,
-      functionName: "tokenURI",
-      args: [agentId],
-    }),
-    client.readContract({
-      address: IDENTITY_REGISTRY,
-      abi: identityRegistryAbi,
-      functionName: "ownerOf",
-      args: [agentId],
-    }),
+    readWithRetry(() =>
+      client.readContract({
+        address: IDENTITY_REGISTRY,
+        abi: identityRegistryAbi,
+        functionName: "tokenURI",
+        args: [agentId],
+      }),
+    ),
+    readWithRetry(() =>
+      client.readContract({
+        address: IDENTITY_REGISTRY,
+        abi: identityRegistryAbi,
+        functionName: "ownerOf",
+        args: [agentId],
+      }),
+    ),
   ]);
-  console.log(`read back:   tokenURI = ${stored}`);
-  console.log(
-    `uri matches: ${stored === uri ? "yes" : "NO"}   owner is the wallet: ${owner.toLowerCase() === wallet.address.toLowerCase() ? "yes" : "NO"}`,
-  );
+  if (stored === undefined || owner === undefined) {
+    console.log(
+      `read back:   read-back not available yet (the registration itself succeeded: see the Celoscan links above). Read tokenURI(${agentId}) and ownerOf(${agentId}) on the registry again in a minute.`,
+    );
+  } else {
+    console.log(`read back:   tokenURI = ${stored}`);
+    console.log(
+      `uri matches: ${stored === uri ? "yes" : "NO"}   owner is the wallet: ${owner.toLowerCase() === wallet.address.toLowerCase() ? "yes" : "NO"}`,
+    );
+  }
   console.log(
     `next: add {"agentId": ${agentId}, "agentRegistry": "eip155:${REGISTRY_CHAIN_ID}:${IDENTITY_REGISTRY}"} to "registrations" in the registration file and deploy the website (the URI itself does not change).`,
   );

@@ -9,6 +9,7 @@ import {
   REGISTRATION_TYPE,
   assertRegistrationLimits,
   fetchRegistrationFile,
+  readWithRetry,
   registrationCostWei,
 } from "./agent-identity.js";
 import type { RegistrationPlan } from "./agent-identity.js";
@@ -185,6 +186,73 @@ describe("the registration file check", () => {
       WALLET,
       serve(readFileSync(path, "utf8")),
     );
-    assert.equal(file.registrations.length, 0);
+    assert.deepEqual(file.registrations, [
+      {
+        agentId: 10022,
+        agentRegistry: "eip155:42220:0x8004A169FB4a3325136EB29fA0ceB6D2e539a432",
+      },
+    ]);
+  });
+});
+
+describe("the read-back retry", () => {
+  const noSleep = () => Promise.resolve();
+
+  it("returns the first answer without waiting", async () => {
+    let calls = 0;
+    const waits: number[] = [];
+    const value = await readWithRetry(
+      () => Promise.resolve(++calls),
+      5,
+      2_000,
+      (ms) => {
+        waits.push(ms);
+        return Promise.resolve();
+      },
+    );
+    assert.equal(value, 1);
+    assert.deepEqual(waits, []);
+  });
+
+  it("retries a read that fails and returns the answer once the node has it", async () => {
+    let calls = 0;
+    const waits: number[] = [];
+    const value = await readWithRetry(
+      () => (++calls < 3 ? Promise.reject(new Error("not yet")) : Promise.resolve("uri")),
+      5,
+      2_000,
+      (ms) => {
+        waits.push(ms);
+        return Promise.resolve();
+      },
+    );
+    assert.equal(value, "uri");
+    assert.equal(calls, 3);
+    assert.deepEqual(waits, [2_000, 2_000]);
+  });
+
+  it("gives up after the last attempt with undefined, never throwing, and does not wait after it", async () => {
+    let calls = 0;
+    const waits: number[] = [];
+    const value = await readWithRetry(
+      () => {
+        calls++;
+        return Promise.reject(new Error("still not"));
+      },
+      4,
+      1_000,
+      (ms) => {
+        waits.push(ms);
+        return Promise.resolve();
+      },
+    );
+    assert.equal(value, undefined);
+    assert.equal(calls, 4);
+    assert.equal(waits.length, 3);
+  });
+
+  it("a read that really returns undefined-like values (0n, empty string) is an answer, not a failure", async () => {
+    assert.equal(await readWithRetry(() => Promise.resolve(""), 3, 0, noSleep), "");
+    assert.equal(await readWithRetry(() => Promise.resolve(0n), 3, 0, noSleep), 0n);
   });
 });
