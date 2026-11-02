@@ -40,8 +40,24 @@ apps  →  shared packages  →  domain
 
 ## Prerequisites
 
-- Node.js 24 (`.nvmrc`)
-- pnpm 11 (`corepack enable` picks up the pinned version)
+- **Node.js 24** (`.nvmrc`; `engines` asks for `>=24`, and the Docker image and CI use 24)
+- **pnpm 11.15.1** (the `packageManager` pin in `package.json`). `corepack enable` picks it up. Any other pnpm 11 also runs: it prints a
+  warning and carries on (`pmOnFail: warn` in `pnpm-workspace.yaml`) and never tries to download the pinned version.
+
+## How to run
+
+From a fresh clone, with the versions above:
+
+```sh
+pnpm install --frozen-lockfile   # the only step that needs the network (public npm registry, no tokens)
+pnpm build
+pnpm typecheck
+pnpm test
+```
+
+Build, typecheck and tests need **no secrets, no `.env` and no database**. The network is needed only to install packages from the public npm
+registry (and for Prisma's engine download during install). The `test:integration` scripts do need a database and are not part of `pnpm test`.
+The API and the web app need the settings in `.env.example` only when you start them.
 
 ## Installation
 

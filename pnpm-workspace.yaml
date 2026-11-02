@@ -24,3 +24,7 @@ allowBuilds:
 minimumReleaseAgeExclude:
   - framer-motion@14.4.0
   - motion-dom@14.4.0
+
+# A pnpm that is not exactly the packageManager pin runs as it is, with a warning. Without this, pnpm tries to download and verify the
+# pinned version: that needs the network, and it fails inside pnpm itself (offline, or when turbo starts several `pnpm run` at once).
+pmOnFail: warn
