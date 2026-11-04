@@ -74,6 +74,9 @@ export const quoteIntentSchema = z.strictObject({
   toAsset: assetLabelSchema.optional(),
   destination: destinationSchema.optional(),
   constraints: paymentConstraintsSchema.optional(),
+  // Wording only (a rate line rather than a conversion). Kaada's own rate paths set it; the interpreter's wire schema has no
+  // such field, so a model can never ask for it.
+  rateOnly: z.boolean().optional(),
 }) satisfies z.ZodType<QuoteIntent>;
 
 export const balanceIntentSchema = z.strictObject({

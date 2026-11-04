@@ -8,6 +8,8 @@ export type {
   ChannelType,
   Conversation,
   ConversationFocus,
+  RatePairFocus,
+  RateQuotedFocus,
   ConversationStatus,
   Message,
   MessageRole,

@@ -16,6 +16,11 @@ export interface RoutingRequest {
   operation: "SEND" | "CONVERT" | "QUOTE";
   /** A QUOTE only answers a price question; it never becomes a payment. */
   purpose: "PAYMENT" | "QUOTE";
+  /**
+   * The QUOTE answers "what is the rate?" rather than "what would this amount give me?". Wording only: the same route is
+   * found and the same prices are used either way.
+   */
+  rateOnly?: boolean;
   /** The fixed side, in the asset it was expressed in (a fiat currency or a token). */
   amount: Money;
   amountMode: AmountMode;
@@ -60,6 +65,7 @@ export function buildRoutingRequest(
     userId: intent.userId,
     operation: intent.type,
     purpose: intent.type === "QUOTE" ? "QUOTE" : "PAYMENT",
+    ...(intent.parsed?.type === "QUOTE" && intent.parsed.rateOnly === true && { rateOnly: true }),
     amount: intent.amount.money,
     amountMode: intent.amount.mode,
     ...(intent.sourceAssetId && { sourceAssetId: intent.sourceAssetId }),

@@ -63,6 +63,13 @@ export interface QuoteIntent {
   toAsset?: string | undefined;
   destination?: Destination | undefined;
   constraints?: PaymentConstraints | undefined;
+  /**
+   * This quote answers "what is the rate?", not "what would this amount give me?": the amount is ONE unit, chosen by the
+   * product, not named by the person. It only changes how the answer is worded (a rate line rather than a conversion), never
+   * what is priced, stored or authorized. Set by Kaada's own rate paths; a language model cannot set it (it is not on the
+   * interpreter's wire schema).
+   */
+  rateOnly?: boolean | undefined;
 }
 
 export interface BalanceIntent {
