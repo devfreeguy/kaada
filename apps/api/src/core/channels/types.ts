@@ -24,7 +24,11 @@ export type ChannelCommand =
 
 export type InboundContent =
   | { kind: "TEXT"; text: string }
-  | { kind: "COMMAND"; command: ChannelCommand }
+  /**
+   * `args` is whatever the person typed after the command ("/rates naira to argentine pesos"), trimmed, when there is any.
+   * It is ordinary untrusted text and is read exactly like a typed message: a command never gains meaning from it by itself.
+   */
+  | { kind: "COMMAND"; command: ChannelCommand; args?: string }
   /** A button press. `handle` is the opaque id the provider echoed back; `ackToken` lets the adapter acknowledge it. */
   | { kind: "ACTION"; handle: string; ackToken?: string };
 

@@ -109,7 +109,7 @@ describe("exact output affordability", () => {
     w.fund("USDT", 50n); // positive, but 92.26 is needed
     const error = errorOf((await w.r.h.say("pay 500 brl with usdt")).response);
     assert.equal(error.code, "INSUFFICIENT_BALANCE");
-    assert.match(error.text, /up to \$92\.306281, but your wallet has \$50/);
+    assert.match(error.text, /up to \$92\.31, but your wallet has \$50/);
     assert.equal(w.priced.length > 0, true, "the unknown amount needed a preview");
     assert.equal(w.r.world.routes.size, 0, "nothing was stored for an unaffordable route");
   });
@@ -158,11 +158,11 @@ describe("funding problems are told apart", () => {
   it("a wallet with nothing to fund the payment needs funding", async () => {
     const w = setup();
     const error = errorOf((await w.r.h.say("pay 500 brl")).response);
-    assert.deepEqual(error, {
-      type: "ERROR",
-      code: "WALLET_NEEDS_FUNDING",
-      text: "Your Kaada wallet doesn't have a supported asset to fund this payment yet.",
-    });
+    assert.equal(error.code, "WALLET_NEEDS_FUNDING");
+    // It names what WOULD pay for this payment, taken from the candidates routing actually found, so the person is told the
+    // funding action to take instead of only that something is missing.
+    assert.match(error.text, /doesn't hold anything that can pay for this yet/);
+    assert.match(error.text, /Any of these would work: .*US Dollar/);
     assert.deepEqual(w.priced, []);
   });
 

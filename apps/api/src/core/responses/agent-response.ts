@@ -113,6 +113,8 @@ export interface MoneyView {
   amount: string;
   assetId: string;
   symbol: string;
+  /** The asset's own precision, so `amount` can be read exactly (for a rate, say) without another lookup. */
+  decimals: number;
   /** Human text such as "92.25 USDT". Never used for arithmetic. */
   display: string;
 }

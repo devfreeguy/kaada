@@ -53,8 +53,8 @@ describe("AUTHORIZATION_REQUIRED replaces PAYMENT_READY for payments", () => {
     assert.equal(response.summary.recipient, "João Silva");
     assert.equal(response.summary.recipientReceives.display, "R$500");
     assert.equal(response.summary.minimumReceive.display, "R$500");
-    assert.equal(response.summary.senderSpends.display, "$92.26015");
-    assert.equal(response.summary.maximumSpend.display, "$92.306281");
+    assert.equal(response.summary.senderSpends.display, "$92.26");
+    assert.equal(response.summary.maximumSpend.display, "$92.31");
     assert.match(response.text, /Confirm with your PIN/);
     assert.match(response.text, /final price is confirmed just before it is sent/);
     assert.ok(response.authorizationSessionId);
@@ -192,7 +192,7 @@ describe("authorization sessions", () => {
     const view = await w.auth.sessions.view(token);
     assert.equal(view.indicative, true);
     assert.equal(view.pin.isSet, true);
-    assert.equal(view.summary.maximumSpend.display, "$92.306281");
+    assert.equal(view.summary.maximumSpend.display, "$92.31");
     const text = JSON.stringify(view);
     for (const secret of [SENDER, WALLET_ID, token]) assert.equal(text.includes(secret), false);
   });

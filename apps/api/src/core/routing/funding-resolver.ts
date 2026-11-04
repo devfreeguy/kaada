@@ -258,10 +258,20 @@ export class WalletFundingResolver {
       };
     }
     if (allEmpty) {
+      // Nothing that could pay for this is in the wallet. Say which currencies WOULD, named from the candidates routing really
+      // found, so the person is told the funding action to take rather than just that something is missing. The payment stays
+      // open: funding it is enough to carry on.
+      const fundable = await Promise.all(sourceIds.map((id) => this.deps.assets.getById(id)));
+      const names = [
+        ...new Set(fundable.flatMap((asset) => (asset ? [describeAsset(asset)] : []))),
+      ];
       return {
         type: "ERROR",
         code: "WALLET_NEEDS_FUNDING",
-        text: "Your Kaada wallet doesn't have a supported asset to fund this payment yet.",
+        text:
+          names.length > 0
+            ? `Your wallet doesn't hold anything that can pay for this yet. Any of these would work: ${names.join(", ")}.`
+            : "Your Kaada wallet doesn't have a supported asset to fund this payment yet.",
       };
     }
     return {

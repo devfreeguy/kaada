@@ -363,6 +363,8 @@ export class ChannelMessageService {
               : content.command === "RATES"
                 ? "ASK_RATE_PAIR"
                 : "CANCEL_ACTIVE_INTENT",
+          // Anything typed after /rates is the pair to check; the agent reads it as the answer to "which pair?".
+          ...(content.command === "RATES" && content.args && { rateText: content.args }),
           externalMessageId: `cmd:${message.externalEventId}`,
         });
       } else {

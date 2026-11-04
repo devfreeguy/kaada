@@ -249,6 +249,8 @@ function rateCandidate(wire: WireInterpretation): unknown {
       type: "QUOTE",
       amount: { value: RATE_UNIT_AMOUNT, currencyOrAsset: source, mode: "EXACT_INPUT" },
       fromAsset: source,
+      // A rate question, so the answer reads as a rate. The model asked for type RATE; it cannot set this field itself.
+      rateOnly: true,
       ...(to !== undefined && { toAsset: to }),
       ...(Object.keys(destination).length > 0 && { destination }),
     },

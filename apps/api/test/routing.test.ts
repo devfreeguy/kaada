@@ -133,15 +133,15 @@ describe("exact input", () => {
     assert.equal(ready.senderSpends.max.amount, ready.senderSpends.expected.amount, "never more");
     // net 19.998 USDT at 5.42 = 108.38916 wBRL; with 5 bps slippage at least 108.33496542.
     assert.equal(ready.recipientReceives.expected.amount, "108389160000000000000");
-    assert.equal(ready.recipientReceives.min.display, "R$108.33496542");
+    assert.equal(ready.recipientReceives.min.display, "R$108.33");
     assert.equal(ready.senderSpends.expected.display, "$20");
     assert.deepEqual(
       ready.fees.map((f) => f.display),
-      ["$0.002"],
+      ["<$0.01"],
     );
     assert.equal(ready.revision, 1);
     assert.equal(ready.route.hops.length, 1);
-    assert.match(ready.text, /You spend exactly \$20; João Silva receives about R\$108\.38916/);
+    assert.match(ready.text, /You spend exactly \$20; João Silva receives about R\$108\.39/);
     assert.equal(ready.mock, true);
     assert.match(ready.text, /mock pricing/);
   });
@@ -158,7 +158,8 @@ describe("exact input", () => {
     // USDC->USDT: fee 4000 (2 bps), 19.996 USDT; USDT->wBRL: fee 2000, net 19.994 * 5.42 = 108.36748.
     assert.equal(ready.recipientReceives.expected.amount, "108367480000000000000");
     assert.equal(ready.slippageBps, 10, "slippage adds up over the two steps");
-    assert.deepEqual(ready.fees.map((f) => f.display).sort(), ["$0.002", "$0.004"].sort());
+    // Both fees are well under a cent: shown as a bound, never as "$0.00" and never to six decimals.
+    assert.deepEqual(ready.fees.map((f) => f.display).sort(), ["<$0.01", "<$0.01"].sort());
   });
 
   it("with no preference it maximises the output and picks the direct USDT route", async () => {
@@ -177,14 +178,14 @@ describe("exact output", () => {
     assert.equal(ready.recipientReceives.expected.display, "R$500");
     assert.equal(ready.recipientReceives.min.amount, ready.recipientReceives.expected.amount);
     assert.equal(ready.senderSpends.expected.amount, "92260150");
-    assert.equal(ready.senderSpends.expected.display, "$92.26015");
+    assert.equal(ready.senderSpends.expected.display, "$92.26");
     // 5 bps above the estimate, rounded up: 92260150 + 46131.
     assert.equal(ready.senderSpends.max.amount, "92306281");
     assert.deepEqual(
       ready.fees.map((f) => f.display),
-      ["$0.009227"],
+      ["$0.01"],
     );
-    assert.match(ready.text, /João Silva receives exactly R\$500; estimated spend \$92\.26015/);
+    assert.match(ready.text, /João Silva receives exactly R\$500; estimated spend \$92\.26/);
   });
 
   it("USDC -> USDT -> wBRL: discovers the two-hop route, exact at the end, minimal at each step", async () => {
@@ -577,8 +578,8 @@ describe("quote versus payment", () => {
     const quote = quoteResult(turn.response);
     assert.equal(quote.source.display, "$50");
     // net 49.995 USDT at 5.42 = 270.97290 wBRL
-    assert.equal(quote.destination.display, "R$270.9729");
-    assert.match(quote.text, /\$50 currently gives approximately R\$270\.9729/);
+    assert.equal(quote.destination.display, "R$270.97");
+    assert.match(quote.text, /\$50 currently gives approximately R\$270\.97/);
     assert.doesNotMatch(quote.text, /Nothing was sent|expire/, "no infrastructure narration");
     for (const message of r.world.messages) {
       const type = (message.structuredData as { type?: string } | undefined)?.type;

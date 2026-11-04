@@ -249,7 +249,7 @@ describe("amount modes and assets", () => {
       mode: "EXACT_INPUT",
     });
     assert.equal(stored?.sourceAssetId, h.assets.USD.id);
-    assert.match(turn.response.text, /You're sending \$20\.5 to Daniel/);
+    assert.match(turn.response.text, /You're sending \$20\.50 to Daniel/);
   });
 
   it("puts an explicit EXACT_OUTPUT amount on the destination side", async () => {

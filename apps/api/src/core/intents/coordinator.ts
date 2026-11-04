@@ -423,11 +423,15 @@ export class IntentCoordinator {
     });
     const request = buildRoutingRequest({ ...state, createdAt: now, updatedAt: now });
     if (!request) return askForPair;
-    return answer({
-      type: "SIDE_QUOTE_REQUIRED",
-      text: "Let me check that rate for you 👀",
-      request,
-    });
+    return {
+      ...answer({
+        type: "SIDE_QUOTE_REQUIRED",
+        text: "Let me check that rate for you 👀",
+        request,
+      }),
+      // Asked beside an open payment: the pair is remembered the same way, against that payment.
+      ...(this.quotedPairFocus(quote) ?? {}),
+    };
   }
 
   /**
@@ -604,7 +608,31 @@ export class IntentCoordinator {
         : undefined,
     );
     if (!summary || !request) throw new Error("a ready intent must have an amount");
-    return { ...base, response: routingRequiredResponse(summary, saved, request) };
+    return {
+      ...base,
+      response: routingRequiredResponse(summary, saved, request),
+      // A rate was just asked for: remember the pair, so a bare "20,000" next means that much of it.
+      ...(this.quotedPairFocus(parsedWithHome) ?? {}),
+    };
+  }
+
+  /**
+   * After a rate question, the pair it was about. A plain number in the next message is then read as that amount of the source
+   * currency rather than as the start of a payment. Only a RATE question sets it (a conversion of a stated amount has already
+   * been answered in full), and only when both sides were actually named.
+   */
+  private quotedPairFocus(parsed: TransactionalIntent): { focus: ConversationFocus } | undefined {
+    if (parsed.type !== "QUOTE" || parsed.rateOnly !== true) return undefined;
+    const { fromAsset, toAsset } = parsed;
+    if (!fromAsset || !toAsset) return undefined;
+    return {
+      focus: {
+        kind: "RATE_QUOTED",
+        from: fromAsset,
+        to: toAsset,
+        setAt: this.deps.now().toISOString(),
+      },
+    };
   }
 
   /**

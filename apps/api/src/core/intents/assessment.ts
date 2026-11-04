@@ -9,13 +9,12 @@ import type {
   TransactionalIntent,
 } from "@kaada/domain";
 
-import { describeAsset } from "../assets/asset-resolver.js";
 import type { AssetResolver } from "../assets/asset-resolver.js";
 import type { RecipientResolver } from "../recipients/recipient-resolver.js";
 import { MAX_OPTIONS } from "../responses/clarifications.js";
 import type { Clarification } from "../responses/clarifications.js";
 import type { AssetTarget, ChoiceDraft } from "./choices.js";
-import { describeMoney } from "../currency/catalog.js";
+import { describeAssetChoice, describeMoney } from "../currency/catalog.js";
 
 export type { TransactionalIntent };
 
@@ -209,7 +208,8 @@ export async function assessIntent(
         reason: "AMBIGUOUS",
         subject: label,
         choices: result.candidates.map((asset): ChoiceDraft => ({
-          label: describeAsset(asset),
+          // Named as a currency where it is one: a question about "pesos" must read as a choice between pesos.
+          label: describeAssetChoice(asset),
           value: { kind: "ASSET", target, assetId: asset.id },
         })),
       });

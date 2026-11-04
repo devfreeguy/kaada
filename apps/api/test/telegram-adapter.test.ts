@@ -118,7 +118,17 @@ describe("Telegram update normalisation", () => {
   it("recognises syntax-level commands, with a payload or a bot suffix, and leaves other slash text to the agent", () => {
     const command = (text: string) => adapter.parseWebhook(textUpdate({ text }))?.content;
     assert.deepEqual(command("/start"), { kind: "COMMAND", command: "START" });
-    assert.deepEqual(command("/start abc123"), { kind: "COMMAND", command: "START" });
+    // Whatever follows the command travels with it: /start keeps its deep-link payload, and /rates its pair.
+    assert.deepEqual(command("/start abc123"), {
+      kind: "COMMAND",
+      command: "START",
+      args: "abc123",
+    });
+    assert.deepEqual(command("/rates naira to argentine pesos"), {
+      kind: "COMMAND",
+      command: "RATES",
+      args: "naira to argentine pesos",
+    });
     assert.deepEqual(command("/START@kaada_bot"), { kind: "COMMAND", command: "START" });
     assert.deepEqual(command("/help"), { kind: "COMMAND", command: "HELP" });
     assert.deepEqual(command("/cancel"), { kind: "COMMAND", command: "CANCEL" });

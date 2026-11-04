@@ -141,8 +141,10 @@ function presentError(response: Extract<AgentResponse, { type: "ERROR" }>): Pres
       };
     // A payment that cannot go ahead for want of funds points at the way forward. The payment itself stays open.
     case "WALLET_NEEDS_FUNDING":
+      // The service's own wording names the currencies that would pay for this payment; keep it rather than replacing it
+      // with something vaguer, and only add the way forward.
       return {
-        text: "You don't have a supported balance for this payment yet.\n\nWant to fund your wallet?",
+        text: `${response.text}\n\nWant to fund your wallet?`,
         suggestions: ["FUND_WALLET"],
         cancellable: true,
       };

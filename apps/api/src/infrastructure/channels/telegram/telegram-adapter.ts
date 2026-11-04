@@ -71,26 +71,35 @@ const displayName = (user: TelegramUser): string | undefined => {
   return name || undefined;
 };
 
-/** Syntax-level commands only: "/start", "/start payload", "/start@kaadabot". Everything else is plain text. */
-function commandOf(text: string): ChannelCommand | null {
+/**
+ * Syntax-level commands only: "/start", "/start payload", "/start@kaadabot". Everything else is plain text.
+ * Whatever follows the command is returned with it, untouched: "/rates naira to argentine pesos" is the RATES command with
+ * "naira to argentine pesos" to be read, exactly as if it had been typed on its own.
+ */
+function commandOf(text: string): { command: ChannelCommand; args?: string } | null {
   const match = /^\/([A-Za-z_]+)(?:@\w+)?(?:\s|$)/.exec(text);
+  const args = text.slice(match?.[0]?.length ?? 0).trim();
+  const named = (command: ChannelCommand): { command: ChannelCommand; args?: string } => ({
+    command,
+    ...(args.length > 0 && { args: args.slice(0, 2000) }),
+  });
   switch (match?.[1]?.toLowerCase()) {
     case "start":
-      return "START";
+      return named("START");
     case "help":
-      return "HELP";
+      return named("HELP");
     case "balance":
-      return "BALANCE";
+      return named("BALANCE");
     case "fund":
-      return "FUND";
+      return named("FUND");
     case "rates":
-      return "RATES";
+      return named("RATES");
     case "wallet":
-      return "WALLET";
+      return named("WALLET");
     case "country":
-      return "COUNTRY";
+      return named("COUNTRY");
     case "cancel":
-      return "CANCEL";
+      return named("CANCEL");
     default:
       return null;
   }
@@ -170,7 +179,7 @@ export class TelegramAdapter implements ChannelAdapter {
       externalConversationId: String(message.chat.id),
       sender: this.sender(message.from),
       isPrivate: message.chat.type === "private",
-      content: command ? { kind: "COMMAND", command } : { kind: "TEXT", text: text.slice(0, 2000) },
+      content: command ? { kind: "COMMAND", ...command } : { kind: "TEXT", text: text.slice(0, 2000) },
       timestamp: new Date((message.date ?? Math.floor(Date.now() / 1000)) * 1000),
     };
   }

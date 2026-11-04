@@ -55,8 +55,13 @@ describe("everyday words name a currency first", () => {
     for (const label of ["Brazilian Real", "Real", "reais", "BRL", "R$"]) {
       assert.equal(code(label), "BRL", label);
     }
-    for (const label of ["Argentine Peso", "Argentine pesos", "Peso", "ARS", "AR$"]) {
+    for (const label of ["Argentine Peso", "Argentine pesos", "Argentina Peso", "ARS", "AR$"]) {
       assert.equal(code(label), "ARS", label);
+    }
+    // A bare "peso" names four currencies in the registry, so it names none on its own: it is never
+    // silently taken to be the Argentine one. The caller narrows it or asks (see registry.test.ts).
+    for (const label of ["Peso", "pesos"]) {
+      assert.equal(code(label), undefined, label);
     }
     for (const label of ["Indonesian Rupiah", "Rupiah", "rupiah", "IDR", "Rp"]) {
       assert.equal(code(label), "IDR", label);
@@ -225,7 +230,7 @@ describe("what people see is currencies, not tokens", () => {
   it("formats amounts the way people write them", () => {
     const naira = { symbol: "cNGN", fiatCode: "NGN", decimals: 6 };
     assert.equal(describeMoney(naira, "300000000"), "₦300");
-    assert.equal(describeMoney(naira, "1234500000"), "₦1,234.5");
+    assert.equal(describeMoney(naira, "1234500000"), "₦1,234.50");
     assert.equal(
       describeMoney(
         { symbol: "wBRL", fiatCode: "BRL", decimals: 18 },

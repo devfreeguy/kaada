@@ -70,12 +70,12 @@ const authorization = (): AgentResponse => ({
   summary: {
     amountMode: "EXACT_INPUT",
     recipient: "Daniel",
-    senderSpends: { amount: "1", assetId: "a", symbol: "USDT", display: "20.00 USDT" },
-    maximumSpend: { amount: "1", assetId: "a", symbol: "USDT", display: "20.00 USDT" },
-    recipientReceives: { amount: "1", assetId: "b", symbol: "wBRL", display: "102.30 wBRL" },
-    minimumReceive: { amount: "1", assetId: "b", symbol: "wBRL", display: "101.50 wBRL" },
+    senderSpends: { amount: "1", assetId: "a", symbol: "USDT", decimals: 6, display: "20.00 USDT" },
+    maximumSpend: { amount: "1", assetId: "a", symbol: "USDT", decimals: 6, display: "20.00 USDT" },
+    recipientReceives: { amount: "1", assetId: "b", symbol: "wBRL", decimals: 6, display: "102.30 wBRL" },
+    minimumReceive: { amount: "1", assetId: "b", symbol: "wBRL", decimals: 6, display: "101.50 wBRL" },
   },
-  fees: [{ amount: "1", assetId: "a", symbol: "USDT", display: "0.10 USDT" }],
+  fees: [{ amount: "1", assetId: "a", symbol: "USDT", decimals: 6, display: "0.10 USDT" }],
   slippageBps: 50,
   indicative: true,
 });
@@ -342,8 +342,8 @@ describe("rate and balance answers", () => {
     intentId: randomUUID(),
     revision: 1,
     routeId: randomUUID(),
-    source: { amount: "1", assetId: "a", symbol: "USDT", display: "1 USDT" },
-    destination: { amount: "1", assetId: "b", symbol: "cNGN", display: "1,600.25 cNGN" },
+    source: { amount: "1", assetId: "a", symbol: "USDT", decimals: 6, display: "1 USDT" },
+    destination: { amount: "1", assetId: "b", symbol: "cNGN", decimals: 6, display: "1,600.25 cNGN" },
     fees: [],
     slippageBps: 50,
     expiresAt: NOW.toISOString(),
@@ -513,6 +513,7 @@ describe("rate questions are priced by the application, not read from the model"
         amount: { value: "1", currencyOrAsset: "USDT", mode: "EXACT_INPUT" },
         fromAsset: "USDT",
         toAsset: "cNGN",
+        rateOnly: true,
       },
     });
   });
@@ -525,6 +526,7 @@ describe("rate questions are priced by the application, not read from the model"
         type: "QUOTE",
         amount: { value: "1", currencyOrAsset: "USD", mode: "EXACT_INPUT" },
         fromAsset: "USD",
+        rateOnly: true,
         toAsset: "BRL",
       },
     });

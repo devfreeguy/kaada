@@ -93,12 +93,12 @@ const authorizationResponse = (sessionId: string): AgentResponse => ({
   summary: {
     amountMode: "EXACT_INPUT",
     recipient: "Daniel",
-    senderSpends: { amount: "20000000", assetId: "a", symbol: "USDT", display: "20.00 USDT" },
-    maximumSpend: { amount: "20000000", assetId: "a", symbol: "USDT", display: "20.00 USDT" },
-    recipientReceives: { amount: "100", assetId: "b", symbol: "wBRL", display: "102.30 wBRL" },
-    minimumReceive: { amount: "99", assetId: "b", symbol: "wBRL", display: "101.50 wBRL" },
+    senderSpends: { amount: "20000000", assetId: "a", symbol: "USDT", decimals: 6, display: "20.00 USDT" },
+    maximumSpend: { amount: "20000000", assetId: "a", symbol: "USDT", decimals: 6, display: "20.00 USDT" },
+    recipientReceives: { amount: "100", assetId: "b", symbol: "wBRL", decimals: 6, display: "102.30 wBRL" },
+    minimumReceive: { amount: "99", assetId: "b", symbol: "wBRL", decimals: 6, display: "101.50 wBRL" },
   },
-  fees: [{ amount: "100000", assetId: "a", symbol: "USDT", display: "0.10 USDT" }],
+  fees: [{ amount: "100000", assetId: "a", symbol: "USDT", decimals: 6, display: "0.10 USDT" }],
   slippageBps: 50,
   indicative: true,
 });
@@ -430,9 +430,9 @@ describe("the secure authorization flow", () => {
     response.summary = {
       ...response.summary,
       amountMode: "EXACT_OUTPUT",
-      recipientReceives: { amount: "1", assetId: "b", symbol: "BRL", display: "R$500.00" },
-      senderSpends: { amount: "1", assetId: "a", symbol: "USDT", display: "92.25 USDT" },
-      maximumSpend: { amount: "1", assetId: "a", symbol: "USDT", display: "93.00 USDT" },
+      recipientReceives: { amount: "1", assetId: "b", symbol: "BRL", decimals: 6, display: "R$500.00" },
+      senderSpends: { amount: "1", assetId: "a", symbol: "USDT", decimals: 6, display: "92.25 USDT" },
+      maximumSpend: { amount: "1", assetId: "a", symbol: "USDT", decimals: 6, display: "93.00 USDT" },
     };
     const { adapter, service } = build({ agent: scriptedAgent(response) });
     await service.handleInbound(inbound({ text: "send joão exactly R$500", eventId: event() }));
@@ -492,9 +492,15 @@ describe("the secure authorization flow", () => {
         },
         /You don't have enough USDT for this payment/,
       ],
+      // This one carries the service's own wording, which names the currencies that WOULD pay for the payment, so it is shown
+      // rather than replaced with something vaguer. Only the way forward is added.
       [
-        { type: "ERROR", code: "WALLET_NEEDS_FUNDING", text: "internal" },
-        /don't have a supported balance for this payment yet/,
+        {
+          type: "ERROR",
+          code: "WALLET_NEEDS_FUNDING",
+          text: "Your wallet doesn't hold anything that can pay for this yet. Any of these would work: US Dollar.",
+        },
+        /Any of these would work: US Dollar\.\n\nWant to fund your wallet\?/,
       ],
     ];
     for (const [response, expected] of cases) {

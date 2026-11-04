@@ -18,6 +18,7 @@ import { IntentCoordinator } from "../intents/coordinator.js";
 import type { Applied, OpenPaymentNeeds, ResumeTurn } from "../intents/coordinator.js";
 import {
   activeFocus,
+  amountOnQuotedPair,
   isExplicitIntent,
   parseBareAmount,
   parseBareLabel,
@@ -78,6 +79,11 @@ export interface CommandInput extends IncomingBase {
     | "CONVERT_CURRENCY";
   /** CONTINUE_PAYMENT: the payment the pressed button belonged to. */
   resumeIntentId?: string;
+  /**
+   * ASK_RATE_PAIR: the pair the person typed with the command ("/rates naira to argentine pesos"). Read exactly like the answer
+   * to "which pair?", so the command needs no syntax of its own and nothing is assumed when it is absent.
+   */
+  rateText?: string;
   /** CONVERT_CURRENCY: what to convert (currency codes and the human amount), from the button's stored payload. */
   conversion?: { from: string; to: string; amount: string };
 }
@@ -279,7 +285,15 @@ export class AgentService {
 
   /** A deterministic command: stored like a message (so it is idempotent), applied without the interpreter. */
   async handleCommand(input: CommandInput): Promise<AgentTurnResult> {
-    const { kind: _kind, command, resumeIntentId: _resume, conversion, ...base } = input;
+    const {
+      kind: _kind,
+      command,
+      resumeIntentId: _resume,
+      rateText,
+      conversion,
+      ...base
+    } = input;
+    const pairText = command === "ASK_RATE_PAIR" ? rateText?.trim() : undefined;
     const accepted = await this.accept({
       ...base,
       content:
@@ -290,13 +304,25 @@ export class AgentService {
             : command === "CONTINUE_PAYMENT"
               ? "Continue"
               : command === "ASK_RATE_PAIR"
-                ? "Check a rate"
+                ? (pairText !== undefined && pairText.length > 0 ? pairText : "Check a rate")
                 : command === "CONVERT_CURRENCY"
                   ? "Convert"
                   : "Start over",
     });
     if ("reply" in accepted) {
       return this.duplicateResult(accepted.conversation, accepted.message, accepted.reply);
+    }
+
+    // "/rates naira to argentine pesos": the pair came with the command, so it is read now instead of asking for it. It goes
+    // through exactly the same path as a typed answer, so an unknown or ambiguous side is handled the same way too.
+    if (pairText !== undefined && pairText.length > 0) {
+      return this.route(
+        await this.answerRatePair(accepted.conversation, accepted.message, accepted.fresh, {
+          kind: "RATE_PAIR",
+          setAt: this.now().toISOString(),
+        }),
+        input.userId,
+      );
     }
     const interpretation: Interpretation | ResumeTurn =
       command === "SHOW_BALANCE"
@@ -382,7 +408,15 @@ export class AgentService {
     const open = await findActiveIntent(read, conversation.id);
 
     const focus = activeFocus(conversation.metadata, this.now(), open);
-    if (focus) return this.answerRatePair(conversation, message, fresh, focus);
+    if (focus?.kind === "RATE_PAIR") return this.answerRatePair(conversation, message, fresh, focus);
+    if (focus?.kind === "RATE_QUOTED") {
+      // "20,000" right after a rate for Naira to Argentine pesos means ₦20,000 in pesos. Only a bare number is taken this
+      // way; anything else is read normally, so a new request is never trapped by the last answer.
+      const value = parseBareAmount(message.content);
+      if (value !== undefined) {
+        return this.complete(conversation, message, amountOnQuotedPair(focus, value), fresh);
+      }
+    }
 
     const parsed = open?.parsed;
     if (open?.status === "AWAITING_DETAILS" && parsed && isTransactionalIntent(parsed)) {

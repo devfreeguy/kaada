@@ -36,7 +36,8 @@ function world(): RoutingHarness {
 
 const focusOf = async (r: RoutingHarness, turn: { conversationId: string }) =>
   (await r.world.repositories.conversations.findById(turn.conversationId))?.metadata?.["focus"] as
-    { kind: string; intentId?: string; intentRevision?: number } | undefined;
+    | { kind: string; intentId?: string; intentRevision?: number; from?: string; to?: string; setAt?: string }
+    | undefined;
 const intentsOf = (r: RoutingHarness) => [...r.world.intents.values()];
 
 describe("the pair parser (no model needed)", () => {
@@ -87,13 +88,23 @@ describe("a rate question is remembered, and its answer is read as the answer", 
     const before = r.h.interpreterCalls;
     const answer = await r.h.say("wARS to USDT");
     assert.equal(answer.response.type, "QUOTE_RESULT");
-    assert.match(answer.response.text, /^AR\$1 currently gives approximately \$[\d.]+/);
+    // A rate question is answered as a RATE: the pair, then the rate itself at useful precision.
+    // "AR$1 = $0.00098", never an amount rounded to "<$0.01" and never a figure a model wrote.
+    assert.match(answer.response.text, /Argentine Peso \(ARS\) → US Dollar \(USD\)/);
+    assert.match(answer.response.text, /^AR\$1 = \$0\.\d+$/m);
     assert.equal(r.h.interpreterCalls, before, "no language-model call for a plain pair");
     assert.ok(
       intentsOf(r).every((i) => i.type === "QUOTE"),
       "no payment was begun",
     );
-    assert.equal(await focusOf(r, answer), undefined, "answered, so the question is cleared");
+    // The "which pair?" question is answered, so it is gone; what replaces it is the pair just quoted, so that a bare
+    // amount next ("20,000") is read as that much of it rather than as a new payment.
+    assert.deepEqual(await focusOf(r, answer), {
+      kind: "RATE_QUOTED",
+      from: "wARS",
+      to: "USDT",
+      setAt: (await focusOf(r, answer))?.setAt,
+    });
   });
 
   it("'wARS/USDT', 'wARS -> USDT', 'USDT cNGN' and 'USDT to cNGN' are all pairs", async () => {
@@ -305,7 +316,7 @@ describe("in the chat: Today's rates, then the pair", () => {
     await service.handleInbound(inbound({ eventId: `fc-${randomUUID()}`, command: "RATES" }));
     assert.match(adapter.last?.text ?? "", /Which rate/i);
     await service.handleInbound(inbound({ eventId: `fc-${randomUUID()}`, text: "wARS to USDT" }));
-    assert.match(adapter.last?.text ?? "", /AR\$1 currently gives approximately \$[\d.]+/);
+    assert.match(adapter.last?.text ?? "", /AR\$1 = \$0\.\d+/);
     assert.ok(intentsOf(r).every((i) => i.type === "QUOTE"));
     assert.equal(r.h.interpreterCalls, 0, "no model call anywhere in this exchange");
   });

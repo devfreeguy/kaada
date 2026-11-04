@@ -34,6 +34,7 @@ import type {
   RouteSummary,
 } from "../responses/agent-response.js";
 import { describeMoney } from "../currency/catalog.js";
+import { buildRateAnswer } from "./rate-answer.js";
 
 /**
  * What planning a RoutingRequest produced, before anything is written.
@@ -329,10 +330,7 @@ export class RoutingService {
     };
     const response: QuoteResultResponse = {
       type: "QUOTE_RESULT",
-      text:
-        request.amountMode === "EXACT_INPUT"
-          ? `${input.display} currently gives approximately ${output.display}${fine}. Fees: ${feeText}.`
-          : `To get ${output.display} you would need approximately ${input.display}${fine}. Fees: ${feeText}.`,
+      text: await this.quoteText(request, input, output, fees, { mock, indicative, fine, feeText }),
       intentId: request.intentId,
       revision: request.intentRevision,
       routeId: createId(),
@@ -542,6 +540,38 @@ export class RoutingService {
     return undefined;
   }
 
+  /**
+   * The words of a priced QUOTE. A rate question gets a rate line (the rate itself, derived exactly from the two priced
+   * amounts); a question about a real amount gets that amount converted. Either way the figures are the provider's, and
+   * neither is ever described as a firm, executable quote: only the firm-quote path produces one of those.
+   */
+  private async quoteText(
+    request: RoutingRequest,
+    input: MoneyView,
+    output: MoneyView,
+    fees: MoneyView[],
+    labels: { mock: boolean; indicative: boolean; fine: string; feeText: string },
+  ): Promise<string> {
+    if (request.rateOnly === true) {
+      const [from, to] = await Promise.all([
+        this.deps.assets.getById(input.assetId),
+        this.deps.assets.getById(output.assetId),
+      ]);
+      return buildRateAnswer({
+        source: input,
+        destination: output,
+        sourceCurrency: from?.fiatCode,
+        destinationCurrency: to?.fiatCode,
+        mock: labels.mock,
+        indicative: labels.indicative,
+        amountAsked: false,
+      });
+    }
+    return request.amountMode === "EXACT_INPUT"
+      ? `${input.display} currently gives approximately ${output.display}${labels.fine}. Fees: ${labels.feeText}.`
+      : `To get ${output.display} you would need approximately ${input.display}${labels.fine}. Fees: ${labels.feeText}.`;
+  }
+
   private async view(money: Money, assets: Map<string, Asset>): Promise<MoneyView> {
     let asset = assets.get(money.assetId);
     if (!asset) {
@@ -554,6 +584,7 @@ export class RoutingService {
       amount: money.amount,
       assetId: money.assetId,
       symbol: asset.symbol,
+      decimals: asset.decimals,
       display: describeMoney(asset, money.amount),
     };
   }
@@ -597,10 +628,7 @@ export class RoutingService {
     if (request.purpose === "QUOTE") {
       const response: QuoteResultResponse = {
         type: "QUOTE_RESULT",
-        text:
-          request.amountMode === "EXACT_INPUT"
-            ? `${input.display} currently gives approximately ${output.display}${fine}. Fees: ${feeText}.`
-            : `To get ${output.display} you would need approximately ${input.display}${fine}. Fees: ${feeText}.`,
+        text: await this.quoteText(request, input, output, fees, { mock, indicative, fine, feeText }),
         intentId: request.intentId,
         revision: request.intentRevision,
         routeId: route.id,

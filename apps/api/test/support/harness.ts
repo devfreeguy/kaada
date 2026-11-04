@@ -64,6 +64,8 @@ export interface Harness {
       externalConversationId?: string;
       userId?: string;
       resumeIntentId?: string;
+      /** ASK_RATE_PAIR: the pair typed with the command ("/rates naira to argentine pesos"). */
+      rateText?: string;
     },
   ): Promise<AgentTurnResult>;
   /** Selects an option by id, as a channel would. */
@@ -158,6 +160,7 @@ export function createHarness(
         command,
         externalMessageId: opts.externalMessageId ?? `cmd-${command}-${String(++commandCounter)}`,
         ...(opts.resumeIntentId && { resumeIntentId: opts.resumeIntentId }),
+        ...(opts.rateText && { rateText: opts.rateText }),
       }),
     say: (content, opts = {}) =>
       agent.handleMessage({

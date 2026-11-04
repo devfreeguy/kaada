@@ -38,6 +38,7 @@ export async function buildPricedSummary(input: {
       amount: money.amount,
       assetId: money.assetId,
       symbol: asset.symbol,
+      decimals: asset.decimals,
       display: describeMoney(asset, money.amount),
     };
   };
