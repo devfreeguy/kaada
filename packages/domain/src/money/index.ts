@@ -6,6 +6,13 @@ export {
   isSmallestUnitAmount,
 } from "./amount.js";
 export { normalizeSpokenAmount } from "./spoken-amount.js";
+export {
+  CRYPTO_DISPLAY_STYLE,
+  fiatDisplayStyle,
+  formatDisplayAmount,
+  formatRate,
+} from "./display.js";
+export type { DisplayStyle } from "./display.js";
 export { formatSmallestUnit, isHumanAmountValue, parseHumanAmount } from "./human-amount.js";
 export type { HumanAmount } from "./human-amount.js";
 export {
