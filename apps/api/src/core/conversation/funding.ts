@@ -31,11 +31,17 @@ export function walletAddressMessage(info: FundingInfo): string {
   return `Your Kaada wallet\nNetwork: ${info.network}\nAddress: ${info.address}`;
 }
 
+/** What Kaada supports, independently of whether this person has a wallet yet. */
+export type SupportedCatalogue = Pick<FundingInfo, "network" | "assets">;
+
 /**
- * "What do you support? / Can I receive CELO?": what the wallet really holds (named as currencies, never tickers), and the one
- * other thing it can receive. Every fact here is application state or a fixed product rule, never model text.
+ * "What do you support? / Can I receive CELO?": which currencies Kaada works with (named as currencies, never tickers), and
+ * the one other thing it can receive. Every fact here is application state or a fixed product rule, never model text.
+ *
+ * It deliberately needs no wallet address: which currencies exist is a fact about Kaada, not about the person asking, so
+ * somebody who has not set a wallet up yet still gets the real answer instead of being sent to the setup page.
  */
-export function supportedAssetsMessage(info: FundingInfo): string {
+export function supportedAssetsMessage(info: SupportedCatalogue): string {
   const supported =
     info.assets.length > 0
       ? `Your Kaada wallet works with these currencies on the ${info.network} network:\n${info.assets.join("\n")}`

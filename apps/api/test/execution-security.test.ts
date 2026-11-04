@@ -77,7 +77,9 @@ describe("execution security review (source scan)", () => {
       (p) => !isRecoverySigner(p) && !isBrowserRecoverySigner(p),
     )) {
       const text = code(path);
-      if (path.endsWith("logger.ts")) continue; // the redaction list names key material to hide it
+      // A redaction list names key material in order to hide it; both of these are such a list and nothing else.
+      if (path.endsWith("logger.ts") || path.replace(/\\/g, "/").endsWith("core/channels/trace.ts"))
+        continue;
       // The adapter is the only file that sends or signs UserOperations (it is held to its own scan
       // in wallet-security.test.ts).
       const userOps = /eth_sendUserOperation|sendUserOperation|signUserOperation/;

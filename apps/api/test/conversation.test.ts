@@ -663,7 +663,9 @@ describe("Kaada's voice through the real Agent Core", () => {
       intent({ type: "SEND", recipient: { type: "SAVED_BENEFICIARY", value: "Daniel" } }),
     );
     await svc.handleInbound(say("hi"));
-    assert.match(adapter.last?.text ?? "", /^(Hey|Hi)/);
+    // Which of the fixed greetings is used is chosen by a seed taken from the inbound event id, so all four openings are
+    // reachable here. Pinning two of them made this test fail roughly one run in four for no reason.
+    assert.match(adapter.last?.text ?? "", /^(Hey|Hi|Hello)/);
     await svc.handleInbound(say("I need to pay Daniel"));
     assert.match(adapter.last?.text ?? "", /Daniel it is/);
     assert.match(adapter.last?.text ?? "", /How much/);
@@ -679,7 +681,19 @@ describe("Kaada's voice through the real Agent Core", () => {
     h.script.set("20", intent({ type: "SEND", amount: { value: "20" } }));
     await svc.handleInbound(say("I need to pay Daniel"));
     await svc.handleInbound(say("thanks"));
-    assert.equal(adapter.last?.actions, undefined);
+    // "Thanks" is read as a farewell, but a half-built payment is not abandoned because someone was polite: the reply says
+    // it is still waiting and offers the way back to it, instead of signing off and dropping it.
+    assert.match(
+      adapter.last?.text ?? "",
+      /payment in progress/i,
+      "the open payment is still mentioned",
+    );
+    assert.deepEqual(
+      (adapter.last?.actions ?? [])
+        .map((action) => ("semantic" in action ? action.semantic : action.type))
+        .sort(),
+      ["CANCEL", "CONTINUE_PAYMENT"],
+    );
     await svc.handleInbound(say("20"));
     assert.match(adapter.last?.text ?? "", /currency/i, "the payment carried on where it was");
   });

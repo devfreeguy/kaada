@@ -35,6 +35,7 @@ import type {
 } from "../responses/agent-response.js";
 import { describeMoney } from "../currency/catalog.js";
 import { buildRateAnswer } from "./rate-answer.js";
+import { playgroundTurn } from "../channels/trace.js";
 
 /**
  * What planning a RoutingRequest produced, before anything is written.
@@ -126,7 +127,15 @@ export class RoutingService {
 
     // Only a payment spends the user's funds, so only a payment needs a wallet. A quote is a price
     // question and works without one.
-    const funding = request.purpose === "PAYMENT" ? this.deps.funding : undefined;
+    //
+    // THE PLAYGROUND'S EXECUTION BOUNDARY. In a development playground turn a payment is understood, routed and priced, but
+    // the funding resolver is left out, exactly as it is for a quote. That is the single narrowest point where this pipeline
+    // would otherwise reach a wallet: without it, nothing below asks for a wallet, a balance, a gas check, an authorization
+    // session, a signature or a transaction, because every one of those hangs off `funding` or off the walletId it yields.
+    // The flag comes from an async context that only the playground controller establishes, and that controller exists only
+    // when AGENT_PLAYGROUND is on, which configuration refuses in production. Telegram is untouched.
+    const simulated = playgroundTurn();
+    const funding = request.purpose === "PAYMENT" && !simulated ? this.deps.funding : undefined;
     let wallet: { id: string; address: string } | null = null;
     if (funding) {
       try {
@@ -650,7 +659,10 @@ export class RoutingService {
     const min = minReceive(route, slippageBps, request.amountMode);
     const recipient = request.recipient?.displayName;
     const who = recipient ?? "The recipient";
-    const gate = this.deps.authorization;
+    // Belt and braces: a playground turn never has a walletId (the funding resolver was left out above), so this branch is
+    // already unreachable for it. Naming the condition here means a future change that supplies a walletId still cannot open
+    // an authorization session, which is the step that leads to a PIN page and a real payment.
+    const gate = playgroundTurn() ? null : this.deps.authorization;
     if (gate && authorization.walletId) {
       const session = await gate.begin(authorization.repositories, {
         userId: request.userId,

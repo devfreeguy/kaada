@@ -35,8 +35,33 @@ function compact<T extends object>(value: T): T {
   return Object.fromEntries(entries.filter(([, entry]) => entry !== undefined)) as unknown as T;
 }
 
-const sameCurrency = (a: string | undefined, b: string | undefined): boolean =>
+/** Whether two currency or asset labels name the same thing, as written. */
+export const sameCurrency = (a: string | undefined, b: string | undefined): boolean =>
   a !== undefined && b !== undefined && a.trim().toLowerCase() === b.trim().toLowerCase();
+
+/**
+ * For a CONVERT or a QUOTE the amount's currency and `fromAsset` are two names for ONE side: "2000 pesos to naira" states
+ * "pesos" in both. They must therefore move together. When the two agreed before and only one of them has just been restated
+ * — the person answered "which peso?" with "mexican", or picked the option — the other still carries the superseded label,
+ * and resolving it would ask the very same question again. This brings the stale one along.
+ *
+ * It only ever copies a label the person themselves just gave, and only when the two were already in lockstep: a side that
+ * was deliberately different ("convert 100 USDT, paying from my USDC") is left exactly as it is.
+ */
+export function alignedSourceLabel(
+  previous: { amount?: IntentAmount | undefined; fromAsset?: string | undefined },
+  merged: { amount?: IntentAmount | undefined; fromAsset?: string | undefined },
+): string | undefined {
+  const amountLabel = merged.amount?.currencyOrAsset;
+  const { fromAsset } = merged;
+  if (amountLabel === undefined || fromAsset === undefined) return undefined;
+  if (sameCurrency(amountLabel, fromAsset)) return undefined;
+  // Whichever one still reads as it did before is the stale one; the other is what was just said.
+  if (sameCurrency(amountLabel, previous.amount?.currencyOrAsset)) {
+    return sameCurrency(fromAsset, previous.fromAsset) ? undefined : fromAsset;
+  }
+  return undefined;
+}
 
 /**
  * A replacement amount wins. When it names no currency ("make it 40") it keeps the earlier amount's
@@ -96,23 +121,37 @@ function mergeSend(previous: SendIntent, next: SendIntent): SendIntent {
   });
 }
 
+/** The merged operation with the amount's currency brought into line with a just-restated `fromAsset`. */
+function withAlignedSource<T extends ConvertIntent | QuoteIntent>(previous: T, merged: T): T {
+  const label = alignedSourceLabel(previous, merged);
+  return label === undefined || !merged.amount
+    ? merged
+    : { ...merged, amount: { ...merged.amount, currencyOrAsset: label } };
+}
+
 function mergeConvert(previous: ConvertIntent, next: ConvertIntent): ConvertIntent {
-  return compact({
-    ...compact(previous),
-    ...compact(next),
-    amount: mergeAmount(previous.amount, next.amount),
-    constraints: mergeConstraints(previous.constraints, next.constraints),
-  });
+  return withAlignedSource(
+    previous,
+    compact({
+      ...compact(previous),
+      ...compact(next),
+      amount: mergeAmount(previous.amount, next.amount),
+      constraints: mergeConstraints(previous.constraints, next.constraints),
+    }),
+  );
 }
 
 function mergeQuote(previous: QuoteIntent, next: QuoteIntent): QuoteIntent {
-  return compact({
-    ...compact(previous),
-    ...compact(next),
-    amount: mergeAmount(previous.amount, next.amount),
-    destination: mergeDestination(previous.destination, next.destination),
-    constraints: mergeConstraints(previous.constraints, next.constraints),
-  });
+  return withAlignedSource(
+    previous,
+    compact({
+      ...compact(previous),
+      ...compact(next),
+      amount: mergeAmount(previous.amount, next.amount),
+      destination: mergeDestination(previous.destination, next.destination),
+      constraints: mergeConstraints(previous.constraints, next.constraints),
+    }),
+  );
 }
 
 /**

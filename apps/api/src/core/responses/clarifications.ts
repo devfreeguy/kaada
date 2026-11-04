@@ -1,5 +1,6 @@
 import type { MissingField } from "@kaada/domain";
 
+import { isSharedCurrencyWord } from "../currency/registry.js";
 import type { ChoiceDraft } from "../intents/choices.js";
 import type {
   ClarificationOption,
@@ -21,8 +22,8 @@ export interface Clarification {
   subject?: string;
   /** Extra detail for the wording, e.g. how many decimals a currency allows. */
   decimals?: number;
-  /** Why a recipient was not found, or that too many matched to list. */
-  detail?: "INVALID_FORMAT" | "UNSUPPORTED_TYPE" | "TOO_MANY" | "NO_WALLET";
+  /** Why a recipient was not found, that too many matched to list, or that an amount was not a positive number. */
+  detail?: "INVALID_FORMAT" | "UNSUPPORTED_TYPE" | "TOO_MANY" | "NO_WALLET" | "NOT_POSITIVE";
   /** Answers the user can pick. They are stored server-side when the question is asked. */
   choices?: ChoiceDraft[];
 }
@@ -40,6 +41,11 @@ export function clarificationText(clarification: Clarification): string {
   switch (field) {
     case "AMOUNT":
       if (reason === "INVALID") {
+        // Zero is a number the amount parser accepts and the rest of the pipeline would happily price and route. Nobody
+        // means to send nothing, so it is refused here, by name, rather than becoming an empty payment summary.
+        if (detail === "NOT_POSITIVE") {
+          return `That needs to be more than zero. How much would you like to ${VERB[operation]}?`;
+        }
         return `${subject ?? "That currency"} supports up to ${decimals ?? 0} decimal places. How much would you like to ${VERB[operation]}?`;
       }
       return `How much would you like to ${VERB[operation]}?`;
@@ -64,7 +70,9 @@ export function clarificationText(clarification: Clarification): string {
         if (detail === "UNSUPPORTED_TYPE") {
           return "I can't look up that kind of contact yet. You can use a saved contact, a Kaada username, or a wallet address. Who would you like to send it to?";
         }
-        return `I couldn't find ${subject ?? "that recipient"}. Who would you like to send it to?`;
+        // "I couldn't find Daniel. Who would you like to send it to?" on its own leaves the person with nothing new to try,
+        // so they type the same name again and get the same sentence back. Naming what DOES work ends the loop.
+        return `I couldn't find ${subject ?? "that recipient"}. Who would you like to send it to? You can give me their @username or a wallet address.`;
       }
       return "Who would you like to send it to?";
 
@@ -106,6 +114,12 @@ function assetQuestion(
   subject: string | undefined,
   missing: string,
 ): string {
+  if (reason === "INVALID") {
+    // Both sides are the same currency. There is no rate between a currency and itself.
+    return subject === undefined
+      ? "That's the same currency on both sides. What would you like it in instead?"
+      : `${subject} and ${subject} are the same currency. What would you like it in instead?`;
+  }
   if (reason === "NOT_FOUND") {
     return `I don't support ${subject ?? "that"} yet. Which currency would you like to use instead?`;
   }
@@ -113,7 +127,12 @@ function assetQuestion(
     if (detail === "TOO_MANY") {
       return `${subject ?? "That"} matches many assets. Please say which one, with its network.`;
     }
-    return `${subject ?? "That"} matches more than one asset. Which one do you mean?`;
+    // "pesos" names four real currencies, and the person used an ordinary word, not a ticker. Asking which PESOS they mean
+    // is the question a person would ask; "matches more than one asset" is the database's way of putting it.
+    if (subject !== undefined && isSharedCurrencyWord(subject)) {
+      return `Which ${subject} do you mean?`;
+    }
+    return `There's more than one ${subject ?? "match"}. Which one did you mean?`;
   }
   return missing;
 }

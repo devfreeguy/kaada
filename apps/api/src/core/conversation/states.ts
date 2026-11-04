@@ -66,6 +66,8 @@ export type ResponseState = (typeof RESPONSE_STATES)[number];
 export type PresentationMode = "MODEL_FULL" | "MODEL_WRAPPED" | "DETERMINISTIC";
 
 export const STATE_MODE: Record<ResponseState, PresentationMode> = {
+  // Note: a CHAT response is always phrased by the model (see ConversationPresenter.present), so this entry does not decide
+  // a greeting's mode. What keeps a greeting from turning into a recited menu is its instruction (instructions.ts).
   CASUAL_GREETING: "MODEL_FULL",
   CASUAL_FINANCE_CHAT: "MODEL_FULL",
   CAPABILITY_DISCOVERY: "MODEL_FULL",

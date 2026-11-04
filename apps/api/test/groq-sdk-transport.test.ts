@@ -141,7 +141,8 @@ describe("Groq SDK transport: failures and retries", () => {
       error instanceof GroqTransportError,
       `expected a GroqTransportError, got ${String(error)}`,
     );
-    return { kind: error.kind, status: error.status, calls: seen.length, error };
+    // Order matters: a test below reads the first three values positionally, so new keys go on the end.
+    return { kind: error.kind, status: error.status, calls: seen.length, error, scope: error.scope };
   };
 
   const rateLimited = json(429, { error: { message: "rate limited" } }, { "retry-after-ms": "1" });
@@ -149,6 +150,65 @@ describe("Groq SDK transport: failures and retries", () => {
   it("retries a rate limit once, then reports it", async () => {
     const result = await kindOf([rateLimited]);
     assert.deepEqual([result.kind, result.status, result.calls], ["RATE_LIMITED", 429, 2]);
+  });
+
+  // A spent daily budget and a burst over the per-minute ceiling arrive as the same 429. Waiting cures the second and
+  // can never cure the first, so the kind alone is not enough to tell what to do about it.
+  it("names the exhausted quota, so a spent daily budget is not mistaken for throughput", async () => {
+    const daily = await kindOf([
+      json(
+        429,
+        {
+          error: {
+            message:
+              "Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01secret` service tier" +
+              " `on_demand` on tokens per day (TPD): Limit 200000, Used 198283, Requested 2056.",
+            type: "tokens",
+            code: "rate_limit_exceeded",
+          },
+        },
+        { "retry-after-ms": "1" },
+      ),
+    ]);
+    assert.deepEqual([daily.kind, daily.scope], ["RATE_LIMITED", "TPD"]);
+
+    const perMinute = await kindOf([
+      json(
+        429,
+        {
+          error: {
+            message: "Rate limit reached ... on tokens per minute (TPM): Limit 8000, Used 7900.",
+          },
+        },
+        { "retry-after-ms": "1" },
+      ),
+    ]);
+    assert.deepEqual([perMinute.kind, perMinute.scope], ["RATE_LIMITED", "TPM"]);
+  });
+
+  it("carries the quota name without Groq's organisation identifier or usage figures", async () => {
+    const result = await kindOf([
+      json(
+        429,
+        {
+          error: {
+            message:
+              "Rate limit reached in organization `org_01secret` on tokens per day (TPD):" +
+              " Limit 200000, Used 198283.",
+          },
+        },
+        { "retry-after-ms": "1" },
+      ),
+    ]);
+    const serialised = `${result.error.message} ${JSON.stringify(result.error)}`;
+    assert.equal(result.scope, "TPD");
+    assert.ok(!serialised.includes("org_01secret"), "the organisation identifier must not travel");
+    assert.ok(!serialised.includes("198283"), "Groq's usage figures must not travel");
+  });
+
+  it("names no quota when Groq names none, rather than guessing one", async () => {
+    const result = await kindOf([rateLimited]);
+    assert.equal(result.scope, undefined);
   });
 
   it("recovers when the single retry succeeds", async () => {

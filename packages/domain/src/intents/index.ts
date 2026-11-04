@@ -25,7 +25,13 @@ export { buildRoutingRequest } from "./routing-request.js";
 export type { RecipientView, RoutingRequest } from "./routing-request.js";
 export { AGENT_COMMANDS } from "./interpretation.js";
 export type { AgentCommand, Interpretation } from "./interpretation.js";
-export { isTransactionalIntent, mergeAgentIntent, withoutSourcePreference } from "./merge.js";
+export {
+  alignedSourceLabel,
+  isTransactionalIntent,
+  mergeAgentIntent,
+  sameCurrency,
+  withoutSourcePreference,
+} from "./merge.js";
 export type { MergeOutcome, TransactionalIntent } from "./merge.js";
 export { MISSING_FIELDS, findMissingFields } from "./missing-fields.js";
 export type { MissingField } from "./missing-fields.js";

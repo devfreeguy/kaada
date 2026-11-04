@@ -1,7 +1,7 @@
 import { isUuid } from "@kaada/domain";
 import type { Asset, AssetRegistry } from "@kaada/domain";
 
-import { resolveCurrencyLabel } from "../currency/registry.js";
+import { currencyForCountryWord, resolveCurrencyLabel } from "../currency/registry.js";
 import type { UserCurrency } from "../currency/registry.js";
 
 export type AssetResolution =
@@ -60,8 +60,17 @@ export function createAssetResolver(registry: AssetRegistry): AssetResolver {
         return { status: "AMBIGUOUS", candidates: sorted(supported.flat()) };
       }
 
+      // A bare country word, in an asset slot, names that country's currency. "Which pesos do you mean?" is answered
+      // "mexican" far more often than "Mexican pesos", and that answer can only be about money: it was a reply to a
+      // question about money, and nothing but an asset is read from here. resolveCurrencyLabel refuses it on purpose,
+      // because "Mexican" on its own is a place; the licence to read it as a currency belongs to this caller, not to it.
+      const viaCountry =
+        currency.status === "UNKNOWN" ? currencyForCountryWord(normalized) : undefined;
+
       const lookup =
-        currency.status === "RESOLVED" ? currency.currency.code : normalized;
+        currency.status === "RESOLVED"
+          ? currency.currency.code
+          : (viaCountry?.code ?? normalized);
       const [byFiat, bySymbol] = await Promise.all([
         registry.findByFiatCode(lookup),
         registry.findBySymbol(lookup),
@@ -79,9 +88,18 @@ export function createAssetResolver(registry: AssetRegistry): AssetResolver {
   };
 }
 
-/** A stable order, so the same question always lists its options the same way. */
+/**
+ * A stable AND meaningful order, so the same question always lists its options the same way and the list reads as a list.
+ * Sorting by id was stable but the ids are random uuids, so "which pesos?" offered Colombian, Chilean, Argentine, Mexican in
+ * an order nobody could predict or scan. Currency code first, then symbol, then id as the final tie-break.
+ */
 function sorted(assets: readonly Asset[]): Asset[] {
-  return [...assets].sort((a, b) => a.id.localeCompare(b.id));
+  return [...assets].sort(
+    (a, b) =>
+      (a.fiatCode ?? "").localeCompare(b.fiatCode ?? "") ||
+      a.symbol.localeCompare(b.symbol) ||
+      a.id.localeCompare(b.id),
+  );
 }
 
 /** A short label for showing an asset to a person, e.g. "USDC (chain 42220)". */

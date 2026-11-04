@@ -364,12 +364,14 @@ export class IntentCoordinator {
     intent: AgentIntent,
     applied: Applied,
   ): Promise<Applied> {
+    // RATE_GENERAL asks its own question ("which pair?") and must not be followed by a second one.
+    //
+    // A FAREWELL does carry the reminder. "Thanks" and "that's all" are read as a farewell, and a person who says thanks
+    // halfway through building a payment has not abandoned it: answering "catch you later" and dropping a half-finished
+    // payment on the floor is how a courtesy turns into a lost transfer. The payment is still open, so it is still said.
     const isSide =
       (intent.type === "HELP" &&
-        !(
-          isChatTopic(intent.topic) &&
-          (intent.topic === "FAREWELL" || intent.topic === "RATE_GENERAL")
-        )) ||
+        !(isChatTopic(intent.topic) && intent.topic === "RATE_GENERAL")) ||
       intent.type === "BALANCE";
     if (!isSide) return applied;
     const resume = await this.resumeOf(repositories, conversation, active);
@@ -796,6 +798,17 @@ export class IntentCoordinator {
         };
 
       default: {
+        // An amount below zero. The sentence was understood; the size is the thing that cannot be. Said before the restate
+        // below, so a negative amount typed mid-payment is explained rather than met with "I didn't catch that".
+        if (intent.type === "UNKNOWN" && intent.reason === "NEGATIVE_AMOUNT") {
+          return {
+            response: {
+              type: "MESSAGE",
+              text: "An amount has to be more than zero. How much would you like to send?",
+            },
+            mergeKind,
+          };
+        }
         // Not understood. Restate where the operation stands: the pending question again, or the
         // routing handoff if it was already complete. Nothing about the operation changes.
         if (active?.parsed && isTransactionalIntent(active.parsed)) {

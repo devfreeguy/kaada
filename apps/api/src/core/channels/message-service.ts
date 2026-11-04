@@ -44,7 +44,7 @@ import {
   supportedAssetsMessage,
   walletAddressMessage,
 } from "../conversation/funding.js";
-import type { FundingInfo } from "../conversation/funding.js";
+import type { FundingInfo, SupportedCatalogue } from "../conversation/funding.js";
 import type { OnboardingLifecycleService, Announcement } from "../onboarding/lifecycle-service.js";
 import type { OnboardingFacts, OnboardingStep } from "../onboarding/state.js";
 import type { ChannelActionService } from "./action-service.js";
@@ -110,6 +110,11 @@ export interface ChannelMessageServiceDeps {
   /** Trusted funding details for the person's wallet; null while they have none. Absent: funding is not offered. */
   funding?: {
     info(userId: string): Promise<FundingInfo | null>;
+    /**
+     * Which currencies Kaada works with, and on which network, with no wallet involved. "Do you support bitcoin?" is a
+     * question about the product, so it is answered even before the person has a wallet. Absent: only `info` is used.
+     */
+    catalogue?(): Promise<SupportedCatalogue | null>;
     /**
      * What the wallet holds of a supported token right now (smallest units), read fresh. Used to tell whether a deposit makes an
      * open payment affordable. Absent or null: the payment is simply not mentioned.
@@ -1089,8 +1094,12 @@ It's in your ${from.name} balance.`,
     userId: string,
   ): Promise<void> {
     const info = (await this.deps.funding?.info(userId)) ?? null;
-    if (!info) {
-      // No wallet yet (or funding is off): the setup step, or the plain "not ready" answer, is the useful reply.
+    // Which currencies Kaada works with does not depend on this person having a wallet. Answering "your wallet isn't ready
+    // yet, send /start" to "do you support bitcoin?" refuses a question that has a perfectly good answer, and refuses it
+    // with something the person did not ask about. The catalogue is used whenever there is no wallet to read.
+    const catalogue = info ?? (await this.deps.funding?.catalogue?.()) ?? null;
+    if (!catalogue) {
+      // Funding is off entirely, so there is no list to give: the setup step is the only useful reply left.
       await this.sendWalletDetails(adapter, message, userId, "INSTRUCTIONS");
       return;
     }
@@ -1102,8 +1111,9 @@ It's in your ${from.name} balance.`,
         userId,
         createId(),
         {
-          text: supportedAssetsMessage(info),
-          ...(canFund && { suggestions: ["FUND_WALLET" as const] }),
+          text: supportedAssetsMessage(catalogue),
+          // Funding is only offered to someone who has a wallet to fund.
+          ...(canFund && info !== null && { suggestions: ["FUND_WALLET" as const] }),
         },
       ),
     );

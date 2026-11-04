@@ -1,5 +1,18 @@
 import type { NextConfig } from "next";
 
+/*
+ * Local development: where the API is.
+ *
+ * The API loads the repo-root .env itself; Next does not (it reads only apps/web/.env*, which is git-ignored), so without
+ * this `pnpm dev:all` would start both servers and every /api call would still fail with WEB_API_URL_NOT_SET. The API's own
+ * default port is 4000 (see .env.example).
+ *
+ * It applies to development only, and an API_URL that is actually set always wins, so no deployment is affected.
+ */
+if (process.env.NODE_ENV === "development" && !process.env["API_URL"]) {
+  process.env["API_URL"] = "http://localhost:4000";
+}
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Development only: lets the dev server be opened through a public HTTPS tunnel (pnpm --filter @kaada/api dev:tunnels), which

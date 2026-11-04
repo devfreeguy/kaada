@@ -2,10 +2,10 @@ import { timingSafeEqual } from "node:crypto";
 
 import { z } from "zod";
 
+import { parseChannelCommand } from "../../../core/channels/command-parser.js";
 import type {
   ChannelAdapter,
   ChannelDraft,
-  ChannelCommand,
   ChannelTarget,
   InboundChannelMessage,
   OutboundAction,
@@ -71,39 +71,8 @@ const displayName = (user: TelegramUser): string | undefined => {
   return name || undefined;
 };
 
-/**
- * Syntax-level commands only: "/start", "/start payload", "/start@kaadabot". Everything else is plain text.
- * Whatever follows the command is returned with it, untouched: "/rates naira to argentine pesos" is the RATES command with
- * "naira to argentine pesos" to be read, exactly as if it had been typed on its own.
- */
-function commandOf(text: string): { command: ChannelCommand; args?: string } | null {
-  const match = /^\/([A-Za-z_]+)(?:@\w+)?(?:\s|$)/.exec(text);
-  const args = text.slice(match?.[0]?.length ?? 0).trim();
-  const named = (command: ChannelCommand): { command: ChannelCommand; args?: string } => ({
-    command,
-    ...(args.length > 0 && { args: args.slice(0, 2000) }),
-  });
-  switch (match?.[1]?.toLowerCase()) {
-    case "start":
-      return named("START");
-    case "help":
-      return named("HELP");
-    case "balance":
-      return named("BALANCE");
-    case "fund":
-      return named("FUND");
-    case "rates":
-      return named("RATES");
-    case "wallet":
-      return named("WALLET");
-    case "country":
-      return named("COUNTRY");
-    case "cancel":
-      return named("CANCEL");
-    default:
-      return null;
-  }
-}
+/** Shared with every other channel edge (core/channels/command-parser.ts), so the playground reads a command identically. */
+const commandOf = parseChannelCommand;
 
 export interface TelegramAdapterOptions {
   botToken: string;

@@ -1,4 +1,4 @@
-import { isUuid } from "@kaada/domain";
+import { isUuid, sameCurrency } from "@kaada/domain";
 import type {
   ClarificationChoice,
   ClarificationChoiceRepository,
@@ -66,14 +66,29 @@ export function applyAssetChoice(
   assetId: string,
 ): TransactionalIntent | undefined {
   switch (target) {
-    case "AMOUNT":
-      return intent.amount
-        ? { ...intent, amount: { ...intent.amount, currencyOrAsset: assetId } }
-        : undefined;
+    case "AMOUNT": {
+      if (!intent.amount) return undefined;
+      const amount = { ...intent.amount, currencyOrAsset: assetId };
+      // For a CONVERT or a QUOTE the amount's currency and fromAsset name the SAME side. Choosing "Mexican Peso" for the
+      // amount of "2000 pesos to naira" settles fromAsset too; leaving the old label there would resolve to the same set of
+      // candidates and ask the identical question a second time.
+      return intent.type !== "SEND" && sameCurrency(intent.fromAsset, intent.amount.currencyOrAsset)
+        ? { ...intent, amount, fromAsset: assetId }
+        : { ...intent, amount };
+    }
     case "SOURCE_PREFERENCE":
       return intent.type === "SEND" ? { ...intent, sourceAsset: assetId } : undefined;
-    case "FROM_ASSET":
-      return intent.type === "SEND" ? undefined : { ...intent, fromAsset: assetId };
+    case "FROM_ASSET": {
+      if (intent.type === "SEND") return undefined;
+      // The mirror image: settling the operation's source settles the amount's currency when they were the same label.
+      return intent.amount && sameCurrency(intent.fromAsset, intent.amount.currencyOrAsset)
+        ? {
+            ...intent,
+            fromAsset: assetId,
+            amount: { ...intent.amount, currencyOrAsset: assetId },
+          }
+        : { ...intent, fromAsset: assetId };
+    }
     case "TO_ASSET":
       return intent.type === "SEND" ? undefined : { ...intent, toAsset: assetId };
     case "DESTINATION": {

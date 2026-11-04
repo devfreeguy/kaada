@@ -33,6 +33,8 @@ enum IdentityType {
   EMAIL
   DISCORD
   X
+  /// The browser channel. Used by the development agent playground, in its own identity namespace.
+  WEB
 }
 
 enum ChannelType {

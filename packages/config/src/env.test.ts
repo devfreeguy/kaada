@@ -148,7 +148,12 @@ describe("loadConfig", () => {
     assert.equal(config.database.url, databaseUrl);
     assert.equal("directUrl" in config.database, false);
     assert.equal(config.database.poolMax, SETTINGS.database.poolMax);
-    assert.equal(config.database.transactionTimeoutMs, 5000);
+    // Carried through from SETTINGS, like poolMax above: what matters here is that loadConfig passes the setting on, not
+    // what the number currently is.
+    assert.equal(
+      config.database.transactionTimeoutMs,
+      SETTINGS.database.transactionTimeoutMs,
+    );
   });
 
   it("accepts a direct URL, ports and explicit CORS origins", () => {

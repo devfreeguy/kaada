@@ -15,7 +15,8 @@ export const IdentityType = {
   PHONE: 'PHONE',
   EMAIL: 'EMAIL',
   DISCORD: 'DISCORD',
-  X: 'X'
+  X: 'X',
+  WEB: 'WEB'
 } as const
 
 export type IdentityType = (typeof IdentityType)[keyof typeof IdentityType]

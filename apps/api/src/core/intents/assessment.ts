@@ -1,4 +1,4 @@
-import { findMissingFields, isKaadaError, moneyFromHuman } from "@kaada/domain";
+import { findMissingFields, isKaadaError, isZeroMoney, moneyFromHuman } from "@kaada/domain";
 import type {
   Asset,
   CountryDirectory,
@@ -225,8 +225,12 @@ export async function assessIntent(
     if (amountAsset) {
       try {
         const money = moneyFromHuman(amount.value, amountAsset);
-        facts.amount = { money, mode };
-        facts.display.amount = describeMoney(amountAsset, money.amount);
+        if (isZeroMoney(money)) {
+          raise({ field: "AMOUNT", reason: "INVALID", detail: "NOT_POSITIVE" });
+        } else {
+          facts.amount = { money, mode };
+          facts.display.amount = describeMoney(amountAsset, money.amount);
+        }
       } catch (error) {
         if (!isKaadaError(error, "INVALID_AMOUNT")) throw error;
         raise({
@@ -290,6 +294,21 @@ export async function assessIntent(
     // With EXACT_OUTPUT the amount's own currency is what the recipient receives.
     const declared = Boolean(country) || Boolean(destinationLabel) || mode === "EXACT_OUTPUT";
     if (!implied && !declared) raise({ field: "DESTINATION", reason: "MISSING" });
+  }
+
+  // "Naira to naira", "USD to dollars": both sides resolved to the SAME asset, so there is nothing to convert and no rate to
+  // quote. Pricing it answers "₦1 = ₦1.00" and calls it a live rate, which is true and useless. Asking what the other side
+  // should be is the only sensible reply.
+  if (
+    intent.type !== "SEND" &&
+    sourceAssetId !== undefined &&
+    sourceAssetId === destinationAssetId
+  ) {
+    raise({
+      field: "DESTINATION_ASSET",
+      reason: "INVALID",
+      ...(amountAsset?.symbol !== undefined && { subject: amountAsset.symbol }),
+    });
   }
 
   if (issues.length === 0) return { status: "READY", facts };

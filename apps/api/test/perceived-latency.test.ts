@@ -230,7 +230,9 @@ describe("a conversational reply streams, and ends as the final message", () => 
     await service.handleInbound(say());
     assert.ok(adapter.drafts[0]?.closed);
     assert.equal(adapter.sent.length, 1);
-    assert.match(finalText(adapter), /^(Hey|Hi)/, "the deterministic greeting");
+    // Every GREETING fallback, one of which is chosen at random: "Hey 👋", "Hi there 👋", "Hey, good to see you 😄" and
+    // "Hello 👋". Naming only some of them fails on the others roughly once every four runs.
+    assert.match(finalText(adapter), /^(Hey|Hi|Hello)/, "the deterministic greeting");
     assert.ok(!kinds(adapter).includes("remove"));
   });
 

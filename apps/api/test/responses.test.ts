@@ -38,7 +38,26 @@ describe("clarification wording", () => {
     );
     assert.match(
       ask({ field: "SOURCE_ASSET", reason: "AMBIGUOUS", subject: "USDC" }),
-      /USDC matches more than one/,
+      /There's more than one USDC/,
+    );
+    // An everyday word that names several real currencies is asked about as a word, not as a database row.
+    assert.equal(
+      ask({ field: "SOURCE_ASSET", reason: "AMBIGUOUS", subject: "pesos" }),
+      "Which pesos do you mean?",
+    );
+    assert.doesNotMatch(
+      ask({ field: "SOURCE_ASSET", reason: "AMBIGUOUS", subject: "pesos" }),
+      /asset/,
+    );
+    // Both sides of a conversion resolved to the same currency: there is no rate between a currency and itself.
+    assert.equal(
+      ask({ field: "DESTINATION_ASSET", reason: "INVALID", subject: "NGN", operation: "QUOTE" }),
+      "NGN and NGN are the same currency. What would you like it in instead?",
+    );
+    // Zero is refused by name rather than priced as an empty payment.
+    assert.match(
+      ask({ field: "AMOUNT", reason: "INVALID", detail: "NOT_POSITIVE" }),
+      /more than zero/,
     );
     assert.match(
       ask({ field: "AMOUNT", reason: "INVALID", subject: "USD", decimals: 2 }),

@@ -153,7 +153,10 @@ const ALLOWED_FIELDS: Record<IntentType | "RATE", readonly Field[]> = {
   TRANSACTION_STATUS: ["reference"],
   HELP: ["topic"],
   UNKNOWN: [],
-  RATE: ["fromAsset", "toAsset", "destination"],
+  // A rate question may arrive carrying an amount ("how much is 2000 pesos in naira?"). That is not a rate probe at all: it
+  // is a conversion of a real amount, and rateCandidate reads it as one. Forbidding the field here would throw the amount
+  // away and answer a question about one unit, which is how "2000 pesos" used to become "₦1 = ...".
+  RATE: ["amount", "fromAsset", "toAsset", "destination"],
 };
 
 import { RATE_UNIT_AMOUNT } from "../../core/intents/focus.js";
@@ -168,8 +171,19 @@ function text(value: string | null): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
-/** Normalises the way a number was written ("10k", "10,000"); refuses ambiguity rather than guessing. */
+/** A number written as a negative: "-50", "- 50", "−50" (the minus sign people's keyboards produce). */
+const NEGATIVE_AMOUNT = /^[-−–—]\s*[\d.,]+[km]?$/i;
+
+/**
+ * Normalises the way a number was written ("10k", "10,000"); refuses ambiguity rather than guessing.
+ *
+ * A negative number is refused separately from an unreadable one. Both are refusals, but they are not the same refusal:
+ * "send -50 USDT to Daniel" is a perfectly clear sentence, and answering it with "I didn't understand that" is both untrue
+ * and useless, because it asks the person to rephrase something that needed no rephrasing. The amount is the problem, and
+ * saying so is the only reply that tells them what to change.
+ */
 function amountValue(raw: string): string {
+  if (NEGATIVE_AMOUNT.test(raw.trim())) throw new InterpreterOutputError("NEGATIVE_AMOUNT");
   const value = normalizeSpokenAmount(raw);
   if (value === undefined) throw new InterpreterOutputError("AMBIGUOUS_AMOUNT");
   return value;
@@ -224,12 +238,17 @@ export function wireToCandidate(wire: WireInterpretation): unknown {
 }
 
 /**
- * A rate question as a QUOTE for one unit. The target must be named (an asset, a currency or a country); without one the
- * question is conversational ("which rate?") and nothing is priced. The pricing layer, not the model, supplies the rate.
+ * A rate question as a QUOTE. The target must be named (an asset, a currency or a country); without one the question is
+ * conversational ("which rate?") and nothing is priced. The pricing layer, not the model, supplies every number.
+ *
+ * Size matters here. "What's naira to pesos?" asks the PRICE OF ONE UNIT and is answered as a rate, so it is probed with
+ * RATE_UNIT_AMOUNT. "How much is 2000 pesos in naira?" names a real amount and is a conversion of that amount, answered with
+ * the converted figure. Both reach the model as type RATE, so the amount it reports is what tells them apart.
  */
 function rateCandidate(wire: WireInterpretation): unknown {
   const from = text(wire.fromAsset);
   const to = text(wire.toAsset);
+  const stated = text(wire.amount?.value ?? null);
   const destination = {
     ...(text(wire.destination?.country ?? null) && {
       country: text(wire.destination?.country ?? null),
@@ -242,15 +261,22 @@ function rateCandidate(wire: WireInterpretation): unknown {
   if (to === undefined && Object.keys(destination).length === 0) {
     return { kind: "INTENT", intent: { type: "HELP", topic: "RATE_GENERAL" } };
   }
-  const source = from ?? RATE_DEFAULT_FROM;
+  // The currency the amount is in, when one was named, is the side being converted FROM: "2000 pesos in naira" is 2000 of
+  // the pesos. fromAsset is used when the model filled only that.
+  const source = text(wire.amount?.currencyOrAsset ?? null) ?? from ?? RATE_DEFAULT_FROM;
   return {
     kind: "INTENT",
     intent: {
       type: "QUOTE",
-      amount: { value: RATE_UNIT_AMOUNT, currencyOrAsset: source, mode: "EXACT_INPUT" },
+      amount: {
+        value: stated === undefined ? RATE_UNIT_AMOUNT : amountValue(stated),
+        currencyOrAsset: source,
+        mode: "EXACT_INPUT",
+      },
       fromAsset: source,
-      // A rate question, so the answer reads as a rate. The model asked for type RATE; it cannot set this field itself.
-      rateOnly: true,
+      // Only a question about ONE unit is worded as a rate. With a real amount the person asked what that amount is worth,
+      // so the answer is the converted figure. The model asked for type RATE; it cannot set this field itself.
+      ...(stated === undefined && { rateOnly: true }),
       ...(to !== undefined && { toAsset: to }),
       ...(Object.keys(destination).length > 0 && { destination }),
     },

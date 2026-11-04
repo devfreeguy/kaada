@@ -20,6 +20,7 @@ import { StatsModule } from "./stats/stats.module.js";
 import { RateLimitModule } from "./rate-limit/rate-limit.module.js";
 import { RecoverySwitchModule } from "./recovery/recovery-switch.js";
 import { PlatformModule } from "./platform/platform.module.js";
+import { PlaygroundModule } from "./playground/playground.module.js";
 import { RecoveryModule } from "./recovery/recovery.module.js";
 import { WalletModule } from "./wallet/wallet.module.js";
 
@@ -56,6 +57,8 @@ import { WalletModule } from "./wallet/wallet.module.js";
     ExecutionModule,
     RecoveryModule,
     ChannelsModule,
+    // Development only: the provider inside is null unless AGENT_PLAYGROUND is on, and configuration refuses that flag in production.
+    PlaygroundModule,
   ],
   providers: [allExceptionsFilterProvider],
 })

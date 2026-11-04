@@ -30,6 +30,7 @@ import { AUTHORIZATION_SESSION_SERVICE } from "../authorization/authorization.to
 import type { AuthorizationSessionService } from "../core/authorization/session-service.js";
 import { WalletModule } from "../wallet/wallet.module.js";
 import { WALLET_BALANCE_SERVICE, WALLET_SERVICE } from "../wallet/wallet.tokens.js";
+import { recordTrace } from "../core/channels/trace.js";
 import { AGENT_REPOSITORIES, AGENT_SERVICE, CANDIDATE_SERVICES } from "./agent.tokens.js";
 
 function nestAgentLog(): AgentLog {
@@ -39,6 +40,8 @@ function nestAgentLog(): AgentLog {
     if (level === "info") logger.log(entry);
     else if (level === "warn") logger.warn(entry);
     else logger.error(entry);
+    // Also tees the event to the development playground when it is collecting this request. A no-op otherwise.
+    recordTrace(level, event, fields);
   };
 }
 

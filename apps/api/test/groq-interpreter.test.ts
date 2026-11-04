@@ -453,6 +453,28 @@ describe("Groq interpretation: request and context", () => {
       ],
     );
   });
+
+  // Without this, a spent daily budget and a momentary burst look identical in the log, and the obvious reading of
+  // "RATE_LIMITED" — slow down and retry — is the one thing that cannot help when the day's tokens are gone.
+  it("logs which quota a rate limit came from, and omits the field when there is none", async () => {
+    const logs: Record<string, unknown>[] = [];
+    const log = (_level: string, _event: string, fields: Record<string, unknown>) =>
+      void logs.push(fields);
+    const failWith = async (error: GroqTransportError) => {
+      await assert.rejects(
+        new GroqIntentInterpreter(new FakeGroqTransport(() => error), {
+          ...OPTIONS,
+          log,
+        }).interpret(input("x")),
+      );
+    };
+
+    await failWith(new GroqTransportError("RATE_LIMITED", 429, "TPD"));
+    assert.equal(logs[0]?.["limit"], "TPD");
+
+    await failWith(new GroqTransportError("RATE_LIMITED", 429));
+    assert.ok(logs[1] !== undefined && !("limit" in logs[1]));
+  });
 });
 
 describe("Groq interpretation: a number without a currency", () => {
@@ -739,9 +761,11 @@ describe("Groq interpreter inside the Agent Core", () => {
     for (const message of ["slow", "busy"]) {
       const turn = await h.say(message, { externalMessageId: `ext-${message}` });
       assert.equal(turn.response.type, "MESSAGE");
+      // A timeout and a rate limit are failures to REACH the model, not failures to understand: the reply says so, rather
+      // than telling the person their perfectly clear message was not understood.
       assert.equal(
         turn.response.text,
-        "I couldn't understand that request right now. Please try again.",
+        "I'm having trouble on my end right now, not with your message. Give it a moment and send it again.",
       );
     }
     assert.deepEqual([...h.world.intents.values()], before);

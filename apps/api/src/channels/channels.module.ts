@@ -1,4 +1,5 @@
 import { createOnboardingStateReader } from "../core/onboarding/facts-reader.js";
+import { recordTrace } from "../core/channels/trace.js";
 import { Logger, Module } from "@nestjs/common";
 import { createRepositories } from "@kaada/database";
 import type { Database, Repositories } from "@kaada/database";
@@ -71,6 +72,8 @@ function nestLog(): AgentLog {
     if (level === "info") logger.log(entry);
     else if (level === "warn") logger.warn(entry);
     else logger.error(entry);
+    // Also tees the event to the development playground when it is collecting this request. A no-op otherwise.
+    recordTrace(level, event, fields);
   };
 }
 
@@ -232,6 +235,14 @@ function nestLog(): AgentLog {
                     throw error;
                   }
                 },
+                // Which currencies Kaada works with, with no wallet read at all: the answer to "do you support X?" is the
+                // same for everyone, so it is available before a wallet exists.
+                async catalogue() {
+                  return {
+                    network: balances.networkLabel,
+                    assets: describeSupportedCurrencies(await balances.supportedTokens()),
+                  };
+                },
                 // What the wallet holds right now, so a deposit can be matched against an open payment.
                 async holdings(userId) {
                   try {
@@ -389,6 +400,8 @@ function nestLog(): AgentLog {
   exports: [
     FUNDING_ANNOUNCER,
     CHANNEL_MESSAGE_SERVICE,
+    // Kaada's voice, shared so another edge (the development playground) phrases answers exactly as Telegram does.
+    CONVERSATION_PRESENTER,
     PAYMENT_STATUS_DISPATCHER,
     TELEGRAM_ADAPTER,
     ONBOARDING_LIFECYCLE,

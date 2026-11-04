@@ -10,6 +10,9 @@ const IDENTITY_TYPES: Partial<Record<ChannelIdentity["channel"], IdentityType>> 
   WHATSAPP: "WHATSAPP",
   DISCORD: "DISCORD",
   X: "X",
+  // The browser channel, used today only by the development agent playground. Its own namespace: because (type, externalId)
+  // is unique per type, a WEB identity can never resolve to the Telegram account of the same id.
+  WEB: "WEB",
 };
 
 const isUniqueViolation = (error: unknown): boolean =>

@@ -42,8 +42,8 @@ export function pick<T>(seed: string, variants: readonly T[]): T {
 
 /** Plain wording stored with a CHAT answer in the conversation history (the spoken reply may differ). */
 const CHAT_TEXT: Record<ChatTopic, string> = {
-  GREETING: "Hey 👋 What can I help you with today?",
-  SMALL_TALK: "I'm good 😄 Ready when you are. What do you need?",
+  GREETING: "Hey 👋 How's your day going?",
+  SMALL_TALK: "I'm good 😄 How about you?",
   FAREWELL: "Perfect 👌 Catch you later.",
   CAPABILITIES: "I can help you with money: sending it, rates and your wallet.",
   FINANCE_QUESTION: "Good question. I don't have an answer for that one yet.",
@@ -70,22 +70,23 @@ export function fallbackParts(
 ): ReplyParts | null {
   const can = describeCapabilities(facts.capabilities);
   switch (state) {
+    // A greeting is answered like a greeting. Reciting the capabilities here is what made Kaada sound like a switchboard:
+    // the person has only said hello, and there is a whole conversation after this in which to be useful.
     case "CASUAL_GREETING":
       return pick(seed, [
-        { acknowledgement: "Hey 👋", question: `What can I help you with today? I can ${can}.` },
-        {
-          acknowledgement: "Hi there 👋",
-          question: `What are we sorting out today? I can ${can}.`,
-        },
-        { acknowledgement: "Hey, good to see you 😄", question: `What do you need? I can ${can}.` },
+        { acknowledgement: "Hey 👋", question: "How's your day going?" },
+        { acknowledgement: "Hi there 👋", question: "How are you doing today?" },
+        { acknowledgement: "Hey, good to see you 😄", question: "How've you been?" },
+        { acknowledgement: "Hello 👋", question: "How's everything going?" },
       ]);
+    // This is the wording used when the model's own reply could not be used, so it cannot react to what was actually said.
+    // That makes "Doing well, thanks! How's your day treating you?" a trap: said to "work has been brutal" it answers a
+    // question nobody asked and ignores the one thing the person told Kaada. These stay neutral enough to follow anything.
     case "CASUAL_FINANCE_CHAT":
       return pick(seed, [
-        { acknowledgement: "I'm good 😄 Ready when you are.", question: `Want to ${can}?` },
-        {
-          acknowledgement: "Doing well, thanks 👋",
-          question: `Anything I can help with? I can ${can}.`,
-        },
+        { acknowledgement: "I hear you 😄", question: "What can I do for you?" },
+        { acknowledgement: "Got you 👋", question: "Anything I can help with?" },
+        { acknowledgement: "Fair enough 😄", question: `Anything I can help with? I can ${can}.` },
       ]);
     case "CAPABILITY_DISCOVERY":
       return {
@@ -239,10 +240,24 @@ export function resultFallback(
 }
 
 /** Joins the spoken pieces into one short text. */
+/**
+ * The parts are written as separate fields, so a model that leaves the full stop off each one produces "I can't help with
+ * that I don't have the information Would you like to check your balance" once they are joined. Sentences that run into each
+ * other read as careless, which is the last thing a reply about money should read as, so a piece that ends in a letter or a
+ * digit is finished here: a question gets its question mark, anything else a full stop. A piece that already ends in
+ * punctuation or an emoji is left exactly as written.
+ */
+function terminated(piece: string, key: keyof ReplyParts): string {
+  return /[\p{L}\p{N}]$/u.test(piece) ? `${piece}${key === "question" ? "?" : "."}` : piece;
+}
+
 export function joinParts(parts: ReplyParts, order: (keyof ReplyParts)[]): string {
   return order
-    .map((key) => parts[key])
-    .filter((piece): piece is string => typeof piece === "string" && piece.trim().length > 0)
-    .map((piece) => piece.trim())
+    .map((key) => [key, parts[key]] as const)
+    .filter(
+      (entry): entry is readonly [keyof ReplyParts, string] =>
+        typeof entry[1] === "string" && entry[1].trim().length > 0,
+    )
+    .map(([key, piece]) => terminated(piece.trim(), key))
     .join(" ");
 }

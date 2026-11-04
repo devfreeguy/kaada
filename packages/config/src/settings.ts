@@ -16,8 +16,15 @@ export const SETTINGS = {
   database: {
     poolMax: 10,
     poolTimeoutMs: 10_000,
-    /** The services keep transactions short and never hold one across a chain or provider call. */
-    transactionTimeoutMs: 5_000,
+    /**
+     * The services keep transactions short and never hold one across a chain, model or provider call. What they DO hold is a
+     * run of small queries: a conversation lock, the intent, the recipient lookup, the asset lookups, the clarification
+     * options, the stored reply. Against a managed Postgres several hundred milliseconds away that is twenty round trips, and
+     * Prisma's 5 s default left no headroom: a turn would pass 5 s mid-write and the whole turn failed with "a query cannot
+     * be executed on an expired transaction", losing a reply the person had already waited for. It is a ceiling for a stuck
+     * transaction, not a target, and work that could really take this long (pricing, the model, the chain) is outside it.
+     */
+    transactionTimeoutMs: 20_000,
   },
 
   /** Rate limiting keys (Redis). Changing the prefix resets every limit. */

@@ -7,6 +7,7 @@ import type { StateInstruction } from "./instructions.js";
 import { SERIOUS_STATES } from "./states.js";
 import type { ResponseState } from "./states.js";
 
+
 /**
  * Everything the presentation model is allowed to know, as structured data. It is built from the Agent Core's trusted
  * response and a few recent turns, never from the whole conversation, so tokens stay bounded and an old message cannot steer

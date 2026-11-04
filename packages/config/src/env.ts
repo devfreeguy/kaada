@@ -70,6 +70,11 @@ const envShape = {
 
   // ── agent and pricing ──
   AGENT_INTERPRETER: z.enum(["none", "mock", "groq"]).default("none"),
+  /**
+   * The development agent playground (apps/web /dev/agent-playground and the dev/playground API routes). Off unless set, and
+   * refused outright in production: it talks to the real agent from a browser with no end-user authentication.
+   */
+  AGENT_PLAYGROUND: flag,
   GROQ_API_KEY: optionalSecret,
   // Shared with the web app's proxy so the API can tell visitors apart (see apps/api/src/security/client-ip.ts). Optional, 32+ characters.
   PROXY_SHARED_SECRET: optionalSecret.refine(
@@ -311,6 +316,8 @@ function buildConfig(
     logLevel: env.LOG_LEVEL,
     agent: {
       interpreter: env.AGENT_INTERPRETER,
+      // Never true in production: loadConfig refuses that combination outright.
+      playground: env.AGENT_PLAYGROUND && env.NODE_ENV !== "production",
       ...(env.AGENT_INTERPRETER === "groq" &&
         env.GROQ_API_KEY !== undefined && {
           groq: {
@@ -488,6 +495,8 @@ function crossChecks(
     add("FX_PROVIDER", "the mock FX provider cannot be used in production");
   if (env.AGENT_INTERPRETER === "groq" && env.GROQ_API_KEY === undefined)
     add("GROQ_API_KEY", "GROQ_API_KEY is required when AGENT_INTERPRETER=groq");
+  if (production && env.AGENT_PLAYGROUND)
+    add("AGENT_PLAYGROUND", "the agent playground cannot be enabled in production");
 
   // Wallets and passkeys.
   if (kernel && (env.PASSKEY_RP_ID === undefined || env.PASSKEY_ORIGIN === undefined))

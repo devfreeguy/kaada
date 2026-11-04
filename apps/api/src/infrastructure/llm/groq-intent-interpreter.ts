@@ -71,7 +71,13 @@ export class GroqIntentInterpreter implements IntentInterpreter {
       });
     } catch (error) {
       const kind = error instanceof GroqTransportError ? error.kind : "UNAVAILABLE";
-      this.record(started, { success: false, errorKind: kind });
+      this.record(started, {
+        success: false,
+        errorKind: kind,
+        // Names the exhausted quota when Groq named one, so a spent daily budget is not read as a throughput problem.
+        ...(error instanceof GroqTransportError &&
+          error.scope !== undefined && { limit: error.scope }),
+      });
       // The model answered, but Groq refused the answer as off-schema: unusable output, not an outage.
       if (kind === "INVALID_OUTPUT") throw new InterpreterOutputError("PROVIDER_SCHEMA_REJECTED");
       throw new InterpreterUnavailableError(kind);
@@ -121,6 +127,7 @@ export class GroqIntentInterpreter implements IntentInterpreter {
       schemaValid?: boolean;
       outcome?: string;
       errorKind?: string;
+      limit?: string;
       result?: GroqChatResult;
     },
   ): void {
@@ -132,6 +139,8 @@ export class GroqIntentInterpreter implements IntentInterpreter {
       schemaValid: details.schemaValid,
       outcome: details.outcome,
       errorKind: details.errorKind,
+      // Only when Groq named a quota: a turn that never hit one should not carry an empty field saying so.
+      ...(details.limit !== undefined && { limit: details.limit }),
       promptTokens: details.result?.usage.promptTokens,
       completionTokens: details.result?.usage.completionTokens,
       totalTokens: details.result?.usage.totalTokens,

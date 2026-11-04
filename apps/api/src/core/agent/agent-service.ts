@@ -14,6 +14,7 @@ import { interpretationSchema } from "@kaada/schemas";
 
 import { loadConversationContext, toHistory } from "../conversations/context.js";
 import { balanceBlock, currencyForLabel } from "../currency/catalog.js";
+import { errorDetails } from "../channels/error-details.js";
 import { IntentCoordinator } from "../intents/coordinator.js";
 import type { Applied, OpenPaymentNeeds, ResumeTurn } from "../intents/coordinator.js";
 import {
@@ -219,9 +220,15 @@ function resumeFromJson(value: unknown): ResumeInfo | undefined {
   };
 }
 
+/**
+ * Said only when the language service could not be REACHED (a timeout, a rate limit, a network failure). Output that came
+ * back but could not be used takes the other path and becomes an UNKNOWN intent, which is where "I didn't catch that"
+ * belongs. Keeping the two apart matters: "I couldn't understand that" is a false account of a request that was perfectly
+ * clear and never got read, and it invites the person to rewrite a message that was fine.
+ */
 const TROUBLE_RESPONSE: AgentResponse = {
   type: "MESSAGE",
-  text: "I couldn't understand that request right now. Please try again.",
+  text: "I'm having trouble on my end right now, not with your message. Give it a moment and send it again.",
 };
 
 interface Accepted {
@@ -657,7 +664,15 @@ export class AgentService {
           messageId: message.id,
           reason: error.reason,
         });
-        return { kind: "INTENT", intent: { type: "UNKNOWN" } };
+        // A negative amount is carried through as the reason, so the answer can name what was wrong with the message
+        // instead of claiming the message was not understood. Every other unusable output stays anonymous.
+        return {
+          kind: "INTENT",
+          intent: {
+            type: "UNKNOWN",
+            ...(error.reason === "NEGATIVE_AMOUNT" && { reason: error.reason }),
+          },
+        };
       }
       // Not stored as an answer, so a redelivery of this message is processed again.
       this.log("error", "agent.interpreter.failed", {
@@ -748,10 +763,14 @@ export class AgentService {
         return { ...result, response: routed };
       });
     } catch (error) {
+      // The name alone ("PrismaClientKnownRequestError", "TypeError") says nothing about what actually went wrong, and this
+      // failure is invisible to the person: the turn silently degrades to the understood-request answer. errorDetails adds
+      // the message and, where the client attaches one, the code, which is the difference between a diagnosable report and
+      // a shrug. It carries no URL, headers or credentials (see error-details.ts) and is used the same way elsewhere.
       this.log("error", "agent.routing.failed", {
         conversationId: result.conversationId,
         intentId: response.intentId,
-        error: error instanceof Error ? error.name : "unknown",
+        ...errorDetails(error),
       });
       return result;
     }

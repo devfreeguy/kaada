@@ -117,6 +117,9 @@ export class GroqConversationWriter implements ConversationWriter {
         latencyMs: this.now() - started,
         promptTokens: result.usage.promptTokens,
         completionTokens: result.usage.completionTokens,
+        // Logged because presentation is half of what a turn spends, and a daily token budget cannot be accounted for
+        // from the interpreter's figures alone.
+        totalTokens: result.usage.totalTokens,
       });
       return parsed;
     } catch (error) {
@@ -124,6 +127,8 @@ export class GroqConversationWriter implements ConversationWriter {
         provider: "groq",
         latencyMs: this.now() - started,
         errorKind: error instanceof GroqTransportError ? error.kind : (error as Error).name,
+        ...(error instanceof GroqTransportError &&
+          error.scope !== undefined && { limit: error.scope }),
       });
       throw error;
     }

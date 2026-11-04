@@ -1,6 +1,18 @@
 import type { JsonObject } from "../json.js";
 
-export const IDENTITY_TYPES = ["TELEGRAM", "WHATSAPP", "PHONE", "EMAIL", "DISCORD", "X"] as const;
+/**
+ * WEB is the browser channel. Today its only user is the development agent playground, whose identities live in their own
+ * namespace: a playground session can never resolve to a Telegram account, because (type, externalId) is unique per type.
+ */
+export const IDENTITY_TYPES = [
+  "TELEGRAM",
+  "WHATSAPP",
+  "PHONE",
+  "EMAIL",
+  "DISCORD",
+  "X",
+  "WEB",
+] as const;
 export type IdentityType = (typeof IDENTITY_TYPES)[number];
 
 /**

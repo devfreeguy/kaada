@@ -2,7 +2,12 @@ import Groq, { APIConnectionTimeoutError, APIError } from "groq-sdk";
 import type { ClientOptions } from "groq-sdk";
 
 import { GroqTransportError } from "./groq-transport.js";
-import type { GroqChatRequest, GroqChatResult, GroqTransport } from "./groq-transport.js";
+import type {
+  GroqChatRequest,
+  GroqChatResult,
+  GroqRateLimitScope,
+  GroqTransport,
+} from "./groq-transport.js";
 
 /** Reasoning models need explicit settings to answer quickly and without returning their reasoning. */
 export function reasoningOptionsFor(
@@ -48,13 +53,36 @@ function isSchemaRejection(body: unknown): boolean {
   return code === "json_validate_failed";
 }
 
+const RATE_LIMIT_SCOPES: readonly GroqRateLimitScope[] = ["TPD", "TPM", "RPD", "RPM"];
+
+/**
+ * Which quota a 429 names, or undefined when it names none.
+ *
+ * Groq says it in the message, as in "on tokens per day (TPD): Limit 200000, Used 198283". That message also carries the
+ * organisation identifier and the usage figures, so none of it is kept: the text is only tested for each of the four
+ * known quota names, and what is returned is the matching constant from this file. A quota Groq words differently yields
+ * undefined rather than a guess.
+ */
+function rateLimitScope(body: unknown): GroqRateLimitScope | undefined {
+  if (body === null || typeof body !== "object") return undefined;
+  const inner: unknown = Object.fromEntries(Object.entries(body))["error"];
+  const message: unknown =
+    inner !== null && typeof inner === "object"
+      ? Object.fromEntries(Object.entries(inner))["message"]
+      : undefined;
+  if (typeof message !== "string") return undefined;
+  return RATE_LIMIT_SCOPES.find((scope) => new RegExp(`\\b${scope}\\b`).test(message));
+}
+
 function toTransportError(error: unknown): GroqTransportError {
   if (error instanceof APIConnectionTimeoutError) return new GroqTransportError("TIMEOUT");
   if (error instanceof APIError) {
     // The SDK types the status loosely; only a real number counts.
     const status = typeof error.status === "number" ? error.status : undefined;
     if (status === undefined) return new GroqTransportError("UNAVAILABLE");
-    if (status === 429) return new GroqTransportError("RATE_LIMITED", status);
+    if (status === 429) {
+      return new GroqTransportError("RATE_LIMITED", status, rateLimitScope(error.error));
+    }
     if (status === 408) return new GroqTransportError("TIMEOUT", status);
     if (status === 401 || status === 403) return new GroqTransportError("AUTH", status);
     if (status >= 500) return new GroqTransportError("UNAVAILABLE", status);

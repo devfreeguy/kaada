@@ -94,7 +94,8 @@ const modelNames = [
 ];
 
 const enumValues: Record<string, string[]> = {
-  IdentityType: ["TELEGRAM", "WHATSAPP", "PHONE", "EMAIL", "DISCORD", "X"],
+  // WEB is the browser channel, used today only by the development agent playground. ChannelType already had it.
+  IdentityType: ["TELEGRAM", "WHATSAPP", "PHONE", "EMAIL", "DISCORD", "X", "WEB"],
   ChannelType: ["TELEGRAM", "WHATSAPP", "WEB", "DISCORD", "X"],
   ConversationStatus: ["ACTIVE", "COMPLETED", "ARCHIVED"],
   MessageRole: ["USER", "ASSISTANT", "SYSTEM", "TOOL"],
