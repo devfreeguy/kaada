@@ -183,7 +183,12 @@ function mergeQuote(previous: QuoteIntent, next: QuoteIntent): QuoteIntent {
   // Naming a size ends the rate question. "What's the naira to pesos rate?" then "20000" is a request to convert twenty
   // thousand naira, and deserves "₦20,000 gives AR$23,988" — not the unit rate repeated back with their number priced
   // invisibly behind it. `rateOnly` only ever means "they named no amount", so an amount arriving retires it.
-  if (merged.rateOnly === true && next.amount?.value !== undefined) {
+  //
+  // A rate question is not such an amount, even though it carries one. It is built with a synthetic unit probe of its
+  // own, so reading that probe as "they named a size" makes every rate question after the first in a conversation
+  // retire itself: "USD to Naira" answers "$1 = ₦1,378.98", and "Naira to usd" straight after answers "₦1 currently
+  // gives approximately <$0.01" — the same question, degraded, because the turn before it existed.
+  if (merged.rateOnly === true && next.rateOnly !== true && next.amount?.value !== undefined) {
     const { rateOnly: _retired, ...rest } = merged;
     return rest;
   }

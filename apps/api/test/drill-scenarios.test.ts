@@ -444,6 +444,50 @@ describe("drill: a bare number after the sides were named", () => {
   });
 });
 
+describe("drill: asking a second rate question in one conversation", () => {
+  // From a live Telegram session: "USD to Naira" answered "$1 = ₦1,378.98", and "Naira to usd" immediately after
+  // answered "₦1 currently gives approximately <$0.01". Same question, degraded, purely because a turn preceded it —
+  // a rate question carries a synthetic unit probe, and reading that probe as a size the person named made every rate
+  // question after the first retire itself.
+  it("a rate question is not an amount, however many of them are asked", () => {
+    const first = { value: "1", currencyOrAsset: "USD", mode: "EXACT_INPUT" as const };
+    const outcome = mergeAgentIntent(
+      { type: "QUOTE", amount: first, fromAsset: "USD", toAsset: "Naira", rateOnly: true },
+      {
+        type: "QUOTE",
+        amount: { value: "1", currencyOrAsset: "Naira", mode: "EXACT_INPUT" },
+        fromAsset: "Naira",
+        toAsset: "usd",
+        rateOnly: true,
+      },
+    );
+    assert.equal(outcome.intent.type, "QUOTE");
+    assert.equal(
+      outcome.intent.type === "QUOTE" ? outcome.intent.rateOnly : undefined,
+      true,
+      "still a rate question, so it is still answered as a rate",
+    );
+  });
+
+  it("a real amount after a rate question still ends it", () => {
+    const outcome = mergeAgentIntent(
+      {
+        type: "QUOTE",
+        amount: { value: "1", currencyOrAsset: "naira", mode: "EXACT_INPUT" },
+        fromAsset: "naira",
+        toAsset: "pesos",
+        rateOnly: true,
+      },
+      { type: "QUOTE", amount: { value: "20000" } },
+    );
+    assert.equal(
+      outcome.intent.type === "QUOTE" ? outcome.intent.rateOnly : "still set",
+      undefined,
+      "naming a size is a conversion, not a rate",
+    );
+  });
+});
+
 describe("drill: D09, a question Kaada must not answer", () => {
   // "Should I buy more USDT right now?" is investment advice. Kaada has no trusted answer and must not invent one.
   it("D09: a finance question routes to the state whose rules forbid advising", async () => {
