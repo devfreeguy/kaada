@@ -263,7 +263,14 @@ export type AgentErrorCode =
   /** The money is there but the wallet lacks the little CELO that pays the network fee for this transfer. */
   | "GAS_FUNDING_REQUIRED"
   /** The wallet holds some of the funding asset, but not enough for this payment. */
-  | "INSUFFICIENT_BALANCE";
+  | "INSUFFICIENT_BALANCE"
+  /**
+   * The amount is too small to be priced: below the dollar floor every cross-currency route has to clear in the middle.
+   * `text` names the smallest amount that would work, in the currency being spent. Distinct from ROUTING_UNAVAILABLE on
+   * purpose — a provider being down and an amount being dust both fail a quote, and telling someone "the smallest I can
+   * send is ₦1,500" during an outage would be a confident, wrong answer.
+   */
+  | "AMOUNT_BELOW_MINIMUM";
 
 /** The request cannot be honoured, and nothing was changed. Not an exception: a normal outcome. */
 export interface ErrorResponse {

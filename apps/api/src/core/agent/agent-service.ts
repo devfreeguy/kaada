@@ -665,12 +665,13 @@ export class AgentService {
           reason: error.reason,
         });
         // A negative amount is carried through as the reason, so the answer can name what was wrong with the message
-        // instead of claiming the message was not understood. Every other unusable output stays anonymous.
+        // instead of claiming the message was not understood. It carries the magnitude with it ("NEGATIVE_AMOUNT:50")
+        // so the reply can offer that back as a question. Every other unusable output stays anonymous.
         return {
           kind: "INTENT",
           intent: {
             type: "UNKNOWN",
-            ...(error.reason === "NEGATIVE_AMOUNT" && { reason: error.reason }),
+            ...(error.reason.startsWith("NEGATIVE_AMOUNT") && { reason: error.reason }),
           },
         };
       }

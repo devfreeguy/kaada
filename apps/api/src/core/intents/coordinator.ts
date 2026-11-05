@@ -800,11 +800,19 @@ export class IntentCoordinator {
       default: {
         // An amount below zero. The sentence was understood; the size is the thing that cannot be. Said before the restate
         // below, so a negative amount typed mid-payment is explained rather than met with "I didn't catch that".
-        if (intent.type === "UNKNOWN" && intent.reason === "NEGATIVE_AMOUNT") {
+        //
+        // A minus sign in front of a payment is far more often a slip of the keyboard than a request, so the magnitude is
+        // offered back as a question rather than thrown away. It is only ever a question: the figure is not applied to
+        // anything, and the person has to say it themselves before Kaada will spend it.
+        if (intent.type === "UNKNOWN" && intent.reason?.startsWith("NEGATIVE_AMOUNT") === true) {
+          const [, magnitude] = intent.reason.split(":");
           return {
             response: {
               type: "MESSAGE",
-              text: "An amount has to be more than zero. How much would you like to send?",
+              text:
+                magnitude === undefined || magnitude.length === 0
+                  ? "An amount has to be more than zero. How much would you like to send?"
+                  : `I can't send a negative amount — did you mean ${magnitude}? Tell me the amount and I'll carry on.`,
             },
             mergeKind,
           };

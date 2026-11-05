@@ -1,7 +1,7 @@
 import type { Asset, AssetRegistry } from "../assets/index.js";
 import { isKaadaError } from "../errors/index.js";
 import type { RoutingRequest } from "../intents/routing-request.js";
-import { createMoney, rescaleAmount } from "../money/index.js";
+import { createMoney, parseHumanAmount, rescaleAmount } from "../money/index.js";
 import type { Money } from "../money/index.js";
 import type { CapabilityType, FxProvider, ProviderCapabilityRegistry } from "../providers/index.js";
 import type { AmountMode } from "../quotes/amount-mode.js";
@@ -15,7 +15,7 @@ import { rankRoutes } from "./route-ranking.js";
 /** Longest chain of provider steps a route may have. A bounded search, not a general pathfinder. */
 export const MAX_ROUTE_HOPS = 2;
 
-export type RoutePlanFailureKind = "PROVIDER_UNAVAILABLE" | "QUOTE_FAILED";
+export type RoutePlanFailureKind = "PROVIDER_UNAVAILABLE" | "QUOTE_FAILED" | "BELOW_MINIMUM";
 
 export interface RoutePlanFailure {
   kind: RoutePlanFailureKind;
@@ -23,6 +23,14 @@ export interface RoutePlanFailure {
   inputAssetId: string;
   outputAssetId: string;
   reason: string;
+  /**
+   * BELOW_MINIMUM only: the smallest input that would have cleared the floor, in the asset the person is spending.
+   *
+   * Computed from the hop that was actually priced, so it is their own currency at the rate they were just quoted, not
+   * a conversion done separately or a figure from a table. A refusal that names a workable amount is worth sending; one
+   * that says only "too small" is not.
+   */
+  minimumInput?: Money;
 }
 
 /**
@@ -60,6 +68,17 @@ export interface RoutePlannerDeps {
   fx: FxProviderDirectory;
   now: () => Date;
   chainId?: number;
+  /**
+   * The least a hop may hand the next one, as a human decimal in the intermediate's own currency ("1.00" of USD).
+   *
+   * Every cross-currency route passes through a dollar stablecoin, and it is that middle figure which decides whether
+   * the second leg can be priced at all: one naira is seven ten-thousandths of a dollar, and no market maker quotes
+   * that. Checked where the figure actually exists — between the hops — rather than guessed from the source amount
+   * before anything has been priced.
+   *
+   * Unset, no floor is applied, which is the behaviour every existing caller gets.
+   */
+  minimumIntermediate?: string;
 }
 
 interface HopSpec {
@@ -154,6 +173,33 @@ export function createRoutePlanner(deps: RoutePlannerDeps): RoutePlanner {
         string,
         Promise<FxQuote | { error: string; kind: RoutePlanFailureKind }>
       >();
+
+      /**
+       * The floor as an amount of `carried`'s own asset, when `carried` falls short of it; undefined when it clears.
+       * The floor is written in whole units ("1.00") and the asset decides its decimals.
+       */
+      const belowMinimum = async (carried: Money, floor: string): Promise<Money | undefined> => {
+        const asset = await assetFor(carried.assetId);
+        if (!asset) return undefined;
+        const required = parseHumanAmount(floor, asset.decimals);
+        return BigInt(carried.amount) < BigInt(required)
+          ? createMoney(required, carried.assetId)
+          : undefined;
+      };
+
+      /**
+       * What the person would have had to spend for `carried` to have reached `needed`, at the rate just quoted.
+       *
+       * Scaled from the hop that was actually priced, and rounded UP, because a figure rounded down is one that would
+       * be refused all over again. Only meaningful when the fixed side is the input, which is the case this guards.
+       */
+      const scaleUp = (fixed: Money, carried: Money, needed: Money): Money | undefined => {
+        const got = BigInt(carried.amount);
+        if (got <= 0n) return undefined;
+        const spend = BigInt(fixed.amount);
+        const want = BigInt(needed.amount);
+        return createMoney(String((spend * want + got - 1n) / got), fixed.assetId);
+      };
 
       const required: CapabilityType[] = candidates.requiredCapabilities;
 
@@ -273,7 +319,8 @@ export function createRoutePlanner(deps: RoutePlannerDeps): RoutePlanner {
         let amount = fixed;
         const order =
           mode === "EXACT_INPUT" ? path.map((_, i) => i) : path.map((_, i) => path.length - 1 - i);
-        for (const index of order) {
+        for (const position = { i: 0 }; position.i < order.length; position.i += 1) {
+          const index = order[position.i] as number;
           const spec = path[index] as HopSpec;
           const priced = await quoteHop(spec, amount);
           if ("failure" in priced) {
@@ -281,7 +328,29 @@ export function createRoutePlanner(deps: RoutePlannerDeps): RoutePlanner {
             return undefined;
           }
           hops[index] = priced.hop;
-          amount = mode === "EXACT_INPUT" ? priced.hop.output : priced.hop.input;
+          const carried = mode === "EXACT_INPUT" ? priced.hop.output : priced.hop.input;
+
+          // Between the hops, where the dollar figure actually exists: too little here and the next leg cannot be
+          // priced at all. Caught now, with the rate from the hop just quoted, so the refusal can name the smallest
+          // amount that WOULD work — in the person's own currency, at the price they were quoted a moment ago.
+          const last = position.i === order.length - 1;
+          if (!last && deps.minimumIntermediate !== undefined) {
+            const short = await belowMinimum(carried, deps.minimumIntermediate);
+            if (short !== undefined) {
+              failures.push({
+                kind: "BELOW_MINIMUM",
+                providerId: priced.hop.providerId,
+                inputAssetId: priced.hop.input.assetId,
+                outputAssetId: priced.hop.output.assetId,
+                reason: `below the ${deps.minimumIntermediate} minimum for the next leg`,
+                ...(scaleUp(fixed, carried, short) && {
+                  minimumInput: scaleUp(fixed, carried, short) as Money,
+                }),
+              });
+              return undefined;
+            }
+          }
+          amount = carried;
         }
         const first = hops[0] as PlannedHop;
         const last = hops[hops.length - 1] as PlannedHop;

@@ -282,12 +282,27 @@ export class RoutingService {
           "ROUTING_UNAVAILABLE",
           "I can't reach a pricing provider right now. Please try again in a moment.",
         );
-      case "QUOTE_FAILED":
+      case "QUOTE_FAILED": {
+        // An amount too small to price is not an outage, and must not be worded as one. The planner only reports this
+        // after measuring the middle of the route, so the floor is never inferred from a quote that merely failed —
+        // which today would have meant telling people a minimum while a corridor was simply down.
+        const short = result.failures.find(
+          (failure) => failure.kind === "BELOW_MINIMUM" && failure.minimumInput !== undefined,
+        );
+        if (short?.minimumInput) {
+          const smallest = await this.view(short.minimumInput, new Map());
+          return failed(
+            request,
+            "AMOUNT_BELOW_MINIMUM",
+            `That's too small to send. The smallest I can manage is about ${smallest.display}.`,
+          );
+        }
         return failed(
           request,
           "ROUTING_UNAVAILABLE",
           "I couldn't get a usable price right now. Please try again in a moment.",
         );
+      }
     }
   }
 
@@ -743,7 +758,7 @@ function adapterOf(quote: Quote | undefined): string {
 
 function failed(
   request: RoutingRequest,
-  code: "NO_ROUTE" | "ROUTING_UNAVAILABLE",
+  code: "NO_ROUTE" | "ROUTING_UNAVAILABLE" | "AMOUNT_BELOW_MINIMUM",
   text: string,
 ): RoutingOutcome {
   return { status: "FAILED", request, response: { type: "ERROR", code, text } };

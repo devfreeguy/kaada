@@ -244,8 +244,30 @@ describe("drill: amounts that must be refused rather than priced", () => {
     });
     const out = await r.h.say("send -50 USDT to Daniel");
     const text = "text" in out.response ? out.response.text : "";
-    assert.match(text, /more than zero/i);
+    // A minus sign before a payment is usually a slip, so the magnitude comes back as a question — never applied.
+    assert.match(text, /did you mean 50\?/i);
     assert.doesNotMatch(text, /didn't understand|didn't catch/i, "the message was understood");
+    assert.notEqual(out.response.type, "PAYMENT_READY", "nothing is priced until they say the number themselves");
+  });
+
+  it("B06: offers the magnitude back, and only ever as a question", async () => {
+    for (const [typed, offered] of [
+      ["-50", "50"],
+      ["- 1,250", "1250"],
+      ["−20k", "20000"],
+    ] as const) {
+      const reply = wire({
+        type: "SEND",
+        recipient: { type: "USERNAME", value: "Daniel" },
+        amount: wireAmount(typed, "USDT"),
+      });
+      const r = createRoutingHarness({
+        interpreter: new GroqIntentInterpreter(new FakeGroqTransport(() => reply), INTERPRETER),
+      });
+      const out = await r.h.say(`send ${typed} USDT to Daniel`);
+      const text = "text" in out.response ? out.response.text : "";
+      assert.match(text, new RegExp(`did you mean ${offered}\\?`, "i"), `"${typed}" offers ${offered}`);
+    }
   });
 
   it("B06: the wire layer tells a negative amount apart from an unreadable one", async () => {
@@ -259,7 +281,9 @@ describe("drill: amounts that must be refused rather than priced", () => {
           }),
         ),
         (error: unknown) =>
-          error instanceof Error && "reason" in error && error.reason === "NEGATIVE_AMOUNT",
+          error instanceof Error &&
+          "reason" in error &&
+          String(error.reason).startsWith("NEGATIVE_AMOUNT"),
         `"${raw}" is a negative amount, not an unreadable one`,
       );
     }

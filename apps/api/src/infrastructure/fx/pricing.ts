@@ -8,6 +8,7 @@ import {
   defaultCountryDirectory,
 } from "@kaada/domain";
 import type { AssetRepository, FxProvider, ProviderRepository } from "@kaada/domain";
+import { SETTINGS } from "@kaada/config";
 import type { AppConfig } from "@kaada/config";
 
 import type { AgentLog, AgentRepositories } from "../../core/agent/ports.js";
@@ -87,6 +88,8 @@ export function createRoutingService(
       capabilities,
       fx: createFxProviderDirectory([{ capabilityProvider: "textile", provider: pricing }]),
       now,
+      // The dollar floor every cross-currency route has to clear between its hops.
+      minimumIntermediate: SETTINGS.routing.minimumSendUsd,
       ...(deps.chainId !== undefined && { chainId: deps.chainId }),
     }),
     assets: registry,

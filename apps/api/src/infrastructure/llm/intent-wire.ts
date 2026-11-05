@@ -174,6 +174,9 @@ function text(value: string | null): string | undefined {
 /** A number written as a negative: "-50", "- 50", "−50" (the minus sign people's keyboards produce). */
 const NEGATIVE_AMOUNT = /^[-−–—]\s*[\d.,]+[km]?$/i;
 
+/** Separates the magnitude from the reason: "NEGATIVE_AMOUNT:50". Nothing else in a reason carries a colon. */
+export const NEGATIVE_AMOUNT_REASON = "NEGATIVE_AMOUNT";
+
 /**
  * Normalises the way a number was written ("10k", "10,000"); refuses ambiguity rather than guessing.
  *
@@ -181,10 +184,22 @@ const NEGATIVE_AMOUNT = /^[-−–—]\s*[\d.,]+[km]?$/i;
  * "send -50 USDT to Daniel" is a perfectly clear sentence, and answering it with "I didn't understand that" is both untrue
  * and useless, because it asks the person to rephrase something that needed no rephrasing. The amount is the problem, and
  * saying so is the only reply that tells them what to change.
+ *
+ * The magnitude travels with the refusal so the answer can offer it back — a minus sign in front of a payment is far more
+ * often a typo than a request, and "did you mean 50?" is a question worth asking. It is carried as text on the reason and
+ * never as a number on an intent: nothing downstream may spend it until the person has said yes.
  */
 function amountValue(raw: string): string {
-  if (NEGATIVE_AMOUNT.test(raw.trim())) throw new InterpreterOutputError("NEGATIVE_AMOUNT");
-  const value = normalizeSpokenAmount(raw);
+  const trimmed = raw.trim();
+  if (NEGATIVE_AMOUNT.test(trimmed)) {
+    const magnitude = normalizeSpokenAmount(trimmed.replace(/^[-−–—]\s*/, ""));
+    throw new InterpreterOutputError(
+      magnitude === undefined
+        ? NEGATIVE_AMOUNT_REASON
+        : `${NEGATIVE_AMOUNT_REASON}:${magnitude}`,
+    );
+  }
+  const value = normalizeSpokenAmount(trimmed);
   if (value === undefined) throw new InterpreterOutputError("AMBIGUOUS_AMOUNT");
   return value;
 }

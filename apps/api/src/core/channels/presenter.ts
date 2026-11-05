@@ -130,7 +130,9 @@ function presentError(response: Extract<AgentResponse, { type: "ERROR" }>): Pres
     case "ROUTING_UNAVAILABLE":
     case "ROUTING_STALE":
       return { text: "Pricing is temporarily unavailable. Please try again in a moment." };
+    // Both carry their own specifics: the exact thing that is unsupported, or the smallest amount that would work.
     case "ROUTING_UNSUPPORTED":
+    case "AMOUNT_BELOW_MINIMUM":
       return { text: response.text };
     case "CHOICE_EXPIRED":
     case "CHOICE_STALE":
