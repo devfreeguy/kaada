@@ -53,7 +53,23 @@ export class GroqIntentInterpreter implements IntentInterpreter {
     this.limits = options.limits ?? DEFAULT_CONTEXT_LIMITS;
     this.log = options.log ?? noopLog;
     this.now = options.now ?? Date.now;
-    this.maxCompletionTokens = options.maxCompletionTokens ?? 512;
+    /**
+     * Room to answer in, not room to think in — and the two share this budget.
+     *
+     * A reasoning model spends completion tokens reasoning BEFORE it writes the JSON, so a ceiling that fits the answer
+     * does not fit the answer plus the thinking that reaches it. At 512 the easy sentences landed in 194-273 tokens and
+     * the harder ones spent all 512 reasoning and returned an EMPTY completion: no JSON at all, read as unusable
+     * output, answered "Sorry, I didn't understand that."
+     *
+     * "Send $1 worth of Argentine Pesos to @someone" failed that way every time while "Send $1 to @someone" succeeded,
+     * which looks exactly like a model that cannot read English and is nothing of the kind. Worse, with an operation
+     * already open the failure is invisible: the coordinator restates what is in progress, so three failed sends in a
+     * row came back as the same rate quoted three times, as though the agent were ignoring the person.
+     *
+     * Generous on purpose. Unused room costs nothing — billing and the daily budget count tokens actually generated,
+     * and the successful calls above show what that really is.
+     */
+    this.maxCompletionTokens = options.maxCompletionTokens ?? 2_048;
   }
 
   async interpret(input: InterpretationInput): Promise<Interpretation> {

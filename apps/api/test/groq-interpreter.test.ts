@@ -327,7 +327,9 @@ describe("Groq interpretation: request and context", () => {
     const [call] = transport.calls;
     assert.equal(call?.model, "openai/gpt-oss-20b");
     assert.equal(call?.timeoutMs, 5000);
-    assert.equal(call?.maxCompletionTokens, 512);
+    // Room for the reasoning AND the JSON that follows it. At 512 the harder sentences spent the whole budget
+    // reasoning and returned an empty completion, which reads as "I didn't understand that".
+    assert.equal(call?.maxCompletionTokens, 2048);
     assert.equal(call?.system, INTENT_SYSTEM_PROMPT);
     assert.deepEqual(call?.schema, wireJsonSchema());
   });
