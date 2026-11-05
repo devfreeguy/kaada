@@ -344,3 +344,42 @@ export function currencyForCountryWord(word: string): UserCurrency | undefined {
 export function isSharedCurrencyWord(label: string): boolean {
   return BY_SHARED.has(normalizeLabel(label));
 }
+
+/**
+ * How much of a currency to price when answering "what's the rate?", where the person named no amount.
+ *
+ * It cannot be one unit. A cross-currency rate is two hops through USDT, and one naira is worth about $0.0007: the first
+ * hop prices fine and hands the second hop seven hundred-thousandths of a dollar, which Textile will not quote at all
+ * ("Textile has no quote for this request"). The whole plan then fails and the person is told "Pricing is temporarily
+ * unavailable" for a pair that works perfectly at any real size — ₦100,000 to Argentine pesos prices on the first try.
+ *
+ * So each currency is probed at roughly fifty dollars' worth, rounded to something unremarkable. The figure never
+ * reaches the person: formatRate divides the priced output by the priced input, so a probe of ₦100,000 and a probe of
+ * ₦1 produce the same "₦1 = AR$1.1973" line. It exists only to ask the provider a question it can answer.
+ *
+ * These are rounded generously on purpose. They need to stay above a provider's minimum, not track a real exchange
+ * rate, so ordinary inflation will not invalidate them; a currency that redenominates will.
+ */
+const RATE_PROBE_AMOUNTS: Readonly<Record<string, string>> = {
+  NGN: "100000",
+  ARS: "50000",
+  IDR: "1000000",
+  COP: "200000",
+  CLP: "50000",
+  MXN: "1000",
+  BRL: "250",
+  PEN: "200",
+  USD: "50",
+};
+
+/** The default for a currency with no entry: fifty of it, which is a real size in any currency Kaada settles. */
+const DEFAULT_RATE_PROBE = "50";
+
+/**
+ * The amount to price a rate question with, for the currency an asset stands for. Falls back to a plain fifty, which is
+ * still far above the dust that one unit of a low-value currency becomes after a hop.
+ */
+export function rateProbeAmount(fiatCode: string | undefined): string {
+  const code = fiatCode?.trim().toUpperCase();
+  return (code === undefined ? undefined : RATE_PROBE_AMOUNTS[code]) ?? DEFAULT_RATE_PROBE;
+}

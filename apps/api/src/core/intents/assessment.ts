@@ -15,6 +15,8 @@ import { MAX_OPTIONS } from "../responses/clarifications.js";
 import type { Clarification } from "../responses/clarifications.js";
 import type { AssetTarget, ChoiceDraft } from "./choices.js";
 import { describeAssetChoice, describeMoney } from "../currency/catalog.js";
+import { rateProbeAmount } from "../currency/registry.js";
+import { RATE_UNIT_AMOUNT } from "./focus.js";
 
 export type { TransactionalIntent };
 
@@ -224,7 +226,20 @@ export async function assessIntent(
     amountAsset = await resolveLabel(amountLabel, field, "AMOUNT");
     if (amountAsset) {
       try {
-        const money = moneyFromHuman(amount.value, amountAsset);
+        // A rate question names no amount, so one is chosen to price with. It has to be a size the provider will
+        // actually quote: one unit of a low-value currency becomes dust on the second hop of a cross-currency route
+        // and is refused outright. The figure is never shown — the rate is the ratio of what was priced.
+        //
+        // Only the synthetic placeholder is replaced, never a number a person typed. `rateOnly` is set only where no
+        // amount was stated, and the placeholder it comes with is RATE_UNIT_AMOUNT; but it SURVIVES a merge, so after
+        // "what's the naira to pesos rate?" the follow-up "20000" arrives still carrying it. Substituting there would
+        // quietly price ₦100,000 and tell the person it was their ₦20,000.
+        const probing =
+          intent.type === "QUOTE" && intent.rateOnly === true && amount.value === RATE_UNIT_AMOUNT;
+        const money = moneyFromHuman(
+          probing ? rateProbeAmount(amountAsset.fiatCode) : amount.value,
+          amountAsset,
+        );
         if (isZeroMoney(money)) {
           raise({ field: "AMOUNT", reason: "INVALID", detail: "NOT_POSITIVE" });
         } else {

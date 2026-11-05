@@ -88,10 +88,13 @@ describe("a rate question is remembered, and its answer is read as the answer", 
     const before = r.h.interpreterCalls;
     const answer = await r.h.say("wARS to USDT");
     assert.equal(answer.response.type, "QUOTE_RESULT");
-    // A rate question is answered as a RATE: the pair, then the rate itself at useful precision.
-    // "AR$1 = $0.00098", never an amount rounded to "<$0.01" and never a figure a model wrote.
-    assert.match(answer.response.text, /Argentine Peso \(ARS\) → US Dollar \(USD\)/);
-    assert.match(answer.response.text, /^AR\$1 = \$0\.\d+$/m);
+    // A rate question is answered as a RATE: the pair, then the rate itself at useful precision — never an amount
+    // rounded to "<$0.01" and never a figure a model wrote.
+    //
+    // The dollar is the base whichever way the pair was asked, so "wARS to USDT" reads "$1 = AR$1,020.10" rather than
+    // "AR$1 = $0.00098". Same ratio, read the way people hold it.
+    assert.match(answer.response.text, /US Dollar \(USD\) → Argentine Peso \(ARS\)/);
+    assert.match(answer.response.text, /^\$1 = AR\$[\d,]+\.\d+$/m);
     assert.equal(r.h.interpreterCalls, before, "no language-model call for a plain pair");
     assert.ok(
       intentsOf(r).every((i) => i.type === "QUOTE"),
@@ -316,7 +319,8 @@ describe("in the chat: Today's rates, then the pair", () => {
     await service.handleInbound(inbound({ eventId: `fc-${randomUUID()}`, command: "RATES" }));
     assert.match(adapter.last?.text ?? "", /Which rate/i);
     await service.handleInbound(inbound({ eventId: `fc-${randomUUID()}`, text: "wARS to USDT" }));
-    assert.match(adapter.last?.text ?? "", /AR\$1 = \$0\.\d+/);
+    // Dollar-first, whichever way the pair was named.
+    assert.match(adapter.last?.text ?? "", /\$1 = AR\$[\d,]+\.\d+/);
     assert.ok(intentsOf(r).every((i) => i.type === "QUOTE"));
     assert.equal(r.h.interpreterCalls, 0, "no model call anywhere in this exchange");
   });

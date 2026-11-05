@@ -210,6 +210,20 @@ export class RoutingService {
       revision: request.intentRevision,
       status: result.status,
       failures: result.failures.length,
+      // WHICH leg could not be priced, not just how many could not.
+      //
+      // A cross-fiat conversion is two hops through USDT (cNGN -> USDT -> wARS): the route is found, each leg is quoted
+      // in turn, and one leg failing fails the whole plan. Counting the failures says a quote was refused; naming the
+      // pair says WHICH corridor the provider would not price, which is the difference between "pricing is down" and
+      // "this provider does not serve that leg". Without it the answer reaching the person -- "Pricing is temporarily
+      // unavailable" -- is the only evidence there is, and it names nothing.
+      ...(result.failures.length > 0 && {
+        failed: result.failures
+          .slice(0, 3)
+          .map((failure) => `${failure.providerId}:${failure.inputAssetId}>${failure.outputAssetId}:${failure.kind}`)
+          .join(" | "),
+        failureReason: result.failures[0]?.reason,
+      }),
     });
     switch (result.status) {
       case "SUCCESS": {

@@ -168,7 +168,7 @@ function mergeConvert(previous: ConvertIntent, next: ConvertIntent): ConvertInte
 }
 
 function mergeQuote(previous: QuoteIntent, next: QuoteIntent): QuoteIntent {
-  return withDenominatedAmount(
+  const merged = withDenominatedAmount(
     withAlignedSource(
       previous,
       compact({
@@ -180,6 +180,14 @@ function mergeQuote(previous: QuoteIntent, next: QuoteIntent): QuoteIntent {
       }),
     ),
   );
+  // Naming a size ends the rate question. "What's the naira to pesos rate?" then "20000" is a request to convert twenty
+  // thousand naira, and deserves "₦20,000 gives AR$23,988" — not the unit rate repeated back with their number priced
+  // invisibly behind it. `rateOnly` only ever means "they named no amount", so an amount arriving retires it.
+  if (merged.rateOnly === true && next.amount?.value !== undefined) {
+    const { rateOnly: _retired, ...rest } = merged;
+    return rest;
+  }
+  return merged;
 }
 
 /**

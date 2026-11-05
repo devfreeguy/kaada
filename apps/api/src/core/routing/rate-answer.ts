@@ -42,16 +42,32 @@ function unitOf(view: MoneyView, fiatCode: string | undefined): string {
   return currencyByCode(fiatCode)?.symbol ?? `${view.symbol} `;
 }
 
+/** Whether a side stands for US dollars — the base every rate is read against when it is one of the two. */
+function isDollar(fiatCode: string | undefined): boolean {
+  return fiatCode?.trim().toUpperCase() === "USD";
+}
+
 /**
  * The answer to "what's the rate?": the pair, the rate itself, what it means for one unit, how fresh it is, and whether money
  * can actually move that way. It never asks for an amount it does not need; it offers.
  */
 export function buildRateAnswer(input: RateAnswerInput): string {
-  const { source, destination } = input;
+  // The dollar is the base whenever it is in the pair, whichever way round the person asked.
+  //
+  // "₦1 = $0.0007246" is arithmetically correct and practically unreadable: nobody holds a mental model of a naira in
+  // ten-thousandths of a dollar, and the figure changes shape as currencies move. "$1 = ₦1,380.00" is the rate every
+  // Nigerian already knows, and it stays comparable across every currency Kaada settles, because they all have the same
+  // base. The two statements carry identical information — formatRate is a ratio of the two priced amounts, so reading
+  // it the other way round is a division, not a second price. No provider is called twice for this.
+  const anchored = isDollar(input.destinationCurrency) && !isDollar(input.sourceCurrency);
+  const source = anchored ? input.destination : input.source;
+  const destination = anchored ? input.source : input.destination;
+  const sourceCode = anchored ? input.destinationCurrency : input.sourceCurrency;
+  const destinationCode = anchored ? input.sourceCurrency : input.destinationCurrency;
   const rate = formatRate(source, destination);
-  const sourceUnit = unitOf(source, input.sourceCurrency);
-  const destinationUnit = unitOf(destination, input.destinationCurrency);
-  const pair = `${nameOf(source, input.sourceCurrency)} → ${nameOf(destination, input.destinationCurrency)}`;
+  const sourceUnit = unitOf(source, sourceCode);
+  const destinationUnit = unitOf(destination, destinationCode);
+  const pair = `${nameOf(source, sourceCode)} → ${nameOf(destination, destinationCode)}`;
 
   const lines: string[] = [pair];
   lines.push(

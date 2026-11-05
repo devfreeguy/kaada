@@ -97,6 +97,24 @@ export const SETTINGS = {
     timeoutMs: 8_000,
   },
 
+  routing: {
+    /**
+     * The smallest payment worth attempting, in US dollars.
+     *
+     * One number rather than nine, because the dollar is where the limit actually bites: every cross-currency route
+     * passes through USDT, and it is that leg which refuses a figure too small to be worth quoting. One naira is
+     * seven ten-thousandths of a dollar, and no provider will price it.
+     *
+     * Expressed to the person in THEIR currency, converted at the live rate, so it stays right as rates move instead
+     * of becoming a stale table of per-currency floors. It is deliberately a round, slightly generous figure: a
+     * refusal that names a workable amount is useful, and one that names a figure which then also fails is not.
+     *
+     * It governs SENDING only. A rate question never meets it: rates are read against the dollar, so nothing dust-sized
+     * is ever quoted in the first place.
+     */
+    minimumSendUsd: "1.00",
+  },
+
   passkey: { rpName: "Kaada" },
 
   /** Both deliberately short: the time to open the link and enter the PIN (5 min), and how long an approved payment may run (10 min; a first-time wallet setup in a browser needs more than 3). */
