@@ -2,7 +2,7 @@ import { Logger, Module } from "@nestjs/common";
 import { createRepositories, withTransaction } from "@kaada/database";
 import { KaadaError, createAssetRegistry, createCachedAssetRepository } from "@kaada/domain";
 import type { Database, Repositories } from "@kaada/database";
-import type { AppConfig } from "@kaada/config";
+import type { AppConfig, InterpreterProtocol, InterpreterProvider } from "@kaada/config";
 
 import { APP_CONFIG } from "../config/config.module.js";
 import { DATABASE } from "../database/database.module.js";
@@ -10,7 +10,10 @@ import { AgentService } from "../core/agent/agent-service.js";
 import { classifyBalanceFailure } from "../core/wallets/balance-failure.js";
 import type { AgentBalanceReader } from "../core/agent/agent-service.js";
 import { createDevInterpreter } from "../core/agent/dev-fixtures.js";
+import { FallbackIntentInterpreter } from "../core/agent/fallback-interpreter.js";
 import type { IntentInterpreter } from "../core/agent/interpreter.js";
+import { createAnthropicTransport } from "../infrastructure/llm/anthropic-transport.js";
+import type { GroqTransport } from "../infrastructure/llm/groq-transport.js";
 import type { AgentLog } from "../core/agent/ports.js";
 import { composeRevisionHooks } from "../core/intents/intent-commit.js";
 import { createDefaultResolvers } from "../core/agent/resolvers.js";
@@ -70,8 +73,55 @@ function walletBalanceReader(balances: WalletBalanceService): AgentBalanceReader
   };
 }
 
+/** Builds the transport a protocol needs. One case per PROTOCOL, never per provider. */
+const TRANSPORTS: Record<InterpreterProtocol, (provider: InterpreterProvider) => GroqTransport> = {
+  openai: (provider) =>
+    createGroqSdkTransport({
+      apiKey: provider.apiKey,
+      ...(provider.baseUrl !== undefined && { baseURL: provider.baseUrl }),
+    }),
+  anthropic: (provider) => createAnthropicTransport({ apiKey: provider.apiKey }),
+};
+
+/**
+ * One provider's interpreter, built from what the configuration says rather than from which provider it is.
+ *
+ * This is the whole of the provider-specific wiring. Adding a provider that speaks a protocol already in this table —
+ * Cerebras, Google, OpenRouter, Together, anything with an OpenAI-compatible endpoint — is a settings entry and an
+ * environment key, and changes no code here. Only a genuinely different protocol needs a new transport and a new row.
+ */
+function createProviderInterpreter(
+  provider: InterpreterProvider,
+  log: AgentLog,
+): IntentInterpreter {
+  return new GroqIntentInterpreter(TRANSPORTS[provider.protocol](provider), {
+    model: provider.model,
+    timeoutMs: provider.timeoutMs,
+    log,
+  });
+}
+
 /** Picks the interpreter from configuration. Production can never get the mock: config rejects it. */
 function createInterpreter(config: AppConfig, log: AgentLog): IntentInterpreter | null {
+  // A configured chain wins over the single provider: it is the more specific statement of intent, and it already
+  // holds only providers whose key is present. The order is the deployment's, and it is stated at startup so nobody
+  // has to infer from a log line which model is reading people's messages.
+  const chain = config.agent.interpreterChain;
+  if (chain.length > 0) {
+    const fallback = new FallbackIntentInterpreter(
+      chain.map((provider) => ({
+        name: provider.name,
+        interpreter: createProviderInterpreter(provider, log),
+      })),
+      log,
+    );
+    log("info", "agent.interpreter.chain", {
+      providers: fallback.providers.join(","),
+      models: chain.map((provider) => `${provider.name}:${provider.model}`).join(","),
+    });
+    return fallback;
+  }
+
   switch (config.agent.interpreter) {
     case "groq": {
       const groq = config.agent.groq;

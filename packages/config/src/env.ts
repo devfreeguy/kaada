@@ -76,6 +76,23 @@ const envShape = {
    */
   AGENT_PLAYGROUND: flag,
   GROQ_API_KEY: optionalSecret,
+  /**
+   * The interpreter providers to try, best first, comma separated: "anthropic,cerebras,groq,gemini".
+   *
+   * Only providers whose key is present are used, so a name here with no key behind it is skipped rather than fatal;
+   * that way one deployment's .env can list the full order and a developer's can hold one key. Unset, the interpreter
+   * is whatever AGENT_INTERPRETER says, with no fallback — existing deployments are unaffected.
+   */
+  AGENT_INTERPRETER_CHAIN: optionalSecret,
+  ANTHROPIC_API_KEY: optionalSecret,
+  CEREBRAS_API_KEY: optionalSecret,
+  OPENROUTER_API_KEY: optionalSecret,
+  GEMINI_API_KEY: optionalSecret,
+  /** Per-provider model overrides, for when a provider renames a model or a deployment wants a larger one. */
+  ANTHROPIC_MODEL: optionalSecret,
+  CEREBRAS_MODEL: optionalSecret,
+  OPENROUTER_MODEL: optionalSecret,
+  GEMINI_MODEL: optionalSecret,
   // Shared with the web app's proxy so the API can tell visitors apart (see apps/api/src/security/client-ip.ts). Optional, 32+ characters.
   PROXY_SHARED_SECRET: optionalSecret.refine(
     (value) => value === undefined || value.length >= 32,
@@ -327,6 +344,9 @@ function buildConfig(
             presentation: SETTINGS.agent.groq.presentation,
           },
         }),
+      // The fallback chain, already in the order it will be tried and already filtered to providers that have a key.
+      // Empty when none was configured, which is the existing single-provider behaviour.
+      interpreterChain: interpreterChain(env),
     },
     chain: { network: SETTINGS.celo.network, chainId: SETTINGS.celo.chainId },
     wallet: {
@@ -497,6 +517,15 @@ function crossChecks(
     add("GROQ_API_KEY", "GROQ_API_KEY is required when AGENT_INTERPRETER=groq");
   if (production && env.AGENT_PLAYGROUND)
     add("AGENT_PLAYGROUND", "the agent playground cannot be enabled in production");
+  // A misspelled provider is reported rather than skipped: it would otherwise leave someone believing they had a
+  // fallback they do not have, which is exactly the belief a fallback chain exists to make true.
+  for (const name of chainNames(env.AGENT_INTERPRETER_CHAIN)) {
+    if (!(INTERPRETER_PROVIDERS as readonly string[]).includes(name))
+      add(
+        "AGENT_INTERPRETER_CHAIN",
+        `"${name}" is not an interpreter provider (expected ${INTERPRETER_PROVIDERS.join(", ")})`,
+      );
+  }
 
   // Wallets and passkeys.
   if (kernel && (env.PASSKEY_RP_ID === undefined || env.PASSKEY_ORIGIN === undefined))
@@ -778,6 +807,85 @@ export function parseIosAppIds(raw: string | undefined): string[] | null {
   if (raw === undefined) return [];
   const ids = raw.split(",").map((id) => id.trim());
   return ids.every((id) => /^[A-Z0-9]{10}\.[A-Za-z0-9.-]+$/.test(id)) ? ids : null;
+}
+
+/** The interpreter providers Kaada can be configured to use, in no particular order. */
+export const INTERPRETER_PROVIDERS = [
+  "anthropic",
+  "cerebras",
+  "groq",
+  "openrouter",
+  "gemini",
+] as const;
+export type InterpreterProviderName = (typeof INTERPRETER_PROVIDERS)[number];
+
+/**
+ * How a provider is spoken to. This, not the provider's name, is what decides which transport is built — so a new
+ * provider that speaks an already-known protocol is a settings entry and a key, with no new code anywhere.
+ */
+export type InterpreterProtocol = "openai" | "anthropic";
+
+/** One provider, ready to build a transport from. The key is here; it is never logged or echoed. */
+export interface InterpreterProvider {
+  name: InterpreterProviderName;
+  protocol: InterpreterProtocol;
+  apiKey: string;
+  model: string;
+  /** An OpenAI-compatible endpoint other than Groq's. Absent for Groq (its SDK default) and for Claude (own protocol). */
+  baseUrl?: string;
+  timeoutMs: number;
+}
+
+/** The names in AGENT_INTERPRETER_CHAIN, lowercased and in order, with blanks dropped. */
+function chainNames(raw: string | undefined): string[] {
+  return (raw ?? "")
+    .split(",")
+    .map((name) => name.trim().toLowerCase())
+    .filter((name) => name.length > 0);
+}
+
+/**
+ * The configured chain, in order, limited to providers that actually have a key.
+ *
+ * A named provider with no key is skipped rather than fatal: one .env can list the whole preferred order while a
+ * developer's machine holds a single key, and the chain is simply shorter there. A name that is not a provider at all
+ * is a different matter and is reported by validateConfig — that is a typo, and silently dropping it would leave
+ * someone believing they had a fallback they do not have.
+ */
+function interpreterChain(env: Env): InterpreterProvider[] {
+  const settings = SETTINGS.agent.providers;
+  const keys: Record<InterpreterProviderName, string | undefined> = {
+    anthropic: env.ANTHROPIC_API_KEY,
+    cerebras: env.CEREBRAS_API_KEY,
+    groq: env.GROQ_API_KEY,
+    openrouter: env.OPENROUTER_API_KEY,
+    gemini: env.GEMINI_API_KEY,
+  };
+  const models: Record<InterpreterProviderName, string | undefined> = {
+    anthropic: env.ANTHROPIC_MODEL,
+    cerebras: env.CEREBRAS_MODEL,
+    groq: undefined,
+    openrouter: env.OPENROUTER_MODEL,
+    gemini: env.GEMINI_MODEL,
+  };
+
+  const chain: InterpreterProvider[] = [];
+  for (const name of chainNames(env.AGENT_INTERPRETER_CHAIN)) {
+    if (!(INTERPRETER_PROVIDERS as readonly string[]).includes(name)) continue;
+    const provider = name as InterpreterProviderName;
+    const apiKey = keys[provider];
+    if (apiKey === undefined) continue;
+    const base = settings[provider];
+    chain.push({
+      name: provider,
+      protocol: base.protocol,
+      apiKey,
+      model: models[provider] ?? base.model,
+      ...("baseUrl" in base && { baseUrl: base.baseUrl }),
+      timeoutMs: base.timeoutMs,
+    });
+  }
+  return chain;
 }
 
 function parseOrigins(raw: string, fallback: string): string[] {

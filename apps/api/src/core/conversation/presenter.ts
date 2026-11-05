@@ -214,7 +214,11 @@ export class ConversationPresenter {
   async present(input: PresentationInput): Promise<PresentedMessage> {
     const { response } = input;
     const flags = this.effectiveFlags(input.onboardingStep);
-    const state = deriveResponseState({ response, corrected: input.corrected });
+    const state = deriveResponseState({
+      response,
+      corrected: input.corrected,
+      resuming: input.resume !== undefined,
+    });
     const base = presentAgentResponse(response, input.now);
     const mode: PresentationMode = response.type === "CHAT" ? "MODEL_FULL" : STATE_MODE[state];
     const known: Record<string, string> = {

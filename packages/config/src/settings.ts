@@ -38,6 +38,53 @@ export const SETTINGS = {
       /** The conversation presenter (wording only; never decides anything). The person waits for it, so it is bounded tighter. */
       presentation: { timeoutMs: 5_000, temperature: 0.7 },
     },
+
+    /**
+     * The interpreter providers, in the order AGENT_INTERPRETER_CHAIN may name them. Models and endpoints only: every
+     * key comes from the environment, so nothing secret is ever committed here.
+     *
+     * Each is tried in turn when the one before it cannot answer (see FallbackIntentInterpreter). The order is a
+     * deployment's choice, not a default, because it is a real trade: the first provider is the one whose reading of
+     * people's messages the prompt has actually been drilled against, and any other is a model that may read the same
+     * sentence differently.
+     *
+     * Cerebras and Google are reached through their OpenAI-compatible endpoints, so they share the Groq transport;
+     * Claude speaks its own protocol and has its own.
+     */
+    providers: {
+      anthropic: { protocol: "anthropic", model: "claude-haiku-5-5", timeoutMs: 8_000 },
+      cerebras: {
+        protocol: "openai",
+        model: "gpt-oss-120b",
+        baseUrl: "https://api.cerebras.ai/v1",
+        timeoutMs: 8_000,
+      },
+      // No baseUrl: Groq is the transport's own default endpoint.
+      groq: { protocol: "openai", model: "openai/gpt-oss-20b", timeoutMs: 8_000 },
+      openrouter: {
+        protocol: "openai",
+        /**
+         * The same model Groq serves and the prompt is drilled against, so a fallback here reads a message the way the
+         * primary would — the one thing no other provider in this table can offer. Paid, but per-token rather than
+         * per-day, which is the cap that actually stops work.
+         *
+         * Pin a model; never route to OpenRouter's automatic free-model selector. It chooses a different host per
+         * request, several of which may train on what they are sent, and what is sent here is a person's payment
+         * instruction with a real name and amount in it.
+         */
+        model: "openai/gpt-oss-20b",
+        baseUrl: "https://openrouter.ai/api/v1",
+        timeoutMs: 8_000,
+      },
+      gemini: {
+        protocol: "openai",
+        // Google renames these often and the free tier covers only the Flash line; AI Studio lists what the project
+        // can actually call. Override with GEMINI_MODEL rather than assuming this one is current.
+        model: "gemini-2.5-flash",
+        baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/",
+        timeoutMs: 8_000,
+      },
+    },
   },
 
   textile: {

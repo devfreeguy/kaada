@@ -23,6 +23,7 @@
     "seed:test-network": "node --import tsx scripts/seed-test-network.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.4.0",
     "@kaada/attestation": "workspace:*",
     "@kaada/blockchain": "workspace:*",
     "@kaada/config": "workspace:*",

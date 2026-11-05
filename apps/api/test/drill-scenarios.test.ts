@@ -502,6 +502,20 @@ describe("drill: C09, thanks in the middle of a payment", () => {
     const thanks = await ask(r, "thanks man", intent({ type: "HELP", topic: "FAREWELL" }));
     assert.notEqual(thanks.response.type, "CANCELLED", "gratitude is not a cancellation");
     assert.ok(thanks.resume !== undefined, "the open payment is carried, not dropped");
+
+    // Live wave 2 answered "Perfect 👌 Catch you later. You have a payment in progress. Want to continue?" — a sign-off
+    // and a request to carry on, in one message. The farewell was routed to CONVERSATION_END, whose whole job is to end
+    // the conversation, so the model was told to say goodbye while the payment was still waiting.
+    assert.equal(
+      deriveResponseState({ response: thanks.response, resuming: thanks.resume !== undefined }),
+      "CASUAL_FINANCE_CHAT",
+      "a payment still open means the conversation is not over",
+    );
+    assert.equal(
+      deriveResponseState({ response: thanks.response }),
+      "CONVERSATION_END",
+      "with nothing open, a farewell still ends the conversation",
+    );
   });
 });
 

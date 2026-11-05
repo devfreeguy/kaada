@@ -144,10 +144,14 @@ export const SERIOUS_STATES: ReadonlySet<ResponseState> = new Set([
 
 const ASSET_FIELDS = new Set(["CURRENCY", "SOURCE_ASSET", "DESTINATION_ASSET"]);
 
-/** The state of one agent turn. `corrected` is the Agent Core's own statement that this message changed a known detail. */
+/**
+ * The state of one agent turn. `corrected` is the Agent Core's own statement that this message changed a known detail.
+ * `resuming` says a payment is still open behind this answer.
+ */
 export function deriveResponseState(turn: {
   response: AgentResponse;
   corrected?: readonly string[] | undefined;
+  resuming?: boolean | undefined;
 }): ResponseState {
   const { response } = turn;
   const corrected = (turn.corrected?.length ?? 0) > 0;
@@ -159,7 +163,10 @@ export function deriveResponseState(turn: {
         case "SMALL_TALK":
           return "CASUAL_FINANCE_CHAT";
         case "FAREWELL":
-          return "CONVERSATION_END";
+          // "thanks man" halfway through a payment is not the end of the conversation, whatever the words were, and a
+          // turn that signs off and then asks "want to continue?" contradicts itself inside one message. The payment
+          // still waiting is the fact that decides this, not the phrasing of the farewell.
+          return turn.resuming === true ? "CASUAL_FINANCE_CHAT" : "CONVERSATION_END";
         case "CAPABILITIES":
           return "CAPABILITY_DISCOVERY";
         case "FINANCE_QUESTION":

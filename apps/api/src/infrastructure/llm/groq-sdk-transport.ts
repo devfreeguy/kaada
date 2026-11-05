@@ -30,6 +30,15 @@ export interface GroqSdkTransportOptions {
    * Default 1, so one logical call is at most two HTTP attempts.
    */
   maxRetries?: number;
+  /**
+   * A different OpenAI-compatible endpoint, for a provider that speaks the same wire protocol: Cerebras
+   * (https://api.cerebras.ai/v1) and Google's compatibility endpoint both do. Omitted, this is Groq.
+   *
+   * Sharing the transport is not a shortcut: the chat-completions request, the strict `json_schema` response format and
+   * the error-to-kind mapping are identical across these providers, so a second copy of this file would be the same code
+   * with one string changed — and the one that was not kept in step would be the one in production.
+   */
+  baseURL?: string;
   /** Replaces the global fetch; used by tests to run without a network. */
   fetch?: ClientOptions["fetch"];
 }
@@ -103,6 +112,7 @@ export function createGroqSdkTransport(options: GroqSdkTransportOptions): GroqTr
   const client = new Groq({
     apiKey: options.apiKey,
     maxRetries: options.maxRetries ?? 1,
+    ...(options.baseURL !== undefined && { baseURL: options.baseURL }),
     ...(options.fetch && { fetch: options.fetch }),
   });
 

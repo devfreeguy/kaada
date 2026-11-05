@@ -200,6 +200,120 @@ describe("loadConfig", () => {
     );
   });
 
+  it("builds the interpreter chain in the order it was written", () => {
+    const keys = {
+      ANTHROPIC_API_KEY: "sk-ant-test",
+      CEREBRAS_API_KEY: "csk-test",
+      GROQ_API_KEY: "gsk-test",
+      GEMINI_API_KEY: "goog-test",
+    };
+    const chain = loadConfig({
+      ...base,
+      ...keys,
+      AGENT_INTERPRETER_CHAIN: "anthropic,cerebras,groq,gemini",
+    }).agent.interpreterChain;
+
+    assert.deepEqual(
+      chain.map((provider) => provider.name),
+      ["anthropic", "cerebras", "groq", "gemini"],
+      "best first, least last, exactly as configured",
+    );
+    // Reordering is a deployment decision, not a code change.
+    assert.deepEqual(
+      loadConfig({ ...base, ...keys, AGENT_INTERPRETER_CHAIN: "groq,anthropic" })
+        .agent.interpreterChain.map((provider) => provider.name),
+      ["groq", "anthropic"],
+    );
+    // Only the providers that speak an OpenAI-compatible protocol elsewhere carry an endpoint.
+    assert.equal(chain.find((p) => p.name === "cerebras")?.baseUrl, SETTINGS.agent.providers.cerebras.baseUrl);
+    assert.equal(chain.find((p) => p.name === "anthropic")?.baseUrl, undefined);
+    assert.equal(chain.find((p) => p.name === "groq")?.baseUrl, undefined);
+  });
+
+  it("serves a new OpenAI-compatible provider from settings alone, with no application code", () => {
+    // OpenRouter was added as a settings entry and an environment key: no transport, no wiring, no case anywhere. This
+    // test exists to keep that true — if reaching a provider ever needs code again, the protocol table is the place.
+    const chain = loadConfig({
+      ...base,
+      OPENROUTER_API_KEY: "or-test",
+      AGENT_INTERPRETER_CHAIN: "openrouter",
+    }).agent.interpreterChain;
+    assert.equal(chain[0]?.name, "openrouter");
+    assert.equal(chain[0]?.protocol, "openai");
+    assert.equal(chain[0]?.baseUrl, SETTINGS.agent.providers.openrouter.baseUrl);
+    // The model Kaada is drilled against, so a fallback here reads a message the way the primary does.
+    assert.equal(chain[0]?.model, SETTINGS.agent.providers.groq.model);
+  });
+
+  it("skips a provider with no key, so one .env can state the full preferred order", () => {
+    const chain = loadConfig({
+      ...base,
+      GROQ_API_KEY: "gsk-test",
+      AGENT_INTERPRETER_CHAIN: "anthropic,cerebras,groq,gemini",
+    }).agent.interpreterChain;
+    assert.deepEqual(
+      chain.map((provider) => provider.name),
+      ["groq"],
+      "a named provider without a key is simply not in the chain",
+    );
+  });
+
+  it("reports a misspelled provider rather than silently dropping it", () => {
+    // Dropping it would leave someone believing they had a fallback they do not have.
+    assert.throws(
+      () =>
+        loadConfig({
+          ...base,
+          GROQ_API_KEY: "gsk-test",
+          AGENT_INTERPRETER_CHAIN: "anthropik,groq",
+        }),
+      /anthropik/,
+    );
+  });
+
+  it("takes a model override, and otherwise uses the settings model", () => {
+    const withOverride = loadConfig({
+      ...base,
+      ANTHROPIC_API_KEY: "sk-ant-test",
+      AGENT_INTERPRETER_CHAIN: "anthropic",
+      ANTHROPIC_MODEL: "claude-sonnet-5-5",
+    }).agent.interpreterChain;
+    assert.equal(withOverride[0]?.model, "claude-sonnet-5-5");
+
+    const standard = loadConfig({
+      ...base,
+      ANTHROPIC_API_KEY: "sk-ant-test",
+      AGENT_INTERPRETER_CHAIN: "anthropic",
+    }).agent.interpreterChain;
+    assert.equal(standard[0]?.model, SETTINGS.agent.providers.anthropic.model);
+  });
+
+  it("leaves the chain empty when none is configured, so existing deployments are unaffected", () => {
+    assert.deepEqual(
+      loadConfig({ ...base, AGENT_INTERPRETER: "groq", GROQ_API_KEY: "gsk-test" }).agent
+        .interpreterChain,
+      [],
+    );
+  });
+
+  it("never echoes a provider key in an error", () => {
+    try {
+      loadConfig({
+        ...base,
+        AGENT_INTERPRETER_CHAIN: "nonsense",
+        ANTHROPIC_API_KEY: "sk-ant-super-secret",
+        CEREBRAS_API_KEY: "csk-super-secret",
+        GEMINI_API_KEY: "goog-super-secret",
+      });
+      assert.fail("expected a failure");
+    } catch (error) {
+      const message = String((error as Error).message);
+      for (const secret of ["sk-ant-super-secret", "csk-super-secret", "goog-super-secret"]) {
+        assert.equal(message.includes(secret), false, `${secret} must not be echoed`);
+      }
+    }
+  });
+
   it("never echoes the Groq key in an error", () => {
     try {
       loadConfig({ ...base, AGENT_INTERPRETER: "bogus", GROQ_API_KEY: "gsk_super_secret" });
