@@ -121,6 +121,30 @@ function mergeSend(previous: SendIntent, next: SendIntent): SendIntent {
   });
 }
 
+/**
+ * A bare number, denominated from the side the person already named.
+ *
+ * "Swap from Naira to Argentine Pesos", then "200", is two hundred NAIRA. The input side was stated a turn ago, and an
+ * EXACT_INPUT amount is in the input currency; when the OUTPUT is the fixed side, the same reasoning points at `toAsset`
+ * instead. Asking "which currency is that amount in?" here is not a missing value being requested, it is a value the
+ * person already gave being ignored — and it sends the conversation round a loop, because their answer ("Pesos") is then
+ * read as the amount's currency rather than the destination they chose at the start.
+ *
+ * Nothing is invented: the label is copied from a side the person stated themselves. When neither side names one, the
+ * question is still asked.
+ */
+function withDenominatedAmount<T extends ConvertIntent | QuoteIntent>(intent: T): T {
+  const { amount } = intent;
+  if (!amount || amount.currencyOrAsset !== undefined) return intent;
+  const side = amount.mode === "EXACT_OUTPUT" ? intent.toAsset : intent.fromAsset;
+  return side === undefined ? intent : { ...intent, amount: { ...amount, currencyOrAsset: side } };
+}
+
+/** The same, for an intent that may be of any type: only a conversion or a quote has sides to read. */
+function denominated(intent: AgentIntent): AgentIntent {
+  return intent.type === "CONVERT" || intent.type === "QUOTE" ? withDenominatedAmount(intent) : intent;
+}
+
 /** The merged operation with the amount's currency brought into line with a just-restated `fromAsset`. */
 function withAlignedSource<T extends ConvertIntent | QuoteIntent>(previous: T, merged: T): T {
   const label = alignedSourceLabel(previous, merged);
@@ -130,27 +154,31 @@ function withAlignedSource<T extends ConvertIntent | QuoteIntent>(previous: T, m
 }
 
 function mergeConvert(previous: ConvertIntent, next: ConvertIntent): ConvertIntent {
-  return withAlignedSource(
-    previous,
-    compact({
-      ...compact(previous),
-      ...compact(next),
-      amount: mergeAmount(previous.amount, next.amount),
-      constraints: mergeConstraints(previous.constraints, next.constraints),
-    }),
+  return withDenominatedAmount(
+    withAlignedSource(
+      previous,
+      compact({
+        ...compact(previous),
+        ...compact(next),
+        amount: mergeAmount(previous.amount, next.amount),
+        constraints: mergeConstraints(previous.constraints, next.constraints),
+      }),
+    ),
   );
 }
 
 function mergeQuote(previous: QuoteIntent, next: QuoteIntent): QuoteIntent {
-  return withAlignedSource(
-    previous,
-    compact({
-      ...compact(previous),
-      ...compact(next),
-      amount: mergeAmount(previous.amount, next.amount),
-      destination: mergeDestination(previous.destination, next.destination),
-      constraints: mergeConstraints(previous.constraints, next.constraints),
-    }),
+  return withDenominatedAmount(
+    withAlignedSource(
+      previous,
+      compact({
+        ...compact(previous),
+        ...compact(next),
+        amount: mergeAmount(previous.amount, next.amount),
+        destination: mergeDestination(previous.destination, next.destination),
+        constraints: mergeConstraints(previous.constraints, next.constraints),
+      }),
+    ),
   );
 }
 
@@ -166,8 +194,10 @@ export function mergeAgentIntent(
   incoming: AgentIntent,
 ): MergeOutcome {
   if (!isTransactionalIntent(incoming)) return { kind: "SIDE_REQUEST", intent: incoming };
-  if (!active || !isTransactionalIntent(active)) return { kind: "NEW", intent: incoming };
-  if (active.type !== incoming.type) return { kind: "REPLACED", intent: incoming };
+  // A first or replacing statement gets the same reading as a merged one: "swap 200 from naira" names its side in the
+  // same breath, and should no more be asked what the 200 is in than if it had arrived a turn later.
+  if (!active || !isTransactionalIntent(active)) return { kind: "NEW", intent: denominated(incoming) };
+  if (active.type !== incoming.type) return { kind: "REPLACED", intent: denominated(incoming) };
 
   if (active.type === "SEND" && incoming.type === "SEND") {
     return { kind: "MERGED", intent: mergeSend(active, incoming) };

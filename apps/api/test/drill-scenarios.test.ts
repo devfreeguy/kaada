@@ -15,7 +15,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { createId, mergeAgentIntent, sameCurrency } from "@kaada/domain";
+import { createId, findMissingFields, mergeAgentIntent, sameCurrency } from "@kaada/domain";
 import type { Asset, Interpretation } from "@kaada/domain";
 
 import { describeMoney } from "../src/core/currency/catalog.js";
@@ -365,6 +365,57 @@ describe("drill: C07, changing your mind about the currency", () => {
     assert.ok(
       sameCurrency(outcome.intent.amount?.currencyOrAsset, outcome.intent.fromAsset),
       "the amount's currency and fromAsset must not drift apart",
+    );
+  });
+});
+
+describe("drill: a bare number after the sides were named", () => {
+  // From a live Telegram session: "Swap from Naira to Agentine Pesos" / "200" / "Got it, 200. Which currency is that
+  // amount in?" The person had said "from Naira" a turn earlier. Being asked anyway, they answered "Pesos", which was
+  // then read as the amount's currency and sent the conversation back to "Which Pesos do you mean?" — the same question
+  // it had already asked. One ignored field, and the conversation cannot get out of the loop.
+  it("a bare amount is denominated from the source the person already stated", () => {
+    const outcome = mergeAgentIntent(
+      { type: "CONVERT", fromAsset: "naira", toAsset: "argentine pesos" },
+      { type: "CONVERT", amount: { value: "200" } },
+    );
+    assert.equal(outcome.intent.type, "CONVERT");
+    if (outcome.intent.type !== "CONVERT") return;
+    assert.equal(outcome.intent.amount?.currencyOrAsset, "naira");
+    assert.deepEqual(findMissingFields(outcome.intent), [], "nothing left to ask");
+  });
+
+  it("when the OUTPUT is the fixed side, the amount is in the destination currency", () => {
+    const outcome = mergeAgentIntent(
+      { type: "CONVERT", fromAsset: "naira", toAsset: "reais" },
+      { type: "CONVERT", amount: { value: "200", mode: "EXACT_OUTPUT" } },
+    );
+    assert.equal(
+      outcome.intent.type === "CONVERT" ? outcome.intent.amount?.currencyOrAsset : undefined,
+      "reais",
+    );
+  });
+
+  it("with no side named, the currency is still asked for rather than invented", () => {
+    const outcome = mergeAgentIntent(
+      { type: "CONVERT" },
+      { type: "CONVERT", amount: { value: "200" } },
+    );
+    assert.equal(
+      outcome.intent.type === "CONVERT" ? outcome.intent.amount?.currencyOrAsset : "set",
+      undefined,
+    );
+    assert.ok(findMissingFields(outcome.intent).includes("CURRENCY"));
+  });
+
+  it("a stated currency is never overwritten by the side", () => {
+    const outcome = mergeAgentIntent(
+      { type: "CONVERT", fromAsset: "naira" },
+      { type: "CONVERT", amount: { value: "200", currencyOrAsset: "dollars" } },
+    );
+    assert.equal(
+      outcome.intent.type === "CONVERT" ? outcome.intent.amount?.currencyOrAsset : undefined,
+      "dollars",
     );
   });
 });
