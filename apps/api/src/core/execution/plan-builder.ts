@@ -102,7 +102,20 @@ export function buildExecutionPlan(input: PlanInputs): ExecutionPlan {
   const { maxInput } = boundLimits(authorization.bounds);
   // The wallet receives the swap output, so the recipient is paid by a transfer in the same
   // UserOperation. It needs a destination address; without one the payment cannot execute.
-  const recipientAddress = input.candidate.recipient.address?.toLowerCase();
+  //
+  // A CONVERSION has no recipient, and used to be blocked here for not having one — so swapping your own naira for
+  // your own dollars priced, authorized, asked for a PIN, and then failed with "the payment didn't go through". The
+  // money was never going anywhere: it is already in the wallet once the swap settles.
+  //
+  // So it pays out to the same wallet. The transfer leg is kept rather than removed because the validated signer
+  // asserts the exact shape of this UserOperation, and a conversion must not be the one shape that skips that check.
+  // Balance-neutral, a little gas, and the output ends where it was always going to end.
+  //
+  // A SEND with no address is still blocked: there the money is meant to leave, and having nowhere to send it is a
+  // real fault rather than a shape of payment.
+  const recipientAddress =
+    input.candidate.recipient.address?.toLowerCase() ??
+    (input.candidate.operation === "CONVERT" ? wallet.address.toLowerCase() : undefined);
   if (!recipientAddress) blockers.push("RECIPIENT_ADDRESS_REQUIRED");
   // The permission must NOT depend on the allowance as it is right now: the allowance changes mid-run
   // (the approval confirms, then the plan is re-derived with "no approval needed"), and a scope that
