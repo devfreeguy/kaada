@@ -39,16 +39,21 @@ export function describePayment(
   options: { mock?: boolean | undefined },
 ): string {
   const lines: string[] = [];
-  lines.push(summary.recipient ? `Payment to ${summary.recipient}` : "Payment");
+  // Converting your own money has no "they". Swapping naira for pesos in your own wallet read "The recipient receives
+  // about AR$6,045", which invites the obvious question of who that is — and the honest answer is nobody.
+  const toSelf = summary.recipient === undefined;
+  lines.push(toSelf ? "Conversion" : `Payment to ${summary.recipient}`);
   if (summary.amountMode === "EXACT_OUTPUT") {
-    lines.push(`They receive exactly: ${summary.recipientReceives.display}`);
+    lines.push(
+      `${toSelf ? "You get" : "They receive"} exactly: ${summary.recipientReceives.display}`,
+    );
     lines.push(
       `You spend: about ${summary.senderSpends.display}, never more than ${summary.maximumSpend.display}`,
     );
   } else {
     lines.push(`You spend exactly: ${summary.senderSpends.display}`);
     lines.push(
-      `They receive: about ${summary.recipientReceives.display}, at least ${summary.minimumReceive.display}`,
+      `${toSelf ? "You get" : "They receive"}: about ${summary.recipientReceives.display}, at least ${summary.minimumReceive.display}`,
     );
   }
   return `${lines.join("\n")}${options.mock ? "\n(Test prices: no real money moves.)" : ""}`;
