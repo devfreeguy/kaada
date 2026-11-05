@@ -78,9 +78,13 @@ export const SETTINGS = {
       },
       gemini: {
         protocol: "openai",
-        // Google renames these often and the free tier covers only the Flash line; AI Studio lists what the project
-        // can actually call. Override with GEMINI_MODEL rather than assuming this one is current.
-        model: "gemini-2.5-flash",
+        /**
+         * The moving alias, not a pinned version. Google retires these from under you: `gemini-2.5-flash` answered
+         * "no longer available to new users" with a 404 when this chain was first probed, and the list of Flash models
+         * on one key ran from 2.5 to 3.8. For a provider that only answers when three others could not, surviving a
+         * rename matters more than knowing exactly which weights replied. Override with GEMINI_MODEL to pin one.
+         */
+        model: "gemini-flash-latest",
         baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/",
         timeoutMs: 8_000,
       },

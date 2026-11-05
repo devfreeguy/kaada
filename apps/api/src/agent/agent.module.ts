@@ -13,6 +13,7 @@ import { createDevInterpreter } from "../core/agent/dev-fixtures.js";
 import { FallbackIntentInterpreter } from "../core/agent/fallback-interpreter.js";
 import type { IntentInterpreter } from "../core/agent/interpreter.js";
 import { createAnthropicTransport } from "../infrastructure/llm/anthropic-transport.js";
+import { createOpenAiCompatibleTransport } from "../infrastructure/llm/openai-compatible-transport.js";
 import type { GroqTransport } from "../infrastructure/llm/groq-transport.js";
 import type { AgentLog } from "../core/agent/ports.js";
 import { composeRevisionHooks } from "../core/intents/intent-commit.js";
@@ -75,11 +76,13 @@ function walletBalanceReader(balances: WalletBalanceService): AgentBalanceReader
 
 /** Builds the transport a protocol needs. One case per PROTOCOL, never per provider. */
 const TRANSPORTS: Record<InterpreterProtocol, (provider: InterpreterProvider) => GroqTransport> = {
+  // Groq is the one provider the Groq SDK's hardcoded "/openai/v1/chat/completions" path is correct for, so it keeps
+  // its own client (retries, quota-scope parsing). Everyone else speaking the same protocol lives at a different path
+  // and is reached directly.
   openai: (provider) =>
-    createGroqSdkTransport({
-      apiKey: provider.apiKey,
-      ...(provider.baseUrl !== undefined && { baseURL: provider.baseUrl }),
-    }),
+    provider.baseUrl === undefined
+      ? createGroqSdkTransport({ apiKey: provider.apiKey })
+      : createOpenAiCompatibleTransport({ apiKey: provider.apiKey, baseUrl: provider.baseUrl }),
   anthropic: (provider) => createAnthropicTransport({ apiKey: provider.apiKey }),
 };
 
