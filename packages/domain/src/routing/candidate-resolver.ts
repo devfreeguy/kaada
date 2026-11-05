@@ -133,17 +133,56 @@ export function createRoutingCandidateResolver(
     request: RoutingRequest,
     options: ResolveOptions,
   ): Promise<SideOutcome> {
+    /**
+     * "A dollar of pesos": the dollar says how BIG the payment is, not what pays for it.
+     *
+     * The dollar is the pivot every cross-currency route already passes through, so naming an amount in dollars is the
+     * natural way to size a payment into any currency. Read as a funding instruction instead, it tells someone holding
+     * naira that their wallet "doesn't hold anything that can pay for this" — for a payment their naira covers many
+     * times over, through a route that exists and is priced.
+     *
+     * Only when the destination is a DIFFERENT currency. "Send $20" with nothing else named still means dollars, and a
+     * source the person stated themselves is always obeyed.
+     */
+    const amountAsset = await deps.assets.getById(request.amount.assetId);
+    const destinationAsset =
+      request.destinationAssetId === undefined
+        ? null
+        : await deps.assets.getById(request.destinationAssetId);
+    // Whichever side is fixed. "A dollar of pesos" sizes the payment in dollars whether it is read as spending one or
+    // as the recipient receiving one; either way the dollar is never a statement about which of their money pays.
+    const dollarSizing =
+      amountAsset?.fiatCode === "USD" &&
+      destinationAsset?.fiatCode !== undefined &&
+      destinationAsset.fiatCode !== "USD";
+
+    /** Nothing named at all: the source is open, and anything the person holds may pay. */
+    const dollarIsTheSize =
+      dollarSizing &&
+      request.sourceAssetId === undefined &&
+      request.preferredSourceAssetId === undefined;
+
     const reference =
       request.sourceAssetId ??
-      (request.amountMode === "EXACT_INPUT" ? request.amount.assetId : undefined);
+      (request.amountMode === "EXACT_INPUT" && !dollarIsTheSize
+        ? request.amount.assetId
+        : undefined);
     const preferenceId = request.preferredSourceAssetId;
     const preference = preferenceId ? await deps.assets.getById(preferenceId) : null;
 
-    // A preference must be a usable token on the chain; a fiat currency cannot be spent.
+    /**
+     * A preference must end at a usable token on the chain — but it may be NAMED as a currency.
+     *
+     * "Send from my naira balance" is how people describe their money; cNGN is an implementation detail they have never
+     * heard of. The settlement resolver already turns NGN into the token that settles it, which is the line below, so
+     * refusing a fiat preference outright answered "I can't pay with NGN right now" to someone whose naira was sitting
+     * there ready to spend. A currency with no settlement token on this chain still fails, which is the real case this
+     * guard was for.
+     */
     let preferred: Asset | undefined;
     if (preferenceId) {
       const resolved = await deps.settlement.resolveAsset({ chainId, assetId: preferenceId });
-      if (resolved.status === "UNSUPPORTED" || preference?.kind === "FIAT") {
+      if (resolved.status === "UNSUPPORTED") {
         const denomination = resolved.denomination;
         return fail(
           "SOURCE_ASSET_UNSUPPORTED",
@@ -169,6 +208,11 @@ export function createRoutingCandidateResolver(
       if (preferred) {
         // "$20 using USDT": the preference must be one of the tokens that represent the amount's
         // currency. A named token amount cannot be paid with a different token.
+        //
+        // Deliberately NOT relaxed for a dollar-sized amount. "A dollar of pesos from my naira balance" ought to be
+        // allowed — the naira becomes a dollar and the dollar becomes pesos — but relaxing it here also lets "$20 to
+        // Brazil using wBRL" through as a direct transfer labelled in dollars, which is a different claim than the one
+        // being made. It belongs with the planner work that lets a fixed amount sit between two hops, not before it.
         const allowed = resolution.assets.some((asset) => asset.id === preferred.id);
         if (!allowed) {
           return fail(
@@ -215,9 +259,28 @@ export function createRoutingCandidateResolver(
       options.homeCurrency && request.purpose === "PAYMENT" && request.operation === "SEND"
         ? await deps.settlement.resolveCurrency({ chainId, fiatCode: options.homeCurrency })
         : undefined;
+    /**
+     * When the dollar was only the size, whatever they actually hold can pay: every token on this chain that stands for
+     * a currency is a candidate, and the wallet layer keeps the ones with a balance before anything is priced.
+     *
+     * Offered AFTER the dollar assets, which is the order that matters: holding dollars, the payment starts in the
+     * middle of the route and converts nothing; holding naira, the naira becomes exactly the dollars asked for and the
+     * payment carries on from the same place.
+     */
+    const held = dollarIsTheSize
+      ? (await deps.assets.listActive()).filter(
+          (asset) =>
+            asset.kind !== "FIAT" &&
+            asset.chainId === chainId &&
+            asset.contractAddress !== undefined &&
+            asset.fiatCode !== undefined,
+        )
+      : [];
+
     const extra = [
       ...(sameCurrency && sameCurrency.status !== "UNSUPPORTED" ? sameCurrency.assets : []),
       ...(homeResolution && homeResolution.status !== "UNSUPPORTED" ? homeResolution.assets : []),
+      ...held,
     ].filter((asset, index, all) => all.findIndex((other) => other.id === asset.id) === index);
 
     if (funding.status === "UNSUPPORTED") {

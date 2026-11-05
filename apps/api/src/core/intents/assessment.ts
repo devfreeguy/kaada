@@ -278,11 +278,31 @@ export async function assessIntent(
         : "DESTINATION",
   );
 
+  /**
+   * "Send a dollar of pesos": the dollar is the SIZE of the payment, not the sender's side of it.
+   *
+   * For a SEND into a different currency, a dollar amount is the natural way to say how much to send — the dollar is
+   * the pivot every such route already passes through. Taken as the sender's side instead, it pins the payment to
+   * dollars the sender may not hold, and someone with naira is told their wallet "doesn't hold anything that can pay
+   * for this" for a payment their naira covers many times over.
+   *
+   * Only when the destination currency is genuinely different: "send $20" with nothing else named still means dollars.
+   * A funding asset the person names themselves is separate, and is still obeyed as a preference below.
+   */
+  const dollarSizesOnly =
+    intent.type === "SEND" &&
+    mode === "EXACT_INPUT" &&
+    amountAsset?.fiatCode === "USD" &&
+    declaredDestination?.fiatCode !== undefined &&
+    declaredDestination.fiatCode !== "USD";
+
   // For a SEND, the sender side is whatever the amount is denominated in; a named funding asset is a
   // preference on top of it. For CONVERT and QUOTE the named assets are the operation itself.
   const sourceAssetId =
     mode === "EXACT_INPUT"
-      ? amountAsset?.id
+      ? dollarSizesOnly
+        ? undefined
+        : amountAsset?.id
       : intent.type === "SEND"
         ? undefined
         : declaredSource?.id;

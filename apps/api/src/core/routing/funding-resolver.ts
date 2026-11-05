@@ -109,6 +109,18 @@ export class WalletFundingResolver {
       const fixed =
         asset && amountAsset ? expressFixedAmount(request, amountAsset, asset) : undefined;
       if (!fixed) {
+        // A candidate in a DIFFERENT currency cannot be judged yet: what a dollar costs in naira is not known until the
+        // route is priced, so it is carried forward exactly as EXACT_OUTPUT is above. Calling it insufficient instead
+        // meant someone holding naira was told their wallet could not pay for a dollar of pesos before a single price
+        // had been fetched — the naira was never weighed, only found to be the wrong currency.
+        if (
+          asset?.fiatCode !== undefined &&
+          amountAsset?.fiatCode !== undefined &&
+          asset.fiatCode !== amountAsset.fiatCode
+        ) {
+          status.set(id, "POTENTIALLY_FUNDED");
+          continue;
+        }
         // The planner could not express the amount in this token either; it cannot be used.
         status.set(id, "INSUFFICIENT");
         continue;

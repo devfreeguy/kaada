@@ -44,6 +44,11 @@ export interface AssetRegistry {
     code: string,
     options?: Pick<FindAssetOptions, "chainId" | "includeInactive">,
   ): Promise<Asset[]>;
+  /**
+   * Every active asset. Used where the question is "what could pay for this at all?" rather than "is this one
+   * supported?" — the table is small and read through a cache.
+   */
+  listActive(): Promise<Asset[]>;
   /** The asset, or ASSET_NOT_SUPPORTED when it does not exist or is inactive. */
   requireActive(id: string): Promise<Asset>;
   /** Decimals for an existing asset (active or not), or ASSET_NOT_SUPPORTED. */
@@ -60,6 +65,8 @@ export function createAssetRegistry(repository: AssetRepository): AssetRegistry 
 
   return {
     getById: (id) => repository.findById(id),
+
+    listActive: () => repository.listActive(),
 
     async findBySymbol(symbol, options = {}) {
       const assets = await repository.findBySymbol(
