@@ -5,6 +5,8 @@ import { logFailure } from "../../lib/client-log";
 import type { RootSigningRequest } from "../../lib/root-material";
 import { signRootRequest } from "../../lib/root-material";
 import { DeviceKeyMissingError } from "../../lib/root-proof";
+import { failureCopy } from "../../lib/app-copy";
+import { useOperation } from "../../lib/use-operation";
 type View =
   | { name: "loading" }
   | { name: "missing" }
@@ -22,6 +24,7 @@ export function useCancelRecovery() {
   const [token, setToken] = useState<string | null>(null);
   const [view, setView] = useState<View>({ name: "loading" });
   const captured = useRef<string | null | undefined>(undefined);
+  const gate = useOperation();
   useEffect(() => {
     const match = /^#([A-Za-z0-9_-]{20,})$/.exec(window.location.hash);
     if (captured.current === undefined) captured.current = match?.[1] ?? null;
@@ -36,26 +39,32 @@ export function useCancelRecovery() {
   }, []);
   async function cancelWithRoot() {
     if (!token) return;
-    setView({ name: "working" });
+    const operation = gate.begin();
+    if (!operation) return;
+    operation.commit(() => setView({ name: "working" }));
     try {
       const request = await json<RootSigningRequest>(
         await api("/recovery/cancel/prepare", token, { method: "POST" }),
       );
       const material = await signRootRequest(request);
       await json(await api("/recovery/cancel", token, { body: { material } }));
-      setView({ name: "stopped" });
+      operation.succeed(() => setView({ name: "stopped" }));
     } catch (error) {
       logFailure("recovery.cancel_failed", error);
-      setView({
-        name: "error",
-        message:
-          error instanceof DeviceKeyMissingError
-            ? "This browser doesn't hold your wallet's device key. Open the link on the device or passkey you normally use."
-            : describeError(
-                error,
-                "We couldn’t confirm cancellation. Check the recovery status before trying again.",
-              ),
-      });
+      operation.commit(() =>
+        setView({
+          name: "error",
+          message:
+            error instanceof DeviceKeyMissingError
+              ? failureCopy.deviceKeyMissing
+              : describeError(
+                  error,
+                  "Couldn’t confirm the cancellation. Check the recovery status.",
+                ),
+        }),
+      );
+    } finally {
+      operation.finish();
     }
   }
   return { view, cancelWithRoot };

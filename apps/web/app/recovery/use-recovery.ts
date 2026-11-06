@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Address } from "viem";
 import { api, ApiError, describeError, json } from "../lib/api";
 import { logFailure } from "../lib/client-log";
@@ -10,6 +10,8 @@ import { deriveRecoveryKey, parseRecoveryCode, signRecovery } from "../lib/recov
 import type { RootSigningRequest } from "../lib/root-material";
 import { signRootRequest } from "../lib/root-material";
 import { DeviceKeyMissingError } from "../lib/root-proof";
+import { failureCopy } from "../lib/app-copy";
+import { useOperation } from "../lib/use-operation";
 type NextStep =
   | "VERIFY_EMAIL"
   | "CREATE_CREDENTIAL"
@@ -99,20 +101,28 @@ export function useRecovery() {
   const [authenticatorCode, setAuthenticatorCode] = useState("");
   const [now, setNow] = useState(() => Date.now());
   const token = session?.token ?? null;
+  const gate = useOperation();
+  /**
+   * Which recovery the screen is showing. `forget` starts a new one, and an answer that was asked for under the old one is
+   * dropped instead of bringing the old recovery back.
+   */
+  const epoch = useRef(0);
   const refresh = useCallback(async (value: string) => {
+    const mine = epoch.current;
     try {
-      setStatus(await json<Status>(await api("/recovery/status", value)));
+      const next = await json<Status>(await api("/recovery/status", value));
+      if (epoch.current !== mine) return;
+      setStatus(next);
       setError(null);
     } catch (failure) {
+      if (epoch.current !== mine) return;
       logFailure("recovery.status_failed", failure);
       if (failure instanceof ApiError && failure.kind === "invalid") {
         saveSession(null);
         setSession(null);
         setStatus(null);
       }
-      setError(
-        describeError(failure, "We couldn’t refresh recovery. Your progress is kept; try again."),
-      );
+      setError(describeError(failure, "Couldn’t refresh. Your progress is kept; try again."));
     }
   }, []);
   useEffect(() => restoreSession(setSession, refresh, () => setReady(true)), [refresh]);
@@ -127,22 +137,33 @@ export function useRecovery() {
       waiting && token ? watchRecovery(token, status?.executeAfter, refresh, setNow) : undefined,
     [waiting, token, status?.executeAfter, refresh],
   );
-  const run = useCallback(async (work: () => Promise<void>, fallback: string) => {
-    setBusy(true);
-    setError(null);
-    try {
-      await work();
-    } catch (failure) {
-      logFailure("recovery.step_failed", failure);
-      setError(
-        failure instanceof DeviceKeyMissingError
-          ? "This browser doesn't hold your wallet's device key."
-          : describeError(failure, fallback),
-      );
-    } finally {
-      setBusy(false);
-    }
-  }, []);
+  /** One step at a time: a second start while one runs is refused, and a step that finishes after `forget` writes nothing. */
+  const run = useCallback(
+    async (work: () => Promise<void>, fallback: string) => {
+      const operation = gate.begin();
+      if (!operation) return;
+      operation.commit(() => {
+        setBusy(true);
+        setError(null);
+      });
+      try {
+        await work();
+      } catch (failure) {
+        logFailure("recovery.step_failed", failure);
+        operation.commit(() =>
+          setError(
+            failure instanceof DeviceKeyMissingError
+              ? failureCopy.deviceKeyMissing
+              : describeError(failure, fallback),
+          ),
+        );
+      } finally {
+        operation.commit(() => setBusy(false));
+        operation.finish();
+      }
+    },
+    [gate],
+  );
   const start = () =>
     run(async () => {
       const started = await json<{ token: string }>(
@@ -152,19 +173,19 @@ export function useRecovery() {
       saveSession(next);
       setSession(next);
       await refresh(started.token);
-    }, "We couldn't start recovery. Check the email address and try again.");
+    }, "Couldn’t start recovery. Check the email and try again.");
   const verifyEmail = () =>
     run(async () => {
       if (!token) return;
       await json(await api("/recovery/verify-email", token, { body: { code: emailCode } }));
       setEmailCode("");
       await refresh(token);
-    }, "That code didn't work. Check it and try again.");
+    }, "That code didn’t work. Try again.");
   const resend = () =>
     run(async () => {
       if (!token) return;
       await json(await api("/recovery/resend", token, { method: "POST" }));
-    }, "We couldn't send a new code yet. Please wait a moment.");
+    }, "Couldn’t send a new code yet. Wait a moment.");
   const keep = (proposal: Proposal) => {
     const next = { token: token ?? "", proposal };
     saveSession(next);
@@ -184,7 +205,7 @@ export function useRecovery() {
         await json<Proposal>(await api("/recovery/root/passkey", token, { body: { response } })),
       );
       await refresh(token);
-    }, "We couldn't create your new passkey.");
+    }, "Couldn’t create your passkey.");
   const createDeviceKey = () =>
     run(async () => {
       if (!token) return;
@@ -199,7 +220,7 @@ export function useRecovery() {
         ),
       );
       await refresh(token);
-    }, "We couldn't create a key on this device.");
+    }, "Couldn’t create a key on this device.");
   const proveWithCode = () =>
     run(async () => {
       if (!token || !status?.account || !session?.proposal) {
@@ -230,7 +251,7 @@ export function useRecovery() {
         await api("/recovery/proof", token, { body: { signature, authenticatorCode: code } }),
       );
       await refresh(token);
-    }, "That didn't work. Check your Recovery Code and the code in your authenticator app, then try again.");
+    }, "That didn’t work. Check your Recovery Code and authenticator code.");
   const proveNewCredential = () =>
     run(async () => {
       if (!token) return;
@@ -240,8 +261,12 @@ export function useRecovery() {
       const material = await signRootRequest(request);
       await json(await api("/recovery/signing-proof", token, { body: { material } }));
       await refresh(token);
-    }, "We couldn't confirm your new credential.");
+    }, "Couldn’t confirm your new credential.");
   const forget = () => {
+    // A new recovery starts clean: invalidate anything still running for the old one.
+    epoch.current += 1;
+    gate.reset();
+    setBusy(false);
     saveSession(null);
     setSession(null);
     setStatus(null);

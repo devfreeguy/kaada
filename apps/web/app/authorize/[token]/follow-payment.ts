@@ -111,8 +111,7 @@ export function watchFinalPricing(
       if (!cancelled) {
         setOutcome({
           state: "ERROR",
-          message:
-            "We couldn't confirm the payment's progress. If you started it, please check your wallet before trying again.",
+          message: "Couldn't confirm your payment's progress. Check your chat before trying again.",
         });
       }
     }

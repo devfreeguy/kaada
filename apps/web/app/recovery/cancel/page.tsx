@@ -7,7 +7,7 @@ export const metadata = {
 };
 export default function CancelPage() {
   return (
-    <ApplicationShell label="Keep your wallet yours.">
+    <ApplicationShell>
       <CancelFlow />
     </ApplicationShell>
   );

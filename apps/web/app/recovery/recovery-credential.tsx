@@ -1,7 +1,7 @@
 "use client";
+import { ActionButton } from "../components/application/action-button";
 import { CredentialUnavailable } from "../components/application/credential-unavailable";
-import { primaryAction, secondaryAction } from "../components/application/styles";
-
+import { FlowSection } from "../components/application/flow-section";
 import type { useRecovery } from "./use-recovery";
 
 export function RecoveryCredential({
@@ -11,40 +11,29 @@ export function RecoveryCredential({
   capabilities,
   status,
 }: ReturnType<typeof useRecovery>) {
-  const step = status?.nextStep;
+  if (status?.nextStep !== "CREATE_CREDENTIAL") return null;
   return (
-    <>
-      {step === "CREATE_CREDENTIAL" && (
-        <section className="flex flex-col gap-4">
-          <h1 className="text-2xl font-semibold">Set up this device</h1>
-          <p className="text-white/75">
-            Choose how this device will protect your wallet from now on.
-          </p>
-          {capabilities.ready && !capabilities.passkey && !capabilities.deviceKey && (
-            <CredentialUnavailable />
-          )}
-          {capabilities.passkey && (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void createPasskey()}
-              className={primaryAction}
-            >
-              {busy ? "Waiting for your device..." : "Create a new passkey"}
-            </button>
-          )}
-          {capabilities.deviceKey && (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void createDeviceKey()}
-              className={secondaryAction}
-            >
-              No passkey? Use a key kept by this device
-            </button>
-          )}
-        </section>
+    <FlowSection
+      title="Set up this device"
+      description="Choose how this device will protect your wallet from now on."
+    >
+      {capabilities.ready && !capabilities.passkey && !capabilities.deviceKey && (
+        <CredentialUnavailable />
       )}
-    </>
+      {capabilities.passkey && (
+        <ActionButton
+          busy={busy}
+          busyLabel="Waiting for your device…"
+          onClick={() => void createPasskey()}
+        >
+          Create passkey
+        </ActionButton>
+      )}
+      {capabilities.deviceKey && (
+        <ActionButton variant="secondary" disabled={busy} onClick={() => void createDeviceKey()}>
+          No passkey? Use a key on this device
+        </ActionButton>
+      )}
+    </FlowSection>
   );
 }

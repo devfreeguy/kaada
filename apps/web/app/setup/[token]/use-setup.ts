@@ -2,6 +2,7 @@
 import { browserSupportsWebAuthn, startRegistration } from "@simplewebauthn/browser";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, describeError, json } from "../../lib/api";
+import { failureCopy } from "../../lib/app-copy";
 import { logFailure } from "../../lib/client-log";
 import {
   deviceKeySupported,
@@ -9,11 +10,15 @@ import {
   saveDeviceKey,
   signDevicePayload,
 } from "../../lib/device-key";
+import { observeRequest } from "../../lib/observe-request";
+import type { Operation } from "../../lib/operation-gate";
+import { useOperation } from "../../lib/use-operation";
+
 interface WalletInfo {
   address: string | null;
   status: string;
 }
-type View =
+export type View =
   | { name: "loading" }
   | { name: "invalid" }
   | { name: "ready"; deviceKeysEnabled: boolean }
@@ -21,8 +26,10 @@ type View =
   | { name: "creating"; action: "create" | "device" | "finish" }
   | { name: "done"; address: string }
   | { name: "error"; message: string; retry: "load" | "create" | "device" | "finish" };
+
+const SAVED_BUT_UNCONFIRMED = "Your credential is saved. Wallet creation isn't confirmed yet.";
+
 /** Sends the setup token as a bearer header: it is never put in a body, a query string or a log. */
-import { observeRequest } from "../../lib/observe-request";
 async function loadSetup(
   token: string,
 ): Promise<{ deviceKeysEnabled: boolean; funded: boolean; view: View }> {
@@ -40,16 +47,26 @@ async function loadSetup(
         : { name: "ready", deviceKeysEnabled: body.deviceKeysEnabled };
   return { deviceKeysEnabled: body.deviceKeysEnabled, funded: body.funded === true, view };
 }
+
+/**
+ * Wallet setup: create the credential, then finish. Every action runs through the operation gate, so a second tap starts
+ * nothing, a late answer from an earlier attempt is dropped, and a wallet that was created can never be replaced on screen by a
+ * failure from something that finished after it.
+ */
 export function useSetup({ token }: { token: string }) {
   const [view, setView] = useState<View>({ name: "loading" });
   const [deviceKeysEnabled, setDeviceKeysEnabled] = useState(false);
   // Securing the account is asked for only once the wallet has received its first funds.
   const [funded, setFunded] = useState(false);
   const [revision, setRevision] = useState(0);
-  const reload = () => {
+  const gate = useOperation();
+
+  const reload = useCallback(() => {
+    gate.reset();
     setView({ name: "loading" });
     setRevision((value) => value + 1);
-  };
+  }, [gate]);
+
   useEffect(
     () =>
       observeRequest(
@@ -57,122 +74,160 @@ export function useSetup({ token }: { token: string }) {
         (result) => {
           setDeviceKeysEnabled(result.deviceKeysEnabled);
           setFunded(result.funded);
-          setView(result.view);
+          setView((current) => (current.name === "loading" ? result.view : current));
         },
         (error) => {
           logFailure("setup.load_failed", error);
-          setView(
-            error instanceof ApiError && error.kind === "invalid"
-              ? { name: "invalid" }
-              : {
-                  name: "error",
-                  message: describeError(error, "We couldn’t load your wallet. Please try again."),
-                  retry: "load",
-                },
+          setView((current) =>
+            current.name !== "loading"
+              ? current
+              : error instanceof ApiError && error.kind === "invalid"
+                ? { name: "invalid" }
+                : {
+                    name: "error",
+                    message: describeError(error, "Couldn't load your wallet."),
+                    retry: "load",
+                  },
           );
         },
       ),
     [token, revision],
   );
+
   const finish = useCallback(async () => {
-    setView({ name: "creating", action: "finish" });
+    const operation = gate.begin();
+    if (!operation) return;
+    const show = (next: View) => operation.commit(() => setView(next));
+    show({ name: "creating", action: "finish" });
     try {
       const response = await api("/wallet/setup/finalize", token, { method: "POST" });
-      if (response.status === 401) return setView({ name: "invalid" });
+      if (response.status === 401) {
+        show({ name: "invalid" });
+        return;
+      }
       if (!response.ok) throw new Error("failed");
       const body = (await response.json()) as { wallet: WalletInfo | null };
-      if (body.wallet?.address) return setView({ name: "done", address: body.wallet.address });
-      throw new Error("no wallet");
+      if (!body.wallet?.address) throw new Error("no wallet");
+      const address = body.wallet.address;
+      operation.succeed(() => setView({ name: "done", address }));
     } catch (error) {
       logFailure("setup.finish_failed", error);
-      setView({
-        name: "error",
-        message:
-          "Your credential is saved. We couldn’t confirm wallet creation yet. You can retry finishing setup.",
-        retry: "finish",
-      });
+      show({ name: "error", message: SAVED_BUT_UNCONFIRMED, retry: "finish" });
+    } finally {
+      operation.finish();
     }
-  }, [token]);
+  }, [gate, token]);
+
   /**
    * The alternative for a browser or phone without passkeys: a P-256 key made by this device. Its private half is
    * non-extractable and never leaves the browser; Kaada gets the public key and a signature proving the key is held.
    */
-  const createWithDevice = useCallback(async () => {
-    if (!deviceKeySupported()) {
-      return setView({
-        name: "error",
-        message: "This browser can't keep a device key. Please open the link in Safari or Chrome.",
-        retry: "device",
-      });
-    }
-    setView({ name: "creating", action: "device" });
-    try {
-      const key = await generateDeviceKey();
-      const optionsResponse = await api("/wallet/device-keys/options", token, {
-        method: "POST",
-        body: { publicKeyX: key.publicKeyX, publicKeyY: key.publicKeyY },
-      });
-      if (optionsResponse.status === 401) return setView({ name: "invalid" });
-      if (!optionsResponse.ok) throw new Error("options");
-      const challenge = (await optionsResponse.json()) as {
-        keyId: string;
-        payload: string;
-        challenge: string;
-      };
-      const { r, s } = await signDevicePayload(key.privateKey, challenge.payload);
-      // Kept BEFORE the server records it: a key lost after the server accepted it would lock the wallet.
-      await saveDeviceKey(challenge.keyId, key.privateKey);
-      const registerResponse = await api("/wallet/device-keys/register", token, {
-        method: "POST",
-        body: {
-          publicKeyX: key.publicKeyX,
-          publicKeyY: key.publicKeyY,
-          challenge: challenge.challenge,
-          r,
-          s,
-        },
-      });
-      if (registerResponse.status === 401) return setView({ name: "invalid" });
-      if (registerResponse.status === 502) {
-        return setView({
+  const runDevice = useCallback(
+    async (operation: Operation) => {
+      const show = (next: View) => operation.commit(() => setView(next));
+      if (!deviceKeySupported()) {
+        show({
           name: "error",
-          message:
-            "Your device key is saved, but the wallet could not be created yet. Please try again.",
-          retry: "finish",
+          message: "This browser can't keep a device key. Open the link in Safari or Chrome.",
+          retry: "device",
+        });
+        return;
+      }
+      show({ name: "creating", action: "device" });
+      try {
+        const key = await generateDeviceKey();
+        const optionsResponse = await api("/wallet/device-keys/options", token, {
+          method: "POST",
+          body: { publicKeyX: key.publicKeyX, publicKeyY: key.publicKeyY },
+        });
+        if (optionsResponse.status === 401) {
+          show({ name: "invalid" });
+          return;
+        }
+        if (!optionsResponse.ok) throw new Error("options");
+        const challenge = (await optionsResponse.json()) as {
+          keyId: string;
+          payload: string;
+          challenge: string;
+        };
+        const { r, s } = await signDevicePayload(key.privateKey, challenge.payload);
+        // Kept BEFORE the server records it: a key lost after the server accepted it would lock the wallet.
+        await saveDeviceKey(challenge.keyId, key.privateKey);
+        const registerResponse = await api("/wallet/device-keys/register", token, {
+          method: "POST",
+          body: {
+            publicKeyX: key.publicKeyX,
+            publicKeyY: key.publicKeyY,
+            challenge: challenge.challenge,
+            r,
+            s,
+          },
+        });
+        if (registerResponse.status === 401) {
+          show({ name: "invalid" });
+          return;
+        }
+        if (registerResponse.status === 502) {
+          show({
+            name: "error",
+            message: "Your device key is saved. Wallet creation isn't confirmed yet.",
+            retry: "finish",
+          });
+          return;
+        }
+        if (!registerResponse.ok) throw new Error("register");
+        const body = (await registerResponse.json()) as { wallet: WalletInfo | null };
+        if (!body.wallet?.address) throw new Error("no wallet");
+        const address = body.wallet.address;
+        operation.succeed(() => setView({ name: "done", address }));
+      } catch (error) {
+        logFailure("setup.device_key_failed", error);
+        show({
+          name: "error",
+          message: describeError(error, "Couldn't confirm setup. Reload before trying again."),
+          retry: "load",
         });
       }
-      if (!registerResponse.ok) throw new Error("register");
-      const body = (await registerResponse.json()) as { wallet: WalletInfo | null };
-      if (!body.wallet?.address) throw new Error("no wallet");
-      setView({ name: "done", address: body.wallet.address });
-    } catch (error) {
-      logFailure("setup.device_key_failed", error);
-      setView({
-        name: "error",
-        message: describeError(
-          error,
-          "We couldn’t confirm setup. Reload your wallet before trying again.",
-        ),
-        retry: "load",
-      });
-    }
-  }, [token]);
-  const create = useCallback(async () => {
-    if (!browserSupportsWebAuthn()) {
-      // Passkeys are preferred but not required: without them, a device key is the way in (when it is enabled).
-      if (deviceKeysEnabled) return createWithDevice();
-      return setView({
-        name: "error",
-        message: "This browser doesn't support passkeys. Please open the link in Safari or Chrome.",
-        retry: "create",
-      });
-    }
-    setView({ name: "creating", action: "create" });
+    },
+    [token],
+  );
+
+  const createWithDevice = useCallback(async () => {
+    const operation = gate.begin();
+    if (!operation) return;
     try {
+      await runDevice(operation);
+    } finally {
+      operation.finish();
+    }
+  }, [gate, runDevice]);
+
+  const create = useCallback(async () => {
+    const operation = gate.begin();
+    if (!operation) return;
+    const show = (next: View) => operation.commit(() => setView(next));
+    try {
+      if (!browserSupportsWebAuthn()) {
+        // Passkeys are preferred but not required: without them, a device key is the way in (when it is enabled).
+        if (deviceKeysEnabled) {
+          await runDevice(operation);
+          return;
+        }
+        show({
+          name: "error",
+          message: "This browser doesn't support passkeys. Open the link in Safari or Chrome.",
+          retry: "create",
+        });
+        return;
+      }
+      show({ name: "creating", action: "create" });
       const optionsResponse = await api("/wallet/passkeys/registration/options", token, {
         method: "POST",
       });
-      if (optionsResponse.status === 401) return setView({ name: "invalid" });
+      if (optionsResponse.status === 401) {
+        show({ name: "invalid" });
+        return;
+      }
       if (!optionsResponse.ok) throw new Error("options");
       const optionsJSON = (await optionsResponse.json()) as Parameters<
         typeof startRegistration
@@ -182,41 +237,33 @@ export function useSetup({ token }: { token: string }) {
         method: "POST",
         body: credential,
       });
-      if (verifyResponse.status === 401) return setView({ name: "invalid" });
+      if (verifyResponse.status === 401) {
+        show({ name: "invalid" });
+        return;
+      }
       if (verifyResponse.status === 502) {
-        return setView({
-          name: "error",
-          message:
-            "Your credential is saved. We couldn’t confirm wallet creation yet. You can retry finishing setup.",
-          retry: "finish",
-        });
+        show({ name: "error", message: SAVED_BUT_UNCONFIRMED, retry: "finish" });
+        return;
       }
       if (!verifyResponse.ok) throw new Error("verify");
       const body = (await verifyResponse.json()) as { wallet: WalletInfo | null };
       if (!body.wallet?.address) throw new Error("no wallet");
-      setView({ name: "done", address: body.wallet.address });
+      const address = body.wallet.address;
+      operation.succeed(() => setView({ name: "done", address }));
     } catch (error) {
       logFailure("setup.passkey_failed", error);
       const cancelled = error instanceof Error && error.name === "NotAllowedError";
-      setView({
+      show({
         name: "error",
         message: cancelled
-          ? "Passkey creation was cancelled. You can try again when you're ready."
-          : describeError(
-              error,
-              "We couldn’t confirm setup. Reload your wallet before trying again.",
-            ),
+          ? failureCopy.cancelled
+          : describeError(error, "Couldn't confirm setup. Reload before trying again."),
         retry: cancelled ? "create" : "load",
       });
+    } finally {
+      operation.finish();
     }
-  }, [token, deviceKeysEnabled, createWithDevice]);
-  return {
-    funded,
-    view,
-    deviceKeysEnabled,
-    finish,
-    createWithDevice,
-    create,
-    reload,
-  };
+  }, [deviceKeysEnabled, gate, runDevice, token]);
+
+  return { funded, view, deviceKeysEnabled, finish, createWithDevice, create, reload };
 }

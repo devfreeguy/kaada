@@ -1,13 +1,17 @@
 "use client";
 import { useCallback, useState } from "react";
 import { api, describeError, json } from "../../lib/api";
+import { failureCopy } from "../../lib/app-copy";
 import { logFailure } from "../../lib/client-log";
 import { newDeviceKey, registerPasskey } from "../../lib/new-root";
 import type { RootChallenge } from "../../lib/root-proof";
 import { DeviceKeyMissingError, proveRoot } from "../../lib/root-proof";
+import { useOperation } from "../../lib/use-operation";
+import { useBrowserCapabilities } from "../../lib/browser-capabilities";
+
 type Kind = "ROTATE_ROOT" | "ENROLL_BACKUP";
 type NewType = "PASSKEY" | "DEVICE_KEY";
-type Progress =
+export type Progress =
   | { name: "idle" }
   | { name: "confirmed" }
   | { name: "pending"; message: string; changeId: string }
@@ -24,48 +28,67 @@ interface ChangeView {
   changeId: string;
   status: "PREPARED" | "SUBMITTED" | "CONFIRMED" | "FAILED" | "EXPIRED" | "CANCELLED";
 }
+
+const STILL_CONFIRMING = "Still confirming. Check again shortly.";
+const UNKNOWN_RESULT =
+  "Couldn't confirm the result. Check this change's status before starting another.";
+
 /**
  * Change who controls the wallet WITHOUT a recovery: rotate the root to a fresh credential, or add a backup. The server fixes
  * the operation and what is signed; the CURRENT root confirms it (a passkey prompt or this device's key). Nothing secret leaves
  * the browser: a new device key stays non-extractable here, and Kaada gets only public keys and signatures.
+ *
+ * Every change and every status check runs through the operation gate. Leaving the current action (`reset`) invalidates the
+ * attempt in progress, including its bounded wait for the chain, so it can neither write into the next action's screen nor keep
+ * polling after the person has gone.
  */
-import { useBrowserCapabilities } from "../../lib/browser-capabilities";
 export function useSecurity({ token }: { token: string }) {
   const capabilities = useBrowserCapabilities();
   const [progress, setProgress] = useState<Progress>({ name: "idle" });
+  const gate = useOperation();
+
   const check = useCallback(
     async (changeId: string) => {
+      const operation = gate.begin();
+      if (!operation) return;
       try {
         const view = await json<ChangeView>(await api(`/wallet/root/changes/${changeId}`, token));
-        if (view.status === "CONFIRMED") setProgress({ name: "confirmed" });
-        else if (view.status === "SUBMITTED")
+        if (view.status === "CONFIRMED") {
+          operation.succeed(() => setProgress({ name: "confirmed" }));
+        } else if (view.status === "SUBMITTED") {
+          operation.commit(() =>
+            setProgress({ name: "pending", changeId, message: STILL_CONFIRMING }),
+          );
+        } else {
+          operation.commit(() =>
+            setProgress({
+              name: "error",
+              message:
+                "This change wasn't confirmed. Review your wallet security before starting another.",
+            }),
+          );
+        }
+      } catch (error) {
+        operation.commit(() =>
           setProgress({
             name: "pending",
             changeId,
-            message: "Your change is still being confirmed. Check again shortly.",
-          });
-        else
-          setProgress({
-            name: "error",
-            message:
-              "This change has not been confirmed. Review your wallet security before starting another change.",
-          });
-      } catch (error) {
-        setProgress({
-          name: "pending",
-          changeId,
-          message: describeError(
-            error,
-            "We couldn’t check the change yet. Try checking again shortly.",
-          ),
-        });
+            message: describeError(error, "Couldn't check yet. Try again shortly."),
+          }),
+        );
+      } finally {
+        operation.finish();
       }
     },
-    [token],
+    [gate, token],
   );
+
   const change = useCallback(
     async (kind: Kind, type: NewType) => {
-      setProgress({ name: "working", message: "Preparing..." });
+      const operation = gate.begin();
+      if (!operation) return;
+      const show = (next: Progress) => operation.commit(() => setProgress(next));
+      show({ name: "working", message: "Preparing…" });
       let submittedChange: string | null = null;
       try {
         let credential: Record<string, unknown>;
@@ -76,7 +99,7 @@ export function useSecurity({ token }: { token: string }) {
             userId: string;
             userName: string;
           }>(await api("/wallet/root/passkey/options", token, { method: "POST" }));
-          setProgress({ name: "working", message: "Create the new passkey on your device..." });
+          show({ name: "working", message: "Create the new passkey on your device…" });
           credential = { type: "PASSKEY", response: await registerPasskey(options) };
         } else {
           const key = await newDeviceKey();
@@ -100,7 +123,7 @@ export function useSecurity({ token }: { token: string }) {
         const prepared = await json<PreparedChange>(
           await api("/wallet/root/changes", token, { body: { kind, credential } }),
         );
-        setProgress({ name: "working", message: "Confirm with your current passkey or device..." });
+        show({ name: "working", message: "Confirm with your current passkey or device…" });
         const proof = await proveRoot(prepared.challenge);
         submittedChange = prepared.changeId;
         let view = await json<ChangeView>(
@@ -108,48 +131,53 @@ export function useSecurity({ token }: { token: string }) {
             body: { proof },
           }),
         );
-        // The chain confirms it a moment later: wait (bounded) for the final answer.
+        // The chain confirms it a moment later: wait (bounded) for the final answer, and stop at once if the person left.
         for (let i = 0; i < 20 && view.status === "SUBMITTED"; i += 1) {
+          if (!operation.isCurrent()) return;
           await new Promise((resolve) => setTimeout(resolve, 2000));
+          if (!operation.isCurrent()) return;
           view = await json<ChangeView>(
             await api(`/wallet/root/changes/${prepared.changeId}`, token),
           );
         }
-        if (view.status === "CONFIRMED") return setProgress({ name: "done", kind });
+        if (view.status === "CONFIRMED") {
+          operation.succeed(() => setProgress({ name: "done", kind }));
+          return;
+        }
         if (view.status === "SUBMITTED") {
-          return setProgress({
+          show({
             name: "pending",
             changeId: prepared.changeId,
-            message: "Your change was submitted and is still being confirmed. Check again shortly.",
-          });
-        }
-        setProgress({
-          name: "error",
-          message: "The change did not go through. Nothing was lost; you can try again.",
-        });
-      } catch (error) {
-        logFailure("security.change_failed", error);
-        if (submittedChange) {
-          setProgress({
-            name: "pending",
-            changeId: submittedChange,
-            message:
-              "We couldn’t confirm the result. Check this change’s status before starting another.",
+            message: "Submitted and still confirming. Check again shortly.",
           });
           return;
         }
-        setProgress({
+        show({ name: "error", message: "The change didn't go through. You can try again." });
+      } catch (error) {
+        logFailure("security.change_failed", error);
+        if (submittedChange) {
+          show({ name: "pending", changeId: submittedChange, message: UNKNOWN_RESULT });
+          return;
+        }
+        show({
           name: "error",
           message:
             error instanceof DeviceKeyMissingError
-              ? "This browser doesn't hold your wallet's device key. Open the link on the device you set up."
-              : describeError(error, "We couldn’t prepare the change. You can try again."),
+              ? failureCopy.deviceKeyMissing
+              : describeError(error, "Couldn't prepare the change. You can try again."),
         });
+      } finally {
+        operation.finish();
       }
     },
-    [token],
+    [gate, token],
   );
+
   const busy = progress.name === "working" || progress.name === "pending";
-  const reset = useCallback(() => setProgress({ name: "idle" }), []);
+  /** Leaving this action: whatever was in progress is forgotten and can no longer write to the screen. */
+  const reset = useCallback(() => {
+    gate.reset();
+    setProgress({ name: "idle" });
+  }, [gate]);
   return { progress, change, check, busy, capabilities, reset };
 }

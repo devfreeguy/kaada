@@ -8,8 +8,8 @@ export const metadata = {
 export default async function RootActionPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   return (
-    <ApplicationShell label="Your approval comes first.">
-      <RootActionFlow token={token} />
+    <ApplicationShell>
+      <RootActionFlow key={token} token={token} />
     </ApplicationShell>
   );
 }

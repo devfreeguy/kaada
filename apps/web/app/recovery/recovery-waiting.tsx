@@ -1,6 +1,7 @@
 "use client";
-
+import { FlowSection } from "../components/application/flow-section";
 import type { useRecovery } from "./use-recovery";
+
 function remaining(until: string, now: number): string {
   const ms = Math.max(0, new Date(until).getTime() - now);
   const totalMinutes = Math.floor(ms / 60_000);
@@ -13,28 +14,22 @@ function remaining(until: string, now: number): string {
 }
 
 export function RecoveryWaiting({ status, now, waiting }: ReturnType<typeof useRecovery>) {
+  if (!waiting || !status) return null;
   return (
-    <>
-      {waiting && status && (
-        <section className="flex flex-col gap-4">
-          <h1 className="text-2xl font-semibold">Recovery in progress</h1>
-          {status.executeAfter ? (
-            <>
-              <p className="text-white/75">Your wallet will move to this device in about</p>
-              <p className="text-3xl font-semibold" aria-live="polite">
-                {remaining(status.executeAfter, now)}
-              </p>
-            </>
-          ) : (
-            <p className="text-white/75">Working on it...</p>
-          )}
-          <p className="text-sm text-white/75">
-            This delay protects you: if anyone else started this, the owner of the current device
-            can cancel it. We emailed you a link that stops it. You can leave this page; come back
-            to it on this device.
+    <FlowSection
+      title="Recovery in progress"
+      description="This delay protects you. The owner of the current device can cancel it from the email link we sent. You can leave and come back on this device."
+    >
+      {status.executeAfter ? (
+        <div>
+          <p className="text-sm text-app-muted">Your wallet moves to this device in about</p>
+          <p className="text-3xl font-semibold" aria-live="polite">
+            {remaining(status.executeAfter, now)}
           </p>
-        </section>
+        </div>
+      ) : (
+        <p className="text-sm text-app-muted">Working…</p>
       )}
-    </>
+    </FlowSection>
   );
 }

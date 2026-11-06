@@ -1,21 +1,20 @@
 "use client";
-import { secondaryAction } from "../../components/application/styles";
+import { ActionButton } from "../../components/application/action-button";
+import { FlowSection } from "../../components/application/flow-section";
 import { securityActions, type SecurityAction } from "./security-actions";
 export function SecurityActionMenu({ onSelect }: { onSelect: (action: SecurityAction) => void }) {
   return (
-    <section className="flex flex-col gap-5">
-      <h1>Wallet security</h1>
-      <p className="text-white/75">Choose what you want to update.</p>
+    <FlowSection title="Wallet security" description="Choose what to update.">
       {(Object.keys(securityActions) as SecurityAction[]).map((action) => (
-        <button
+        <ActionButton
           key={action}
-          type="button"
-          className={`${secondaryAction} text-left`}
+          variant="secondary"
+          className="justify-start text-left"
           onClick={() => onSelect(action)}
         >
           {securityActions[action].title}
-        </button>
+        </ActionButton>
       ))}
-    </section>
+    </FlowSection>
   );
 }

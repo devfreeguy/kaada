@@ -8,8 +8,8 @@ export const metadata = {
 export default async function SetupPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   return (
-    <ApplicationShell label="Make it yours.">
-      <SetupFlow token={token} />
+    <ApplicationShell>
+      <SetupFlow key={token} token={token} />
     </ApplicationShell>
   );
 }

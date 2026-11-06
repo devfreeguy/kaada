@@ -1,47 +1,33 @@
 "use client";
-import { primaryAction, secondaryAction } from "../../components/application/styles";
+import { ActionButton } from "../../components/application/action-button";
+import { VerificationStep } from "../../components/application/verification-step";
+import { verifyCopy } from "../../lib/app-copy";
 import type { useSetup } from "./use-setup";
 
 type Props = Pick<
   ReturnType<typeof useSetup>,
   "view" | "deviceKeysEnabled" | "createWithDevice" | "create"
 >;
+
 export function SetupCredentialStep({ view, deviceKeysEnabled, createWithDevice, create }: Props) {
+  const creating = view.name === "creating";
+  // After a failed passkey attempt that offered the device instead, the device becomes the main action.
+  const deviceFirst = view.name === "error" && view.retry === "device";
   return (
-    <section className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">Secure your wallet</h1>
-      <p className="text-white/75">
-        A passkey secures your account using your fingerprint, face or screen lock.
-        {deviceKeysEnabled &&
-          " You can also keep a key on this device and confirm payments with your PIN instead."}
-      </p>
-      {view.name === "error" && (
-        <p role="alert" className="rounded-lg bg-coral/15 px-4 py-3 text-sm text-white">
-          {view.message}
-        </p>
-      )}
-      <button
-        type="button"
-        disabled={view.name === "creating"}
-        onClick={() =>
-          void (view.name === "error" && view.retry === "device" ? createWithDevice() : create())
-        }
-        className={primaryAction}
-      >
-        {view.name === "creating"
-          ? "Waiting for your device..."
-          : view.name === "error" && view.retry === "device"
-            ? "Try with this device"
-            : "Create Passkey"}
-      </button>
-      {deviceKeysEnabled && view.name !== "creating" && (
-        <button type="button" onClick={() => void createWithDevice()} className={secondaryAction}>
-          Use this device and my PIN instead
-        </button>
-      )}
-      <p className="text-xs text-white/60">
-        Your device keeps the passkey or key. Kaada never sees or stores it.
-      </p>
-    </section>
+    <VerificationStep
+      context="wallet-setup"
+      method={deviceFirst ? "device" : "passkey"}
+      waiting={creating}
+      notice={view.name === "error" ? view.message : undefined}
+      onConfirm={() => void (deviceFirst ? createWithDevice() : create())}
+      alternative={
+        deviceKeysEnabled && !creating && !deviceFirst ? (
+          <ActionButton variant="secondary" onClick={() => void createWithDevice()}>
+            {verifyCopy("wallet-setup", "device").action}
+          </ActionButton>
+        ) : null
+      }
+      footer={<p className="text-xs text-app-faint">Kaada never sees your passkey or key.</p>}
+    />
   );
 }

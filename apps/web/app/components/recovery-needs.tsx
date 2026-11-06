@@ -1,10 +1,10 @@
 import { RECOVERY_LOSS_WARNING, RECOVERY_NEEDS, RECOVERY_NEEDS_TITLE } from "../lib/recovery-copy";
-/** The two things recovery needs, said plainly, and what happens if both are lost. */
+/** The things recovery needs, and what happens if they are lost. The wording is shared with the docs (recovery-copy.ts). */
 export function RecoveryNeeds() {
   return (
-    <div className="rounded-lg bg-white/8 px-4 py-3 text-sm text-white/90">
+    <div className="rounded-xl border border-app-border bg-app-surface-2 px-4 py-3 text-sm">
       <p className="font-medium">{RECOVERY_NEEDS_TITLE}</p>
-      <ul className="mt-1 list-disc pl-5">
+      <ul className="mt-1 list-disc pl-5 text-app-muted">
         {RECOVERY_NEEDS.map((need) => (
           <li key={need}>{need}</li>
         ))}

@@ -1,5 +1,7 @@
 "use client";
-import { secondaryAction } from "./application/styles";
+import { ActionButton } from "./application/action-button";
+import { FlowSection } from "./application/flow-section";
+import { StatusNote } from "./application/status-note";
 import { RecoveryCodeIntro } from "./recovery-code-intro";
 import { RecoveryCodeConfirmation } from "./recovery-code-confirmation";
 import { useRecoveryCode } from "./use-recovery-code";
@@ -13,33 +15,27 @@ export function RecoveryCodeCreator({
   onDone?: () => void;
   standalone?: boolean;
 }) {
-  const Heading = standalone ? "h1" : "h2";
   const controller = useRecoveryCode({ token, onDone });
   const { step, reload } = controller;
   return (
-    <section className={`flex flex-col gap-4 ${standalone ? "" : "border-t border-white/15 pt-6"}`}>
-      <Heading className={standalone ? "" : "text-lg font-semibold"}>Recovery setup</Heading>
-      {step.name === "loading" && <p className="text-sm text-white/75">Loading...</p>}
+    <FlowSection title="Recovery setup" as={standalone ? "h1" : "h2"}>
+      {step.name === "loading" && <StatusNote>Loading…</StatusNote>}
       <RecoveryCodeIntro token={token} controller={controller} />
       <RecoveryCodeConfirmation controller={controller} />
-      {step.name === "arming" && (
-        <p className="text-sm text-white/75">Confirm with your passkey or this device...</p>
-      )}
+      {step.name === "arming" && <StatusNote>Confirm with your passkey or this device…</StatusNote>}
       {step.name === "done" && (
-        <p className="rounded-lg bg-white/8 px-4 py-3 text-sm text-white/90">
-          Recovery is set up. Keep your Recovery Code safe, and keep your authenticator app.
-        </p>
+        <StatusNote tone="success">
+          Recovery is set up. Keep your Recovery Code and authenticator app safe.
+        </StatusNote>
       )}
       {step.name === "error" && (
         <>
-          <p role="alert" className="rounded-lg bg-coral/15 px-4 py-3 text-sm text-white">
-            {step.message}
-          </p>
-          <button type="button" onClick={reload} className={secondaryAction}>
+          <StatusNote tone="danger">{step.message}</StatusNote>
+          <ActionButton variant="secondary" onClick={reload}>
             Start again
-          </button>
+          </ActionButton>
         </>
       )}
-    </section>
+    </FlowSection>
   );
 }

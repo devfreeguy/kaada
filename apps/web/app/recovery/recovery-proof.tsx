@@ -1,6 +1,6 @@
 "use client";
-import { primaryAction } from "../components/application/styles";
-
+import { ActionButton } from "../components/application/action-button";
+import { FlowSection } from "../components/application/flow-section";
 import type { useRecovery } from "./use-recovery";
 
 export function RecoveryProof({
@@ -8,25 +8,15 @@ export function RecoveryProof({
   proveNewCredential,
   status,
 }: ReturnType<typeof useRecovery>) {
-  const step = status?.nextStep;
+  if (status?.nextStep !== "PROVE_NEW_CREDENTIAL") return null;
   return (
-    <>
-      {step === "PROVE_NEW_CREDENTIAL" && (
-        <section className="flex flex-col gap-4">
-          <h1 className="text-2xl font-semibold">Recovered. One quick check</h1>
-          <p className="text-white/75">
-            Confirm that this device can sign for your wallet before you continue.
-          </p>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void proveNewCredential()}
-            className={primaryAction}
-          >
-            Confirm with this device
-          </button>
-        </section>
-      )}
-    </>
+    <FlowSection
+      title="One quick check"
+      description="Confirm that this device can sign for your wallet."
+    >
+      <ActionButton busy={busy} busyLabel="Confirming…" onClick={() => void proveNewCredential()}>
+        Confirm with this device
+      </ActionButton>
+    </FlowSection>
   );
 }

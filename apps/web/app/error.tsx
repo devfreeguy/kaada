@@ -19,7 +19,7 @@ export default function ErrorPage({
   }, [error]);
 
   return (
-    <ApplicationShell label="We’re here to help.">
+    <ApplicationShell>
       <ApplicationFailure reference={error.digest} reset={reset} />
     </ApplicationShell>
   );

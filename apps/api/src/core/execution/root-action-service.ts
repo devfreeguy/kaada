@@ -201,11 +201,10 @@ export class RootActionService {
 
   async view(token: string): Promise<RootActionView> {
     const { session, root } = await this.resolveWithRoot(token);
-    const how = root.type === "PASSKEY" ? "your passkey" : "this device";
     // A conversion was confirmed with one tap, not a PIN, and this setup is what lets later ones run without asking.
     const message = (await this.isConversion(session.executionId))
-      ? `One-time setup so Kaada can convert between your own currencies for you, without asking each time. Confirm it with ${how}. It is only for converting your own money: sending to someone else always asks for your PIN or passkey.`
-      : `Your payment is waiting on a one-time wallet setup. Confirm it with ${how}. This does not authorize any payment amount: your PIN already did that, and it cannot be changed here.`;
+      ? "One-time setup so Kaada can convert between your own currencies without asking each time."
+      : "One-time setup for this payment.";
     return {
       title: "Confirm wallet setup to continue payment",
       message,

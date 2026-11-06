@@ -1,5 +1,8 @@
 "use client";
-import { primaryAction } from "../../components/application/styles";
+import { ActionButton } from "../../components/application/action-button";
+import { FlowSection } from "../../components/application/flow-section";
+import { StatusNote } from "../../components/application/status-note";
+
 export function SetupFinalizeStep({
   busy,
   message,
@@ -10,22 +13,11 @@ export function SetupFinalizeStep({
   onFinish: () => Promise<void>;
 }) {
   return (
-    <section className="flex flex-col gap-4">
-      <h1>Almost done</h1>
-      <p className="text-white/75">Your credential is saved. Finish this last step to continue.</p>
-      {message && (
-        <p role="alert" className="text-white/75">
-          {message}
-        </p>
-      )}
-      <button
-        type="button"
-        disabled={busy}
-        onClick={() => void onFinish()}
-        className={primaryAction}
-      >
-        {busy ? "Finishing setup..." : "Finish setup"}
-      </button>
-    </section>
+    <FlowSection title="Almost done" description="One last step to create your wallet.">
+      {message ? <StatusNote tone="warning">{message}</StatusNote> : null}
+      <ActionButton busy={busy} busyLabel="Finishing…" onClick={() => void onFinish()}>
+        Finish setup
+      </ActionButton>
+    </FlowSection>
   );
 }

@@ -1,62 +1,61 @@
+/* The application frame. Colours come from the application tokens in globals.css and nowhere else. */
 .shell {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  color: var(--on-dark);
+  background: var(--app-bg);
+  color: var(--app-text);
   color-scheme: dark;
 }
 .shell a:focus-visible,
 .shell button:focus-visible,
 .shell input:focus-visible {
-  outline: 3px solid var(--lavender);
-  outline-offset: 5px;
+  outline: 2px solid var(--app-accent);
+  outline-offset: 3px;
 }
 .frame {
-  max-width: 560px;
+  max-width: 520px;
   margin-inline: auto;
 }
-.eyebrow {
-  margin-bottom: 24px;
-  color: var(--lavender);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
 .content {
-  border: 1px solid rgb(255 255 255 / 0.14);
-  border-radius: 32px;
-  padding: clamp(24px, 5vw, 40px);
-  background: rgb(255 255 255 / 0.035);
+  border: 1px solid var(--app-border);
+  border-radius: 24px;
+  padding: clamp(20px, 5vw, 32px);
+  background: var(--app-surface);
 }
 .content h1 {
-  font-family: var(--font-anton);
-  font-size: clamp(32px, 6vw, 48px);
-  line-height: 1.12;
-  font-weight: 400;
-  text-transform: uppercase;
+  font-family: var(--font-dm-sans), sans-serif;
+  font-size: clamp(22px, 5vw, 26px);
+  line-height: 1.25;
+  font-weight: 650;
+  letter-spacing: -0.01em;
   text-wrap: balance;
-  letter-spacing: -0.015em;
 }
 .content h2 {
-  font-family: var(--font-anton);
-  font-size: 24px;
-  line-height: 1.25;
-  font-weight: 400;
-  text-transform: uppercase;
+  font-family: var(--font-dm-sans), sans-serif;
+  font-size: 17px;
+  line-height: 1.3;
+  font-weight: 600;
+}
+.content h3 {
+  font-family: var(--font-dm-sans), sans-serif;
+  font-size: 15px;
+  font-weight: 600;
 }
 .content p {
-  line-height: 1.65;
+  line-height: 1.55;
 }
 .content input {
-  min-height: 52px;
+  min-height: 48px;
   width: 100%;
-  background: var(--navy);
-  color: white;
-  border-color: rgb(255 255 255 / 0.28);
+  background: var(--app-surface-2);
+  color: var(--app-text);
+  border: 1px solid var(--app-border-strong);
+  border-radius: 12px;
+  padding: 0 14px;
 }
 .content input::placeholder {
-  color: rgb(255 255 255 / 0.5);
+  color: var(--app-faint);
 }
 .content button,
 .content a {
@@ -70,24 +69,6 @@
 }
 .content button:disabled {
   cursor: not-allowed;
-}
-.signature {
-  display: flex;
-  gap: 6px;
-  justify-content: center;
-  margin-top: 24px;
-}
-.signature span {
-  width: 24px;
-  height: 5px;
-  border-radius: 8px;
-  background: var(--lavender);
-}
-.signature span:nth-child(2) {
-  background: var(--orange);
-}
-.signature span:nth-child(3) {
-  background: var(--emerald);
 }
 @media (prefers-reduced-motion: reduce) {
   .content button,

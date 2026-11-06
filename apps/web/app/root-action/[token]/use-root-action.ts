@@ -1,88 +1,113 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, describeError, json } from "../../lib/api";
+import { failureCopy } from "../../lib/app-copy";
 import { logFailure } from "../../lib/client-log";
+import { observeRequest } from "../../lib/observe-request";
 import type { RootChallenge } from "../../lib/root-proof";
 import { DeviceKeyMissingError, proveRoot } from "../../lib/root-proof";
+import { useOperation } from "../../lib/use-operation";
+
 type RootAction = "ROOT_PASSKEY_REQUIRED" | "ROOT_DEVICE_KEY_REQUIRED";
-type View =
+export type View =
   | { name: "loading" }
   | { name: "invalid" }
   | { name: "load-error"; message: string }
-  | { name: "ready"; title: string; message: string; action: RootAction }
-  | { name: "confirming"; action: RootAction }
-  | { name: "done" }
-  | { name: "error"; message: string; action: RootAction };
-/** The link token travels in a header only: never in a body, a query string or a log. */
+  | { name: "ready"; message: string; action: RootAction; notice?: string }
+  | { name: "confirming"; message: string; action: RootAction }
+  | { name: "done" };
+
 /**
- * Wallet setup that needs the person's ROOT (creating the account and installing the restricted permission for one
- * payment). The server decides exactly what is signed and which signer the wallet has: the page shows a sentence and the
- * matching prompt (a passkey, or this device's key), sends back the root's proof and nothing else, and never asks for the PIN.
+ * Wallet setup that needs the person's ROOT (creating the account and installing the restricted permission for one payment).
+ * The server decides exactly what is signed and which signer the wallet has: the page shows a sentence and the matching prompt
+ * (a passkey, or this device's key), sends back the root's proof and nothing else, and never asks for the PIN.
+ *
+ * A failed attempt returns to `ready` with its notice INSIDE that state, and every attempt runs through the operation gate: a
+ * second tap sends nothing, a late answer is dropped, and a completed setup can never be replaced by a failure.
  */
-import { observeRequest } from "../../lib/observe-request";
 async function loadRootAction(token: string): Promise<View> {
-  const body = await json<{ title: string; message: string; action: RootAction }>(
+  const body = await json<{ message: string; action: RootAction }>(
     await api("/root-action/view", token),
   );
   if (body.action !== "ROOT_PASSKEY_REQUIRED" && body.action !== "ROOT_DEVICE_KEY_REQUIRED")
     throw new Error("Unsupported root action");
-  return { name: "ready", ...body };
+  return { name: "ready", message: body.message, action: body.action };
 }
+
 export function useRootAction({ token }: { token: string }) {
   const [view, setView] = useState<View>({ name: "loading" });
   const [revision, setRevision] = useState(0);
-  const reload = () => {
+  const gate = useOperation();
+
+  const reload = useCallback(() => {
+    gate.reset();
     setView({ name: "loading" });
     setRevision((value) => value + 1);
-  };
+  }, [gate]);
+
   useEffect(
     () =>
       observeRequest(
         () => loadRootAction(token),
-        setView,
+        (loaded) => setView((current) => (current.name === "loading" ? loaded : current)),
         (error) => {
           logFailure("root_action.load_failed", error);
-          setView(
-            error instanceof ApiError && error.kind === "invalid"
-              ? { name: "invalid" }
-              : {
-                  name: "load-error",
-                  message: describeError(error, "We couldn’t load this request. Try again."),
-                },
+          setView((current) =>
+            current.name !== "loading"
+              ? current
+              : error instanceof ApiError && error.kind === "invalid"
+                ? { name: "invalid" }
+                : {
+                    name: "load-error",
+                    message: describeError(error, "Couldn't load this request."),
+                  },
           );
         },
       ),
     [token, revision],
   );
-  async function confirm(action: RootAction) {
-    setView({ name: "confirming", action });
+
+  const confirm = useCallback(async () => {
+    if (view.name !== "ready") return;
+    const { action, message } = view;
+    const operation = gate.begin();
+    if (!operation) return;
+    setView({ name: "confirming", action, message });
+    const fail = (notice: string) =>
+      operation.commit(() => setView({ name: "ready", action, message, notice }));
     try {
       const options = await api("/root-action/options", token);
-      if (options.status === 401) return setView({ name: "invalid" });
+      if (options.status === 401) {
+        operation.commit(() => setView({ name: "invalid" }));
+        return;
+      }
       if (!options.ok) throw new Error("options");
       const proof = await proveRoot((await options.json()) as RootChallenge);
       const response = await api("/root-action/complete", token, {
         method: "POST",
         body: { proof },
       });
-      if (response.status === 401) return setView({ name: "invalid" });
+      if (response.status === 401) {
+        operation.commit(() => setView({ name: "invalid" }));
+        return;
+      }
       if (!response.ok) throw new Error("complete");
-      setView({ name: "done" });
+      operation.succeed(() => setView({ name: "done" }));
     } catch (error) {
       logFailure("root_action.register_failed", error);
-      // Cancelling the prompt is the person's choice, not a fault.
+      // Cancelling the prompt is the person's choice, and certain: nothing was submitted.
       const cancelled = error instanceof Error && error.name === "NotAllowedError";
-      setView({
-        name: "error",
-        action,
-        message:
-          error instanceof DeviceKeyMissingError
-            ? "This browser doesn't hold your wallet's device key. Open the link on the device you set up."
-            : cancelled
-              ? "Confirmation was cancelled. Nothing was changed; you can try again."
-              : "We couldn’t confirm the result. Return to your payment to check its status before trying again.",
-      });
+      fail(
+        error instanceof DeviceKeyMissingError
+          ? failureCopy.deviceKeyMissing
+          : cancelled
+            ? failureCopy.cancelled
+            : failureCopy.unknownRequest,
+      );
+    } finally {
+      operation.finish();
     }
-  }
+  }, [gate, token, view]);
+
   return { view, confirm, reload };
 }

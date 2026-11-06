@@ -292,12 +292,20 @@ describe("execution security review (source scan)", () => {
         message,
       );
     }
-    const page = code(join(dir("apps/web/app/authorize/[token]"), "authorize-flow.tsx"));
+    const pageDir = dir("apps/web/app/authorize/[token]");
+    const summary = code(join(pageDir, "payment-summary.tsx"));
+    const page = [
+      code(join(pageDir, "authorize-flow.tsx")),
+      summary,
+      code(join(dir("apps/web/app/lib"), "app-copy.ts")),
+    ].join(String.fromCharCode(10));
     // Build 13: the page itself claims nothing; every statement of progress comes from the server,
     // and the server says "sent" only for a COMPLETED execution (see run-status.ts).
     const pageClaims = page.replace(/Nothing was sent[.]/g, "");
     assert.equal(/\b(was sent|has been sent|paid|received|delivered)\b/i.test(pageClaims), false);
-    assert.ok(/starts only/.test(page));
+    // What the person is shown is an estimate, bounded by the maximum, and the final price comes before anything is sent.
+    assert.ok(/never exceeds the maximum/.test(summary));
+    assert.ok(/confirmed before sending/.test(summary));
     const statusSource = code(join(dir("apps/api/src/core/execution"), "run-status.ts"));
     assert.equal((statusSource.match(/PAYMENT_SENT/g) ?? []).length >= 1, true);
   });

@@ -1,4 +1,9 @@
 "use client";
+import { ActionButton } from "../components/application/action-button";
+import { FlowSection } from "../components/application/flow-section";
+import { FlowStatus } from "../components/application/flow-status";
+import { StatusNote } from "../components/application/status-note";
+import { PinReset } from "./pin-reset";
 import { RecoveryCredential } from "./recovery-credential";
 import { RecoveryEmail } from "./recovery-email";
 import { RecoveryFactors } from "./recovery-factors";
@@ -6,38 +11,27 @@ import { RecoveryFinish } from "./recovery-finish";
 import { RecoveryProof } from "./recovery-proof";
 import { RecoveryStart } from "./recovery-start";
 import { RecoveryWaiting } from "./recovery-waiting";
-
-import { AppAlert as Alert } from "../components/application/app-alert";
-import { primaryAction, secondaryAction } from "../components/application/styles";
-import { PinReset } from "./pin-reset";
 import { useRecovery } from "./use-recovery";
-const button = primaryAction;
-const secondary = secondaryAction;
+
 export function RecoveryFlow() {
   const controller = useRecovery();
   const { session, status, ready, busy, error, token, refresh, forget } = controller;
-  if (!ready)
-    return (
-      <p role="status" className="text-white/75">
-        Loading...
-      </p>
-    );
+  if (!ready) return <FlowStatus kind="loading" subject="request" />;
   const step = status?.nextStep;
   return (
     <div className="flex flex-col gap-5">
-      {error && <Alert>{error}</Alert>}
+      {error && <StatusNote tone="danger">{error}</StatusNote>}
       {error && session && (
-        <button
-          type="button"
+        <ActionButton
+          variant="secondary"
           disabled={busy}
           onClick={() => void refresh(session.token)}
-          className={secondaryAction}
         >
-          Refresh recovery status
-        </button>
+          Refresh
+        </ActionButton>
       )}
       <RecoveryStart {...controller} />
-      {session && !status && !error && <p className="text-white/75">Loading...</p>}
+      {session && !status && !error && <FlowStatus kind="loading" subject="request" />}
       <RecoveryEmail {...controller} />
       <RecoveryCredential {...controller} />
       <RecoveryFactors {...controller} />
@@ -48,41 +42,34 @@ export function RecoveryFlow() {
       )}
       <RecoveryFinish {...controller} />
       {step === "DONE" && (
-        <section className="flex flex-col gap-3">
-          <h1 className="text-2xl font-semibold">Your wallet is recovered</h1>
-          <p className="text-white/75">
-            This device now controls your wallet. Your new PIN, authenticator app and Recovery Code
-            are set.
-          </p>
-          <button type="button" onClick={forget} className={secondary}>
+        <FlowSection
+          title="Wallet recovered"
+          description="This device now controls your wallet. Your PIN, authenticator app and Recovery Code are set."
+        >
+          <ActionButton variant="secondary" onClick={forget}>
             Close
-          </button>
-        </section>
+          </ActionButton>
+        </FlowSection>
       )}
       {step === "STOPPED" && (
-        <section className="flex flex-col gap-3">
-          <h1 className="text-2xl font-semibold">This recovery was stopped</h1>
-          <p className="text-white/75">
-            It was cancelled from the device or passkey that controls your wallet. Nothing changed.
-            You can start again.
-          </p>
-          <button type="button" onClick={forget} className={button}>
-            Start again
-          </button>
-        </section>
+        <FlowSection
+          title="Recovery stopped"
+          description="It was cancelled from the device or passkey that controls your wallet. Nothing changed."
+        >
+          <ActionButton onClick={forget}>Start again</ActionButton>
+        </FlowSection>
       )}
       {step === "FAILED" && (
-        <section className="flex flex-col gap-3">
-          <h1 className="text-2xl font-semibold">This recovery couldn&apos;t continue</h1>
-          <p className="text-white/75">
-            {status?.blockedReason
-              ? "It can't start right now. Try again later."
-              : "Something went wrong. Nothing was changed. You can start again."}
-          </p>
-          <button type="button" onClick={forget} className={button}>
-            Start again
-          </button>
-        </section>
+        <FlowSection
+          title="Recovery couldn’t continue"
+          description={
+            status?.blockedReason
+              ? "It can’t start right now. Try again later."
+              : "Nothing was changed. You can start again."
+          }
+        >
+          <ActionButton onClick={forget}>Start again</ActionButton>
+        </FlowSection>
       )}
     </div>
   );

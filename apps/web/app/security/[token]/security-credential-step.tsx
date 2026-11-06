@@ -1,6 +1,7 @@
 "use client";
+import { ActionButton } from "../../components/application/action-button";
 import { CredentialUnavailable } from "../../components/application/credential-unavailable";
-import { primaryAction, secondaryAction } from "../../components/application/styles";
+import { FlowSection } from "../../components/application/flow-section";
 import { securityActions } from "./security-actions";
 import { SecurityProgress } from "./security-progress";
 import type { useSecurity } from "./use-security";
@@ -15,9 +16,7 @@ export function SecurityCredentialStep({
   const copy = securityActions[action];
   const canEdit = progress.name === "idle" || progress.name === "error";
   return (
-    <section className="flex flex-col gap-4">
-      <h1>{copy.title}</h1>
-      {canEdit && <p className="text-white/75">{copy.intro}</p>}
+    <FlowSection title={copy.title} description={canEdit ? copy.intro : undefined}>
       <SecurityProgress {...controller} />
       {canEdit && (
         <>
@@ -25,29 +24,21 @@ export function SecurityCredentialStep({
             <CredentialUnavailable />
           )}
           {capabilities.passkey && (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void change(copy.kind, "PASSKEY")}
-              className={primaryAction}
-            >
-              {action === "rotate" ? "Switch to a new passkey" : "Add a passkey"}
-            </button>
+            <ActionButton disabled={busy} onClick={() => void change(copy.kind, "PASSKEY")}>
+              {action === "rotate" ? "Use a new passkey" : "Add a passkey"}
+            </ActionButton>
           )}
           {capabilities.deviceKey && (
-            <button
-              type="button"
+            <ActionButton
+              variant="secondary"
               disabled={busy}
               onClick={() => void change(copy.kind, "DEVICE_KEY")}
-              className={secondaryAction}
             >
-              {action === "rotate"
-                ? "Switch to a key on this device"
-                : "Add this device as a backup"}
-            </button>
+              {action === "rotate" ? "Use a key on this device" : "Add this device"}
+            </ActionButton>
           )}
         </>
       )}
-    </section>
+    </FlowSection>
   );
 }

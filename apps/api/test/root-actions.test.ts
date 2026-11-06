@@ -53,7 +53,9 @@ describe("installing a permission with a DEVICE-KEY root", () => {
     assert.equal(view.action, "ROOT_DEVICE_KEY_REQUIRED");
     assert.equal(view.rootType, "DEVICE_KEY");
     assert.equal(await w.rootActions.requiredAction(session.walletId), "ROOT_DEVICE_KEY_REQUIRED");
-    assert.match(view.message, /with this device/);
+    // The page's button names the method from the action; the sentence under the title must not talk about a passkey.
+    assert.match(view.message, /^One-time setup/);
+    assert.doesNotMatch(view.message, /passkey/i);
   });
 
   it("fixes the payload on the server: the documented KaadaDeviceKey/v1 bytes over THIS operation's hash", async () => {

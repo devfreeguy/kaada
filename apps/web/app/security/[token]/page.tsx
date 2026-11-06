@@ -16,7 +16,7 @@ export default async function SecurityPage({
   const [{ token }, query] = await Promise.all([params, searchParams]);
   const action = parseSecurityAction(query.action);
   return (
-    <ApplicationShell label="You’re always in control.">
+    <ApplicationShell>
       <SecurityFlow key={`${token}:${action ?? "menu"}`} token={token} initialAction={action} />
     </ApplicationShell>
   );

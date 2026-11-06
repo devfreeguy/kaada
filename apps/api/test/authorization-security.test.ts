@@ -172,10 +172,15 @@ describe("PIN and authorization security review (source scan)", () => {
       assert.equal(/console\./.test(text), false, path);
       assert.equal(/\?[a-z]+=|[?&]pin=/i.test(text), false, path);
     }
-    // The page's logic lives in its controller hook and the one request helper: the rules apply to all three together.
+    // The page's logic lives in its controller hook, the one function that talks to the server, and the one request helper: the
+    // rules apply to all of them together.
+    const authorizeDir = dir("apps/web/app/authorize/[token]");
+    const confirm = code(join(authorizeDir, "confirm-payment.ts"));
     const flow = [
-      code(join(dir("apps/web/app/authorize/[token]"), "authorize-flow.tsx")),
-      code(join(dir("apps/web/app/authorize/[token]"), "use-authorization.ts")),
+      code(join(authorizeDir, "authorize-flow.tsx")),
+      code(join(authorizeDir, "use-authorization.ts")),
+      confirm,
+      code(join(authorizeDir, "run-approval.ts")),
       code(join(dir("apps/web/app/lib"), "api.ts")),
     ].join("\n");
     assert.equal(
@@ -184,25 +189,41 @@ describe("PIN and authorization security review (source scan)", () => {
       "the token goes in a header",
     );
     assert.equal(
-      /body: \{ pin: attempt \}/.test(flow),
+      /body: \{ pin \}/.test(confirm),
       true,
       "the PIN is only ever the body of one POST",
+    );
+    assert.equal(
+      /\.\.\.\(method === "DEVICE_KEY" && \{ pin \}\)/.test(confirm),
+      true,
+      "and, for a device key, only the body of the one confirm POST",
     );
     assert.equal(
       /JSON\.stringify\(init\.body\)/.test(flow),
       true,
       "and is sent as a JSON body, never a URL",
     );
-    assert.equal(/setPin\(""\)/.test(flow), true, "the digits are cleared before the request");
+    assert.equal(
+      /setPin\(""\)/.test(code(join(authorizeDir, "use-authorization.ts"))),
+      true,
+      "the digits are cleared before the request",
+    );
     assert.equal(/cache: "no-store"/.test(flow), true);
-    // Success is shown only after the server confirms the authorization: the one place that decides is `interpret`, which says
-    // "went through" only for an OK response, and every road to the success screen goes through it.
-    assert.equal(/if \(response\.ok\) return true/.test(flow), true);
-    const successes = flow.match(/setState\(\{ name: "done", method \}\)/g) ?? [];
-    const guarded =
-      flow.match(/if \(interpret\([^)]*\)\) setState\(\{ name: "done", method \}\)/g) ?? [];
-    assert.equal(successes.length, guarded.length, "no road to success skips the server's answer");
-    assert.equal(successes.length, 2, "the PIN road and the wallet-root road, and no other");
+    // Success is shown only after the server confirms the authorization. Two places can say "approved" (the PIN road and the
+    // wallet-root road) and each only on an OK response; and the screen reaches its success state only from that outcome.
+    // (One occurrence is the outcome type's own declaration.)
+    const approvals = (confirm.match(/\{ type: "approved" \}/g) ?? []).slice(1);
+    const guarded = confirm.match(/response\.ok\s*\?\s*\{ type: "approved" \}/g) ?? [];
+    assert.equal(approvals.length, guarded.length, "no road to success skips the server's answer");
+    assert.equal(approvals.length, 2, "the PIN road and the wallet-root road, and no other");
+    const run = code(join(authorizeDir, "run-approval.ts"));
+    const succeeded = run.match(/dispatch\(\{ type: "succeeded" \}\)/g) ?? [];
+    assert.equal(succeeded.length, 1, "one place reports success");
+    assert.match(
+      run,
+      /case "approved":\s*operation\.succeed\(\(\) => dispatch\(\{ type: "succeeded" \}\)\)/,
+      "and only for an approved outcome",
+    );
   });
 
   it("the secure pages are not cached, framed, indexed or sent as a referrer", () => {

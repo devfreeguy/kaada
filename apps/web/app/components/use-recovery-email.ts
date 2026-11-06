@@ -3,8 +3,10 @@ import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, describeError, json } from "../lib/api";
 import { logFailure } from "../lib/client-log";
 import { observeRequest } from "../lib/observe-request";
+import { useOperation } from "../lib/use-operation";
+import { useWhen } from "../lib/use-when";
 
-type Step =
+export type Step =
   | { name: "loading" }
   | { name: "enter" }
   | { name: "sending" }
@@ -19,12 +21,16 @@ const looksLikeEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valu
  * Registers the email a person recovers with. Recovery starts from this address, so without it nobody can get back in: it is the
  * first part of recovery setup. A 6-digit code is sent to the address and the address counts only once the right code is entered.
  * The page cannot say whether an address already belongs to someone: the answer is the same either way.
+ *
+ * Sending and checking run through the operation gate, and the parent hears about `done` from useWhen rather than from inside the
+ * check, so a parent that fails cannot turn a verified email into a reported failure.
  */
 export function useRecoveryEmail({ token, onDone }: { token: string; onDone: () => void }) {
   const [step, setStep] = useState<Step>({ name: "loading" });
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [revision, setRevision] = useState(0);
+  const gate = useOperation();
 
   useEffect(
     () =>
@@ -34,25 +40,36 @@ export function useRecoveryEmail({ token, onDone }: { token: string; onDone: () 
             await api("/recovery/configuration/email", token),
           ),
         (status) =>
-          setStep(
-            status.registered ? { name: "done", masked: status.masked ?? "" } : { name: "enter" },
+          setStep((current) =>
+            current.name !== "loading"
+              ? current
+              : status.registered
+                ? { name: "done", masked: status.masked ?? "" }
+                : { name: "enter" },
           ),
         (error) => {
           logFailure("recovery_email.status_failed", error);
-          setStep({
-            name: "error",
-            message: describeError(error, "We couldn’t check your email. Try again."),
-            retry: "load",
-          });
+          setStep((current) =>
+            current.name !== "loading"
+              ? current
+              : {
+                  name: "error",
+                  message: describeError(error, "Couldn't check your email."),
+                  retry: "load",
+                },
+          );
         },
       ),
     [token, revision],
   );
 
-  const reload = () => {
+  useWhen(step.name === "done", onDone);
+
+  const reload = useCallback(() => {
+    gate.reset();
     setStep({ name: "loading" });
     setRevision((value) => value + 1);
-  };
+  }, [gate]);
 
   const send = useCallback(async () => {
     const address = email.trim();
@@ -60,52 +77,63 @@ export function useRecoveryEmail({ token, onDone }: { token: string; onDone: () 
       setStep({ name: "error", message: "Enter a valid email address.", retry: "enter" });
       return;
     }
-    setStep({ name: "sending" });
+    const operation = gate.begin();
+    if (!operation) return;
+    operation.commit(() => setStep({ name: "sending" }));
     try {
       await json(
         await api("/recovery/configuration/email/begin", token, { body: { email: address } }),
       );
       setCode("");
-      setStep({ name: "code", email: address });
+      operation.commit(() => setStep({ name: "code", email: address }));
     } catch (error) {
       logFailure("recovery_email.send_failed", error);
-      setStep({
-        name: "error",
-        message:
-          error instanceof ApiError && error.kind === "rate-limited"
-            ? "Please wait a minute before asking for another code."
-            : error instanceof ApiError && error.kind === "unavailable"
-              ? "We couldn’t send the email right now. Please try again in a few minutes."
-              : describeError(error, "We couldn’t send the code. Check the address and try again."),
-        retry: "enter",
-      });
+      operation.commit(() =>
+        setStep({
+          name: "error",
+          message:
+            error instanceof ApiError && error.kind === "rate-limited"
+              ? "Wait a minute before asking for another code."
+              : error instanceof ApiError && error.kind === "unavailable"
+                ? "Couldn't send the email. Try again in a few minutes."
+                : describeError(error, "Couldn't send the code. Check the address."),
+          retry: "enter",
+        }),
+      );
+    } finally {
+      operation.finish();
     }
-  }, [email, token]);
+  }, [email, gate, token]);
 
   const confirm = useCallback(
     async (address: string) => {
-      setStep({ name: "checking", email: address });
+      const operation = gate.begin();
+      if (!operation) return;
+      operation.commit(() => setStep({ name: "checking", email: address }));
       try {
         const done = await json<{ masked: string }>(
           await api("/recovery/configuration/email/confirm", token, { body: { code } }),
         );
         setCode("");
-        setStep({ name: "done", masked: done.masked });
-        onDone();
+        operation.succeed(() => setStep({ name: "done", masked: done.masked }));
       } catch (error) {
         logFailure("recovery_email.confirm_failed", error);
         setCode("");
-        setStep({
-          name: "error",
-          message:
-            error instanceof ApiError && error.kind === "rejected"
-              ? "That code didn’t work. It may be wrong or expired. Ask for a new one."
-              : describeError(error, "We couldn’t check the code. Try again."),
-          retry: "enter",
-        });
+        operation.commit(() =>
+          setStep({
+            name: "error",
+            message:
+              error instanceof ApiError && error.kind === "rejected"
+                ? "That code didn't work. It may be wrong or expired."
+                : describeError(error, "Couldn't check the code. Try again."),
+            retry: "enter",
+          }),
+        );
+      } finally {
+        operation.finish();
       }
     },
-    [code, onDone, token],
+    [code, gate, token],
   );
 
   return { step, email, setEmail, code, setCode, send, confirm, reload, setStep };

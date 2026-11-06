@@ -1,6 +1,7 @@
 "use client";
-import { AppAlert } from "./application/app-alert";
-import { primaryAction, secondaryAction } from "./application/styles";
+import { ActionButton } from "./application/action-button";
+import { StatusNote } from "./application/status-note";
+import { TextField } from "./application/text-field";
 import { useRecoveryEmail } from "./use-recovery-email";
 
 export function RecoveryEmailStep({ token, onDone }: { token: string; onDone: () => void }) {
@@ -10,79 +11,74 @@ export function RecoveryEmailStep({ token, onDone }: { token: string; onDone: ()
 
   return (
     <div className="flex flex-col gap-4">
-      <h3 className="text-base font-semibold">1. Your recovery email</h3>
-      {step.name === "loading" && <p className="text-sm text-white/75">Loading...</p>}
+      <h3>1. Recovery email</h3>
+      {step.name === "loading" && <StatusNote>Loading…</StatusNote>}
       {step.name === "done" && (
-        <p role="status" className="rounded-lg bg-white/8 px-4 py-3 text-sm text-white/90">
-          Recovery email verified{step.masked ? `: ${step.masked}` : ""}.
-        </p>
+        <StatusNote tone="success">
+          Email verified{step.masked ? `: ${step.masked}` : ""}.
+        </StatusNote>
       )}
       {(step.name === "enter" || step.name === "sending" || step.name === "error") && (
         <>
-          <p className="text-sm text-white/75">
-            If you ever lose your device, recovery starts from this email. Use an address only you
-            can open. We send a 6-digit code to check it.
+          <p className="text-sm text-app-muted">
+            Recovery starts from this address. Use one only you can open.
           </p>
-          {step.name === "error" && <AppAlert>{step.message}</AppAlert>}
-          <label htmlFor="recovery-setup-email" className="text-sm font-medium text-white/80">
-            Email address
-          </label>
-          <input
-            id="recovery-setup-email"
+          {step.name === "error" && <StatusNote tone="danger">{step.message}</StatusNote>}
+          <TextField
+            label="Email address"
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             autoComplete="email"
             placeholder="you@example.com"
-            className="rounded-lg border border-white/25 px-4 py-3"
           />
           {step.name === "error" && step.retry === "load" ? (
-            <button type="button" onClick={reload} className={secondaryAction}>
+            <ActionButton variant="secondary" onClick={reload}>
               Try again
-            </button>
+            </ActionButton>
           ) : (
-            <button
-              type="button"
-              disabled={step.name === "sending" || email.trim().length < 5}
+            <ActionButton
+              busy={step.name === "sending"}
+              busyLabel="Sending…"
+              disabled={email.trim().length < 5}
               onClick={() => void send()}
-              className={primaryAction}
             >
-              {step.name === "sending" ? "Sending..." : "Send me a code"}
-            </button>
+              Send code
+            </ActionButton>
           )}
         </>
       )}
       {(step.name === "code" || step.name === "checking") && (
         <>
-          <p className="text-sm text-white/75">
+          <p className="text-sm text-app-muted">
             If that address can be used, a 6-digit code is on its way to {step.email}. It expires in
-            10 minutes. Check your spam folder too.
+            10 minutes.
           </p>
-          <input
+          <TextField
+            label="6-digit code"
             value={code}
             onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
             inputMode="numeric"
             autoComplete="one-time-code"
-            aria-label="6-digit code from your email"
             placeholder="000000"
-            className="rounded-lg border border-white/25 px-4 py-3 text-center font-mono text-xl tracking-widest"
+            mono
+            center
           />
-          <button
-            type="button"
-            disabled={step.name === "checking" || code.length !== 6}
+          <ActionButton
+            busy={step.name === "checking"}
+            busyLabel="Checking…"
+            disabled={code.length !== 6}
             onClick={() => void confirm(step.email)}
-            className={primaryAction}
           >
-            {step.name === "checking" ? "Checking..." : "Verify email"}
-          </button>
-          <button
-            type="button"
+            Verify email
+          </ActionButton>
+          <ActionButton
+            variant="quiet"
             disabled={step.name === "checking"}
             onClick={() => setStep({ name: "enter" })}
-            className={secondaryAction}
           >
             Use a different address
-          </button>
+          </ActionButton>
         </>
       )}
     </div>

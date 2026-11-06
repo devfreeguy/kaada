@@ -8,8 +8,8 @@ export const metadata = {
 export default async function AuthorizePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   return (
-    <ApplicationShell label="You approve. We handle the rest.">
-      <AuthorizeFlow token={token} />
+    <ApplicationShell>
+      <AuthorizeFlow key={token} token={token} />
     </ApplicationShell>
   );
 }

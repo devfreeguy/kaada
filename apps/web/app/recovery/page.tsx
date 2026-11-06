@@ -7,7 +7,7 @@ export const metadata = {
 };
 export default function RecoveryPage() {
   return (
-    <ApplicationShell label="Find your way back.">
+    <ApplicationShell>
       <RecoveryFlow />
     </ApplicationShell>
   );

@@ -43,10 +43,37 @@
   color-scheme: light;
 }
 
-/* Follow the rendered route on the server and during client navigation. */
+/*
+ * The application's own colour system. It exists ONLY while an application route is rendered (data-application-shell), so
+ * the landing page keeps its palette untouched. Tokens are named by role, not by colour: a surface is a surface, whatever
+ * hue it is today. Everything in the application reads these; nothing in it picks a raw colour.
+ *
+ *   bg            the page
+ *   surface       a card sitting on the page            surface-2   a control or inset area on a card
+ *   border        a quiet edge                          border-strong   an edge that must be seen (inputs)
+ *   text / muted / faint     reading order of copy
+ *   primary       the one main action on a screen       accent   links, focus, progress: used sparingly
+ *   success / warning / danger    status only; never decoration
+ */
 :root:has([data-application-shell]) {
-  --page-background: var(--navy);
-  --page-foreground: var(--on-dark);
+  --app-bg: #0a0c0f;
+  --app-surface: #11141a;
+  --app-surface-2: #181c23;
+  --app-surface-3: #20252d;
+  --app-border: #242a33;
+  --app-border-strong: #3a4250;
+  --app-text: #eceef1;
+  --app-muted: #a0a9b5;
+  --app-faint: #7c8693;
+  --app-primary: #e9ecf1;
+  --app-primary-hover: #ffffff;
+  --app-on-primary: #0a0c0f;
+  --app-accent: #8fa3c4;
+  --app-success: #5fbf93;
+  --app-warning: #d9a84f;
+  --app-danger: #ea7f73;
+  --page-background: var(--app-bg);
+  --page-foreground: var(--app-text);
   color-scheme: dark;
 }
 
@@ -78,6 +105,22 @@
   --color-navy: var(--navy);
   --color-lime: var(--lime);
   --color-on-dark: var(--on-dark);
+  --color-app-bg: var(--app-bg);
+  --color-app-surface: var(--app-surface);
+  --color-app-surface-2: var(--app-surface-2);
+  --color-app-surface-3: var(--app-surface-3);
+  --color-app-border: var(--app-border);
+  --color-app-border-strong: var(--app-border-strong);
+  --color-app-text: var(--app-text);
+  --color-app-muted: var(--app-muted);
+  --color-app-faint: var(--app-faint);
+  --color-app-primary: var(--app-primary);
+  --color-app-primary-hover: var(--app-primary-hover);
+  --color-app-on-primary: var(--app-on-primary);
+  --color-app-accent: var(--app-accent);
+  --color-app-success: var(--app-success);
+  --color-app-warning: var(--app-warning);
+  --color-app-danger: var(--app-danger);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

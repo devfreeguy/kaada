@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { secondaryAction } from "../../components/application/styles";
+import { ActionButton } from "../../components/application/action-button";
 import { RecoveryCodeCreator } from "../../components/recovery-code-creator";
 import { SecurityActionMenu } from "./security-action-menu";
 import { SecurityCredentialStep } from "./security-credential-step";
@@ -23,17 +23,16 @@ export function SecurityFlow({
       ) : (
         <SecurityCredentialStep action={action} controller={controller} />
       )}
-      <button
-        type="button"
+      <ActionButton
+        variant="quiet"
         disabled={controller.busy}
-        className={secondaryAction}
         onClick={() => {
           controller.reset();
           setAction(null);
         }}
       >
-        Back to security options
-      </button>
+        Back
+      </ActionButton>
     </div>
   );
 }
