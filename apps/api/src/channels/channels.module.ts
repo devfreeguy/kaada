@@ -28,7 +28,12 @@ import type { RunTracker } from "../core/execution/run-tracker.js";
 import type { WalletSetupService } from "../core/wallets/setup-service.js";
 import { DATABASE } from "../database/database.module.js";
 import { ExecutionModule } from "../execution/execution.module.js";
-import { ROOT_ACTION_SERVICE, RUN_TRACKER } from "../execution/execution.tokens.js";
+import type { ConversionService } from "../core/execution/conversion-service.js";
+import {
+  CONVERSION_SERVICE,
+  ROOT_ACTION_SERVICE,
+  RUN_TRACKER,
+} from "../execution/execution.tokens.js";
 import { TelegramAdapter } from "../infrastructure/channels/telegram/telegram-adapter.js";
 import { WalletModule } from "../wallet/wallet.module.js";
 import {
@@ -172,6 +177,7 @@ function nestLog(): AgentLog {
         CONVERSATION_PRESENTER,
         ONBOARDING_LIFECYCLE,
         WALLET_BALANCE_SERVICE,
+        CONVERSION_SERVICE,
       ],
       useFactory: (
         repositories: Repositories,
@@ -183,6 +189,7 @@ function nestLog(): AgentLog {
         conversation: ConversationPresenter,
         onboarding: OnboardingLifecycleService | null,
         balances: WalletBalanceService | null,
+        convert: ConversionService | null,
       ): ChannelMessageService | null => {
         if (!telegram) return null;
         const log = nestLog();
@@ -201,6 +208,7 @@ function nestLog(): AgentLog {
           conversation,
           onboarding,
           linked: repositories.identities,
+          convert,
           // The person's own choice of country and default currency; nothing here guesses it.
           profile: {
             async get(userId) {

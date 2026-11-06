@@ -23,7 +23,7 @@ import type { Database } from "../src/index.js";
 import { createAssetRepository } from "../src/repositories/assets.js";
 import { createProviderRepository } from "../src/repositories/recipients-providers.js";
 import { seedCeloAssets } from "../src/seed/celo-assets.js";
-import { seedProviderCapabilities } from "../src/seed/capabilities.js";
+import { seedProviderCapabilities, verifiedCapabilities } from "../src/seed/capabilities.js";
 
 try {
   process.loadEnvFile(new URL("../../../.env", import.meta.url));
@@ -254,7 +254,12 @@ describe("settlement assets and capabilities on the seeded database", { skip }, 
       const capsBefore = await tx.providerCapability.findMany({ orderBy: { id: "asc" } });
       await seedCeloAssets(tx);
       const report = await seedProviderCapabilities(tx);
-      assert.deepEqual([report.created, report.existing, report.skipped.length], [0, 40, 0]);
+      // Derived, not a literal: the seeded set grows as providers are verified, and a hardcoded count
+      // fails for the wrong reason when it does.
+      assert.deepEqual(
+        [report.created, report.existing, report.skipped.length],
+        [0, verifiedCapabilities.length, 0],
+      );
       const assetsAfter = await tx.asset.findMany({ orderBy: { id: "asc" } });
       const capsAfter = await tx.providerCapability.findMany({ orderBy: { id: "asc" } });
       assert.deepEqual(
@@ -275,10 +280,10 @@ describe("settlement assets and capabilities on the seeded database", { skip }, 
       });
       await tx.providerCapability.update({ where: { id: row.id }, data: { isActive: false } });
       const report = await seedProviderCapabilities(tx);
-      assert.deepEqual([report.created, report.existing], [0, 40]);
+      assert.deepEqual([report.created, report.existing], [0, verifiedCapabilities.length]);
       const after = await tx.providerCapability.findUniqueOrThrow({ where: { id: row.id } });
       assert.equal(after.isActive, false);
-      assert.equal(await tx.providerCapability.count(), 40);
+      assert.equal(await tx.providerCapability.count(), verifiedCapabilities.length);
     });
   });
 

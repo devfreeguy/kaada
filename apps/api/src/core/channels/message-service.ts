@@ -136,6 +136,16 @@ export interface ChannelMessageServiceDeps {
    * when this says yes. Absent: conversions are never offered.
    */
   conversions?: { available(from: string, to: string): Promise<boolean> } | null;
+  /**
+   * Carries out a conversion between the person's own currencies after one tap (no PIN). Absent: a conversion is confirmed on
+   * the secure PIN page like any other payment.
+   */
+  convert?: {
+    confirm(input: {
+      userId: string;
+      sessionId: string;
+    }): Promise<{ status: "STARTED" | "NOT_AVAILABLE" }>;
+  } | null;
   /** How long ago a payment may have last moved and still be offered back after a deposit. Default one hour. */
   resumeWindowMs?: number;
   /** Whether symbols alone may tie an open payment's token to a held one (test networks only; see funding announcements). */
@@ -895,6 +905,19 @@ It's in your ${from.name} balance.`,
           externalMessageId: `cb:${message.externalEventId}`,
         });
       }
+      case "CONFIRM_CONVERSION": {
+        const sessionId = action.payload["sessionId"];
+        if (!sessionId || !this.deps.convert) return null;
+        const started = await this.deps.convert.confirm({ userId, sessionId });
+        // The payment status message then follows it (priced, running, done), exactly as for any payment.
+        await adapter.send(target, {
+          text:
+            started.status === "STARTED"
+              ? "Converting now. I'll tell you as soon as it's done."
+              : "That conversion is no longer available. Tell me what you'd like to convert and I'll set it up again.",
+        });
+        return null;
+      }
       case "SUGGESTION": {
         const id = action.payload["suggestion"];
         if (!id || !isSuggestionId(id)) return null;
@@ -1196,7 +1219,8 @@ It's in your ${from.name} balance.`,
     turn: AgentTurnResult,
     activity: Activity,
   ): Promise<PresentedMessage> {
-    const plain = presentAgentResponse(turn.response, this.now());
+    const response = this.withAvailableConfirmation(turn.response);
+    const plain = presentAgentResponse(response, this.now());
     const presenter = this.deps.conversation;
     if (!presenter) return plain;
     // Conversational wording may be shown as it is written, where the channel can; facts never are (the presenter decides).
@@ -1213,7 +1237,7 @@ It's in your ${from.name} balance.`,
         .catch(this.recover("onboarding.state_read_failed", undefined));
       return await presenter.present({
         onboardingStep,
-        response: turn.response,
+        response,
         corrected: turn.corrected,
         resume: turn.resume,
         userMessage: userMessageOf(inbound),
@@ -1239,6 +1263,20 @@ It's in your ${from.name} balance.`,
     }
   }
 
+  /**
+   * A conversion is confirmed with one tap only where the service that carries it out exists. Without it the person is sent to
+   * the secure PIN page like any other payment, and the message must say so rather than promise a button that is not there.
+   */
+  private withAvailableConfirmation(
+    response: AgentTurnResult["response"],
+  ): AgentTurnResult["response"] {
+    return response.type === "AUTHORIZATION_REQUIRED" &&
+      response.operation === "CONVERT" &&
+      !this.deps.convert
+      ? { ...response, operation: "SEND" }
+      : response;
+  }
+
   private async compose(
     inbound: { channel: ChannelType; externalUserId: string },
     userId: string,
@@ -1254,7 +1292,8 @@ It's in your ${from.name} balance.`,
         | "CONTINUE_PAYMENT"
         | "SET_COUNTRY"
         | "CONVERT_CURRENCY"
-        | "KEEP_CURRENCY",
+        | "KEEP_CURRENCY"
+        | "CONFIRM_CONVERSION",
       payload?: Record<string, string>,
       reusable = false,
     ) =>
@@ -1278,7 +1317,15 @@ It's in your ${from.name} balance.`,
       });
     }
 
-    if (presented.authorization) {
+    if (presented.authorization?.oneTap && this.deps.convert) {
+      // Converting your own money: one server-bound button, no PIN page. Pressing it is the confirmation.
+      actions.push({
+        type: "ACTION",
+        semantic: "CONFIRM_CONVERSION",
+        label: "✅ Confirm",
+        handle: await issue("CONFIRM_CONVERSION", { sessionId: presented.authorization.sessionId }),
+      });
+    } else if (presented.authorization) {
       // The secure page issues its own single-use, short-lived link; the PIN is entered there and never here.
       const url = await this.deps.links.authorizationLink({
         sessionId: presented.authorization.sessionId,

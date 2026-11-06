@@ -484,7 +484,8 @@ export const ChannelActionKind = {
   CONTINUE_PAYMENT: 'CONTINUE_PAYMENT',
   SET_COUNTRY: 'SET_COUNTRY',
   CONVERT_CURRENCY: 'CONVERT_CURRENCY',
-  KEEP_CURRENCY: 'KEEP_CURRENCY'
+  KEEP_CURRENCY: 'KEEP_CURRENCY',
+  CONFIRM_CONVERSION: 'CONFIRM_CONVERSION'
 } as const
 
 export type ChannelActionKind = (typeof ChannelActionKind)[keyof typeof ChannelActionKind]

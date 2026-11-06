@@ -7,13 +7,16 @@ export type {
   RootActionStatus,
 } from "./root-action.js";
 export type { ExecutionTransactionRepository, TransactionStepInput } from "./transactions.js";
+export { createSettlementConfirmerRegistry } from "./ports.js";
 export type {
   AccountCall,
   KernelExecutionPort,
   OperationReceipt,
   PreparedRootOperation,
-  ProviderOrderPort,
-  ProviderOrderState,
-  ProviderOrderStatus,
+  SettlementConfirmer,
+  SettlementConfirmerRegistry,
+  SettlementOutcome,
+  SettlementQuery,
+  SettlementState,
   TokenPolicy,
 } from "./ports.js";

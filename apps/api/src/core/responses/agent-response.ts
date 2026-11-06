@@ -98,6 +98,12 @@ export interface AuthorizationRequiredResponse {
   revision: number;
   routeId: string;
   authorizationSessionId: string;
+  /**
+   * What is being authorized. A CONVERT (the person's own currency into another of their own, with nothing leaving the
+   * wallet) is confirmed with one tap instead of a PIN; a SEND to someone else always keeps its PIN or passkey. Absent on
+   * responses stored before this was recorded, which are read as a SEND.
+   */
+  operation?: "SEND" | "CONVERT";
   /** ISO time after which the session (and so the PIN screen) can no longer be used. */
   expiresAt: string;
   summary: AuthorizationSummary;

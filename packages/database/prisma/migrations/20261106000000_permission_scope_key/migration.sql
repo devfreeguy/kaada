@@ -1,0 +1,11 @@
+-- The on-chain-pinned scope a delegated permission was installed with, as one canonical string.
+--
+-- A permission used to be matched to a later payment by broad sets alone (contracts, assets, operations), but the recipient and
+-- the amounts are pinned on chain and were not remembered. A second payment to a different recipient, or for a different
+-- amount, was therefore planned as "already covered" and then refused at signing, when the exact scope was read back from the
+-- chain; a retry hit the same wall until the permission expired. With the key stored, a permission is reused only by a payment
+-- whose own key is identical.
+--
+-- Additive and safe: one nullable column, no existing row changes, nothing reads it until a permission is created with one. A
+-- permission that has no key (every row that exists today) is simply never reused for a later payment, which is the safe default.
+ALTER TABLE "DelegatedPermission" ADD COLUMN "scopeKey" TEXT;

@@ -14,6 +14,7 @@ import { noopLog } from "../agent/ports.js";
 import { loadLiveExecution } from "./live-execution.js";
 import type { LiveExecution } from "./live-execution.js";
 import { freshPlan } from "./fresh-plan.js";
+import type { PlanPolicy } from "./fresh-plan.js";
 import type { ChainState, ExecutionUnitOfWork, SecretCipher } from "./ports.js";
 import {
   ALLOWED_SELECTORS,
@@ -35,8 +36,10 @@ export interface ValidatedSignerDeps {
   wallets: { getWallet(userId: string): Promise<Wallet | null> };
   kernel: KernelExecutionPort;
   cipher: SecretCipher;
-  chain: Pick<ChainState, "allowances" | "isDeployed">;
+  chain: Pick<ChainState, "allowances" | "isDeployed" | "permit2Allowances">;
   tokenPolicy?: TokenPolicy;
+  /** Sizes of the permission and one-time grants a plan asks for; the same value preparation uses. */
+  planPolicy?: PlanPolicy;
   /** The least time that must remain on the firm quote when the swap is sent. */
   minWindowMs: number;
   infrastructure: { rpcConfigured: boolean; bundlerConfigured: boolean };
@@ -378,6 +381,7 @@ export class ValidatedExecutionSigner implements ExecutionSigner {
         chain: this.deps.chain,
         infrastructure: this.deps.infrastructure,
         ...(this.deps.tokenPolicy && { tokenPolicy: this.deps.tokenPolicy }),
+        ...(this.deps.planPolicy && { planPolicy: this.deps.planPolicy }),
       },
       live,
       now,

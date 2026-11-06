@@ -150,10 +150,7 @@ describe("loadConfig", () => {
     assert.equal(config.database.poolMax, SETTINGS.database.poolMax);
     // Carried through from SETTINGS, like poolMax above: what matters here is that loadConfig passes the setting on, not
     // what the number currently is.
-    assert.equal(
-      config.database.transactionTimeoutMs,
-      SETTINGS.database.transactionTimeoutMs,
-    );
+    assert.equal(config.database.transactionTimeoutMs, SETTINGS.database.transactionTimeoutMs);
   });
 
   it("accepts a direct URL, ports and explicit CORS origins", () => {
@@ -220,12 +217,18 @@ describe("loadConfig", () => {
     );
     // Reordering is a deployment decision, not a code change.
     assert.deepEqual(
-      loadConfig({ ...base, ...keys, AGENT_INTERPRETER_CHAIN: "groq,anthropic" })
-        .agent.interpreterChain.map((provider) => provider.name),
+      loadConfig({
+        ...base,
+        ...keys,
+        AGENT_INTERPRETER_CHAIN: "groq,anthropic",
+      }).agent.interpreterChain.map((provider) => provider.name),
       ["groq", "anthropic"],
     );
     // Only the providers that speak an OpenAI-compatible protocol elsewhere carry an endpoint.
-    assert.equal(chain.find((p) => p.name === "cerebras")?.baseUrl, SETTINGS.agent.providers.cerebras.baseUrl);
+    assert.equal(
+      chain.find((p) => p.name === "cerebras")?.baseUrl,
+      SETTINGS.agent.providers.cerebras.baseUrl,
+    );
     assert.equal(chain.find((p) => p.name === "anthropic")?.baseUrl, undefined);
     assert.equal(chain.find((p) => p.name === "groq")?.baseUrl, undefined);
   });
@@ -372,7 +375,6 @@ describe("hardcoded settings are not configurable from the environment", () => {
     assert.equal(config.chain.network, "mainnet");
     assert.equal(config.execution.minFirmWindowMs, 12_000);
     assert.equal(config.execution.firmTimeoutMs, 75_000);
-    assert.equal(config.execution.maxOutstandingRfqs, 4);
     for (const network of ["celo-mainnet", "celo-sepolia"] as const) {
       assert.ok(RECOVERY_DELAYS[network].minDelaySeconds >= 86_400, network);
       assert.ok(RECOVERY_DELAYS[network].delaySeconds >= RECOVERY_DELAYS[network].minDelaySeconds);
@@ -423,6 +425,38 @@ describe("pricing and Textile", () => {
   it("ignores Textile keys unless the provider is textile", () => {
     const config = loadConfig({ ...base, TEXTILE_LIVE_API_KEY: "tx_live_x.y" });
     assert.equal("textile" in config.fx, false);
+  });
+
+  /*
+   * Uniswap is additive, so it is keyed off its own key rather than FX_PROVIDER: the two price sources serve disjoint
+   * pairs and the router picks per pair. The test that matters is the absence case — every deployment without the key
+   * must be untouched by this.
+   */
+  it("adds Uniswap on its own key, alongside Textile rather than instead of it", () => {
+    const config = loadConfig({
+      ...base,
+      FX_PROVIDER: "textile",
+      TEXTILE_LIVE_API_KEY: "tx_live_abcd1234.supersecretvalue",
+      UNISWAP_API_KEY: "uniswap-key-value",
+    });
+    assert.equal(config.fx.provider, "textile");
+    assert.ok(config.fx.textile, "Textile is still configured");
+    assert.deepEqual(config.fx.uniswap, {
+      apiKey: "uniswap-key-value",
+      apiUrl: SETTINGS.uniswap.apiUrl,
+      timeoutMs: SETTINGS.uniswap.timeoutMs,
+      slippagePercent: SETTINGS.uniswap.slippagePercent,
+      quoteLifetimeMs: SETTINGS.uniswap.quoteLifetimeMs,
+    });
+  });
+
+  it("leaves Uniswap absent when its key is not set", () => {
+    const config = loadConfig({
+      ...base,
+      FX_PROVIDER: "textile",
+      TEXTILE_LIVE_API_KEY: "tx_live_abcd1234.supersecretvalue",
+    });
+    assert.equal("uniswap" in config.fx, false);
   });
 });
 

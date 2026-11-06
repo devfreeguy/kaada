@@ -129,6 +129,7 @@ export function toDelegatedPermission(row: PermissionRow): DelegatedPermission {
         cumulativeLimit: createMoney(row.cumulativeAmount, row.cumulativeAssetId),
       }),
     enforcement: readEnforcement(row.enforcement, row.id),
+    ...maybe("scopeKey", row.scopeKey),
     validFrom: row.validFrom,
     expiresAt: row.expiresAt,
     ...maybe("revokedAt", row.revokedAt),
@@ -160,6 +161,7 @@ export function permissionCreateData(
     cumulativeAmount: permission.cumulativeLimit?.amount ?? null,
     cumulativeAssetId: permission.cumulativeLimit?.assetId ?? null,
     enforcement: permission.enforcement,
+    scopeKey: permission.scopeKey ?? null,
     validFrom: permission.validFrom,
     expiresAt: permission.expiresAt,
   };

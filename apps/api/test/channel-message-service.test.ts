@@ -22,6 +22,12 @@ interface Options {
   agent?: { handle(input: never): Promise<AgentTurnResult> } | null;
   wallet?: boolean;
   linked?: boolean;
+  convert?: {
+    confirm(input: {
+      userId: string;
+      sessionId: string;
+    }): Promise<{ status: "STARTED" | "NOT_AVAILABLE" }>;
+  };
 }
 
 function build(options: Options = {}) {
@@ -47,6 +53,7 @@ function build(options: Options = {}) {
     inboundEvents: stores.inboundEvents,
     statuses: stores.channelPaymentStatuses,
     agent: options.agent === undefined ? h.agent : options.agent,
+    ...(options.convert && { convert: options.convert }),
     links: {
       setupLink: (userId) => {
         links.setup += 1;
@@ -93,10 +100,34 @@ const authorizationResponse = (sessionId: string): AgentResponse => ({
   summary: {
     amountMode: "EXACT_INPUT",
     recipient: "Daniel",
-    senderSpends: { amount: "20000000", assetId: "a", symbol: "USDT", decimals: 6, display: "20.00 USDT" },
-    maximumSpend: { amount: "20000000", assetId: "a", symbol: "USDT", decimals: 6, display: "20.00 USDT" },
-    recipientReceives: { amount: "100", assetId: "b", symbol: "wBRL", decimals: 6, display: "102.30 wBRL" },
-    minimumReceive: { amount: "99", assetId: "b", symbol: "wBRL", decimals: 6, display: "101.50 wBRL" },
+    senderSpends: {
+      amount: "20000000",
+      assetId: "a",
+      symbol: "USDT",
+      decimals: 6,
+      display: "20.00 USDT",
+    },
+    maximumSpend: {
+      amount: "20000000",
+      assetId: "a",
+      symbol: "USDT",
+      decimals: 6,
+      display: "20.00 USDT",
+    },
+    recipientReceives: {
+      amount: "100",
+      assetId: "b",
+      symbol: "wBRL",
+      decimals: 6,
+      display: "102.30 wBRL",
+    },
+    minimumReceive: {
+      amount: "99",
+      assetId: "b",
+      symbol: "wBRL",
+      decimals: 6,
+      display: "101.50 wBRL",
+    },
   },
   fees: [{ amount: "100000", assetId: "a", symbol: "USDT", decimals: 6, display: "0.10 USDT" }],
   slippageBps: 50,
@@ -397,6 +428,100 @@ describe("buttons are bound to the person who was shown them", () => {
   });
 });
 
+describe("converting your own money is one tap, not a PIN", () => {
+  const conversion = (sessionId: string): AgentResponse => {
+    const response = authorizationResponse(sessionId);
+    if (response.type !== "AUTHORIZATION_REQUIRED") throw new Error("unreachable");
+    const { recipient: _recipient, ...summary } = response.summary;
+    return { ...response, operation: "CONVERT", summary };
+  };
+  const recorder = (status: "STARTED" | "NOT_AVAILABLE" = "STARTED") => {
+    const calls: { userId: string; sessionId: string }[] = [];
+    return {
+      calls,
+      confirm: (input: { userId: string; sessionId: string }) => {
+        calls.push(input);
+        return Promise.resolve({ status });
+      },
+    };
+  };
+
+  it("offers a Confirm button and no PIN page, and says nothing about a PIN", async () => {
+    const sessionId = randomUUID();
+    const { adapter, service, links, stores } = build({
+      agent: scriptedAgent(conversion(sessionId)),
+      convert: recorder(),
+    });
+    await service.handleInbound(inbound({ text: "convert 5000 naira to pesos", eventId: event() }));
+    const text = adapter.last?.text ?? "";
+    assert.match(text, /Tap Confirm/);
+    assert.doesNotMatch(text, /PIN/);
+    assert.deepEqual(urlActions(adapter.last), [], "no secure PIN page");
+    assert.deepEqual(links.authorization, [], "no authorization link was issued");
+    assert.deepEqual(
+      buttons(adapter.last).map((b) => b.semantic),
+      ["CONFIRM_CONVERSION", "CANCEL"],
+    );
+    // The payment is still followed in the chat, exactly like any other.
+    assert.equal([...stores.statuses.values()][0]?.authorizationSessionId, sessionId);
+  });
+
+  it("pressing Confirm starts the conversion for THAT session and this person, once", async () => {
+    const sessionId = randomUUID();
+    const convert = recorder();
+    const { adapter, service } = build({ agent: scriptedAgent(conversion(sessionId)), convert });
+    await service.handleInbound(inbound({ text: "convert", eventId: event() }));
+    const confirm = buttons(adapter.last).find((b) => b.semantic === "CONFIRM_CONVERSION");
+    assert.ok(confirm);
+
+    await service.handleInbound(inbound({ action: confirm.handle, eventId: event() }));
+    assert.deepEqual(convert.calls, [{ userId: SENDER, sessionId }]);
+    assert.match(adapter.last?.text ?? "", /Converting now/);
+
+    await service.handleInbound(inbound({ action: confirm.handle, eventId: event() }));
+    assert.equal(convert.calls.length, 1, "a second press does nothing");
+    assert.match(adapter.last?.text ?? "", /already used/);
+  });
+
+  it("says plainly when the conversion can no longer be confirmed", async () => {
+    const sessionId = randomUUID();
+    const { adapter, service } = build({
+      agent: scriptedAgent(conversion(sessionId)),
+      convert: recorder("NOT_AVAILABLE"),
+    });
+    await service.handleInbound(inbound({ text: "convert", eventId: event() }));
+    const confirm = buttons(adapter.last).find((b) => b.semantic === "CONFIRM_CONVERSION");
+    await service.handleInbound(inbound({ action: confirm?.handle ?? "", eventId: event() }));
+    assert.match(adapter.last?.text ?? "", /no longer available/);
+  });
+
+  it("a payment to someone else still asks for the PIN on the secure page, even with one-tap wired", async () => {
+    const sessionId = randomUUID();
+    const { adapter, service, links } = build({
+      agent: scriptedAgent(authorizationResponse(sessionId)),
+      convert: recorder(),
+    });
+    await service.handleInbound(inbound({ text: "send daniel $20", eventId: event() }));
+    assert.match(adapter.last?.text ?? "", /6-digit PIN/);
+    assert.equal(urlActions(adapter.last)[0]?.semantic, "OPEN_AUTHORIZATION");
+    assert.deepEqual(links.authorization, [sessionId]);
+    assert.equal(
+      buttons(adapter.last).some((b) => b.semantic === "CONFIRM_CONVERSION"),
+      false,
+    );
+  });
+
+  it("falls back to the secure page when one-tap is not available on this deployment", async () => {
+    const sessionId = randomUUID();
+    const { adapter, service, links } = build({ agent: scriptedAgent(conversion(sessionId)) });
+    await service.handleInbound(inbound({ text: "convert", eventId: event() }));
+    assert.equal(urlActions(adapter.last)[0]?.semantic, "OPEN_AUTHORIZATION");
+    assert.deepEqual(links.authorization, [sessionId]);
+    assert.match(adapter.last?.text ?? "", /6-digit PIN/, "and the words match the button");
+    assert.doesNotMatch(adapter.last?.text ?? "", /Tap Confirm/);
+  });
+});
+
 describe("the secure authorization flow", () => {
   it("shows the summary with an 'Authorize payment' link to the secure page and tracks the payment", async () => {
     const sessionId = randomUUID();
@@ -430,9 +555,27 @@ describe("the secure authorization flow", () => {
     response.summary = {
       ...response.summary,
       amountMode: "EXACT_OUTPUT",
-      recipientReceives: { amount: "1", assetId: "b", symbol: "BRL", decimals: 6, display: "R$500.00" },
-      senderSpends: { amount: "1", assetId: "a", symbol: "USDT", decimals: 6, display: "92.25 USDT" },
-      maximumSpend: { amount: "1", assetId: "a", symbol: "USDT", decimals: 6, display: "93.00 USDT" },
+      recipientReceives: {
+        amount: "1",
+        assetId: "b",
+        symbol: "BRL",
+        decimals: 6,
+        display: "R$500.00",
+      },
+      senderSpends: {
+        amount: "1",
+        assetId: "a",
+        symbol: "USDT",
+        decimals: 6,
+        display: "92.25 USDT",
+      },
+      maximumSpend: {
+        amount: "1",
+        assetId: "a",
+        symbol: "USDT",
+        decimals: 6,
+        display: "93.00 USDT",
+      },
     };
     const { adapter, service } = build({ agent: scriptedAgent(response) });
     await service.handleInbound(inbound({ text: "send joão exactly R$500", eventId: event() }));

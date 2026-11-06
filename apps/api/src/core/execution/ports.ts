@@ -10,6 +10,7 @@ import type {
   FirmQuoteAttemptRepository,
   IntentRepository,
   PasskeyRepository,
+  Permit2AllowanceReader,
   PaymentAuthorizationRepository,
   ProviderRepository,
   RecipientRepository,
@@ -55,6 +56,11 @@ export interface ExecutionUnitOfWork {
 /** Read-only chain access for planning. There is no write method on either member. */
 export interface ChainState {
   allowances: AllowanceReader;
+  /**
+   * Permit2 allowances, when a Uniswap-style provider is configured. Optional: a deployment that has
+   * none never needs it, and the plan then refuses a Permit2-routed swap instead of guessing.
+   */
+  permit2Allowances?: Permit2AllowanceReader;
   /** Fresh on-chain balances in smallest units, by asset id. */
   balances: { balancesOf(address: string, assetIds: string[]): Promise<Map<string, bigint>> };
   /** Whether the smart account already exists on chain (read-only). */

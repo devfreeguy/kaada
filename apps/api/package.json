@@ -20,7 +20,9 @@
     "demo:authorize": "node --import tsx scripts/authorize-demo.ts",
     "conversation:review": "node --import tsx scripts/conversation-review.ts",
     "dev:tunnels": "node --import tsx scripts/dev-tunnels.ts",
-    "seed:test-network": "node --import tsx scripts/seed-test-network.ts"
+    "seed:test-network": "node --import tsx scripts/seed-test-network.ts",
+    "smoke:uniswap": "node --import tsx scripts/smoke-uniswap-mainnet.ts",
+    "smoke:kernel": "node --import tsx scripts/smoke-uniswap-kernel.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.4.0",

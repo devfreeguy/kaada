@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { createMoney, isKaadaError } from "@kaada/domain";
+import { createMoney, isKaadaError, permissionScopeKey } from "@kaada/domain";
 import type { DelegatedPermission, WalletCredential } from "@kaada/domain";
 
 import {
@@ -262,7 +262,11 @@ describe("a repeat payment needs no root signature", () => {
         rootSignatureRequired: boolean;
         rootAvailable: boolean;
       };
-      permissionRequirement: { state: string; installSigner: string };
+      permissionRequirement: {
+        state: string;
+        installSigner: string;
+        scope: Parameters<typeof permissionScopeKey>[0];
+      };
     };
 
   for (const [label, key] of [
@@ -284,7 +288,20 @@ describe("a repeat payment needs no root signature", () => {
     it(`${label}: a REPEAT payment, with the account deployed and a covering permission installed, asks the root for nothing`, async () => {
       const f = await prepared(key);
       f.chain.deployed = true;
-      f.permissions.push(permission(f));
+      // Plan once to learn the scope this payment needs, then install a permission carrying that scope's own key
+      // (as a real installation records it) and plan again. A READY plan is reused, so forget the first.
+      await f.service.prepare(f.authorization.id);
+      const scopeKey = permissionScopeKey(planOf(f).permissionRequirement.scope);
+      f.firm.plans.length = 0;
+      f.transport.enqueue(
+        quotedReply({
+          now: f.now(),
+          sellAmount: "92200000",
+          takerPays: "92200000",
+          buyAmount: EXACT_OUT,
+        }),
+      );
+      f.permissions.push({ ...permission(f), scopeKey });
       const outcome = await f.service.prepare(f.authorization.id);
       assert.equal(outcome.status, "EXECUTION_READY");
       const plan = planOf(f);

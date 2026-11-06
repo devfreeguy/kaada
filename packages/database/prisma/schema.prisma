@@ -713,6 +713,9 @@ model DelegatedPermission {
   cumulativeAmount      String?
   cumulativeAssetId     String?          @db.Uuid
   enforcement           Json
+  /// The on-chain-pinned scope this permission was installed with (recipient, ceilings, swap target), as one canonical
+  /// string. A later payment may reuse the permission only when its own scope has the identical key. NULL means never reused.
+  scopeKey              String?
   validFrom             DateTime         @db.Timestamptz(3)
   expiresAt             DateTime         @db.Timestamptz(3)
   revokedAt             DateTime?        @db.Timestamptz(3)
@@ -1509,6 +1512,7 @@ enum ChannelActionKind {
   SET_COUNTRY
   CONVERT_CURRENCY
   KEEP_CURRENCY
+  CONFIRM_CONVERSION
 }
 
 /// One webhook delivery from a chat provider (a Telegram update id, ...). The unique key is what makes a redelivery harmless:

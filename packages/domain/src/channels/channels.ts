@@ -15,6 +15,7 @@ export const CHANNEL_ACTION_KINDS = [
   "SET_COUNTRY",
   "CONVERT_CURRENCY",
   "KEEP_CURRENCY",
+  "CONFIRM_CONVERSION",
 ] as const;
 export type ChannelActionKind = (typeof CHANNEL_ACTION_KINDS)[number];
 

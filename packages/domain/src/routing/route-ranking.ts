@@ -8,14 +8,15 @@ import type { PlannedRoute } from "./planned-route.js";
  * Deterministic route ranking. Only routes that already passed validation and honour the fixed side
  * are ranked, so the order below starts after "valid" and "satisfies the mode":
  *
- *   1. EXACT_OUTPUT: lowest source cost.   EXACT_INPUT: highest destination output.
- *   2. Lower fees.
- *   3. Fewer hops.
+ *   1. Fewer hops. A direct route always beats a two-step one, whatever the price: every extra hop is
+ *      another trade, another fee and another place to fail, and the person asked for one conversion.
+ *      A two-step route is only used when no direct one exists.
+ *   2. EXACT_OUTPUT: lowest source cost.   EXACT_INPUT: highest destination output.
+ *   3. Lower fees.
  *   4. Lower slippage.
  *   5. A stable tie-breaker on the route key.
  *
- * The first criterion is strict: a two-step route that is genuinely better beats a direct one, and an
- * equal one loses on hop count. Amounts of different assets are compared only when the assets
+ * Among routes with the same number of hops the price decides. Amounts of different assets are compared only when the assets
  * represent the same currency (their `fiatCode`), at par, re-expressed at a common precision; across
  * currencies there is no rate, so such amounts are treated as equal and the next criterion decides.
  * Nothing here uses a model or a clock.
@@ -71,6 +72,8 @@ function compareFees(a: PlannedRoute, b: PlannedRoute, assets: ReadonlyMap<strin
 
 /** Negative when `a` ranks before `b`. */
 export function compareRoutes(a: PlannedRoute, b: PlannedRoute, context: RankingContext): number {
+  if (a.hops.length !== b.hops.length) return a.hops.length - b.hops.length;
+
   const primary =
     context.mode === "EXACT_OUTPUT"
       ? compareLower(a.input, b.input, context.assets)
@@ -80,7 +83,6 @@ export function compareRoutes(a: PlannedRoute, b: PlannedRoute, context: Ranking
   const fees = compareFees(a, b, context.assets);
   if (fees !== 0) return fees;
 
-  if (a.hops.length !== b.hops.length) return a.hops.length - b.hops.length;
   if (a.slippageBps !== b.slippageBps) return a.slippageBps - b.slippageBps;
   return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
 }

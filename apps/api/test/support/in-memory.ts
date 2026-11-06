@@ -372,6 +372,7 @@ export function createInMemoryWorld(): InMemoryWorld {
 
     providers: {
       findBySlug: (slug) => Promise.resolve(providers.find((p) => p.slug === slug) ?? null),
+      findById: (id) => Promise.resolve(providers.find((p) => p.id === id) ?? null),
       listActive: () => Promise.resolve(providers.filter((p) => p.isActive)),
       listCapabilities: () => {
         const active = new Set(providers.filter((p) => p.isActive).map((p) => p.id));

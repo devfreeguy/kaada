@@ -97,6 +97,26 @@ export const SETTINGS = {
     timeoutMs: 8_000,
   },
 
+  uniswap: {
+    /** The Trading API root; the client adds /quote, /swap and /check_approval. */
+    apiUrl: "https://trade-api.gateway.uniswap.org/v1",
+    timeoutMs: 8_000,
+    /**
+     * Slippage bound written into the swap calldata, in percent (Uniswap's own unit).
+     *
+     * An AMM reserves nothing, so this — not a quote expiry — is what protects the person when the pool moves between
+     * the price they saw and the block their swap lands in. 2.5% is Uniswap's own default for these pairs, observed on
+     * a live quote; the local-currency pools on Celo are thin enough that a tighter bound reverts instead of filling,
+     * and a reverted swap costs gas and delivers nothing.
+     */
+    slippagePercent: 2.5,
+    /**
+     * How long a Uniswap quote is honoured once made: 3 minutes. Long enough to read and confirm; short enough that
+     * the pool price has not drifted far. After it, the person simply gets a fresh quote.
+     */
+    quoteLifetimeMs: 180_000,
+  },
+
   routing: {
     /**
      * The smallest payment worth attempting, in US dollars.
@@ -111,8 +131,14 @@ export const SETTINGS = {
      *
      * It governs SENDING only. A rate question never meets it: rates are read against the dollar, so nothing dust-sized
      * is ever quoted in the first place.
+     *
+     * Why there is still a floor at all, rather than none. The limit is not a policy choice, it is where the market
+     * stops answering: one naira is about seven ten-thousandths of a dollar, and a probe of 1 cNGN came back
+     * unquotable. A send below the floor is refused with the smallest amount that WOULD work, which is useful; a send
+     * the provider then declines for its own reasons is not. Lowered from 1.00 so a 1,500 naira balance is two
+     * testable payments rather than one.
      */
-    minimumSendUsd: "1.00",
+    minimumSendUsd: "0.50",
   },
 
   passkey: { rpName: "Kaada" },
@@ -129,8 +155,34 @@ export const SETTINGS = {
     minFirmWindowSeconds: 12,
     /** Textile documents about 70 s for a firm request and recommends a 75 s client timeout. */
     firmTimeoutMs: 75_000,
-    /** Textile allows 4 outstanding firm RFQs per key; Kaada counts its own to avoid avoidable 429s. */
-    maxOutstandingRfqs: 4,
+    /**
+     * The one-time Permit2 -> router grant a Uniswap swap needs: a size in WHOLE tokens and a lifetime.
+     *
+     * Generous, and safe because of where the binding limit sits. Permit2 moves tokens by calling
+     * `transferFrom` on the token itself, so it can never move more than the ERC-20 allowance granted to
+     * Permit2, and Kaada rebuilds THAT on every payment, bounded to exactly one swap's input. Verified on
+     * Celo mainnet: with a 1,000 cNGN Permit2 allowance and a 10 cNGN ERC-20 one, a 100 cNGN swap reverts
+     * with TRANSFER_FROM_FAILED, which is the ERC-20 layer refusing.
+     *
+     * So these figures decide only how often someone is asked for their root signature, never how much can
+     * move. Thirty days rather than a year: the grant is only ever made to a router Kaada has pinned
+     * (TRUSTED_PERMIT2_SPENDERS), and a shorter life keeps a standing allowance from outliving its usefulness.
+     */
+    permit2Grant: { wholeTokens: 1_000_000n, durationSeconds: 30n * 24n * 3600n },
+    /**
+     * The standing permission for converting between a person's OWN currencies, with no PIN and no passkey per conversion.
+     *
+     * A conversion pays its output back to the wallet it came from, so nothing can leave the wallet through it: the
+     * on-chain payout is pinned to the wallet's own address. That is what allows one permission, installed once per
+     * currency pair with the person's passkey, to serve every later conversion of that pair. Its ceilings are in WHOLE
+     * tokens (the same unit for every token, whatever its precision) and it lasts 30 days.
+     *
+     * What the chain cannot pin is the receiver INSIDE the swap router's data. Kaada checks, when it builds the quote, that
+     * the output goes to the wallet; the chain does not enforce it. That trade-off is deliberate and limited to
+     * conversions: a SEND to another person keeps its exact, short-lived, recipient-pinned permission and its PIN or
+     * passkey.
+     */
+    standingConversion: { wholeTokens: 1_000_000n, windowMs: 30 * 24 * 3600 * 1000 },
   },
 
   /**

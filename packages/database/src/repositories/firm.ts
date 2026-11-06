@@ -83,7 +83,8 @@ export function createFirmQuoteAttemptRepository(db: Db): FirmQuoteAttemptReposi
           orderDeadline: fields.orderDeadline ?? null,
           latestOrderDeadline: fields.latestOrderDeadline ?? null,
           ...maybe("unsignedTransactions", jsonInput(fields.unsignedTransactions, "transactions")),
-          claimSecretId: fields.claimSecretId,
+          // NULL for a provider that issues no claim token (an AMM); the column has always been nullable.
+          claimSecretId: fields.claimSecretId ?? null,
           updatedAt: now,
         },
       });

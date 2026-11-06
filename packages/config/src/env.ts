@@ -99,6 +99,19 @@ const envShape = {
     "PROXY_SHARED_SECRET must be at least 32 characters",
   ),
   FX_PROVIDER: z.enum(["none", "mock", "textile"]).default("none"),
+  /**
+   * [secret] The Uniswap Trading API key, sent as `x-api-key`.
+   *
+   * Uniswap prices local-to-local pairs that Textile has no corridor for at all: cNGN -> wARS answers "No RFQ corridor
+   * for this pair on chain 42220". There is no direct cNGN/wARS pool either — the decoded route is cNGN/USDT then
+   * USDT/wARS, both 0.01% tiers — but the Universal Router crosses both pools inside ONE transaction that either
+   * completes or reverts. So the dollar pivot is kept and the two-leg settlement gap is not: what Textile can only
+   * reach as two non-atomic legs is a single swap here.
+   *
+   * Present, Uniswap is offered alongside Textile and the router picks per pair from the capability rows. Absent,
+   * nothing changes.
+   */
+  UNISWAP_API_KEY: optionalSecret,
   // Kaada uses Textile's LIVE environment only (Celo exists nowhere else). The test key is for the sandbox smoke script.
   TEXTILE_LIVE_API_KEY: optionalSecret,
 
@@ -399,7 +412,6 @@ function buildConfig(
       pollIntervalMs: SETTINGS.execution.pollIntervalMs,
       pollMaxWaitMs: SETTINGS.execution.pollMaxWaitMs,
       reconcileIntervalMs: SETTINGS.execution.reconcileIntervalSeconds * 1000,
-      maxOutstandingRfqs: SETTINGS.execution.maxOutstandingRfqs,
       // Newest first. Empty when no key is configured: firm quoting is then disabled.
       cipherKeys: [
         ...(env.EXECUTION_SECRET_KEY
@@ -426,6 +438,21 @@ function buildConfig(
             timeoutMs: SETTINGS.textile.timeoutMs,
           },
         }),
+      /*
+       * Uniswap is ADDITIVE, not an alternative: it is keyed off its own key rather than FX_PROVIDER, because the two
+       * price sources serve disjoint sets of pairs (Textile every corridor against USDT, Uniswap the local-to-local
+       * pools Textile has no corridor for) and the router picks per pair from the capability rows. Without the key
+       * Uniswap is simply absent and every existing deployment behaves exactly as before.
+       */
+      ...(env.UNISWAP_API_KEY !== undefined && {
+        uniswap: {
+          apiKey: env.UNISWAP_API_KEY,
+          apiUrl: SETTINGS.uniswap.apiUrl,
+          timeoutMs: SETTINGS.uniswap.timeoutMs,
+          slippagePercent: SETTINGS.uniswap.slippagePercent,
+          quoteLifetimeMs: SETTINGS.uniswap.quoteLifetimeMs,
+        },
+      }),
     },
     // Server-side only: this object is never sent to a client. The address is public; the key is only ever a file path.
     ...(env.PLATFORM_WALLET_KEY_FILE !== undefined &&

@@ -14,8 +14,17 @@ import type { ExecutionPlanRecord } from "@kaada/domain";
 
 import type { ExecutionRepositories } from "./ports.js";
 
-/** The firm quote an attempt holds, as a provider-independent value. */
-export function quoteFromAttempt(attempt: FirmQuoteAttempt): FirmQuote | undefined {
+/**
+ * The firm quote an attempt holds, as a provider-independent value.
+ *
+ * `providerSlug` is passed in because the attempt row stores the Provider row id, while everything
+ * downstream (the settlement registry, the plan, the audit trail) is keyed by slug. It used to be the
+ * literal "textile", which is what made every execution Textile's regardless of what the route chose.
+ */
+export function quoteFromAttempt(
+  attempt: FirmQuoteAttempt,
+  providerSlug: string,
+): FirmQuote | undefined {
   if (
     !attempt.providerQuoteId ||
     !attempt.input ||
@@ -27,7 +36,7 @@ export function quoteFromAttempt(attempt: FirmQuoteAttempt): FirmQuote | undefin
   }
   return {
     id: attempt.id,
-    provider: "textile",
+    provider: providerSlug,
     providerQuoteId: attempt.providerQuoteId,
     chainId: attempt.unsignedTransactions.swap.chainId,
     input: attempt.input,
@@ -148,7 +157,11 @@ export async function loadLiveExecution(
   const attempt = record.firmQuoteAttemptId
     ? await repositories.firmQuoteAttempts.findById(record.firmQuoteAttemptId)
     : null;
-  const quote = attempt ? quoteFromAttempt(attempt) : undefined;
+  // Whose quote this is, read back from the attempt. Without it the quote cannot name its provider,
+  // and settlement would have to guess which provider to confirm with.
+  const quoteProvider = attempt ? await repositories.providers.findById(attempt.providerId) : null;
+  const quote =
+    attempt && quoteProvider ? quoteFromAttempt(attempt, quoteProvider.slug) : undefined;
   if (!attempt || !quote || !attempt.unsignedTransactions || attempt.status !== "QUOTED") {
     return { ok: false, reason: "NO_FIRM_QUOTE" };
   }

@@ -121,6 +121,7 @@ function createWorld() {
 
   const providerRepository: ProviderRepository = {
     findBySlug: (slug) => Promise.resolve(providers.find((p) => p.slug === slug) ?? null),
+    findById: (id) => Promise.resolve(providers.find((p) => p.id === id) ?? null),
     listActive: () => Promise.resolve(providers.filter((p) => p.isActive)),
     listCapabilities: () => {
       reads += 1;
@@ -440,6 +441,7 @@ describe("ProviderCapabilityRegistry", () => {
     // A failing read is surfaced and not remembered.
     const flaky = createProviderCapabilityRegistry({
       findBySlug: () => Promise.resolve(null),
+      findById: () => Promise.resolve(null),
       listActive: () => Promise.reject(new Error("db down")),
       listCapabilities: () => Promise.resolve([]),
     });

@@ -57,6 +57,11 @@ export interface CapabilityQuery {
 
 export interface ProviderRepository {
   findBySlug(slug: string): Promise<Provider | null>;
+  /**
+   * By row id. Needed because a persisted route step stores the Provider row id while every provider
+   * registry is keyed by slug, so execution has to turn one into the other to honour the route's choice.
+   */
+  findById(id: string): Promise<Provider | null>;
   listActive(): Promise<Provider[]>;
   /** Active capabilities of active providers matching every given filter. */
   listCapabilities(query?: CapabilityQuery): Promise<ProviderCapability[]>;

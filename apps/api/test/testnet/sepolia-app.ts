@@ -371,6 +371,8 @@ const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       const chain = chainPorts(db);
       const provider = {
         id: "textile",
+        issuesClaimToken: true as const,
+        maxOutstanding: 4 as const,
         requestFirm(request: import("@kaada/domain").FirmQuoteRequest) {
           const sell = request.sellToken.toLowerCase();
           const buy = request.buyToken.toLowerCase();
@@ -418,10 +420,9 @@ const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
         unitOfWork: uow,
         firmQuotes: new FirmQuoteService({
           unitOfWork: uow,
-          provider,
+          providers: domain.createFirmQuoteProviderRegistry([provider]),
           cipher,
           chain,
-          maxOutstanding: 4,
           requestTimeoutMs: 75_000,
         }),
         policy,
@@ -466,15 +467,16 @@ const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       const infrastructure = { rpcConfigured: true, bundlerConfigured: true };
       const orders = {
         id: "textile",
-        submit: () => Promise.resolve({ state: "SUBMITTED" as const }),
-        status: () => Promise.resolve({ state: "FILLED" as const }),
+        notifiesProvider: true as const,
+        notify: () => Promise.resolve({ state: "SUBMITTED" as const }),
+        confirm: () => Promise.resolve({ state: "SETTLED" as const }),
       };
       return new ExecutionRunner({
         unitOfWork: uow,
         preparation,
         wallets,
         kernel,
-        orders,
+        settlement: domain.createSettlementConfirmerRegistry([orders]),
         cipher,
         chain,
         signer: new ValidatedExecutionSigner({

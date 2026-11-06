@@ -1,6 +1,7 @@
 import {
   CELO_CHAIN_ID,
   EXECUTION_AUDIT_EVENTS,
+  PERMIT2,
   boundLimits,
   createId,
   isWalletActive,
@@ -24,6 +25,7 @@ import { noopLog } from "../agent/ports.js";
 import type { AuthorizationPolicyService } from "../authorization/policy-service.js";
 import type { AccountReadinessService } from "./account-readiness.js";
 import type { FirmQuoteService } from "./firm-quote-service.js";
+import type { PlanPolicy } from "./fresh-plan.js";
 import { buildExecutionPlan, serializePlan } from "./plan-builder.js";
 import { buildTransferPlan, isDirectTransferRoute, transferCandidate } from "./transfer.js";
 import { defaultTokenPolicy } from "./token-policy.js";
@@ -62,10 +64,12 @@ export interface PreparationServiceDeps {
   firmQuotes: FirmQuoteService;
   policy: Pick<AuthorizationPolicyService, "check">;
   readiness: AccountReadinessService;
-  chain: Pick<ChainState, "allowances">;
+  chain: Pick<ChainState, "allowances" | "permit2Allowances">;
   wallets: { getWallet(userId: string): Promise<Wallet | null> };
   /** The least time that must remain on a firm quote for it to count as executable. */
   minWindowMs: number;
+  /** Sizes of the permission and one-time grants a plan asks for. */
+  planPolicy?: PlanPolicy;
   /** Token-specific ERC-20 quirks. Defaults to the built-in table. */
   tokenPolicy?: TokenPolicy;
   now?: () => Date;
@@ -255,8 +259,29 @@ export class ExecutionPreparationService {
         })
       ).record;
 
+    /*
+     * The provider the ROUTE was planned on, carried forward rather than re-decided.
+     *
+     * A route step stores the Provider row id; the firm registry is keyed by slug, so the row is read
+     * back for its slug. A step with no provider is a planning fault, not something to paper over with
+     * a default: defaulting here is precisely how a Uniswap route would be requested from Textile.
+     */
+    const plannedStep = swaps[0];
+    const plannedProviderId = plannedStep?.providerId;
+    const plannedProvider = plannedProviderId
+      ? await repositories.providers.findById(plannedProviderId)
+      : null;
+    if (!plannedProvider) {
+      await this.audit(authorization, EXECUTION_AUDIT_EVENTS.routeUnsupported, authorization.id, {
+        reason: "SWAP_STEP_HAS_NO_PROVIDER",
+      });
+      await this.recordTerminal(authorization, "EXECUTION_ROUTE_UNSUPPORTED");
+      return { status: "EXECUTION_ROUTE_UNSUPPORTED" };
+    }
+
     const obtained = await this.deps.firmQuotes.obtain({
       authorization,
+      providerSlug: plannedProvider.slug,
       takerAddress: wallet.address,
       sellAsset: sell,
       buyAsset: buy,
@@ -292,7 +317,8 @@ export class ExecutionPreparationService {
     }
     const quote: FirmQuote = {
       id: attempt.id,
-      provider: "textile",
+      // The provider that actually answered, not a literal. The attempt row records it.
+      provider: plannedProvider.slug,
       providerQuoteId: attempt.providerQuoteId,
       chainId: attempt.unsignedTransactions.swap.chainId,
       input: attempt.input,
@@ -386,6 +412,19 @@ export class ExecutionPreparationService {
           spender,
         })
       : 0n;
+    /*
+     * The second allowance, read only for a Permit2-routed quote. A provider says it routes that way by
+     * naming Permit2 as the spender; anything else needs no such read, so none is made.
+     */
+    const currentPermit2Allowance =
+      spender?.toLowerCase() === PERMIT2 && this.deps.chain.permit2Allowances
+        ? await this.deps.chain.permit2Allowances.readPermit2Allowance({
+            chainId: quote.chainId,
+            owner: wallet.address,
+            token: sell.contractAddress,
+            spender: attempt.unsignedTransactions.swap.to,
+          })
+        : undefined;
     const plan = buildExecutionPlan({
       candidate,
       quote,
@@ -397,6 +436,13 @@ export class ExecutionPreparationService {
       buyAsset: buy,
       tokenPolicy: this.deps.tokenPolicy ?? defaultTokenPolicy,
       currentAllowance,
+      ...(currentPermit2Allowance !== undefined && { currentPermit2Allowance }),
+      ...(this.deps.planPolicy?.permit2Grant && {
+        permit2Grant: this.deps.planPolicy.permit2Grant,
+      }),
+      ...(this.deps.planPolicy?.standingConversion && {
+        standingConversion: this.deps.planPolicy.standingConversion,
+      }),
       deployed: snapshot.deployed,
       rootAvailable: snapshot.rootAvailable,
       infrastructure: snapshot.infrastructure,

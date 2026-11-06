@@ -78,7 +78,8 @@ export interface QuotedFields {
   orderDeadline?: Date;
   latestOrderDeadline?: Date;
   unsignedTransactions: UnsignedTransactions;
-  claimSecretId: string;
+  /** Absent for a provider that issues no claim token (an AMM). The column has always been nullable. */
+  claimSecretId?: string;
 }
 
 export interface FirmQuoteAttemptRepository {

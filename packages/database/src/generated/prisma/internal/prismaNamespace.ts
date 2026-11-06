@@ -4007,6 +4007,7 @@ export const DelegatedPermissionScalarFieldEnum = {
   cumulativeAmount: 'cumulativeAmount',
   cumulativeAssetId: 'cumulativeAssetId',
   enforcement: 'enforcement',
+  scopeKey: 'scopeKey',
   validFrom: 'validFrom',
   expiresAt: 'expiresAt',
   revokedAt: 'revokedAt',

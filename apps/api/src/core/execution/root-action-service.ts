@@ -1,4 +1,4 @@
-import { KaadaError, createId, rootActionFor } from "@kaada/domain";
+import { KaadaError, createId, permissionScopeKey, rootActionFor } from "@kaada/domain";
 import type { AgentLog } from "../agent/ports.js";
 import { errorDetails } from "../channels/error-details.js";
 import type {
@@ -76,7 +76,13 @@ export class RootActionService {
    */
   async request(
     live: Pick<LiveExecution, "record" | "wallet">,
-    plan: Pick<ExecutionPlan, "permissionRequirement">,
+    /**
+     * A swap plan, or a direct transfer plan. A transfer has no `setupRequirements` because it has no
+     * swap and no provider: nothing is routed through Permit2, so there is no grant to make.
+     */
+    plan: Pick<ExecutionPlan, "permissionRequirement"> & {
+      setupRequirements?: ExecutionPlan["setupRequirements"];
+    },
   ): Promise<RootActionSession> {
     const repositories = this.uow.read;
     const now = this.now();
@@ -87,10 +93,26 @@ export class RootActionService {
     await this.ensureValidator(root, live.wallet);
 
     const scope = plan.permissionRequirement.scope;
+    /*
+     * One-time grants that run in the SAME root operation as the deployment and the permission install.
+     *
+     * They are signed by the root, not by the session key, which is exactly why they are here: the only
+     * case today is the Permit2 -> router allowance a Uniswap swap needs, whose four-argument selector
+     * the payment path's allowlist does not permit and must not be widened to permit. The calls are
+     * built by the plan from validated values; this service passes them on and never composes one.
+     *
+     * The browser still only signs the challenge the server fixed, so adding calls here does not give
+     * the page any new say in what is signed.
+     */
+    const setupCalls = (plan.setupRequirements ?? []).map((requirement) => ({
+      to: requirement.to,
+      data: requirement.data,
+      value: requirement.value,
+    }));
     const prepared = await this.deps.kernel.prepareRootOperation({
       walletAddress: live.wallet.address,
       credential: root,
-      calls: [],
+      calls: setupCalls,
       permission: { scope },
     });
     if (!prepared.sessionKey) throw new Error("the kernel adapter returned no session key");
@@ -104,6 +126,9 @@ export class RootActionService {
       allowedContracts: scope.allowedContracts,
       allowedAssetIds: scope.allowedAssetIds,
       perTransactionLimit: scope.perTransactionLimit,
+      // What is pinned on chain (recipient, ceilings, swap target), remembered so a later payment reuses this permission
+      // only when its own scope is identical, instead of being planned as covered and refused at signing.
+      scopeKey: permissionScopeKey(scope),
       validFrom: scope.validFrom,
       expiresAt: scope.expiresAt,
     });
@@ -176,16 +201,28 @@ export class RootActionService {
 
   async view(token: string): Promise<RootActionView> {
     const { session, root } = await this.resolveWithRoot(token);
+    const how = root.type === "PASSKEY" ? "your passkey" : "this device";
+    // A conversion was confirmed with one tap, not a PIN, and this setup is what lets later ones run without asking.
+    const message = (await this.isConversion(session.executionId))
+      ? `One-time setup so Kaada can convert between your own currencies for you, without asking each time. Confirm it with ${how}. It is only for converting your own money: sending to someone else always asks for your PIN or passkey.`
+      : `Your payment is waiting on a one-time wallet setup. Confirm it with ${how}. This does not authorize any payment amount: your PIN already did that, and it cannot be changed here.`;
     return {
       title: "Confirm wallet setup to continue payment",
-      message:
-        root.type === "PASSKEY"
-          ? "Your payment is waiting on a one-time wallet setup. Confirm it with your passkey. This does not authorize any payment amount: your PIN already did that, and it cannot be changed here."
-          : "Your payment is waiting on a one-time wallet setup. Confirm it with this device. This does not authorize any payment amount: your PIN already did that, and it cannot be changed here.",
+      message,
       expiresAt: session.expiresAt,
       action: rootActionFor(root.type),
       rootType: root.type,
     };
+  }
+
+  /** Whether the payment waiting on this setup is a conversion between the person's own currencies. */
+  private async isConversion(executionId: string): Promise<boolean> {
+    const record = await this.uow.read.executionPlans.findById(executionId);
+    if (!record) return false;
+    const authorization = await this.uow.read.paymentAuthorizations.findById(
+      record.paymentAuthorizationId,
+    );
+    return authorization?.operation === "CONVERT";
   }
 
   /** What the client must sign: a WebAuthn request (passkey) or the documented payload (device key). */

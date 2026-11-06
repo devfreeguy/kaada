@@ -3,6 +3,7 @@ import {
   KaadaError,
   SecretValue,
   boundLimits,
+  claimTokenContext,
   createId,
   isNativeCelo,
 } from "@kaada/domain";
@@ -13,8 +14,8 @@ import type {
   ExecutionSigner,
   KernelExecutionPort,
   PlanRecordStatus,
-  ProviderOrderPort,
-  ProviderOrderStatus,
+  SettlementConfirmerRegistry,
+  SettlementOutcome,
   TokenPolicy,
   Transaction,
   Wallet,
@@ -23,6 +24,7 @@ import type {
 import type { AgentLog } from "../agent/ports.js";
 import { noopLog } from "../agent/ports.js";
 import { freshPlan } from "./fresh-plan.js";
+import type { PlanPolicy } from "./fresh-plan.js";
 import { loadLiveExecution } from "./live-execution.js";
 import type { LiveExecution } from "./live-execution.js";
 import type { PreparationOutcome } from "./preparation-service.js";
@@ -83,12 +85,15 @@ export interface ExecutionRunnerDeps {
   };
   wallets: { getWallet(userId: string): Promise<Wallet | null> };
   kernel: KernelExecutionPort;
-  orders: ProviderOrderPort;
+  /** Every settlement confirmer this deployment can use, looked up by the executed quote's provider. */
+  settlement: SettlementConfirmerRegistry;
   cipher: SecretCipher;
   chain: ChainState;
   signer: ExecutionSigner;
   rootActions: Pick<RootActionService, "request">;
   tokenPolicy?: TokenPolicy;
+  /** Sizes of the permission and one-time grants a plan asks for; the same value preparation uses. */
+  planPolicy?: PlanPolicy;
   /** The least time that must remain on the firm quote before an execution starts. */
   minWindowMs: number;
   /** The least native CELO the wallet needs for network fees (no paymaster is configured). */
@@ -353,6 +358,7 @@ export class ExecutionRunner {
         chain: this.deps.chain,
         infrastructure: this.deps.infrastructure,
         ...(this.deps.tokenPolicy && { tokenPolicy: this.deps.tokenPolicy }),
+        ...(this.deps.planPolicy && { planPolicy: this.deps.planPolicy }),
       },
       live,
       now,
@@ -664,18 +670,41 @@ export class ExecutionRunner {
     if (!loaded.ok) return { status: "PAYMENT_PENDING" };
     const { live } = loaded;
 
-    // Tell the provider (a courtesy it documents as repeat-safe), then read how the order settled.
+    /*
+     * Which provider must confirm this settlement: the one whose quote was executed, looked up by slug.
+     *
+     * Unwired is treated as "keep watching", never as a failure and never as a substitution. The swap is
+     * already confirmed on chain at this point, so money has moved; turning a wiring gap into a terminal
+     * failure here would mark a completed payment failed, and asking a DIFFERENT provider about an order
+     * it never had would get a meaningless answer about real money.
+     */
+    const confirmer = this.deps.settlement.get(live.quote.provider);
+    if (!confirmer) {
+      this.log("error", "execution.settlement_confirmer_not_wired", {
+        executionId: record.id,
+        provider: live.quote.provider,
+        wired: this.deps.settlement.slugs().join(","),
+      });
+      await repositories.executionPlans.transition(record.id, ["SETTLING"], "SETTLING", {
+        lastReconciledAt: this.now(),
+      });
+      return { status: "PAYMENT_PENDING" };
+    }
+
+    // Absent for a provider that issues none. No longer a throw: this code runs AFTER the swap has
+    // confirmed on chain, so throwing here left a paid-out execution stuck in SETTLING for ever.
     const claim = await this.claimToken(live);
-    let status: ProviderOrderStatus;
+    let status: SettlementOutcome;
     // Reporting the hash is OPTIONAL for the provider (it reconciles settlement from the chain), so a failed
     // report must not stop us from reading the order's real status. Found on the Textile TEST environment:
     // a submit after the accept window closed is a 409 ("RFQ accept window closed") even though the swap
     // executed and the order fills.
-    if (record.providerSubmitState !== "SUBMITTED") {
+    if (confirmer.notifiesProvider && record.providerSubmitState !== "SUBMITTED") {
       try {
-        await this.deps.orders.submit({
+        await confirmer.notify({
           providerQuoteId: live.quote.providerQuoteId,
-          claimToken: claim,
+          quoteId: live.quote.id,
+          ...(claim && { claimToken: claim }),
           txHash,
         });
         await repositories.executionPlans.transition(record.id, ["SETTLING"], "SETTLING", {
@@ -690,9 +719,11 @@ export class ExecutionRunner {
       }
     }
     try {
-      status = await this.deps.orders.status({
+      status = await confirmer.confirm({
         providerQuoteId: live.quote.providerQuoteId,
-        claimToken: claim,
+        quoteId: live.quote.id,
+        ...(claim && { claimToken: claim }),
+        txHash,
       });
     } catch (error) {
       // The provider could not be reached or answered oddly. The swap is on chain; keep reconciling.
@@ -706,8 +737,8 @@ export class ExecutionRunner {
       return { status: "PAYMENT_PENDING" };
     }
 
-    if (status.state !== "FILLED") {
-      // Not filled (yet): a failed/expired order can still be corrected for up to 24 hours, and the
+    if (status.state !== "SETTLED") {
+      // Not settled (yet): a failed/expired RFQ order can still be corrected for up to 24 hours, and the
       // swap is confirmed on chain, so this is a state to keep watching, never a verdict.
       await repositories.executionPlans.transition(record.id, ["SETTLING"], "SETTLING", {
         lastReconciledAt: this.now(),
@@ -1008,14 +1039,26 @@ export class ExecutionRunner {
     }
   }
 
-  /** The provider claim token, decrypted only for the call that needs it. */
-  private async claimToken(live: LiveExecution): Promise<SecretValue> {
+  /**
+   * The provider claim token, decrypted only for the call that needs it. Undefined when this provider issued none.
+   *
+   * Deliberately NOT a throw on absence. This runs during settlement, after the swap has confirmed on
+   * chain, so the money has already moved: a throw here left a paid-out execution wedged in SETTLING
+   * with the reconciler re-throwing every pass. Absence is a legitimate state for a provider that
+   * reserves nothing. A token that is RECORDED but unreadable is still a fault, because that means a
+   * secret was expected and has gone missing.
+   */
+  private async claimToken(live: LiveExecution): Promise<SecretValue | undefined> {
     const secretId = live.attempt.claimSecretId;
-    const secret = secretId ? await this.uow.read.executionSecrets.get(secretId) : null;
+    if (!secretId) return undefined;
+    const secret = await this.uow.read.executionSecrets.get(secretId);
     if (!secret)
       throw new KaadaError("EXECUTION_FAILED", "the provider claim token is unavailable");
     return new SecretValue(
-      this.deps.cipher.decrypt(secret.ciphertext, `textile-claim-token:${secret.id}`),
+      this.deps.cipher.decrypt(
+        secret.ciphertext,
+        claimTokenContext(live.quote.provider, secret.id),
+      ),
     );
   }
 

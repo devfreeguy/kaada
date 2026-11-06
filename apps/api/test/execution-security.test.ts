@@ -108,13 +108,18 @@ describe("execution security review (source scan)", () => {
       ].sort(),
     );
     assert.equal(/\bcancel\w*\(/i.test(client), false);
-    // Only the order provider ever submits.
+    /*
+     * Only the provider's own adapter ever submits. The runner is NO LONGER on this list, and that is a
+     * tightening rather than a gap: it used to call `.submit()` on the order port directly, so Textile's
+     * wire call reached into shared execution code. It now asks a SettlementConfirmer to `notify`, and
+     * only Textile's adapter turns that into Textile's submit — a provider with no order to notify does
+     * nothing at all. If `runner.ts` appears here again, provider wire semantics have leaked back in.
+     */
     const submitters = production
       .filter((path) => /\.submit\(/.test(code(path)))
       .map((path) => path.split(/[\\/]/).slice(-1)[0]);
     assert.deepEqual(submitters.sort(), [
       "recovery.controller.ts", // recovery configuration .submit(): arms a Recovery Code, no order
-      "runner.ts",
       "textile-order-provider.ts",
     ]);
     // A firm request is never retried.
@@ -124,12 +129,21 @@ describe("execution security review (source scan)", () => {
   it("only the firm quote service calls the firm provider, and only after an authorization", () => {
     const callers = production.filter((path) => /requestFirm\(/.test(code(path)));
     const names = callers.map((path) => path.split(/[\\/]/).slice(-1)[0]).sort();
+    /*
+     * An allowlist, extended deliberately. Each provider's own adapter DEFINES requestFirm; only the
+     * firm-quote service ever CALLS one, and only after an authorization has been consumed. A new name
+     * here must be a provider adapter and nothing else — if business logic, a channel or the agent ever
+     * appears, a firm quote is being requested outside the authorized path.
+     */
     assert.deepEqual(names, [
       "client.ts",
       "firm-quote-service.ts",
       "firm-quote.ts",
       "textile-firm-provider.ts",
+      "uniswap-firm-provider.ts",
     ]);
+    const adapters = names.filter((name) => name.endsWith("-firm-provider.ts"));
+    assert.deepEqual(adapters, ["textile-firm-provider.ts", "uniswap-firm-provider.ts"]);
     const service = code(join(dir("apps/api/src/core/execution"), "firm-quote-service.ts"));
     assert.ok(/authorization/.test(service) && /claim\(/.test(service));
     // Routing, the agent and the channel layer never touch it.
@@ -156,30 +170,49 @@ describe("execution security review (source scan)", () => {
       "zerodev-kernel-adapter.ts",
     ]);
     const service = code(join(dir("apps/api/src/core/execution"), "firm-quote-service.ts"));
-    assert.ok(/cipher\.encrypt\(\s*result\.claimToken\.reveal\(\)/.test(service));
+    /*
+     * The token is revealed ONLY into the cipher, and what is revealed comes only from the provider's
+     * own result. Three assertions rather than one, because the reveal is no longer inline: a provider
+     * may issue no token at all (an AMM reserves nothing, so there is no order to claim), so the value
+     * is bound to a local first. That local must come from the provider result and nowhere else, and a
+     * provider that declares a token then returns none must be a fault rather than a missing secret
+     * discovered later, after the money has already moved.
+     */
+    assert.ok(
+      /const claimToken = firm\.issuesClaimToken \? result\.claimToken : undefined;/.test(service),
+      "the revealed token comes only from the provider result",
+    );
+    assert.ok(
+      /cipher\.encrypt\(\s*claimToken\.reveal\(\)/.test(service),
+      "the only reveal feeds the cipher",
+    );
+    assert.ok(
+      /if \(firm\.issuesClaimToken && !result\.claimToken\)/.test(service),
+      "a declared-but-absent token is refused",
+    );
   });
 
   it("every mention of claimToken is the schema, the wrapper or the encryption step", () => {
+    /*
+     * Matched as a WHOLE WORD, which makes this list shorter and STRICTER than the substring scan it
+     * replaces. `claimTokenStored` is a boolean and `claimTokenContext` builds an encryption AAD from a
+     * provider slug; neither is or carries a token, so the five files that only mention those no longer
+     * need a pass here. Anything that genuinely handles the token still matches and must be named.
+     */
     const allowed = new Set([
       "schemas.ts",
       "client.ts",
       "textile-firm-provider.ts",
       "firm-quote-service.ts",
       "firm-quote.ts",
-      // These carry only the boolean `claimTokenStored`, never the token.
-      "plan.ts",
-      "plan-builder.ts",
-      "preparation-service.ts",
-      // Build 13: the flag / secret id only, or the per-request reveal by the order provider.
-      "fresh-plan.ts",
-      "live-execution.ts",
+      // The per-request reveal by the order provider, and the ports that type it.
       "runner.ts",
       "textile-order-provider.ts",
       "ports.ts",
     ]);
     for (const path of production) {
       const name = path.split(/[\\/]/).slice(-1)[0] ?? "";
-      if (/claimToken/.test(code(path))) {
+      if (/\bclaimToken\b/.test(code(path))) {
         assert.ok(allowed.has(name), `unexpected claimToken in ${path}`);
       }
     }

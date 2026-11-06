@@ -167,6 +167,7 @@ const enumValues: Record<string, string[]> = {
     "SET_COUNTRY",
     "CONVERT_CURRENCY",
     "KEEP_CURRENCY",
+    "CONFIRM_CONVERSION",
   ],
   RootChangeStatus: ["PREPARED", "SUBMITTED", "CONFIRMED", "FAILED", "EXPIRED", "CANCELLED"],
   WalletCredentialKind: ["PASSKEY", "DEVICE_KEY"],

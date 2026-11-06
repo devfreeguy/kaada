@@ -41,6 +41,11 @@ export interface PermissionRequest {
   cumulativeLimit?: Money;
   validFrom: Date;
   expiresAt: Date;
+  /**
+   * The canonical key of the on-chain-pinned scope this permission is created for (see permissionScopeKey). Optional so
+   * every existing caller keeps working; a permission without one is never reused for a later payment.
+   */
+  scopeKey?: string;
 }
 
 /**
@@ -66,6 +71,12 @@ export interface DelegatedPermission {
   expiresAt: Date;
   revokedAt?: Date;
   revocationReason?: string;
+  /**
+   * The canonical key of the on-chain-pinned scope (recipient, ceilings, swap target...) this permission was installed
+   * with. A later payment may reuse the permission only when its own scope has the identical key. Absent on a permission
+   * created before this existed, which is therefore never reused.
+   */
+  scopeKey?: string;
   /** The restricted session key's public address. Its private half is encrypted in ExecutionSecret. */
   sessionKeyAddress?: string;
   sessionKeySecretId?: string;

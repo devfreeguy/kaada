@@ -10,6 +10,7 @@ export type SeedClient = Pick<PrismaClient, "provider" | "asset">;
  */
 export const providers = [
   { slug: "textile", name: "Textile", type: "FX" },
+  { slug: "uniswap", name: "Uniswap", type: "FX" },
   { slug: "ripio", name: "Ripio", type: "RAMP" },
   { slug: "celo", name: "Celo", type: "RPC" },
 ] as const;

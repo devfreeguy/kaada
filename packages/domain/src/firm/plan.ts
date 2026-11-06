@@ -64,6 +64,62 @@ export interface PermissionScope {
 }
 
 /**
+ * How large and how long the standing permission for conversions between a person's OWN currencies is.
+ *
+ * A conversion pays out to the wallet it came from, so there is no recipient to pin per payment. Its permission can
+ * therefore be installed once, with a ceiling instead of the exact amounts of one payment, and reused for every later
+ * conversion of the same pair without asking the person again. Sized in WHOLE tokens for the same reason the Permit2
+ * grant is: a raw figure means a different amount for every token precision.
+ */
+export interface StandingConversionPolicy {
+  wholeTokens: bigint;
+  windowMs: number;
+}
+
+/** The ceiling, in the token's smallest unit, that a standing conversion permission pins on chain. */
+export function standingLimitAmount(policy: StandingConversionPolicy, decimals: number): bigint {
+  return policy.wholeTokens * 10n ** BigInt(decimals);
+}
+
+/**
+ * Everything in a scope that is PINNED ON CHAIN, as one canonical string; the validity window is left out on purpose.
+ *
+ * Two scopes have the same key exactly when the installed permission for one would accept the other's calls: the same
+ * contracts, the same swap target and function, the same approval token, spender and ceiling, and the same payout token,
+ * RECIPIENT and ceiling. It is stored with the permission when it is created, and a later payment may reuse that
+ * permission only if its own scope has the identical key.
+ *
+ * WHY IT EXISTS. A permission used to be matched to a payment by broad sets (contracts, assets, operations) alone, while the
+ * recipient and the amounts are pinned on chain and were not remembered. A second payment to a different recipient, or for a
+ * different amount, was therefore planned as "already covered" and then refused at signing, when the signer read the exact
+ * scope back from the chain, and a retry hit the same wall until the permission expired.
+ */
+export function permissionScopeKey(scope: PermissionScope): string {
+  const lower = (value: string): string => value.toLowerCase();
+  return JSON.stringify({
+    chain: scope.chainId,
+    operations: [...scope.allowedOperations].sort(),
+    contracts: scope.allowedContracts.map(lower).sort(),
+    assets: [...scope.allowedAssetIds].sort(),
+    swap:
+      scope.swapTarget && scope.swapSelector
+        ? [lower(scope.swapTarget), lower(scope.swapSelector)]
+        : null,
+    approval: scope.approval
+      ? [
+          lower(scope.approval.tokenAddress),
+          lower(scope.approval.spender),
+          scope.approval.limit.amount,
+        ]
+      : null,
+    payout: scope.payout
+      ? [lower(scope.payout.tokenAddress), lower(scope.payout.recipient), scope.payout.limit.amount]
+      : null,
+    perTransaction: [scope.perTransactionLimit.assetId, scope.perTransactionLimit.amount],
+  });
+}
+
+/**
  * - SATISFIED:             an ACTIVE permission that is installed on chain already covers the payment.
  * - INSTALLATION_REQUIRED: none does. A PENDING record is only an intention, never authority.
  */
@@ -132,6 +188,10 @@ export const PLAN_BLOCKERS = [
   "TAKER_MISMATCH",
   "NO_ROOT",
   "RECIPIENT_ADDRESS_REQUIRED",
+  // A Permit2-routed swap needs a one-time root grant and the plan was given no size for one.
+  "PERMIT2_GRANT_UNAVAILABLE",
+  // A Permit2-routed swap targets a contract Kaada has not deliberately decided may hold a Permit2 allowance.
+  "PERMIT2_SPENDER_NOT_TRUSTED",
 ] as const;
 export type PlanBlocker = (typeof PLAN_BLOCKERS)[number];
 
@@ -156,11 +216,39 @@ export interface TransferExecutionPlan {
   status: ExecutionPlanStatus;
 }
 
+/**
+ * One call that must run ONCE, under the wallet's ROOT, before a delegated payment can work.
+ *
+ * It is not part of the payment. It is signed by the root (a passkey or a device key) alongside the
+ * account deployment and the permission install, never by the restricted session key, and it therefore
+ * never passes through the payment path's selector allowlist. That separation is the point: a provider
+ * whose execution needs a grant the session key may not make gets it from the root instead, and nothing
+ * about what a payment may do changes.
+ *
+ * The only case today is the Permit2 -> Universal Router allowance a Uniswap swap needs.
+ */
+export interface SetupRequirement {
+  /** Why this call exists, as a stable code: it is shown and audited, never free text. */
+  purpose: "PERMIT2_ROUTER_ALLOWANCE";
+  to: string;
+  data: string;
+  /** Always "0": a setup call never carries native value. */
+  value: "0";
+  /** The asset the grant concerns, for the audit trail. */
+  assetId: string;
+  signer: "ROOT";
+}
+
 export interface ExecutionPlan {
   candidate: FirmExecutionCandidate;
   accountRequirements: AccountRequirements;
   permissionRequirement: PermissionRequirement;
   approvalRequirements: TokenApprovalRequirement[];
+  /**
+   * One-time grants this payment needs that a session key may not make. Empty for a provider that
+   * needs none, which is every provider but Uniswap today.
+   */
+  setupRequirements: SetupRequirement[];
   swapRequirement: SwapRequirement;
   payoutRequirement: PayoutRequirement;
   /**

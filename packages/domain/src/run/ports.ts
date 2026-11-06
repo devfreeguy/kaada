@@ -73,29 +73,84 @@ export interface KernelExecutionPort {
   ): Promise<{ status: "NOT_FOUND" | "PENDING" | "SUCCESS" | "REVERTED"; blockNumber?: string }>;
 }
 
-export type ProviderOrderState =
-  "QUOTED" | "SUBMITTED" | "FILLED" | "FAILED" | "EXPIRED" | "UNKNOWN";
+export type SettlementState = "QUOTED" | "SUBMITTED" | "SETTLED" | "FAILED" | "EXPIRED" | "UNKNOWN";
 
-export interface ProviderOrderStatus {
-  state: ProviderOrderState;
+export interface SettlementOutcome {
+  state: SettlementState;
   txHash?: string;
-  /** Settled amounts in smallest units, once the provider reports them. */
+  /** Settled amounts in smallest units, once they are known. */
   sellAmount?: string;
   buyAmount?: string;
   feeAmount?: string;
   failReason?: string;
 }
 
-/** Telling the provider about an executed order, and asking how it settled. Never signs or sends. */
-export interface ProviderOrderPort {
+/**
+ * How a provider's side of an executed swap is confirmed. Never signs and never sends.
+ *
+ * WHY THIS IS NOT CALLED AN "ORDER PORT". It answers one question — did this settle, and for how
+ * much — from whichever source is authoritative for that provider, and the two kinds of provider have
+ * genuinely different authorities:
+ *
+ *  - An RFQ provider holds the order off chain. It knows things the chain does not (whether the maker
+ *    filled, the settled amounts, a fill that lands up to 24 hours late), so IT is asked.
+ *  - An AMM holds nothing. The swap either happened in a block or it did not, so the CHAIN is asked.
+ *    This is not a workaround for a missing API: for an AMM there is no other authority in existence.
+ *
+ * `claimToken` is optional for the same reason it is optional on a firm quote: it is proof of ownership
+ * of a reservation, and a provider that reserves nothing issues none.
+ */
+/**
+ * What a confirmer is told about the executed swap. Identifiers only: never an amount.
+ *
+ * Amounts are deliberately absent. A confirmer must obtain them from its own authority — the provider,
+ * for an RFQ; the stored quote plus the confirmed receipt, for an AMM — because the runner then checks
+ * them against the authorized bounds. Passing the expected figures in would let a confirmer echo them
+ * back and turn that check into a tautology.
+ */
+export interface SettlementQuery {
+  /** The provider's own id for the quote. */
+  providerQuoteId: string;
+  /** Kaada's id for the firm-quote attempt that was executed. */
+  quoteId: string;
+  /** Absent for a provider that issues none. */
+  claimToken?: SecretValue;
+  txHash: string;
+}
+
+export interface SettlementConfirmer {
+  /** The provider slug, matching its Provider row: "textile", "uniswap". */
   readonly id: string;
+  /**
+   * Whether this provider needs to be told the transaction hash.
+   *
+   * True for an RFQ, where reporting is a documented courtesy. False for an AMM, which has no order to
+   * notify — and calling `notify` on one must therefore be a no-op rather than an error.
+   */
+  readonly notifiesProvider: boolean;
   /** Reports the on-chain transaction hash. Idempotent for the same hash. */
-  submit(input: {
-    providerQuoteId: string;
-    claimToken: SecretValue;
-    txHash: string;
-  }): Promise<ProviderOrderStatus>;
-  status(input: { providerQuoteId: string; claimToken: SecretValue }): Promise<ProviderOrderStatus>;
+  notify(input: SettlementQuery): Promise<SettlementOutcome>;
+  /** How it settled. Called only after the chain has confirmed the transaction succeeded. */
+  confirm(input: SettlementQuery): Promise<SettlementOutcome>;
+}
+
+/** Which settlement confirmer serves a provider slug. Keyed like every other provider registry. */
+export interface SettlementConfirmerRegistry {
+  get(providerSlug: string): SettlementConfirmer | undefined;
+  slugs(): string[];
+}
+
+export function createSettlementConfirmerRegistry(
+  confirmers: readonly SettlementConfirmer[],
+): SettlementConfirmerRegistry {
+  const bySlug = new Map(confirmers.map((confirmer) => [confirmer.id, confirmer]));
+  if (bySlug.size !== confirmers.length) {
+    throw new Error("two settlement confirmers registered under the same slug");
+  }
+  return {
+    get: (providerSlug) => bySlug.get(providerSlug),
+    slugs: () => [...bySlug.keys()].sort(),
+  };
 }
 
 /** Token-specific ERC-20 quirks, kept as data about the token rather than scattered through code. */

@@ -146,7 +146,7 @@ describe("a payment, end to end", () => {
     const outcome = await w.runner.run(w.executionId);
     assert.equal(outcome.status, "PAYMENT_PENDING");
     assert.equal((await record(w))?.status, "SETTLING", "never READY -> COMPLETED, never early");
-    w.orders.result = { state: "FILLED" };
+    w.orders.result = { state: "SETTLED" };
     assert.equal((await w.runner.run(w.executionId)).status, "PAYMENT_SENT");
     assert.equal((await record(w))?.status, "COMPLETED");
   });
@@ -318,7 +318,7 @@ describe("settlement is checked against what was authorized", () => {
   it("rejects a settlement that took more input than authorized", async () => {
     const w = await runWorld();
     await ready(w);
-    w.orders.result = { state: "FILLED", sellAmount: "999999999999", buyAmount: EXACT_OUT };
+    w.orders.result = { state: "SETTLED", sellAmount: "999999999999", buyAmount: EXACT_OUT };
     const outcome = await w.runner.run(w.executionId);
     assert.deepEqual(outcome, { status: "PAYMENT_FAILED", code: "SETTLEMENT_POLICY_VIOLATION" });
     assert.equal((await record(w))?.failureCode, "SETTLEMENT_POLICY_VIOLATION");
@@ -327,7 +327,7 @@ describe("settlement is checked against what was authorized", () => {
   it("rejects a settlement that delivered less than the exact output", async () => {
     const w = await runWorld();
     await ready(w);
-    w.orders.result = { state: "FILLED", sellAmount: "92200000", buyAmount: "1" };
+    w.orders.result = { state: "SETTLED", sellAmount: "92200000", buyAmount: "1" };
     const outcome = await w.runner.run(w.executionId);
     assert.equal(outcome.status, "PAYMENT_FAILED");
   });
@@ -335,7 +335,7 @@ describe("settlement is checked against what was authorized", () => {
   it("records the settled amounts on success", async () => {
     const w = await runWorld();
     await ready(w);
-    w.orders.result = { state: "FILLED", sellAmount: "91000000", buyAmount: EXACT_OUT };
+    w.orders.result = { state: "SETTLED", sellAmount: "91000000", buyAmount: EXACT_OUT };
     await w.runner.run(w.executionId);
     const final = await record(w);
     assert.equal(final?.settledInputAmount, "91000000");
@@ -817,7 +817,7 @@ describe("the order status as Textile really answers it (found on the TEST envir
       },
     });
     const { SecretValue } = await import("@kaada/domain");
-    const status = await provider.status({
+    const status = await provider.confirm({
       providerQuoteId: "rfq_abc",
       claimToken: new SecretValue("rfqc_x"),
     });
@@ -929,5 +929,44 @@ describe("the wallet record after wallet setup", () => {
     await ready(w);
     await w.runner.run(w.executionId);
     assert.equal([...w.w.auth.wallets.values()][0]?.deployment, "DEPLOYED");
+  });
+});
+
+/*
+ * Settlement for a provider that is not Textile-shaped.
+ *
+ * Both cases below used to be unreachable or fatal, and both run AFTER the swap has confirmed on chain,
+ * which is what made them dangerous: by that point the money has already moved, so getting them wrong
+ * meant either a stuck execution or a completed payment marked failed.
+ */
+describe("settlement does not assume the provider is an RFQ", () => {
+  it("completes when the provider issued no claim token", async () => {
+    const w = await runWorld();
+    await ready(w);
+    // What an AMM's attempt looks like: a quote, no reserved order, no claim token.
+    const attempt = w.firm.attempts[0];
+    assert.ok(attempt);
+    delete attempt.claimSecretId;
+    w.orders.notifiesProvider = false;
+
+    const outcome = await w.runner.run(w.executionId);
+    // Previously this throw-on-missing-secret left the record wedged in SETTLING for ever.
+    assert.equal(outcome.status, "PAYMENT_SENT");
+    assert.equal((await record(w))?.status, "COMPLETED");
+    assert.equal(w.orders.submits.length, 0, "a provider with no order is not notified");
+    assert.equal(w.orders.statuses, 1, "it is still asked how the swap settled");
+  });
+
+  it("keeps reconciling, rather than failing a paid-out payment, when no confirmer is wired", async () => {
+    // No confirmer at all for the executed quote's provider: a wiring gap, not a payment failure.
+    const w = await runWorld({ confirmers: [] });
+    await ready(w);
+
+    const outcome = await w.runner.run(w.executionId);
+    assert.equal(outcome.status, "PAYMENT_PENDING");
+    const after = await record(w);
+    assert.equal(after?.status, "SETTLING", "never FAILED: the swap is already on chain");
+    assert.equal(after?.failureCode, undefined);
+    assert.ok(after?.lastReconciledAt, "it stays under reconciliation");
   });
 });

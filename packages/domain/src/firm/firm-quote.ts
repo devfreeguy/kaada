@@ -80,8 +80,16 @@ export type FirmQuoteProviderResult =
       status: "QUOTED";
       quote: Omit<FirmQuote, "id">;
       transactions: UnsignedTransactions;
-      /** Returned once by the provider; must be encrypted before it is stored. */
-      claimToken: SecretValue;
+      /**
+       * Returned once by an RFQ provider as proof of ownership of a reserved quote; must be encrypted
+       * before it is stored.
+       *
+       * OPTIONAL, because it is a trait of the provider rather than of firm quoting. An RFQ reserves a
+       * price and hands back a token to claim it later. An AMM reserves nothing: the price is a reading
+       * of a pool, the protection is the slippage bound written into the calldata, and there is no order
+       * to claim. Such a provider returns none, and nothing downstream may require one.
+       */
+      claimToken?: SecretValue;
     }
   | {
       status: "FAILED";
@@ -93,9 +101,58 @@ export type FirmQuoteProviderResult =
 
 /** The firm-quote capability of a pricing provider. Separate from indicative pricing on purpose. */
 export interface FirmQuoteProvider {
+  /** The provider slug, matching its Provider row and its capability rows: "textile", "uniswap". */
   readonly id: string;
   requestFirm(request: FirmQuoteRequest): Promise<FirmQuoteProviderResult>;
+  /**
+   * Whether this provider issues a claim token with a firm quote. Declared rather than inferred, so a
+   * provider that SHOULD have returned one and did not is a fault instead of a silent omission.
+   */
+  readonly issuesClaimToken: boolean;
+  /**
+   * The most firm quotes Kaada may hold at this provider at once. `null` means there is no limit.
+   *
+   * A provider trait, not one configured figure for everybody, and REQUIRED rather than optional so
+   * every provider has to decide. An RFQ reserves funds against a slot and publishes a cap (Textile's
+   * is 4), so exceeding it earns a 429 and counting locally avoids one. An AMM reserves nothing: no
+   * slot is held and no cap exists, and applying the RFQ's number to it would refuse a fifth quote
+   * within the deadline window for a capacity limit the provider does not have.
+   */
+  readonly maxOutstanding: number | null;
 }
+
+/**
+ * Which firm-quote provider serves a provider slug. The same shape as FxProviderDirectory, and for the
+ * same reason: the route decides the provider, so execution must look it up rather than assume it.
+ */
+export interface FirmQuoteProviderRegistry {
+  get(providerSlug: string): FirmQuoteProvider | undefined;
+  /** Registered slugs, for diagnostics and for a startup check that the seeded providers are wired. */
+  slugs(): string[];
+}
+
+export function createFirmQuoteProviderRegistry(
+  providers: readonly FirmQuoteProvider[],
+): FirmQuoteProviderRegistry {
+  const bySlug = new Map(providers.map((provider) => [provider.id, provider]));
+  if (bySlug.size !== providers.length) {
+    throw new Error("two firm-quote providers registered under the same slug");
+  }
+  return {
+    get: (providerSlug) => bySlug.get(providerSlug),
+    slugs: () => [...bySlug.keys()].sort(),
+  };
+}
+
+/**
+ * The encryption context (AAD) binding a stored claim token to its provider and its own record.
+ *
+ * Provider-derived rather than a literal, so a second provider cannot reuse the first one's context.
+ * For "textile" it returns exactly the string used before this existed, so every already-stored Textile
+ * token still decrypts: this is deliberately not a rename.
+ */
+export const claimTokenContext = (providerSlug: string, secretId: string): string =>
+  `${providerSlug}-claim-token:${secretId}`;
 
 /** The exact proposed financial operation, before any signing. Contains no secret of any kind. */
 export interface FirmExecutionCandidate extends ExecutionCandidate {

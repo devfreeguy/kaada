@@ -45,6 +45,11 @@ export function createProviderRepository(db: Db): ProviderRepository {
       return row ? toProvider(row) : null;
     },
 
+    async findById(id) {
+      const row = await db.provider.findUnique({ where: { id } });
+      return row ? toProvider(row) : null;
+    },
+
     async listActive() {
       const rows = await db.provider.findMany({
         where: { isActive: true },

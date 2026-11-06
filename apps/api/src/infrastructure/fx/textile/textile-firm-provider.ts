@@ -7,10 +7,15 @@ import { TextileClientError } from "./client.js";
 import type { TextileClient } from "./client.js";
 import type { FirmResponse } from "./schemas.js";
 
+/** Textile allows 4 outstanding firm RFQs per key (its documented limit). */
+export const TEXTILE_MAX_OUTSTANDING_RFQS = 4;
+
 export interface TextileFirmProviderOptions {
   client: Pick<TextileClient, "requestFirm">;
   /** Textile documents ~70 s for a firm request and recommends a 75 s client timeout. */
   timeoutMs: number;
+  /** Lower than Textile's own limit only to exercise the capacity logic in a test. Defaults to Textile's limit. */
+  maxOutstanding?: number;
   log?: AgentLog;
 }
 
@@ -26,10 +31,15 @@ const lower = (value: string) => value.toLowerCase();
  */
 export class TextileFirmQuoteProvider implements FirmQuoteProvider {
   readonly id = "textile";
+  /** An RFQ reserves the price and hands back a token proving ownership of the reservation. */
+  readonly issuesClaimToken = true;
+  /** Kaada counts its own held slots against Textile's limit, to avoid avoidable 429s. */
+  readonly maxOutstanding: number;
   private readonly log: AgentLog;
 
   constructor(private readonly options: TextileFirmProviderOptions) {
     this.log = options.log ?? noopLog;
+    this.maxOutstanding = options.maxOutstanding ?? TEXTILE_MAX_OUTSTANDING_RFQS;
   }
 
   async requestFirm(request: FirmQuoteRequest): Promise<FirmQuoteProviderResult> {

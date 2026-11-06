@@ -13,10 +13,11 @@ import { createDatabase, createRepositories, withTransaction } from "@kaada/data
 import type { Database, Repositories } from "@kaada/database";
 import {
   CELO_CHAIN_ID,
-  SecretValue,
   createAssetRegistry,
+  createFirmQuoteProviderRegistry,
   createId,
   createMoney,
+  SecretValue,
 } from "@kaada/domain";
 import type { FirmQuoteProvider, FirmQuoteRequest, Wallet } from "@kaada/domain";
 
@@ -243,6 +244,8 @@ describe("firm quotes and execution plans on the real database", { skip }, () =>
   /** A provider that returns a plausible firm quote and counts its calls. No network. */
   class FakeProvider implements FirmQuoteProvider {
     readonly id = "textile";
+    readonly issuesClaimToken = true;
+    readonly maxOutstanding = 4;
     calls = 0;
     constructor(private readonly takerPaysAtoms = "92200000") {}
 
@@ -295,10 +298,9 @@ describe("firm quotes and execution plans on the real database", { skip }, () =>
     };
     const firmQuotes = new FirmQuoteService({
       unitOfWork: uow,
-      provider,
+      providers: createFirmQuoteProviderRegistry([provider]),
       cipher: new AesGcmSecretCipher([{ version: 1, key: KEY }]),
       chain,
-      maxOutstanding: 4,
       requestTimeoutMs: 75_000,
     });
     const service = new ExecutionPreparationService({

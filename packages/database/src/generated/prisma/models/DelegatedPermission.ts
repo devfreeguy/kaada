@@ -49,6 +49,7 @@ export type DelegatedPermissionMinAggregateOutputType = {
   perTransactionAssetId: string | null
   cumulativeAmount: string | null
   cumulativeAssetId: string | null
+  scopeKey: string | null
   validFrom: Date | null
   expiresAt: Date | null
   revokedAt: Date | null
@@ -72,6 +73,7 @@ export type DelegatedPermissionMaxAggregateOutputType = {
   perTransactionAssetId: string | null
   cumulativeAmount: string | null
   cumulativeAssetId: string | null
+  scopeKey: string | null
   validFrom: Date | null
   expiresAt: Date | null
   revokedAt: Date | null
@@ -99,6 +101,7 @@ export type DelegatedPermissionCountAggregateOutputType = {
   cumulativeAmount: number
   cumulativeAssetId: number
   enforcement: number
+  scopeKey: number
   validFrom: number
   expiresAt: number
   revokedAt: number
@@ -132,6 +135,7 @@ export type DelegatedPermissionMinAggregateInputType = {
   perTransactionAssetId?: true
   cumulativeAmount?: true
   cumulativeAssetId?: true
+  scopeKey?: true
   validFrom?: true
   expiresAt?: true
   revokedAt?: true
@@ -155,6 +159,7 @@ export type DelegatedPermissionMaxAggregateInputType = {
   perTransactionAssetId?: true
   cumulativeAmount?: true
   cumulativeAssetId?: true
+  scopeKey?: true
   validFrom?: true
   expiresAt?: true
   revokedAt?: true
@@ -182,6 +187,7 @@ export type DelegatedPermissionCountAggregateInputType = {
   cumulativeAmount?: true
   cumulativeAssetId?: true
   enforcement?: true
+  scopeKey?: true
   validFrom?: true
   expiresAt?: true
   revokedAt?: true
@@ -296,6 +302,7 @@ export type DelegatedPermissionGroupByOutputType = {
   cumulativeAmount: string | null
   cumulativeAssetId: string | null
   enforcement: runtime.JsonValue
+  scopeKey: string | null
   validFrom: Date
   expiresAt: Date
   revokedAt: Date | null
@@ -346,6 +353,7 @@ export type DelegatedPermissionWhereInput = {
   cumulativeAmount?: Prisma.StringNullableFilter<"DelegatedPermission"> | string | null
   cumulativeAssetId?: Prisma.UuidNullableFilter<"DelegatedPermission"> | string | null
   enforcement?: Prisma.JsonFilter<"DelegatedPermission">
+  scopeKey?: Prisma.StringNullableFilter<"DelegatedPermission"> | string | null
   validFrom?: Prisma.DateTimeFilter<"DelegatedPermission"> | Date | string
   expiresAt?: Prisma.DateTimeFilter<"DelegatedPermission"> | Date | string
   revokedAt?: Prisma.DateTimeNullableFilter<"DelegatedPermission"> | Date | string | null
@@ -379,6 +387,7 @@ export type DelegatedPermissionOrderByWithRelationInput = {
   cumulativeAmount?: Prisma.SortOrderInput | Prisma.SortOrder
   cumulativeAssetId?: Prisma.SortOrderInput | Prisma.SortOrder
   enforcement?: Prisma.SortOrder
+  scopeKey?: Prisma.SortOrderInput | Prisma.SortOrder
   validFrom?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   revokedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -415,6 +424,7 @@ export type DelegatedPermissionWhereUniqueInput = Prisma.AtLeast<{
   cumulativeAmount?: Prisma.StringNullableFilter<"DelegatedPermission"> | string | null
   cumulativeAssetId?: Prisma.UuidNullableFilter<"DelegatedPermission"> | string | null
   enforcement?: Prisma.JsonFilter<"DelegatedPermission">
+  scopeKey?: Prisma.StringNullableFilter<"DelegatedPermission"> | string | null
   validFrom?: Prisma.DateTimeFilter<"DelegatedPermission"> | Date | string
   expiresAt?: Prisma.DateTimeFilter<"DelegatedPermission"> | Date | string
   revokedAt?: Prisma.DateTimeNullableFilter<"DelegatedPermission"> | Date | string | null
@@ -448,6 +458,7 @@ export type DelegatedPermissionOrderByWithAggregationInput = {
   cumulativeAmount?: Prisma.SortOrderInput | Prisma.SortOrder
   cumulativeAssetId?: Prisma.SortOrderInput | Prisma.SortOrder
   enforcement?: Prisma.SortOrder
+  scopeKey?: Prisma.SortOrderInput | Prisma.SortOrder
   validFrom?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   revokedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -483,6 +494,7 @@ export type DelegatedPermissionScalarWhereWithAggregatesInput = {
   cumulativeAmount?: Prisma.StringNullableWithAggregatesFilter<"DelegatedPermission"> | string | null
   cumulativeAssetId?: Prisma.UuidNullableWithAggregatesFilter<"DelegatedPermission"> | string | null
   enforcement?: Prisma.JsonWithAggregatesFilter<"DelegatedPermission">
+  scopeKey?: Prisma.StringNullableWithAggregatesFilter<"DelegatedPermission"> | string | null
   validFrom?: Prisma.DateTimeWithAggregatesFilter<"DelegatedPermission"> | Date | string
   expiresAt?: Prisma.DateTimeWithAggregatesFilter<"DelegatedPermission"> | Date | string
   revokedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"DelegatedPermission"> | Date | string | null
@@ -506,6 +518,7 @@ export type DelegatedPermissionCreateInput = {
   perTransactionAmount: string
   cumulativeAmount?: string | null
   enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: string | null
   validFrom: Date | string
   expiresAt: Date | string
   revokedAt?: Date | string | null
@@ -537,6 +550,7 @@ export type DelegatedPermissionUncheckedCreateInput = {
   cumulativeAmount?: string | null
   cumulativeAssetId?: string | null
   enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: string | null
   validFrom: Date | string
   expiresAt: Date | string
   revokedAt?: Date | string | null
@@ -560,6 +574,7 @@ export type DelegatedPermissionUpdateInput = {
   perTransactionAmount?: Prisma.StringFieldUpdateOperationsInput | string
   cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -591,6 +606,7 @@ export type DelegatedPermissionUncheckedUpdateInput = {
   cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cumulativeAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -618,6 +634,7 @@ export type DelegatedPermissionCreateManyInput = {
   cumulativeAmount?: string | null
   cumulativeAssetId?: string | null
   enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: string | null
   validFrom: Date | string
   expiresAt: Date | string
   revokedAt?: Date | string | null
@@ -641,6 +658,7 @@ export type DelegatedPermissionUpdateManyMutationInput = {
   perTransactionAmount?: Prisma.StringFieldUpdateOperationsInput | string
   cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -666,6 +684,7 @@ export type DelegatedPermissionUncheckedUpdateManyInput = {
   cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cumulativeAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -703,6 +722,7 @@ export type DelegatedPermissionCountOrderByAggregateInput = {
   cumulativeAmount?: Prisma.SortOrder
   cumulativeAssetId?: Prisma.SortOrder
   enforcement?: Prisma.SortOrder
+  scopeKey?: Prisma.SortOrder
   validFrom?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   revokedAt?: Prisma.SortOrder
@@ -730,6 +750,7 @@ export type DelegatedPermissionMaxOrderByAggregateInput = {
   perTransactionAssetId?: Prisma.SortOrder
   cumulativeAmount?: Prisma.SortOrder
   cumulativeAssetId?: Prisma.SortOrder
+  scopeKey?: Prisma.SortOrder
   validFrom?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   revokedAt?: Prisma.SortOrder
@@ -753,6 +774,7 @@ export type DelegatedPermissionMinOrderByAggregateInput = {
   perTransactionAssetId?: Prisma.SortOrder
   cumulativeAmount?: Prisma.SortOrder
   cumulativeAssetId?: Prisma.SortOrder
+  scopeKey?: Prisma.SortOrder
   validFrom?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   revokedAt?: Prisma.SortOrder
@@ -1063,6 +1085,7 @@ export type DelegatedPermissionCreateWithoutUserInput = {
   perTransactionAmount: string
   cumulativeAmount?: string | null
   enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: string | null
   validFrom: Date | string
   expiresAt: Date | string
   revokedAt?: Date | string | null
@@ -1092,6 +1115,7 @@ export type DelegatedPermissionUncheckedCreateWithoutUserInput = {
   cumulativeAmount?: string | null
   cumulativeAssetId?: string | null
   enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: string | null
   validFrom: Date | string
   expiresAt: Date | string
   revokedAt?: Date | string | null
@@ -1148,6 +1172,7 @@ export type DelegatedPermissionScalarWhereInput = {
   cumulativeAmount?: Prisma.StringNullableFilter<"DelegatedPermission"> | string | null
   cumulativeAssetId?: Prisma.UuidNullableFilter<"DelegatedPermission"> | string | null
   enforcement?: Prisma.JsonFilter<"DelegatedPermission">
+  scopeKey?: Prisma.StringNullableFilter<"DelegatedPermission"> | string | null
   validFrom?: Prisma.DateTimeFilter<"DelegatedPermission"> | Date | string
   expiresAt?: Prisma.DateTimeFilter<"DelegatedPermission"> | Date | string
   revokedAt?: Prisma.DateTimeNullableFilter<"DelegatedPermission"> | Date | string | null
@@ -1171,6 +1196,7 @@ export type DelegatedPermissionCreateWithoutWalletInput = {
   perTransactionAmount: string
   cumulativeAmount?: string | null
   enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: string | null
   validFrom: Date | string
   expiresAt: Date | string
   revokedAt?: Date | string | null
@@ -1200,6 +1226,7 @@ export type DelegatedPermissionUncheckedCreateWithoutWalletInput = {
   cumulativeAmount?: string | null
   cumulativeAssetId?: string | null
   enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: string | null
   validFrom: Date | string
   expiresAt: Date | string
   revokedAt?: Date | string | null
@@ -1249,6 +1276,7 @@ export type DelegatedPermissionCreateWithoutSessionKeySecretInput = {
   perTransactionAmount: string
   cumulativeAmount?: string | null
   enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: string | null
   validFrom: Date | string
   expiresAt: Date | string
   revokedAt?: Date | string | null
@@ -1279,6 +1307,7 @@ export type DelegatedPermissionUncheckedCreateWithoutSessionKeySecretInput = {
   cumulativeAmount?: string | null
   cumulativeAssetId?: string | null
   enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: string | null
   validFrom: Date | string
   expiresAt: Date | string
   revokedAt?: Date | string | null
@@ -1311,6 +1340,7 @@ export type DelegatedPermissionCreateWithoutApprovalSecretInput = {
   perTransactionAmount: string
   cumulativeAmount?: string | null
   enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: string | null
   validFrom: Date | string
   expiresAt: Date | string
   revokedAt?: Date | string | null
@@ -1341,6 +1371,7 @@ export type DelegatedPermissionUncheckedCreateWithoutApprovalSecretInput = {
   cumulativeAmount?: string | null
   cumulativeAssetId?: string | null
   enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: string | null
   validFrom: Date | string
   expiresAt: Date | string
   revokedAt?: Date | string | null
@@ -1405,6 +1436,7 @@ export type DelegatedPermissionCreateWithoutPerTransactionAssetInput = {
   perTransactionAmount: string
   cumulativeAmount?: string | null
   enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: string | null
   validFrom: Date | string
   expiresAt: Date | string
   revokedAt?: Date | string | null
@@ -1434,6 +1466,7 @@ export type DelegatedPermissionUncheckedCreateWithoutPerTransactionAssetInput = 
   cumulativeAmount?: string | null
   cumulativeAssetId?: string | null
   enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: string | null
   validFrom: Date | string
   expiresAt: Date | string
   revokedAt?: Date | string | null
@@ -1467,6 +1500,7 @@ export type DelegatedPermissionCreateWithoutCumulativeAssetInput = {
   perTransactionAmount: string
   cumulativeAmount?: string | null
   enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: string | null
   validFrom: Date | string
   expiresAt: Date | string
   revokedAt?: Date | string | null
@@ -1496,6 +1530,7 @@ export type DelegatedPermissionUncheckedCreateWithoutCumulativeAssetInput = {
   perTransactionAssetId: string
   cumulativeAmount?: string | null
   enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: string | null
   validFrom: Date | string
   expiresAt: Date | string
   revokedAt?: Date | string | null
@@ -1564,6 +1599,7 @@ export type DelegatedPermissionCreateManyUserInput = {
   cumulativeAmount?: string | null
   cumulativeAssetId?: string | null
   enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: string | null
   validFrom: Date | string
   expiresAt: Date | string
   revokedAt?: Date | string | null
@@ -1587,6 +1623,7 @@ export type DelegatedPermissionUpdateWithoutUserInput = {
   perTransactionAmount?: Prisma.StringFieldUpdateOperationsInput | string
   cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1616,6 +1653,7 @@ export type DelegatedPermissionUncheckedUpdateWithoutUserInput = {
   cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cumulativeAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1642,6 +1680,7 @@ export type DelegatedPermissionUncheckedUpdateManyWithoutUserInput = {
   cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cumulativeAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1668,6 +1707,7 @@ export type DelegatedPermissionCreateManyWalletInput = {
   cumulativeAmount?: string | null
   cumulativeAssetId?: string | null
   enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: string | null
   validFrom: Date | string
   expiresAt: Date | string
   revokedAt?: Date | string | null
@@ -1691,6 +1731,7 @@ export type DelegatedPermissionUpdateWithoutWalletInput = {
   perTransactionAmount?: Prisma.StringFieldUpdateOperationsInput | string
   cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1720,6 +1761,7 @@ export type DelegatedPermissionUncheckedUpdateWithoutWalletInput = {
   cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cumulativeAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1746,6 +1788,7 @@ export type DelegatedPermissionUncheckedUpdateManyWithoutWalletInput = {
   cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cumulativeAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1773,6 +1816,7 @@ export type DelegatedPermissionCreateManySessionKeySecretInput = {
   cumulativeAmount?: string | null
   cumulativeAssetId?: string | null
   enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: string | null
   validFrom: Date | string
   expiresAt: Date | string
   revokedAt?: Date | string | null
@@ -1799,6 +1843,7 @@ export type DelegatedPermissionCreateManyApprovalSecretInput = {
   cumulativeAmount?: string | null
   cumulativeAssetId?: string | null
   enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: string | null
   validFrom: Date | string
   expiresAt: Date | string
   revokedAt?: Date | string | null
@@ -1821,6 +1866,7 @@ export type DelegatedPermissionUpdateWithoutSessionKeySecretInput = {
   perTransactionAmount?: Prisma.StringFieldUpdateOperationsInput | string
   cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1851,6 +1897,7 @@ export type DelegatedPermissionUncheckedUpdateWithoutSessionKeySecretInput = {
   cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cumulativeAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1877,6 +1924,7 @@ export type DelegatedPermissionUncheckedUpdateManyWithoutSessionKeySecretInput =
   cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cumulativeAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1899,6 +1947,7 @@ export type DelegatedPermissionUpdateWithoutApprovalSecretInput = {
   perTransactionAmount?: Prisma.StringFieldUpdateOperationsInput | string
   cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1929,6 +1978,7 @@ export type DelegatedPermissionUncheckedUpdateWithoutApprovalSecretInput = {
   cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cumulativeAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1955,6 +2005,7 @@ export type DelegatedPermissionUncheckedUpdateManyWithoutApprovalSecretInput = {
   cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cumulativeAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1980,6 +2031,7 @@ export type DelegatedPermissionCreateManyPerTransactionAssetInput = {
   cumulativeAmount?: string | null
   cumulativeAssetId?: string | null
   enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: string | null
   validFrom: Date | string
   expiresAt: Date | string
   revokedAt?: Date | string | null
@@ -2006,6 +2058,7 @@ export type DelegatedPermissionCreateManyCumulativeAssetInput = {
   perTransactionAssetId: string
   cumulativeAmount?: string | null
   enforcement: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: string | null
   validFrom: Date | string
   expiresAt: Date | string
   revokedAt?: Date | string | null
@@ -2029,6 +2082,7 @@ export type DelegatedPermissionUpdateWithoutPerTransactionAssetInput = {
   perTransactionAmount?: Prisma.StringFieldUpdateOperationsInput | string
   cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2058,6 +2112,7 @@ export type DelegatedPermissionUncheckedUpdateWithoutPerTransactionAssetInput = 
   cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cumulativeAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2084,6 +2139,7 @@ export type DelegatedPermissionUncheckedUpdateManyWithoutPerTransactionAssetInpu
   cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cumulativeAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2107,6 +2163,7 @@ export type DelegatedPermissionUpdateWithoutCumulativeAssetInput = {
   perTransactionAmount?: Prisma.StringFieldUpdateOperationsInput | string
   cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2136,6 +2193,7 @@ export type DelegatedPermissionUncheckedUpdateWithoutCumulativeAssetInput = {
   perTransactionAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2162,6 +2220,7 @@ export type DelegatedPermissionUncheckedUpdateManyWithoutCumulativeAssetInput = 
   perTransactionAssetId?: Prisma.StringFieldUpdateOperationsInput | string
   cumulativeAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enforcement?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  scopeKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2191,6 +2250,7 @@ export type DelegatedPermissionSelect<ExtArgs extends runtime.Types.Extensions.I
   cumulativeAmount?: boolean
   cumulativeAssetId?: boolean
   enforcement?: boolean
+  scopeKey?: boolean
   validFrom?: boolean
   expiresAt?: boolean
   revokedAt?: boolean
@@ -2224,6 +2284,7 @@ export type DelegatedPermissionSelectCreateManyAndReturn<ExtArgs extends runtime
   cumulativeAmount?: boolean
   cumulativeAssetId?: boolean
   enforcement?: boolean
+  scopeKey?: boolean
   validFrom?: boolean
   expiresAt?: boolean
   revokedAt?: boolean
@@ -2257,6 +2318,7 @@ export type DelegatedPermissionSelectUpdateManyAndReturn<ExtArgs extends runtime
   cumulativeAmount?: boolean
   cumulativeAssetId?: boolean
   enforcement?: boolean
+  scopeKey?: boolean
   validFrom?: boolean
   expiresAt?: boolean
   revokedAt?: boolean
@@ -2290,6 +2352,7 @@ export type DelegatedPermissionSelectScalar = {
   cumulativeAmount?: boolean
   cumulativeAssetId?: boolean
   enforcement?: boolean
+  scopeKey?: boolean
   validFrom?: boolean
   expiresAt?: boolean
   revokedAt?: boolean
@@ -2301,7 +2364,7 @@ export type DelegatedPermissionSelectScalar = {
   createdAt?: boolean
 }
 
-export type DelegatedPermissionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "walletId" | "provider" | "providerPermissionId" | "chainId" | "status" | "allowedOperations" | "allowedContracts" | "allowedAssetIds" | "perTransactionAmount" | "perTransactionAssetId" | "cumulativeAmount" | "cumulativeAssetId" | "enforcement" | "validFrom" | "expiresAt" | "revokedAt" | "revocationReason" | "sessionKeyAddress" | "sessionKeySecretId" | "approvalSecretId" | "installedAt" | "createdAt", ExtArgs["result"]["delegatedPermission"]>
+export type DelegatedPermissionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "walletId" | "provider" | "providerPermissionId" | "chainId" | "status" | "allowedOperations" | "allowedContracts" | "allowedAssetIds" | "perTransactionAmount" | "perTransactionAssetId" | "cumulativeAmount" | "cumulativeAssetId" | "enforcement" | "scopeKey" | "validFrom" | "expiresAt" | "revokedAt" | "revocationReason" | "sessionKeyAddress" | "sessionKeySecretId" | "approvalSecretId" | "installedAt" | "createdAt", ExtArgs["result"]["delegatedPermission"]>
 export type DelegatedPermissionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
@@ -2353,6 +2416,11 @@ export type $DelegatedPermissionPayload<ExtArgs extends runtime.Types.Extensions
     cumulativeAmount: string | null
     cumulativeAssetId: string | null
     enforcement: runtime.JsonValue
+    /**
+     * The on-chain-pinned scope this permission was installed with (recipient, ceilings, swap target), as one canonical
+     * string. A later payment may reuse the permission only when its own scope has the identical key. NULL means never reused.
+     */
+    scopeKey: string | null
     validFrom: Date
     expiresAt: Date
     revokedAt: Date | null
@@ -2815,6 +2883,7 @@ export interface DelegatedPermissionFieldRefs {
   readonly cumulativeAmount: Prisma.FieldRef<"DelegatedPermission", 'String'>
   readonly cumulativeAssetId: Prisma.FieldRef<"DelegatedPermission", 'String'>
   readonly enforcement: Prisma.FieldRef<"DelegatedPermission", 'Json'>
+  readonly scopeKey: Prisma.FieldRef<"DelegatedPermission", 'String'>
   readonly validFrom: Prisma.FieldRef<"DelegatedPermission", 'DateTime'>
   readonly expiresAt: Prisma.FieldRef<"DelegatedPermission", 'DateTime'>
   readonly revokedAt: Prisma.FieldRef<"DelegatedPermission", 'DateTime'>

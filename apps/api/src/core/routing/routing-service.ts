@@ -220,7 +220,10 @@ export class RoutingService {
       ...(result.failures.length > 0 && {
         failed: result.failures
           .slice(0, 3)
-          .map((failure) => `${failure.providerId}:${failure.inputAssetId}>${failure.outputAssetId}:${failure.kind}`)
+          .map(
+            (failure) =>
+              `${failure.providerId}:${failure.inputAssetId}>${failure.outputAssetId}:${failure.kind}`,
+          )
           .join(" | "),
         failureReason: result.failures[0]?.reason,
       }),
@@ -666,7 +669,12 @@ export class RoutingService {
     if (request.purpose === "QUOTE") {
       const response: QuoteResultResponse = {
         type: "QUOTE_RESULT",
-        text: await this.quoteText(request, input, output, fees, { mock, indicative, fine, feeText }),
+        text: await this.quoteText(request, input, output, fees, {
+          mock,
+          indicative,
+          fine,
+          feeText,
+        }),
         intentId: request.intentId,
         revision: request.intentRevision,
         routeId: route.id,
@@ -702,15 +710,21 @@ export class RoutingService {
       });
       const maximum = await this.view(max, assets);
       const minimum = await this.view(min, assets);
+      // Converting your own money between your own currencies needs one tap; paying someone else needs your PIN.
+      const confirmLine =
+        request.operation === "CONVERT"
+          ? "Tap Confirm to convert."
+          : "Confirm with your PIN to authorize this payment.";
       const required: AuthorizationRequiredResponse = {
         type: "AUTHORIZATION_REQUIRED",
         text: exactInput
-          ? `You spend exactly ${input.display}; ${who} receives about ${output.display} (at least ${minimum.display})${fine}. Fees: ${feeText}. Confirm with your PIN to authorize this payment. The final price is confirmed just before it is sent.`
-          : `${who} receives exactly ${output.display}; you spend about ${input.display} (at most ${maximum.display})${fine}. Fees: ${feeText}. Confirm with your PIN to authorize this payment. The final price is confirmed just before it is sent.`,
+          ? `You spend exactly ${input.display}; ${who} receives about ${output.display} (at least ${minimum.display})${fine}. Fees: ${feeText}. ${confirmLine} The final price is confirmed just before it is sent.`
+          : `${who} receives exactly ${output.display}; you spend about ${input.display} (at most ${maximum.display})${fine}. Fees: ${feeText}. ${confirmLine} The final price is confirmed just before it is sent.`,
         intentId: request.intentId,
         revision: request.intentRevision,
         routeId: route.id,
         authorizationSessionId: session.sessionId,
+        operation: request.operation === "CONVERT" ? "CONVERT" : "SEND",
         expiresAt: session.expiresAt.toISOString(),
         summary: {
           amountMode: request.amountMode,

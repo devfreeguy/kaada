@@ -5,7 +5,7 @@ import { describe, it } from "node:test";
 
 import { UnauthorizedException } from "@nestjs/common";
 import type { Repositories } from "@kaada/database";
-import { createMoney, SecretValue } from "@kaada/domain";
+import { createMoney, permissionScopeKey, SecretValue } from "@kaada/domain";
 import type { DelegatedPermission } from "@kaada/domain";
 
 import { RunTracker } from "../src/core/execution/run-tracker.js";
@@ -629,7 +629,7 @@ describe("account, permission and allowance requirements", () => {
     };
   }
   const planOf = (f: FirmWorld): PlanView => {
-    const plan = f.firm.plans[0]?.plan;
+    const plan = f.firm.plans.at(-1)?.plan;
     if (!plan) throw new Error("no plan was stored");
     return plan as unknown as PlanView;
   };
@@ -679,43 +679,62 @@ describe("account, permission and allowance requirements", () => {
     assert.ok(window > 0 && window <= 15 * 60_000);
   });
 
+  /**
+   * Plans once with nothing installed to learn the scope the payment needs, then installs a permission carrying that
+   * scope's own key (a real installation records it) and plans again. Negative cases change ONE other field, so each
+   * is refused for exactly that reason and not for lacking a key.
+   */
+  async function plannedWithInstalled(
+    over: (f: FirmWorld) => Partial<DelegatedPermission> = () => ({}),
+  ) {
+    const f = await exactOutput();
+    f.chain.deployed = true;
+    await f.service.prepare(f.authorization.id);
+    const scopeKey = permissionScopeKey(
+      planOf(f)["permissionRequirement"].scope as unknown as Parameters<
+        typeof permissionScopeKey
+      >[0],
+    );
+    // A READY plan is reused, so forget it: the second planning must see the installed permission.
+    f.firm.plans.length = 0;
+    f.transport.enqueue(outReply(f, {}));
+    f.permissions.push(permission(f, { scopeKey, ...over(f) }));
+    await f.service.prepare(f.authorization.id);
+    return f;
+  }
+
   it("recognizes an installed ACTIVE permission, but never a PENDING one", async () => {
-    const installed = await exactOutput();
-    installed.chain.deployed = true;
-    installed.permissions.push(permission(installed));
-    await installed.service.prepare(installed.authorization.id);
+    const installed = await plannedWithInstalled();
     assert.equal(planOf(installed)["permissionRequirement"].state, "SATISFIED");
     assert.equal(planOf(installed)["accountRequirements"].rootSignatureRequired, false);
 
-    const pending = await exactOutput();
-    pending.chain.deployed = true;
-    pending.permissions.push(
-      permission(pending, { status: "PENDING", providerPermissionId: undefined as never }),
-    );
-    await pending.service.prepare(pending.authorization.id);
+    const pending = await plannedWithInstalled(() => ({
+      status: "PENDING",
+      providerPermissionId: undefined as never,
+    }));
     assert.equal(planOf(pending)["permissionRequirement"].state, "INSTALLATION_REQUIRED");
 
-    const small = await exactOutput();
-    small.chain.deployed = true;
-    small.permissions.push(
-      permission(small, {
-        perTransactionLimit: createMoney("1000000", small.w.r.h.assets.USDT.id),
-      }),
-    );
-    await small.service.prepare(small.authorization.id);
+    const small = await plannedWithInstalled((f) => ({
+      perTransactionLimit: createMoney("1000000", f.w.r.h.assets.USDT.id),
+    }));
     assert.equal(
       planOf(small)["permissionRequirement"].state,
       "INSTALLATION_REQUIRED",
       "too small",
     );
 
-    const expired = await exactOutput();
-    expired.chain.deployed = true;
-    expired.permissions.push(
-      permission(expired, { expiresAt: new Date(expired.now().getTime() + 1_000) }),
-    );
-    await expired.service.prepare(expired.authorization.id);
+    const expired = await plannedWithInstalled((f) => ({
+      expiresAt: new Date(f.now().getTime() + 1_000),
+    }));
     assert.equal(planOf(expired)["permissionRequirement"].state, "INSTALLATION_REQUIRED");
+  });
+
+  it("never reuses a permission whose pinned scope differs, or one recorded without a key", async () => {
+    const otherScope = await plannedWithInstalled(() => ({ scopeKey: "some-other-scope" }));
+    assert.equal(planOf(otherScope)["permissionRequirement"].state, "INSTALLATION_REQUIRED");
+
+    const legacy = await plannedWithInstalled(() => ({ scopeKey: undefined as never }));
+    assert.equal(planOf(legacy)["permissionRequirement"].state, "INSTALLATION_REQUIRED");
   });
 
   it("reads the allowance and decides whether an approval is needed", async () => {

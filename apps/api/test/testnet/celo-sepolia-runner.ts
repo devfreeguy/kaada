@@ -25,15 +25,17 @@ import {
   KaadaError,
   SecretValue,
   createAssetRegistry,
+  createFirmQuoteProviderRegistry,
   createId,
   createMoney,
+  createSettlementConfirmerRegistry,
 } from "@kaada/domain";
 import type {
   AccountCall,
   FirmQuoteProvider,
   FirmQuoteRequest,
   KernelExecutionPort,
-  ProviderOrderPort,
+  SettlementConfirmer,
   Wallet,
 } from "@kaada/domain";
 
@@ -345,6 +347,8 @@ async function main(): Promise<void> {
 
   class FakeFirmProvider implements FirmQuoteProvider {
     readonly id = "textile";
+    readonly issuesClaimToken = true;
+    readonly maxOutstanding = 4;
     calls = 0;
     requestFirm(request: FirmQuoteRequest) {
       this.calls += 1;
@@ -387,15 +391,16 @@ async function main(): Promise<void> {
     }
   }
 
-  class FakeOrders implements ProviderOrderPort {
+  class FakeOrders implements SettlementConfirmer {
     readonly id = "textile";
+    readonly notifiesProvider = true;
     submits = 0;
-    submit() {
+    notify() {
       this.submits += 1;
       return Promise.resolve({ state: "SUBMITTED" as const });
     }
-    status() {
-      return Promise.resolve({ state: "FILLED" as const });
+    confirm() {
+      return Promise.resolve({ state: "SETTLED" as const });
     }
   }
 
@@ -436,10 +441,9 @@ async function main(): Promise<void> {
     const provider = new FakeFirmProvider();
     const firmQuotes = new FirmQuoteService({
       unitOfWork: uow,
-      provider,
+      providers: createFirmQuoteProviderRegistry([provider]),
       cipher,
       chain,
-      maxOutstanding: 4,
       requestTimeoutMs: 75_000,
     });
     const preparation = new ExecutionPreparationService({
@@ -479,6 +483,7 @@ async function main(): Promise<void> {
             allowedContracts: request.allowedContracts,
             allowedAssetIds: request.allowedAssetIds,
             perTransactionLimit: request.perTransactionLimit,
+            ...(request.scopeKey !== undefined && { scopeKey: request.scopeKey }),
             enforcement: {
               contracts: "ONCHAIN",
               operations: "ONCHAIN",
@@ -509,7 +514,7 @@ async function main(): Promise<void> {
       preparation,
       wallets,
       kernel,
-      orders,
+      settlement: createSettlementConfirmerRegistry([orders]),
       cipher,
       chain,
       signer,

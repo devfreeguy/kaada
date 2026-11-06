@@ -27,17 +27,19 @@ export type {
   NewFirmQuoteAttempt,
   QuotedFields,
 } from "./attempt.js";
+export { claimTokenContext, createFirmQuoteProviderRegistry } from "./firm-quote.js";
 export type {
   FirmExecutionCandidate,
   FirmQuote,
   FirmQuoteFailureCode,
   FirmQuoteProvider,
+  FirmQuoteProviderRegistry,
   FirmQuoteProviderResult,
   FirmQuoteRequest,
   UnsignedTransaction,
   UnsignedTransactions,
 } from "./firm-quote.js";
-export { PLAN_BLOCKERS } from "./plan.js";
+export { PLAN_BLOCKERS, permissionScopeKey, standingLimitAmount } from "./plan.js";
 export type {
   AccountRequirements,
   ExecutionPlan,
@@ -46,11 +48,13 @@ export type {
   PayoutRequirement,
   PermissionRequirement,
   PermissionScope,
+  StandingConversionPolicy,
   PlanBlocker,
   PlanTransactions,
   SignerKind,
   SwapRequirement,
   TokenApprovalRequirement,
+  SetupRequirement,
 } from "./plan.js";
 export { IN_FLIGHT_EXECUTION_STATUSES, TERMINAL_EXECUTION_STATUSES } from "./plan-record.js";
 export type {
@@ -62,3 +66,20 @@ export type {
   PlanRecordStatus,
 } from "./plan-record.js";
 export type { AllowanceReader } from "./readers.js";
+export {
+  PERMIT2,
+  PERMIT2_APPROVE_SELECTOR,
+  PERMIT2_MAX_AMOUNT,
+  PERMIT2_MAX_EXPIRATION,
+  TRUSTED_PERMIT2_SPENDERS,
+  encodePermit2Approve,
+  isTrustedPermit2Spender,
+  permit2AllowanceCovers,
+  permit2GrantAmount,
+} from "./permit2.js";
+export type {
+  Permit2Allowance,
+  Permit2AllowanceReader,
+  Permit2ApproveInput,
+  Permit2GrantPolicy,
+} from "./permit2.js";

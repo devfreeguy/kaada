@@ -6,12 +6,18 @@ import {
   attributionSuffix,
   createViemAllowanceReader,
   createViemDeploymentChecker,
+  createViemPermit2AllowanceReader,
   createZeroDevKernelAdapter,
 } from "@kaada/blockchain";
-import { isKaadaError } from "@kaada/domain";
+import {
+  createFirmQuoteProviderRegistry,
+  createSettlementConfirmerRegistry,
+  isKaadaError,
+} from "@kaada/domain";
 import type { KernelExecutionPort, RootValidatorDeployer } from "@kaada/domain";
 import { createRepositories, withTransaction } from "@kaada/database";
 import type { Database, Repositories } from "@kaada/database";
+import { SETTINGS } from "@kaada/config";
 import type { AppConfig } from "@kaada/config";
 
 import {
@@ -41,6 +47,12 @@ import {
   TextileOrderProvider,
   createFetchTransport,
 } from "../infrastructure/fx/textile/index.js";
+import {
+  UniswapClient,
+  UniswapFirmQuoteProvider,
+  UniswapSettlementConfirmer,
+  createUniswapFetchTransport,
+} from "../infrastructure/fx/uniswap/index.js";
 import { AesGcmSecretCipher } from "../infrastructure/security/aes-gcm-cipher.js";
 import type { RootAdapters, RootCredentialService } from "../core/roots/root-credentials.js";
 import { RootsModule } from "../roots/roots.module.js";
@@ -51,11 +63,14 @@ import {
 } from "../roots/roots.tokens.js";
 import { WalletModule } from "../wallet/wallet.module.js";
 import { WALLET_BALANCE_SERVICE, WALLET_SERVICE } from "../wallet/wallet.tokens.js";
+import { ConversionService } from "../core/execution/conversion-service.js";
+import type { PlanPolicy } from "../core/execution/fresh-plan.js";
 import { ExecutionController } from "./execution.controller.js";
 import { RootPaymentController } from "./root-payment.controller.js";
 import { ExecutionReconciler } from "./execution-reconciler.js";
 import { RootActionController } from "./root-action.controller.js";
 import {
+  CONVERSION_SERVICE,
   EXECUTION_PREPARATION_SERVICE,
   EXECUTION_REPOSITORIES,
   EXECUTION_RUNNER,
@@ -65,6 +80,19 @@ import {
   ROOT_PAYMENT_SERVICE,
   RUN_TRACKER,
 } from "./execution.tokens.js";
+
+/**
+ * The sizes that shape a plan's permission and one-time grants. Built ONCE and handed to preparation, the runner and the
+ * signer alike: a plan rebuilt without them describes a different permission from the one that was installed.
+ *
+ * The Permit2 grant is only meaningful when Uniswap is configured, so it is only supplied then.
+ */
+function planPolicyFor(config: AppConfig): PlanPolicy {
+  return {
+    ...(config.fx.uniswap && { permit2Grant: SETTINGS.execution.permit2Grant }),
+    standingConversion: SETTINGS.execution.standingConversion,
+  };
+}
 
 function unitOfWork(database: Database): ExecutionUnitOfWork {
   return {
@@ -162,6 +190,8 @@ export function kernelAdapterConfig(config: AppConfig, bundlerUrl: string) {
         const uow = unitOfWork(database);
         const chain = {
           allowances: createViemAllowanceReader({ rpcUrl: config.wallet.rpcUrl }),
+          // Read-only, and consulted only for a quote whose spender is Permit2.
+          permit2Allowances: createViemPermit2AllowanceReader({ rpcUrl: config.wallet.rpcUrl }),
           balances,
           ...createViemDeploymentChecker({ rpcUrl: config.wallet.rpcUrl }),
         };
@@ -172,17 +202,42 @@ export function kernelAdapterConfig(config: AppConfig, bundlerUrl: string) {
           }),
           timeoutMs: config.execution.firmTimeoutMs,
         });
+        /*
+         * Firm-quote providers, keyed by slug, so the route's own choice decides who is asked.
+         *
+         * Uniswap is additive and present only when its key is: without it the registry holds Textile
+         * alone, a Uniswap-planned route is refused with PROVIDER_NOT_WIRED, and the planner's Textile
+         * route through USDT answers instead. Exactly today's behaviour.
+         */
+        const uniswap = config.fx.uniswap;
         const firmQuotes = new FirmQuoteService({
           unitOfWork: uow,
-          provider,
+          providers: createFirmQuoteProviderRegistry([
+            provider,
+            ...(uniswap
+              ? [
+                  new UniswapFirmQuoteProvider({
+                    client: new UniswapClient({
+                      transport: createUniswapFetchTransport({
+                        baseUrl: uniswap.apiUrl,
+                        apiKey: uniswap.apiKey,
+                      }),
+                      timeoutMs: uniswap.timeoutMs,
+                    }),
+                    slippagePercent: uniswap.slippagePercent,
+                    quoteLifetimeMs: uniswap.quoteLifetimeMs,
+                  }),
+                ]
+              : []),
+          ]),
           cipher: new AesGcmSecretCipher(keys),
           chain,
-          maxOutstanding: config.execution.maxOutstandingRfqs,
           requestTimeoutMs: config.execution.firmTimeoutMs,
         });
         return new ExecutionPreparationService({
           unitOfWork: uow,
           firmQuotes,
+          planPolicy: planPolicyFor(config),
           policy,
           readiness: new AccountReadinessService({
             repositories: uow.read,
@@ -317,6 +372,37 @@ export function kernelAdapterConfig(config: AppConfig, bundlerUrl: string) {
       },
     },
     {
+      // One-tap conversions between a person's own currencies. Off exactly when the runner is off.
+      provide: CONVERSION_SERVICE,
+      inject: [
+        EXECUTION_REPOSITORIES,
+        PAYMENT_AUTHORIZATION_SERVICE,
+        EXECUTION_PREPARATION_SERVICE,
+        EXECUTION_RUNNER,
+        PREPARATION_TRACKER,
+        RUN_TRACKER,
+      ],
+      useFactory: (
+        repositories: Repositories,
+        payments: PaymentAuthorizationService | null,
+        preparation: ExecutionPreparationService | null,
+        runner: ExecutionRunner | null,
+        preparations: PreparationTracker,
+        runs: RunTracker,
+      ): ConversionService | null => {
+        if (!payments || !preparation || !runner) return null;
+        return new ConversionService({
+          sessions: repositories.authorizationSessions,
+          payments,
+          preparation,
+          runner,
+          preparations,
+          runs,
+          log: nestLog("Conversion"),
+        });
+      },
+    },
+    {
       provide: EXECUTION_RUNNER,
       inject: [
         DATABASE,
@@ -352,6 +438,8 @@ export function kernelAdapterConfig(config: AppConfig, bundlerUrl: string) {
         const cipher = new AesGcmSecretCipher(config.execution.cipherKeys);
         const chain = {
           allowances: createViemAllowanceReader({ rpcUrl: config.wallet.rpcUrl }),
+          // Read-only, and consulted only for a quote whose spender is Permit2.
+          permit2Allowances: createViemPermit2AllowanceReader({ rpcUrl: config.wallet.rpcUrl }),
           balances,
           ...createViemDeploymentChecker({ rpcUrl: config.wallet.rpcUrl }),
         };
@@ -364,18 +452,35 @@ export function kernelAdapterConfig(config: AppConfig, bundlerUrl: string) {
           chain,
           minWindowMs: config.execution.minFirmWindowMs,
           infrastructure,
+          planPolicy: planPolicyFor(config),
         });
         return new ExecutionRunner({
           unitOfWork: uow,
           preparation,
+          planPolicy: planPolicyFor(config),
           wallets,
           kernel,
-          orders: new TextileOrderProvider({
-            client: new TextileClient({
-              transport: createFetchTransport({ baseUrl: textile.apiUrl, apiKey: textile.apiKey }),
-              timeoutMs: textile.timeoutMs,
+          /*
+           * Settlement confirmers, one per provider, resolved by the executed quote's provider.
+           *
+           * Uniswap's is registered unconditionally and needs no API key: it reads the firm quote's own
+           * amounts, and for an AMM the confirmed chain receipt is the only authority there is. It can
+           * only ever be reached by an execution whose route was planned on Uniswap.
+           */
+          settlement: createSettlementConfirmerRegistry([
+            new TextileOrderProvider({
+              client: new TextileClient({
+                transport: createFetchTransport({
+                  baseUrl: textile.apiUrl,
+                  apiKey: textile.apiKey,
+                }),
+                timeoutMs: textile.timeoutMs,
+              }),
             }),
-          }),
+            new UniswapSettlementConfirmer({
+              findAttempt: (quoteId) => uow.read.firmQuoteAttempts.findById(quoteId),
+            }),
+          ]),
           cipher,
           chain,
           signer,
@@ -399,6 +504,7 @@ export function kernelAdapterConfig(config: AppConfig, bundlerUrl: string) {
     ROOT_ACTION_SERVICE,
     RUN_TRACKER,
     EXECUTION_REPOSITORIES,
+    CONVERSION_SERVICE,
   ],
 })
 export class ExecutionModule {}

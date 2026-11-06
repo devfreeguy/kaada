@@ -100,10 +100,16 @@ describe("route ranking", () => {
     );
   });
 
-  it("a genuinely better two-hop route beats a direct one: the first criterion is strict", () => {
+  it("a direct route beats a cheaper two-hop one: fewest hops comes first, price second", () => {
     const direct = route({ key: "d", input: createMoney("92260150", "usdt"), ...oneHop });
     const cheaper = route({ key: "i", input: createMoney("92000000", "usdt"), ...twoHop });
-    assert.equal(rankRoutes([direct, cheaper], { mode: "EXACT_OUTPUT", assets })[0]?.key, "i");
+    assert.equal(rankRoutes([cheaper, direct], { mode: "EXACT_OUTPUT", assets })[0]?.key, "d");
+  });
+
+  it("with the same number of hops, the better price still wins", () => {
+    const dear = route({ key: "a", input: createMoney("92260150", "usdt"), ...oneHop });
+    const cheap = route({ key: "b", input: createMoney("92000000", "usdt"), ...oneHop });
+    assert.equal(rankRoutes([dear, cheap], { mode: "EXACT_OUTPUT", assets })[0]?.key, "b");
   });
 
   it("never adds fees of different assets, and does not compare them either", () => {

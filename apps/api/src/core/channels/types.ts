@@ -73,7 +73,8 @@ export type OutboundAction =
         | "CONTINUE_PAYMENT"
         | "SET_COUNTRY"
         | "CONVERT_CURRENCY"
-        | "KEEP_CURRENCY";
+        | "KEEP_CURRENCY"
+        | "CONFIRM_CONVERSION";
       label: string;
       description?: string;
       handle: string;

@@ -1,9 +1,16 @@
-import { CELO_CHAIN_ID, EXECUTION_AUDIT_EVENTS, KaadaError, createId } from "@kaada/domain";
+import {
+  CELO_CHAIN_ID,
+  EXECUTION_AUDIT_EVENTS,
+  KaadaError,
+  claimTokenContext,
+  createId,
+} from "@kaada/domain";
 import type {
   Asset,
   FirmQuoteAttempt,
   FirmQuoteFailureCode,
   FirmQuoteProvider,
+  FirmQuoteProviderRegistry,
   PaymentAuthorization,
 } from "@kaada/domain";
 
@@ -23,6 +30,15 @@ export const CAPACITY_COOLDOWN_MS = 30_000;
 /** Everything needed to ask for a firm quote, already checked against the live payment. */
 export interface FirmQuoteContext {
   authorization: PaymentAuthorization;
+  /**
+   * WHICH provider must serve this quote: the slug the route was planned on.
+   *
+   * It is passed in rather than chosen here, because the route already decided it. Picking a provider at
+   * this point, independently of the route, is how a route priced on one provider ends up requested from
+   * another; the pair is then one the second provider has no corridor for, and the person is refused
+   * after they have already authorized the payment.
+   */
+  providerSlug: string;
   /** The wallet address, from WalletService, for the authorization's wallet. */
   takerAddress: string;
   sellAsset: Asset & { contractAddress: string };
@@ -35,16 +51,18 @@ export type FirmQuoteOutcome =
   | { status: "QUOTED"; attempt: FirmQuoteAttempt; reused: boolean }
   | { status: "INSUFFICIENT_BALANCE" }
   | { status: "PROVIDER_CAPACITY_REACHED" }
-  | { status: "FINAL_PRICE_UNAVAILABLE"; code: FirmQuoteFailureCode | "ATTEMPTS_EXHAUSTED" }
+  | {
+      status: "FINAL_PRICE_UNAVAILABLE";
+      code: FirmQuoteFailureCode | "ATTEMPTS_EXHAUSTED" | "PROVIDER_NOT_WIRED";
+    }
   | { status: "IN_PROGRESS" };
 
 export interface FirmQuoteServiceDeps {
   unitOfWork: ExecutionUnitOfWork;
-  provider: FirmQuoteProvider;
+  /** Every firm-quote provider this deployment can use, looked up by the route's provider slug. */
+  providers: FirmQuoteProviderRegistry;
   cipher: SecretCipher;
   chain: Pick<ChainState, "balances">;
-  /** The most outstanding firm quotes Kaada allows itself at the provider (Textile's cap is 4). */
-  maxOutstanding: number;
   /** The provider request timeout, used to recognise an abandoned REQUESTING row. */
   requestTimeoutMs: number;
   now?: () => Date;
@@ -77,8 +95,17 @@ export class FirmQuoteService {
   async obtain(context: FirmQuoteContext): Promise<FirmQuoteOutcome> {
     const { authorization } = context;
     const repositories = this.uow.read;
-    const provider = await repositories.providers.findBySlug(this.deps.provider.id);
-    if (!provider) throw new Error(`no Provider row for ${this.deps.provider.id}`);
+    // The route's provider, not a provider chosen here. Unwired is a refusal, never a substitution.
+    const firm: FirmQuoteProvider | undefined = this.deps.providers.get(context.providerSlug);
+    if (!firm) {
+      this.log("warn", "execution.firm_provider_not_wired", {
+        providerSlug: context.providerSlug,
+        wired: this.deps.providers.slugs().join(","),
+      });
+      return { status: "FINAL_PRICE_UNAVAILABLE", code: "PROVIDER_NOT_WIRED" };
+    }
+    const provider = await repositories.providers.findBySlug(firm.id);
+    if (!provider) throw new Error(`no Provider row for ${firm.id}`);
 
     const attempts = await repositories.firmQuoteAttempts.listByAuthorization(authorization.id);
     const live = attempts.find((a) => a.status === "REQUESTING" || a.status === "QUOTED");
@@ -125,13 +152,23 @@ export class FirmQuoteService {
       return { status: "FINAL_PRICE_UNAVAILABLE", code: "ATTEMPTS_EXHAUSTED" };
     }
 
-    // Kaada's own view of held slots. It does not replace the provider's limit; it avoids avoidable 429s.
-    const held = await repositories.firmQuoteAttempts.countHeldSlots(
-      provider.id,
-      now,
-      TIMED_OUT_SLOT_HOLD_MS,
-    );
-    if (held >= this.deps.maxOutstanding) return { status: "PROVIDER_CAPACITY_REACHED" };
+    /*
+     * Kaada's own view of held slots. It does not replace the provider's limit; it avoids avoidable 429s.
+     *
+     * The cap is the PROVIDER's own (`maxOutstanding`), because the limit belongs to the provider and not to a
+     * deployment. A provider that holds no slots declares `null`, and an AMM is that case: nothing is reserved, so
+     * there is nothing to count and no cap to respect. Counting it with an RFQ's figure would refuse a fifth quote
+     * as PROVIDER_CAPACITY_REACHED when the provider has no capacity limit of any kind.
+     */
+    const cap = firm.maxOutstanding;
+    if (cap !== null) {
+      const held = await repositories.firmQuoteAttempts.countHeldSlots(
+        provider.id,
+        now,
+        TIMED_OUT_SLOT_HOLD_MS,
+      );
+      if (held >= cap) return { status: "PROVIDER_CAPACITY_REACHED" };
+    }
 
     // Fresh chain balance, never a stored one: the wallet must cover the authorized ceiling.
     const { bounds } = authorization;
@@ -171,7 +208,7 @@ export class FirmQuoteService {
     await this.audit(authorization, EXECUTION_AUDIT_EVENTS.firmQuoteRequested, attempt.id);
 
     // The provider call: outside any transaction, once, with the long firm timeout.
-    const result = await this.deps.provider.requestFirm({
+    const result = await firm.requestFirm({
       chainId: CELO_CHAIN_ID,
       sellAssetId: context.sellAsset.id,
       buyAssetId: context.buyAsset.id,
@@ -200,20 +237,39 @@ export class FirmQuoteService {
       }
     }
 
-    // The claim token is encrypted before it touches storage, bound to its own record.
-    const secretId = createId();
-    const sealed = this.deps.cipher.encrypt(
-      result.claimToken.reveal(),
-      `textile-claim-token:${secretId}`,
-    );
+    /*
+     * The claim token, when this provider issues one.
+     *
+     * An RFQ reserves a price and returns a token that proves ownership of the reservation. An AMM
+     * reserves nothing, so there is nothing to prove and no token to store; its protection is the
+     * slippage bound and the deadline already inside the swap calldata. Which of the two a provider is
+     * comes from the provider itself, so a provider that should have returned a token and did not is a
+     * fault here rather than a missing secret discovered later, after the money has already moved.
+     */
+    if (firm.issuesClaimToken && !result.claimToken) {
+      throw new KaadaError(
+        "EXECUTION_FAILED",
+        `${firm.id} declares a claim token but returned none`,
+      );
+    }
+    const claimToken = firm.issuesClaimToken ? result.claimToken : undefined;
+    const secretId = claimToken ? createId() : undefined;
+    // AAD is derived from the provider slug; for "textile" it is byte-identical to the literal it
+    // replaces, so every already-stored Textile token still decrypts.
+    const sealed =
+      claimToken && secretId
+        ? this.deps.cipher.encrypt(claimToken.reveal(), claimTokenContext(firm.id, secretId))
+        : undefined;
     const quoted = await this.uow.transaction(async (tx) => {
-      await tx.executionSecrets.put({
-        id: secretId,
-        purpose: "TEXTILE_CLAIM_TOKEN",
-        keyVersion: sealed.keyVersion,
-        ciphertext: sealed.ciphertext,
-        now: after,
-      });
+      if (sealed && secretId) {
+        await tx.executionSecrets.put({
+          id: secretId,
+          purpose: `${firm.id.toUpperCase()}_CLAIM_TOKEN`,
+          keyVersion: sealed.keyVersion,
+          ciphertext: sealed.ciphertext,
+          now: after,
+        });
+      }
       return tx.firmQuoteAttempts.recordQuoted(
         attempt.id,
         {
@@ -229,7 +285,7 @@ export class FirmQuoteService {
             latestOrderDeadline: result.quote.latestOrderDeadline,
           }),
           unsignedTransactions: result.transactions,
-          claimSecretId: secretId,
+          ...(secretId !== undefined && { claimSecretId: secretId }),
         },
         after,
       );

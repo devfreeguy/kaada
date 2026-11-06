@@ -1,4 +1,13 @@
-import { createMoney, isPermissionUsable } from "@kaada/domain";
+import {
+  PERMIT2,
+  createMoney,
+  encodePermit2Approve,
+  isPermissionUsable,
+  isTrustedPermit2Spender,
+  permissionScopeKey,
+  permit2AllowanceCovers,
+  permit2GrantAmount,
+} from "@kaada/domain";
 import type {
   AccountRequirements,
   Asset,
@@ -10,18 +19,25 @@ import type {
   PaymentAuthorization,
   PermissionRequirement,
   PermissionScope,
+  Permit2Allowance,
+  Permit2GrantPolicy,
   PlanBlocker,
+  SetupRequirement,
+  StandingConversionPolicy,
   TokenApprovalRequirement,
   UnsignedTransactions,
   TokenPolicy,
   TransferExecutionPlan,
   Wallet,
 } from "@kaada/domain";
-import { boundLimits } from "@kaada/domain";
+import { boundLimits, standingLimitAmount } from "@kaada/domain";
 
 import { inspectApprovalTransaction, inspectSwapTransaction } from "./approval-inspector.js";
 
-/** A delegated permission for one payment is short: long enough to run it, never a standing grant. */
+/**
+ * A delegated permission for one payment is short: long enough to run it. The one exception is a conversion between a
+ * person's own currencies, which can use the standing policy below instead.
+ */
 export const PERMISSION_WINDOW_MS = 15 * 60 * 1000;
 
 export interface PlanInputs {
@@ -37,6 +53,25 @@ export interface PlanInputs {
   tokenPolicy: TokenPolicy;
   /** Read-only: the allowance the wallet has already granted the spender. */
   currentAllowance: bigint;
+  /**
+   * Read-only: the Permit2 allowance the wallet has already granted the swap target, when the quote's
+   * spender IS Permit2. Omitted for a provider that does not route through it.
+   */
+  currentPermit2Allowance?: Permit2Allowance;
+  /**
+   * How much a one-time Permit2 grant covers (in whole tokens, scaled by the token's decimals here) and for how
+   * long. Generous on purpose, and safe because of where the real limit sits: Permit2 moves tokens by calling
+   * `transferFrom` on the token itself, so it can never move more than the ERC-20 allowance granted to it, and Kaada
+   * keeps THAT bounded to exactly one swap's input on every payment. Verified on chain: with a 1,000 cNGN Permit2
+   * allowance and a 10 cNGN ERC-20 one, a 100 cNGN swap reverts with TRANSFER_FROM_FAILED.
+   */
+  permit2Grant?: Permit2GrantPolicy;
+  /**
+   * When present, a CONVERSION (the output is paid back to the same wallet) gets a standing permission pinned to
+   * ceilings instead of this one payment's exact amounts, so the same pair can be converted again without installing
+   * anything new. Absent, every payment gets an exact, short-lived permission as before. Never applied to a SEND.
+   */
+  standingConversion?: StandingConversionPolicy;
   /** Read-only: whether the Kernel account exists on chain. */
   deployed: boolean;
   rootAvailable: boolean;
@@ -98,6 +133,55 @@ export function buildExecutionPlan(input: PlanInputs): ExecutionPlan {
   approvalNeeded = approvals.some((approval) => approval.required);
   blockers.push(...inspectSwapTransaction(transactions.swap, { chainId: quote.chainId }));
 
+  /*
+   * The SECOND allowance a Permit2-routed swap needs: Permit2 -> the swap target.
+   *
+   * Only when the quote's spender is Permit2, which is how a provider says it routes that way. The
+   * grant is `Permit2.approve(token, target, amount, expiration)`, whose four-argument selector is
+   * deliberately NOT in the payment path's allowlist: a restricted session key may not make it. So it
+   * is listed here as a one-time setup call for the ROOT to sign, beside the account deployment and
+   * the permission install, and the payment path is untouched.
+   *
+   * Nothing is listed when the wallet already has a grant that covers this swap, so the root is asked
+   * once per token rather than once per payment.
+   */
+  const setupRequirements: SetupRequirement[] = [];
+  if (spender !== undefined && spender.toLowerCase() === PERMIT2) {
+    const target = transactions.swap.to.toLowerCase();
+    const grant = input.permit2Grant;
+    const covered =
+      input.currentPermit2Allowance !== undefined &&
+      permit2AllowanceCovers(input.currentPermit2Allowance, required, now);
+    /*
+     * The swap target must be a contract Kaada has deliberately decided may hold a Permit2 allowance. It arrives in the
+     * provider's API response, and the grant below is signed by the ROOT: a passkey tap the person cannot inspect. Taken
+     * on trust, a hostile response turns one routine confirmation into a standing allowance for an attacker. Checked
+     * whether or not a grant is currently needed, because the same address also becomes the permission's swap target.
+     */
+    if (!isTrustedPermit2Spender(quote.chainId, target)) {
+      blockers.push("PERMIT2_SPENDER_NOT_TRUSTED");
+    } else if (!covered) {
+      if (!grant) {
+        // The plan cannot describe a grant it was given no size for, and must not invent one.
+        blockers.push("PERMIT2_GRANT_UNAVAILABLE");
+      } else {
+        setupRequirements.push({
+          purpose: "PERMIT2_ROUTER_ALLOWANCE",
+          to: PERMIT2,
+          data: encodePermit2Approve({
+            token: sellAsset.contractAddress,
+            spender: target,
+            amount: permit2GrantAmount(grant, sellAsset.decimals),
+            expiration: BigInt(Math.floor(now.getTime() / 1000)) + grant.durationSeconds,
+          }),
+          value: "0",
+          assetId: sellAsset.id,
+          signer: "ROOT",
+        });
+      }
+    }
+  }
+
   // ── delegated permission: only an ACTIVE, installed one that covers THIS payment counts
   const { maxInput } = boundLimits(authorization.bounds);
   // The wallet receives the swap output, so the recipient is paid by a transfer in the same
@@ -131,6 +215,26 @@ export function buildExecutionPlan(input: PlanInputs): ExecutionPlan {
     ? ["APPROVE_TOKEN", "EXECUTE_SWAP", "TRANSFER_TOKEN"]
     : ["EXECUTE_SWAP", "TRANSFER_TOKEN"];
   const mustLastUntil = quote.latestOrderDeadline ?? quote.expiresAt;
+  /*
+   * A conversion's output goes back to the wallet it came from, so nothing can leave: the payout recipient is the
+   * wallet itself, whatever the amount. That is what makes a STANDING permission safe to install once. Its ceilings
+   * are fixed per token instead of being this payment's exact figures, so the next conversion of the same pair has an
+   * identical scope and reuses it. If this payment is larger than the ceiling, it falls back to the exact scope.
+   */
+  const standing =
+    input.standingConversion !== undefined &&
+    input.candidate.operation === "CONVERT" &&
+    recipientAddress === wallet.address.toLowerCase()
+      ? (() => {
+          const sellCap = standingLimitAmount(input.standingConversion, sellAsset.decimals);
+          const buyCap = standingLimitAmount(input.standingConversion, input.buyAsset.decimals);
+          return sellCap >= required &&
+            sellCap >= BigInt(maxInput.amount) &&
+            buyCap >= BigInt(quote.output.amount)
+            ? { policy: input.standingConversion, sellCap, buyCap }
+            : undefined;
+        })()
+      : undefined;
   const scope: PermissionScope = {
     chainId: quote.chainId,
     allowedOperations: needsOperations,
@@ -142,23 +246,25 @@ export function buildExecutionPlan(input: PlanInputs): ExecutionPlan {
       approval: {
         tokenAddress: sellAsset.contractAddress.toLowerCase(),
         spender: spender.toLowerCase(),
-        // The exact allowance this quote needs, never more.
-        limit: createMoney(required.toString(), sellAsset.id),
+        // The exact allowance this quote needs, never more (a standing conversion pins its ceiling instead).
+        limit: createMoney((standing?.sellCap ?? required).toString(), sellAsset.id),
       },
     }),
-    // Never above the authorized maximum spend.
-    perTransactionLimit: maxInput,
+    // Never above the authorized maximum spend (a standing conversion pins its ceiling instead).
+    perTransactionLimit: standing
+      ? createMoney(standing.sellCap.toString(), sellAsset.id)
+      : maxInput,
     // The payout may go to this one recipient and no more than the firm output.
     ...(recipientAddress && {
       payout: {
         assetId: input.buyAsset.id,
         tokenAddress: input.buyAsset.contractAddress.toLowerCase(),
         recipient: recipientAddress,
-        limit: quote.output,
+        limit: standing ? createMoney(standing.buyCap.toString(), input.buyAsset.id) : quote.output,
       },
     }),
     validFrom: now,
-    expiresAt: new Date(now.getTime() + PERMISSION_WINDOW_MS),
+    expiresAt: new Date(now.getTime() + (standing?.policy.windowMs ?? PERMISSION_WINDOW_MS)),
   };
   const covering = input.permissions.find(
     (permission) =>
@@ -168,6 +274,14 @@ export function buildExecutionPlan(input: PlanInputs): ExecutionPlan {
       sameSet(permission.allowedOperations, scope.allowedOperations) &&
       sameSet(permission.allowedContracts, scope.allowedContracts) &&
       sameSet(permission.allowedAssetIds, scope.allowedAssetIds) &&
+      /*
+       * Identical on-chain pins, not just similar sets. The recipient and the amounts are pinned on chain by the
+       * permission's call policies, and the signer reads the exact scope back before it signs anything. A permission
+       * that merely shares contracts and assets with this payment (a different recipient, a larger amount) would be
+       * planned as covered here and then refused at signing, and a retry would hit the same wall until it expired.
+       * A permission with no key, created before the key existed, is never reused.
+       */
+      permission.scopeKey === permissionScopeKey(scope) &&
       permission.perTransactionLimit.assetId === maxInput.assetId &&
       BigInt(permission.perTransactionLimit.amount) >= BigInt(maxInput.amount) &&
       permission.expiresAt.getTime() > mustLastUntil.getTime(),
@@ -183,8 +297,13 @@ export function buildExecutionPlan(input: PlanInputs): ExecutionPlan {
 
   // ── account
   const deploymentRequired = !input.deployed;
+  // A setup call is signed by the root, so needing one needs the root — even when the account exists
+  // and its permission is already installed. Without this a payment would reach the signer, send a
+  // swap with no Permit2 grant behind it, and revert on chain for want of a signature nobody asked for.
   const rootSignatureRequired =
-    deploymentRequired || permissionRequirement.state === "INSTALLATION_REQUIRED";
+    deploymentRequired ||
+    permissionRequirement.state === "INSTALLATION_REQUIRED" ||
+    setupRequirements.length > 0;
   if (rootSignatureRequired && !input.rootAvailable) blockers.push("NO_ROOT");
   const accountRequirements: AccountRequirements = {
     deploymentRequired,
@@ -210,6 +329,7 @@ export function buildExecutionPlan(input: PlanInputs): ExecutionPlan {
     accountRequirements,
     permissionRequirement,
     approvalRequirements: approvals,
+    setupRequirements,
     payoutRequirement: {
       assetId: input.buyAsset.id,
       tokenAddress: input.buyAsset.contractAddress.toLowerCase(),

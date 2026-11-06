@@ -1,5 +1,5 @@
 import { KaadaError } from "@kaada/domain";
-import type { ProviderOrderPort, ProviderOrderState, ProviderOrderStatus } from "@kaada/domain";
+import type { SettlementConfirmer, SettlementOutcome, SettlementState } from "@kaada/domain";
 
 import type { AgentLog } from "../../../core/agent/ports.js";
 import { noopLog } from "../../../core/agent/ports.js";
@@ -7,10 +7,11 @@ import { TextileClientError } from "./client.js";
 import type { TextileClient } from "./client.js";
 import type { OrderStatusResponse } from "./schemas.js";
 
-const STATES: Record<string, ProviderOrderState> = {
+const STATES: Record<string, SettlementState> = {
   quoted: "QUOTED",
   submitted: "SUBMITTED",
-  filled: "FILLED",
+  // Textile's "filled" IS settlement for an RFQ: the maker has paid out.
+  filled: "SETTLED",
   failed: "FAILED",
   expired: "EXPIRED",
 };
@@ -24,8 +25,10 @@ const STATES: Record<string, ProviderOrderState> = {
  * the same transaction hash, with a 409 for a different one. A failed or expired order can still flip
  * to filled for up to 24 hours, so a "not filled" status is a state to keep watching, not a verdict.
  */
-export class TextileOrderProvider implements ProviderOrderPort {
+export class TextileOrderProvider implements SettlementConfirmer {
   readonly id = "textile";
+  /** An RFQ holds the order off chain, so reporting the hash to it is a documented courtesy. */
+  readonly notifiesProvider = true;
   private readonly log: AgentLog;
 
   constructor(
@@ -34,11 +37,13 @@ export class TextileOrderProvider implements ProviderOrderPort {
     this.log = options.log ?? noopLog;
   }
 
-  async submit(input: {
+  async notify(input: {
     providerQuoteId: string;
-    claimToken: { reveal(): string };
+    claimToken?: { reveal(): string };
     txHash: string;
-  }): Promise<ProviderOrderStatus> {
+  }): Promise<SettlementOutcome> {
+    // Textile cannot be asked about an order without proof of ownership of it.
+    if (!input.claimToken) throw this.missingClaim("notify");
     try {
       const { data } = await this.options.client.submit(
         input.providerQuoteId,
@@ -51,14 +56,15 @@ export class TextileOrderProvider implements ProviderOrderPort {
           : "submitted";
       return { state: STATES[status] ?? "SUBMITTED", txHash: input.txHash };
     } catch (error) {
-      throw this.failure("submit", error);
+      throw this.failure("notify", error);
     }
   }
 
-  async status(input: {
+  async confirm(input: {
     providerQuoteId: string;
-    claimToken: { reveal(): string };
-  }): Promise<ProviderOrderStatus> {
+    claimToken?: { reveal(): string };
+  }): Promise<SettlementOutcome> {
+    if (!input.claimToken) throw this.missingClaim("confirm");
     try {
       const { data } = await this.options.client.status(
         input.providerQuoteId,
@@ -66,11 +72,11 @@ export class TextileOrderProvider implements ProviderOrderPort {
       );
       return this.map(data);
     } catch (error) {
-      throw this.failure("status", error);
+      throw this.failure("confirm", error);
     }
   }
 
-  private map(data: OrderStatusResponse["data"]): ProviderOrderStatus {
+  private map(data: OrderStatusResponse["data"]): SettlementOutcome {
     return {
       state: STATES[data.status] ?? "UNKNOWN",
       ...(data.txHash && { txHash: data.txHash.toLowerCase() }),
@@ -79,6 +85,17 @@ export class TextileOrderProvider implements ProviderOrderPort {
       ...(data.feeAmount && { feeAmount: data.feeAmount }),
       ...(data.failReason && { failReason: data.failReason }),
     };
+  }
+
+  /**
+   * A token was expected and is not there. Retryable is false: re-asking cannot conjure the secret. The
+   * caller keeps the execution under reconciliation rather than failing a payment that is already on chain.
+   */
+  private missingClaim(call: string): KaadaError {
+    this.log("warn", "settlement.claim_token_missing", { call, provider: this.id });
+    return new KaadaError("PROVIDER_UNAVAILABLE", `the provider ${call} needs a claim token`, {
+      details: { call, kind: "CLAIM_TOKEN_MISSING", retryable: false },
+    });
   }
 
   /** Never carries the token, a header or the response body. `retryable` says whether trying again is safe. */

@@ -12,5 +12,7 @@ export const ROOT_ACTION_SERVICE = Symbol("ROOT_ACTION_SERVICE");
 export const ROOT_PAYMENT_SERVICE = Symbol("ROOT_PAYMENT_SERVICE");
 /** Carries an authorized payment out. Null unless execution is enabled. */
 export const EXECUTION_RUNNER = Symbol("EXECUTION_RUNNER");
+/** One-tap conversion between a person's own currencies. Null unless execution is enabled. */
+export const CONVERSION_SERVICE = Symbol("CONVERSION_SERVICE");
 /** Background runs and the last outcome of each. */
 export const RUN_TRACKER = Symbol("RUN_TRACKER");

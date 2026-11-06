@@ -375,6 +375,50 @@ describe("PIN entry creates the payment authorization", () => {
   });
 });
 
+describe("a conversion between your own currencies needs no PIN, and nothing else does", () => {
+  it("REFUSES a payment to someone else: a SEND keeps its PIN whatever route reaches the method", async () => {
+    const { w, response } = await pending();
+    const session = w.r.world.authorization.sessions.find(
+      (row) => row.id === response.authorizationSessionId,
+    );
+    assert.ok(session);
+    await assert.rejects(w.auth.payments.authorizeConversion(session), (e) =>
+      isKaadaError(e, "AUTHORIZATION_SESSION_INVALID"),
+    );
+    assert.equal(w.r.world.authorization.payments.length, 0, "no authorization was created");
+    assert.equal(
+      w.r.world.authorization.sessions.find((row) => row.id === session.id)?.status,
+      "PENDING",
+      "and the session is still waiting for its PIN",
+    );
+  });
+
+  it("authorizes a stored CONVERSION with no PIN, once, and records it like any other approval", async () => {
+    const { w, response } = await pending();
+    const session = w.r.world.authorization.sessions.find(
+      (row) => row.id === response.authorizationSessionId,
+    );
+    assert.ok(session);
+    // The stored intent is the authority: make it the conversion this session was created for.
+    const intent = w.r.world.intents.get(session.intentId);
+    assert.ok(intent);
+    w.r.world.intents.set(intent.id, {
+      ...intent,
+      type: "CONVERT",
+      recipientId: undefined,
+    } as never);
+
+    const authorization = await w.auth.payments.authorizeConversion(session);
+    assert.equal(authorization.status, "ACTIVE");
+    assert.equal(authorization.operation, "CONVERT");
+    await assert.rejects(
+      w.auth.payments.authorizeConversion(session),
+      (e) => isKaadaError(e, "AUTHORIZATION_SESSION_INVALID"),
+      "the one-tap session is used up",
+    );
+  });
+});
+
 describe("a changed payment invalidates what was built for it", () => {
   it("editing the payment cancels the session and revokes an approval", async () => {
     const { w, authorize, activeAuthorization } = await pending();

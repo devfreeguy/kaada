@@ -45,7 +45,7 @@ const TEXTILE_SOURCE =
   "Textile official address book (live Celo corridors) and Textile v2 RFQ documentation";
 
 /**
- * Provider capabilities VERIFIED against the provider. Each directed pair and each capability type is
+ * Textile's capabilities, VERIFIED against the provider. Each directed pair and each capability type is
  * its own row; nothing implies another (one direction is not the reverse, QUOTE is not SWAP).
  *
  * Textile, Celo: cNGN, USDC, wARS, wBRL and IDRX each trade against USDT, listed in BOTH directions
@@ -56,7 +56,7 @@ const TEXTILE_SOURCE =
  *
  * Documented only (settlement contracts, fee 1 bps): see `textileCeloContracts` in celo-assets.ts.
  */
-export const verifiedCapabilities: readonly CapabilityDefinition[] = Object.values(
+export const textileCapabilities: readonly CapabilityDefinition[] = Object.values(
   TEXTILE_CELO_COUNTERPARTS,
 ).flatMap((counterpart) =>
   [
@@ -73,6 +73,114 @@ export const verifiedCapabilities: readonly CapabilityDefinition[] = Object.valu
     })),
   ),
 );
+
+/**
+ * Uniswap's Celo pairs, each one PROBED against the live Trading API in both amount modes before being listed here
+ * (POST /v1/quote, 2026-11-06). The point of these rows is the pairs Textile has no corridor for at all; nothing is
+ * listed against USDT, where Textile already serves every corridor and reserves its price.
+ *
+ * None of these is a single pool: the decoded route for cNGN -> wARS is cNGN/USDT then USDT/wARS, which is the dollar
+ * pivot Kaada wants anyway, crossed inside one Universal Router transaction that either completes or reverts.
+ *
+ * WHY DIRECTION IS NOT ASSUMED, with the measured reason rather than the provider's message. `wBRL -> cNGN` answers
+ * NoRouteFoundError, "No route with sufficient liquidity was found for this pair", at every size tried (6, 50, 500,
+ * 5,000 wBRL), in both modes, under BEST_PRICE, and with each protocol version alone. That message is misleading: both
+ * halves price on their own (`wBRL -> USDT` and `USDT -> cNGN` each return 200). Probing version by version shows why:
+ *
+ *   leg              v3   v4
+ *   cNGN  <-> USDT   yes  no      cNGN has no v4 pool at all
+ *   wARS  <-> USDT   yes  yes
+ *   wBRL   -> USDT   NO   yes     the v3 USDT/wBRL pool holds wBRL and almost no USDT: one-sided
+ *   USDT   -> wBRL   yes  yes
+ *
+ * So `wBRL -> cNGN` is the one path that must cross v4 then v3, and Uniswap's router does not chain versions. It is a
+ * routing limit over a one-sided pool, not absent liquidity, and it is outside Kaada's control either way. The pair
+ * still pays: the planner reaches it in two hops through USDT, where Textile holds both corridors.
+ *
+ * Everything that works does so because it stays on one version: cNGN <-> wARS is v3 throughout, wARS <-> wBRL is v4
+ * throughout, and cNGN -> wBRL is v3 throughout.
+ */
+const UNISWAP_CELO = {
+  cNGN: TEXTILE_CELO_COUNTERPARTS.cNGN,
+  wARS: TEXTILE_CELO_COUNTERPARTS.wARS,
+  wBRL: TEXTILE_CELO_COUNTERPARTS.wBRL,
+  USDC: TEXTILE_CELO_COUNTERPARTS.USDC,
+} as const;
+
+/**
+ * One directed pair. Listed one direction per entry and deliberately never mirrored: see the version table above for
+ * what happens when a pair looks symmetric and is not.
+ */
+export type UniswapPair = readonly [keyof typeof UNISWAP_CELO, keyof typeof UNISWAP_CELO];
+
+/** Every directed pair that answered in BOTH amount modes. Evidence, not a decision: see UNISWAP_ENABLED_PAIRS. */
+export const UNISWAP_VERIFIED_PAIRS: readonly UniswapPair[] = [
+  // Local to local: the corridors Textile cannot price at all.
+  ["cNGN", "wARS"],
+  ["wARS", "cNGN"],
+  ["cNGN", "wBRL"],
+  ["wARS", "wBRL"],
+  ["wBRL", "wARS"],
+  // Dollar to local and back. Textile serves these against USDT only, never against USDC.
+  ["USDC", "cNGN"],
+  ["cNGN", "USDC"],
+  ["USDC", "wARS"],
+  ["wARS", "USDC"],
+  ["USDC", "wBRL"],
+  ["wBRL", "USDC"],
+];
+
+/**
+ * The pairs Kaada has DELIBERATELY turned on, which is what gets seeded.
+ *
+ * Verified and enabled are two different things. A pair earns a place above by answering the provider; it earns a place
+ * here by having been settled end to end at least once. Until a Uniswap route has actually executed on chain, only the
+ * corridor being proven is enabled, so a route that cannot yet be paid is never offered to anyone.
+ *
+ * To enable the rest, move entries down from UNISWAP_VERIFIED_PAIRS into this list. Nothing else changes.
+ */
+export const UNISWAP_ENABLED_PAIRS: readonly UniswapPair[] = [
+  ["cNGN", "wARS"],
+  ["wARS", "cNGN"],
+];
+
+/** Verified but not yet enabled. Exported so the difference stays visible and deliberate rather than looking lost. */
+export const UNISWAP_PENDING_PAIRS: readonly UniswapPair[] = UNISWAP_VERIFIED_PAIRS.filter(
+  ([from, to]) => !UNISWAP_ENABLED_PAIRS.some(([a, b]) => a === from && b === to),
+);
+
+/**
+ * SWAP is included because the API returns executable Universal Router calldata for every enabled pair.
+ *
+ * EXACT_OUTPUT is deliberately NOT, even though the API will quote it. On an AMM the unfixed side moves, so an
+ * exact-output trade has a maximum input rather than a known one, while Kaada's approval and its quoted input are a
+ * single figure. The firm adapter therefore refuses it, and listing it here made the router choose Uniswap for "send
+ * exactly 1,500 pesos" and fail only AFTER the person had entered their PIN. A capability row says what Kaada can
+ * actually carry out, not what a provider can price.
+ *
+ * CONDITIONAL_EXECUTION is not included either: nothing probed establishes it.
+ */
+const UNISWAP_AMM_CAPABILITIES = ["QUOTE", "SWAP", "EXACT_INPUT"] as const;
+
+const UNISWAP_SOURCE =
+  "probed live against the Uniswap Trading API (POST /v1/quote, both modes) on Celo mainnet, 2026-11-06";
+
+export const uniswapCapabilities: readonly CapabilityDefinition[] = UNISWAP_ENABLED_PAIRS.flatMap(
+  ([from, to]) =>
+    UNISWAP_AMM_CAPABILITIES.map((capability): CapabilityDefinition => ({
+      provider: "uniswap",
+      capability,
+      chainId: CELO_CHAIN_ID,
+      input: UNISWAP_CELO[from],
+      output: UNISWAP_CELO[to],
+      source: UNISWAP_SOURCE,
+    })),
+);
+
+export const verifiedCapabilities: readonly CapabilityDefinition[] = [
+  ...textileCapabilities,
+  ...uniswapCapabilities,
+];
 
 export interface CapabilitySeedReport {
   created: number;

@@ -80,6 +80,25 @@ export class PaymentAuthorizationService {
   }
 
   /**
+   * Authorizes a CONVERSION without a PIN: the person's own money moving from one of their currencies to another of their
+   * own, with nothing leaving the wallet. The caller has already established that the person pressed their own one-tap
+   * button, which is the only way here.
+   *
+   * It REFUSES anything else, and decides that from the stored intent, never from the caller: a SEND, or any payment with a
+   * recipient, keeps its PIN or passkey whatever route reaches this method.
+   */
+  async authorizeConversion(session: AuthorizationSession): Promise<PaymentAuthorization> {
+    const { intent } = await this.assertCurrent(this.uow.read, session);
+    if (intent.type !== "CONVERT" || intent.recipientId) {
+      throw new KaadaError(
+        "AUTHORIZATION_SESSION_INVALID",
+        "only a conversion between your own currencies can be confirmed without a PIN",
+      );
+    }
+    return this.authorizeVerified(session);
+  }
+
+  /**
    * Records the approval once the person has PROVED it, by the PIN (above) or by their wallet's own passkey or device key over the
    * exact operation (see RootPaymentService). The proof is the caller's to check first: nothing here does.
    */

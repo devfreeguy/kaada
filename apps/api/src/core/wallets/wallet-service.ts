@@ -391,6 +391,7 @@ export class WalletService {
         perTransactionLimit: request.perTransactionLimit,
         ...(request.cumulativeLimit && { cumulativeLimit: request.cumulativeLimit }),
         enforcement: plan.enforcement,
+        ...(request.scopeKey !== undefined && { scopeKey: request.scopeKey }),
         validFrom: request.validFrom,
         expiresAt: request.expiresAt,
       });

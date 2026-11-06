@@ -10,7 +10,7 @@ export interface PresentedMessage {
   /** Selectable answers to a question. Each `optionId` is the agent's own opaque, server-bound id. */
   choices?: { optionId: string; label: string; description?: string }[];
   /** A priced payment waiting for the person's PIN, on a secure page. */
-  authorization?: { sessionId: string; expiresAt: Date };
+  authorization?: { sessionId: string; expiresAt: Date; oneTap?: true };
   /** The person needs a Kaada wallet first: offer the secure setup page. */
   setup?: boolean;
   /** Offer a Cancel button (something is in progress that can be dropped). */
@@ -88,14 +88,22 @@ export function presentAgentResponse(response: AgentResponse, _now: Date): Prese
     case "AUTHORIZATION_REQUIRED": {
       const expiresAt = new Date(response.expiresAt);
       const fees = feeLine(response.fees);
+      // Converting your own money between your own currencies is one tap; paying someone else keeps the PIN.
+      const oneTap = response.operation === "CONVERT";
       const body = [
         describePayment(response.summary, { mock: response.mock }),
         fees,
-        "You confirm with your 6-digit PIN on a secure Kaada page. Never type it in this chat.",
+        oneTap
+          ? "Tap Confirm and I'll convert it. Nothing leaves your wallet."
+          : "You confirm with your 6-digit PIN on a secure Kaada page. Never type it in this chat.",
       ].filter((line): line is string => line !== null);
       return {
         text: body.join("\n\n"),
-        authorization: { sessionId: response.authorizationSessionId, expiresAt },
+        authorization: {
+          sessionId: response.authorizationSessionId,
+          expiresAt,
+          ...(oneTap && { oneTap: true as const }),
+        },
         cancellable: true,
       };
     }

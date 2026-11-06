@@ -53,6 +53,7 @@ function setup(options: Parameters<typeof createHarness>[0] = {}) {
   const rows: ProviderCapability[] = [];
   const providers: ProviderRepository = {
     findBySlug: () => Promise.resolve(textile),
+    findById: () => Promise.resolve(textile),
     listActive: () => Promise.resolve([textile]),
     listCapabilities: () => Promise.resolve(rows.filter((row) => row.isActive)),
   };
@@ -223,6 +224,7 @@ describe("agent hand-off to candidate resolution", () => {
       assets: h.world.repositories.assets,
       providers: {
         findBySlug: () => Promise.resolve(null),
+        findById: () => Promise.resolve(null),
         listActive: () => Promise.resolve([]),
         listCapabilities: () => Promise.resolve([]),
       },

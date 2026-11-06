@@ -209,6 +209,8 @@ async function firmQuote(label: string, mode: "EXACT_INPUT" | "EXACT_OUTPUT", ex
     return undefined;
   }
   const { quote, transactions, claimToken } = result;
+  // Textile always issues one; the type is optional because an AMM provider does not.
+  if (!claimToken) throw new Error("Textile returned no claim token");
   // The claim token is encrypted at once, bound to this rfq id, and only then is anything else done.
   const claimCiphertext = cipher.encrypt(
     claimToken.reveal(),
@@ -352,7 +354,7 @@ function claimFor(pending: PendingRfq): SecretValue {
 async function settle(pending: PendingRfq, txHash: string, tag: string): Promise<boolean> {
   const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash as Hex });
   log("  swap tx", txHash, "->", receipt.status, "block", receipt.blockNumber.toString());
-  const submitted = await orders.submit({
+  const submitted = await orders.notify({
     providerQuoteId: pending.rfqId,
     claimToken: claimFor(pending),
     txHash,
@@ -360,8 +362,8 @@ async function settle(pending: PendingRfq, txHash: string, tag: string): Promise
   log("  submit ->", submitted.state);
   let final = submitted;
   for (let i = 0; i < 60; i += 1) {
-    final = await orders.status({ providerQuoteId: pending.rfqId, claimToken: claimFor(pending) });
-    if (final.state === "FILLED" || final.state === "FAILED" || final.state === "EXPIRED") break;
+    final = await orders.confirm({ providerQuoteId: pending.rfqId, claimToken: claimFor(pending) });
+    if (final.state === "SETTLED" || final.state === "FAILED" || final.state === "EXPIRED") break;
     await wait(3_000);
   }
   log(
@@ -384,7 +386,7 @@ async function settle(pending: PendingRfq, txHash: string, tag: string): Promise
   log(
     `  [${tag}] ${pending.mode}: fixed side exact on chain = ${exactSide} | both sides equal the firm quote = ${matchesQuote}`,
   );
-  return receipt.status === "success" && final.state === "FILLED" && exactSide && matchesQuote;
+  return receipt.status === "success" && final.state === "SETTLED" && exactSide && matchesQuote;
 }
 
 async function settlement(
@@ -421,7 +423,7 @@ async function expired(): Promise<boolean> {
     guarded = true;
   }
   log("  broadcast refused locally after expiry:", guarded);
-  const status = await orders.status({
+  const status = await orders.confirm({
     providerQuoteId: made.pending.rfqId,
     claimToken: claimFor(made.pending),
   });
@@ -429,7 +431,7 @@ async function expired(): Promise<boolean> {
   // A submit for an expired quote is rejected by the provider (documented): classify the failure.
   let kind = "ACCEPTED?";
   try {
-    await orders.submit({
+    await orders.notify({
       providerQuoteId: made.pending.rfqId,
       claimToken: claimFor(made.pending),
       txHash: `0x${"11".repeat(32)}`,
@@ -519,7 +521,7 @@ async function recover(): Promise<boolean> {
   );
   const ok = await settle(pending, pending.swapTxHash, "recovered");
   // No duplicate settlement: the same hash again is idempotent; a different hash is refused (409).
-  const again = await orders.submit({
+  const again = await orders.notify({
     providerQuoteId: pending.rfqId,
     claimToken: claimFor(pending),
     txHash: pending.swapTxHash,
@@ -527,7 +529,7 @@ async function recover(): Promise<boolean> {
   log("  submit AGAIN (same hash) ->", again.state, "(idempotent)");
   let different = "ACCEPTED?!";
   try {
-    await orders.submit({
+    await orders.notify({
       providerQuoteId: pending.rfqId,
       claimToken: claimFor(pending),
       txHash: `0x${"22".repeat(32)}`,

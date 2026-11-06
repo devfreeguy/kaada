@@ -7,6 +7,8 @@ import { createMoney } from "@kaada/domain";
 import type { PermissionScope } from "@kaada/domain";
 
 import {
+  DEFAULT_RPC_MAX_LOG_RANGE,
+  RECEIPT_LOOKBACK_BLOCKS,
   createZeroDevKernelAdapter,
   encodePasskeyAssertion,
   policiesForScope,
@@ -162,5 +164,25 @@ describe("the adapter object", () => {
       "sendDelegatedCalls",
       "sendRootOperation",
     ]);
+  });
+});
+
+/*
+ * The on-chain receipt fallback runs on the FIRST poll after every send, because the bundler has not indexed a
+ * just-sent operation yet. The default public RPC refuses an eth_getLogs range above 5,000 blocks, and the fallback
+ * used to ask for 50,000: found live on Celo mainnet ("query exceeds range, max block range 5000, got 50000"). The
+ * runner treated the error as an outage, so every payment's first wait was cut short.
+ */
+describe("the receipt fallback respects the default RPC's log range", () => {
+  it("looks back no further than the widest range the default RPC allows", () => {
+    assert.ok(
+      RECEIPT_LOOKBACK_BLOCKS <= DEFAULT_RPC_MAX_LOG_RANGE,
+      `${RECEIPT_LOOKBACK_BLOCKS} blocks exceeds the ${DEFAULT_RPC_MAX_LOG_RANGE}-block range forno.celo.org accepts`,
+    );
+  });
+
+  it("still looks back far enough to bridge the gap between mined and indexed", () => {
+    // A bundler indexes an operation within seconds; this is about 80 minutes on a 1-second chain.
+    assert.ok(RECEIPT_LOOKBACK_BLOCKS >= 1_000n);
   });
 });

@@ -3,7 +3,15 @@ import { describe, it } from "node:test";
 
 import { celoAssets, seedCeloAssets } from "./celo-assets.js";
 import type { CeloSeedClient } from "./celo-assets.js";
-import { seedProviderCapabilities, verifiedCapabilities } from "./capabilities.js";
+import {
+  UNISWAP_ENABLED_PAIRS,
+  UNISWAP_PENDING_PAIRS,
+  UNISWAP_VERIFIED_PAIRS,
+  seedProviderCapabilities,
+  textileCapabilities,
+  uniswapCapabilities,
+  verifiedCapabilities,
+} from "./capabilities.js";
 import type { CapabilityDefinition, CapabilitySeedClient } from "./capabilities.js";
 
 interface Row {
@@ -223,26 +231,125 @@ describe("the peso and sol tokens", () => {
 });
 
 describe("seedProviderCapabilities", () => {
+  const key = (c: CapabilityDefinition) => JSON.stringify([c.capability, c.input, c.output]);
+  const reverseOf = (c: CapabilityDefinition, within: readonly CapabilityDefinition[]) =>
+    within.find(
+      (other) =>
+        other.capability === c.capability &&
+        JSON.stringify(other.input) === JSON.stringify(c.output) &&
+        JSON.stringify(other.output) === JSON.stringify(c.input),
+    );
+
   it("defines exactly the verified Textile RFQ capabilities, with both directions explicit", () => {
-    assert.equal(verifiedCapabilities.length, 40);
-    assert.ok(verifiedCapabilities.every((c) => c.provider === "textile"));
-    const types = new Set(verifiedCapabilities.map((c) => c.capability));
+    assert.equal(textileCapabilities.length, 40);
+    assert.ok(textileCapabilities.every((c) => c.provider === "textile"));
+    const types = new Set(textileCapabilities.map((c) => c.capability));
     assert.deepEqual([...types].sort(), ["EXACT_INPUT", "EXACT_OUTPUT", "QUOTE", "SWAP"]);
-    const key = (c: CapabilityDefinition) => JSON.stringify([c.capability, c.input, c.output]);
-    assert.equal(new Set(verifiedCapabilities.map(key)).size, 40, "no duplicate definitions");
-    for (const c of verifiedCapabilities) {
-      const reverse = verifiedCapabilities.find(
-        (other) =>
-          other.capability === c.capability &&
-          JSON.stringify(other.input) === JSON.stringify(c.output) &&
-          JSON.stringify(other.output) === JSON.stringify(c.input),
-      );
-      assert.ok(reverse, "the reverse direction is its own row");
+    assert.equal(new Set(textileCapabilities.map(key)).size, 40, "no duplicate definitions");
+    for (const c of textileCapabilities) {
+      assert.ok(reverseOf(c, textileCapabilities), "the reverse direction is its own row");
     }
     // Only the RFQ types: no conditional execution, no ramp or payout.
     for (const excluded of ["CONDITIONAL_EXECUTION", "ON_RAMP", "OFF_RAMP", "BANK_PAYOUT"]) {
       assert.equal(types.has(excluded as never), false, excluded);
     }
+  });
+
+  /*
+   * Uniswap's rows carry the OPPOSITE invariant to Textile's, which is the whole point of asserting them separately:
+   * an RFQ corridor runs both ways by definition, an AMM pair does not. cNGN -> wBRL prices while wBRL -> cNGN does
+   * not, because the only path for the reverse crosses a v4 pool into a v3 one and Uniswap's router will not chain
+   * versions. Mirroring these rows the way Textile's are mirrored would advertise a route that cannot be built.
+   */
+  it("does not mirror a verified Uniswap pair, because direction is a measured fact", () => {
+    const has = (from: string, to: string) =>
+      UNISWAP_VERIFIED_PAIRS.some(([a, b]) => a === from && b === to);
+    assert.ok(has("cNGN", "wBRL"), "cNGN -> wBRL prices");
+    assert.equal(has("wBRL", "cNGN"), false, "wBRL -> cNGN has no route and must never be listed");
+    // Both directions were probed for this one and both answered, so both are listed. Also not an assumption.
+    assert.ok(has("cNGN", "wARS") && has("wARS", "cNGN"), "cNGN <-> wARS answered both ways");
+    assert.ok(
+      UNISWAP_VERIFIED_PAIRS.every(([a, b]) => a !== b),
+      "no self-pair",
+    );
+    assert.equal(
+      new Set(UNISWAP_VERIFIED_PAIRS.map((pair) => pair.join(">"))).size,
+      UNISWAP_VERIFIED_PAIRS.length,
+      "no duplicate pair",
+    );
+  });
+
+  /*
+   * Verified and enabled are deliberately different sets. Seeding only what has been settled end to end keeps the
+   * router from offering a corridor that cannot yet be paid, which is a worse outcome than not offering it.
+   */
+  it("seeds only the pairs deliberately enabled, not everything that priced", () => {
+    assert.ok(UNISWAP_ENABLED_PAIRS.length > 0, "something is enabled");
+    assert.ok(
+      UNISWAP_ENABLED_PAIRS.length < UNISWAP_VERIFIED_PAIRS.length,
+      "enabling everything that priced would defeat the point of the split",
+    );
+    // Every enabled pair must have been verified first. The reverse does not have to hold.
+    for (const [from, to] of UNISWAP_ENABLED_PAIRS) {
+      assert.ok(
+        UNISWAP_VERIFIED_PAIRS.some(([a, b]) => a === from && b === to),
+        `${from} -> ${to} is enabled without having been verified`,
+      );
+    }
+    assert.equal(
+      UNISWAP_ENABLED_PAIRS.length + UNISWAP_PENDING_PAIRS.length,
+      UNISWAP_VERIFIED_PAIRS.length,
+      "pending is exactly verified minus enabled",
+    );
+    // The corridor being proven first, in both directions.
+    assert.deepEqual(UNISWAP_ENABLED_PAIRS.map((pair) => pair.join(">")).sort(), [
+      "cNGN>wARS",
+      "wARS>cNGN",
+    ]);
+  });
+
+  it("builds three capability rows per enabled pair, on Celo, never against USDT", () => {
+    assert.equal(uniswapCapabilities.length, UNISWAP_ENABLED_PAIRS.length * 3);
+    assert.ok(uniswapCapabilities.every((c) => c.provider === "uniswap"));
+    assert.ok(
+      uniswapCapabilities.every((c) => c.chainId === 42220),
+      "Celo mainnet only",
+    );
+    const types = new Set(uniswapCapabilities.map((c) => c.capability));
+    assert.deepEqual([...types].sort(), ["EXACT_INPUT", "QUOTE", "SWAP"]);
+    assert.equal(
+      new Set(uniswapCapabilities.map(key)).size,
+      uniswapCapabilities.length,
+      "no duplicate definitions",
+    );
+
+    const address = (ref: CapabilityDefinition["input"]) =>
+      ref && "contractAddress" in ref ? ref.contractAddress.toLowerCase() : "";
+    const USDT = "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e";
+    const IDRX = "0x18bc5bcc660cf2b9ce3cd51a404afe1a0cbd3c22";
+    // USDT is Textile's territory: it reserves a price there, and an AMM cannot.
+    assert.ok(
+      uniswapCapabilities.every((c) => address(c.input) !== USDT && address(c.output) !== USDT),
+      "nothing is routed against USDT here",
+    );
+    // No Uniswap liquidity in any direction, at any size probed.
+    assert.ok(
+      uniswapCapabilities.every((c) => address(c.input) !== IDRX && address(c.output) !== IDRX),
+      "IDRX has no Uniswap pool",
+    );
+  });
+
+  it("gives the two providers disjoint pairs, so neither is asked about the other's", () => {
+    const textilePairs = new Set(textileCapabilities.map(key));
+    assert.deepEqual(
+      uniswapCapabilities.filter((c) => textilePairs.has(key(c))),
+      [],
+      "no pair is served by both providers",
+    );
+    assert.equal(
+      verifiedCapabilities.length,
+      textileCapabilities.length + uniswapCapabilities.length,
+    );
   });
 
   it("only references seeded assets, and none of the unverified tokens", () => {
@@ -330,5 +437,24 @@ describe("seedProviderCapabilities", () => {
       report.skipped.map((s) => s.reason),
       ["provider nobody is not seeded", "output asset is not seeded"],
     );
+  });
+});
+
+/*
+ * A capability row says what Kaada can actually CARRY OUT, not what a provider can price. Uniswap will quote an exact-output
+ * trade, but on an AMM the input is then a maximum rather than a known figure, while Kaada's approval and its quoted input
+ * are one number, so the firm adapter refuses it. Listing it here made the router choose Uniswap for "send exactly 1,500
+ * pesos" and fail only AFTER the person had entered their PIN (reproduced on the real router on 2026-11-06).
+ */
+describe("Uniswap is never offered for a mode it cannot execute", () => {
+  it("has no EXACT_OUTPUT row for any pair", () => {
+    assert.equal(
+      uniswapCapabilities.some((c) => c.capability === "EXACT_OUTPUT"),
+      false,
+    );
+  });
+
+  it("still serves Textile's exact-output corridors, which can", () => {
+    assert.ok(textileCapabilities.some((c) => c.capability === "EXACT_OUTPUT"));
   });
 });

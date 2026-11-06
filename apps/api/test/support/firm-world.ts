@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
+import { createFirmQuoteProviderRegistry } from "@kaada/domain";
 import type {
   DelegatedPermission,
   PasskeyCredential,
@@ -23,6 +24,7 @@ import {
   TextileFirmQuoteProvider,
 } from "../../src/infrastructure/fx/textile/index.js";
 import { AesGcmSecretCipher } from "../../src/infrastructure/security/aes-gcm-cipher.js";
+import type { PlanPolicy } from "../../src/core/execution/fresh-plan.js";
 import { createFirmStores } from "./firm-memory.js";
 import { createRunStores } from "./run-memory.js";
 import { FakeTextileTransport } from "./textile-fixtures.js";
@@ -175,6 +177,8 @@ export async function firmWorld(
     directCelo?: { holds: bigint };
     /** Stop before the PIN: the authorization session is open and nothing is authorized (for confirming with the root). */
     openSession?: boolean;
+    /** The sizes of the permission and one-time grants a plan asks for (preparation, runner and signer all get the same). */
+    planPolicy?: PlanPolicy;
   } = {},
 ): Promise<FirmWorld> {
   const w = setup({ authorize: true });
@@ -248,7 +252,12 @@ export async function firmWorld(
   const logs: FirmWorld["logs"] = [];
   const log = (level: "info" | "warn" | "error", event: string, fields: Record<string, unknown>) =>
     void logs.push({ level, event, fields });
-  const provider = new TextileFirmQuoteProvider({ client, timeoutMs: 75_000, log });
+  const provider = new TextileFirmQuoteProvider({
+    client,
+    timeoutMs: 75_000,
+    log,
+    ...(options.maxOutstanding !== undefined && { maxOutstanding: options.maxOutstanding }),
+  });
   const cipher = new AesGcmSecretCipher([{ version: 1, key: SECRET_KEY }]);
   const run = createRunStores();
   const firm = createFirmStores(w.r.world.authorization.payments, run.transactions);
@@ -320,10 +329,9 @@ export async function firmWorld(
   };
   const firmQuotes = new FirmQuoteService({
     unitOfWork: uow,
-    provider,
+    providers: createFirmQuoteProviderRegistry([provider]),
     cipher,
     chain: chainState,
-    maxOutstanding: options.maxOutstanding ?? 4,
     requestTimeoutMs: 75_000,
     now,
     log,
@@ -347,6 +355,7 @@ export async function firmWorld(
     }),
     chain: chainState,
     wallets: preparationWallets,
+    ...(options.planPolicy && { planPolicy: options.planPolicy }),
     minWindowMs: options.minWindowMs ?? 12_000,
     now,
     log,

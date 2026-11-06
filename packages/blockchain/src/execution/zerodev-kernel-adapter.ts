@@ -65,8 +65,21 @@ import { deviceKeyStubSignature, toRootValidator } from "../wallet/root-validato
 const ENTRY_POINT = getEntryPoint("0.7");
 const BIGINT_PREFIX = "bigint:";
 const HEX = /^0x[0-9a-fA-F]*$/;
-/** How far back a hash lookup on the chain looks (a day or so on a 1-second chain is ~86k blocks). */
-const RECEIPT_LOOKBACK_BLOCKS = 50_000n;
+/**
+ * How far back a hash lookup on the chain looks: about 80 minutes on a 1-second chain.
+ *
+ * It was 50,000 blocks, which the default RPC (forno.celo.org) REFUSES: `eth_getLogs` there allows a range of 5,000 and
+ * answers "query exceeds range". That fallback runs exactly when the bundler has not indexed an operation YET, which is
+ * the first poll after every send, so on the default RPC every payment's first wait was cut short and handed to the
+ * reconciler. Found live on Celo mainnet. Not a fund risk (the runner treats the error as an outage and never resends),
+ * but a latency and reliability defect for every payment.
+ *
+ * The fallback only has to bridge the seconds between "mined" and "indexed by the bundler", so a window this size is
+ * ample, and it stays inside the limit.
+ */
+export const RECEIPT_LOOKBACK_BLOCKS = 4_900n;
+/** The widest `eth_getLogs` range the default public RPC accepts. */
+export const DEFAULT_RPC_MAX_LOG_RANGE = 5_000n;
 const USER_OPERATION_EVENT = parseAbiItem(
   "event UserOperationEvent(bytes32 indexed userOpHash, address indexed sender, address indexed paymaster, uint256 nonce, bool success, uint256 actualGasCost, uint256 actualGasUsed)",
 );

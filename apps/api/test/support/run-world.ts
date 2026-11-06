@@ -1,16 +1,23 @@
 import { createHash, randomBytes } from "node:crypto";
 
-import { KaadaError, SecretValue, createId } from "@kaada/domain";
+import {
+  KaadaError,
+  SecretValue,
+  createId,
+  createSettlementConfirmerRegistry,
+} from "@kaada/domain";
 import type {
   AccountCall,
   KernelExecutionPort,
   OperationReceipt,
   PasskeyVerifier,
   PermissionScope,
-  ProviderOrderPort,
-  ProviderOrderStatus,
+  SettlementConfirmer,
+  SettlementOutcome,
+  SettlementQuery,
 } from "@kaada/domain";
 
+import type { PlanPolicy } from "../../src/core/execution/fresh-plan.js";
 import { ExecutionRunner } from "../../src/core/execution/runner.js";
 import { DeviceKeyRootAdapter, PasskeyRootAdapter } from "../../src/core/roots/adapters.js";
 import { RootAdapters, RootCredentialService } from "../../src/core/roots/root-credentials.js";
@@ -161,29 +168,27 @@ export class FakeKernel implements KernelExecutionPort {
   }
 }
 
-export class FakeOrders implements ProviderOrderPort {
+export class FakeOrders implements SettlementConfirmer {
   readonly id = "textile";
+  /** Settable here only because tests need both shapes; a real confirmer declares this once. */
+  notifiesProvider = true;
   submits: { providerQuoteId: string; claim: string; txHash: string }[] = [];
   statuses = 0;
   /** What the provider says about the order. */
-  result: ProviderOrderStatus = { state: "FILLED" };
+  result: SettlementOutcome = { state: "SETTLED" };
   submitFails = false;
   statusFails = false;
 
-  submit(input: {
-    providerQuoteId: string;
-    claimToken: SecretValue;
-    txHash: string;
-  }): Promise<ProviderOrderStatus> {
+  notify(input: SettlementQuery): Promise<SettlementOutcome> {
     if (this.submitFails) return Promise.reject(new Error("provider unavailable"));
     this.submits.push({
       providerQuoteId: input.providerQuoteId,
-      claim: input.claimToken.reveal(),
+      claim: input.claimToken?.reveal() ?? "",
       txHash: input.txHash,
     });
     return Promise.resolve({ state: "SUBMITTED" });
   }
-  status(): Promise<ProviderOrderStatus> {
+  confirm(): Promise<SettlementOutcome> {
     this.statuses += 1;
     if (this.statusFails) return Promise.reject(new Error("provider unavailable"));
     return Promise.resolve(this.result);
@@ -224,6 +229,13 @@ export async function runWorld(
     quote?: Partial<Parameters<typeof quotedReply>[0]>;
     /** The wallet's root is this device key (a fresh clone), not a passkey. */
     deviceRoot?: SoftDeviceKey;
+    /**
+     * Which settlement confirmers the runner is given. Defaults to the Textile-shaped fake.
+     *
+     * Overridable so a test can reach the case where the executed quote's provider has NO confirmer
+     * wired, which must keep reconciling rather than fail a payment that is already on chain.
+     */
+    confirmers?: SettlementConfirmer[];
   } = {},
 ): Promise<RunWorld> {
   const world = await firmWorld({
@@ -239,13 +251,17 @@ export async function runWorld(
       ...options.quote,
     }),
   );
-  return attachRunner(world, options.minNativeWei, options.deviceRoot);
+  return attachRunner(world, options.minNativeWei, options.deviceRoot, options.confirmers);
 }
 
 export async function attachRunner(
   world: FirmWorld,
   minNativeWei = 10n ** 15n,
   deviceRoot?: SoftDeviceKey,
+  /** Which confirmers the runner gets. Undefined means just the Textile-shaped fake. */
+  confirmers?: SettlementConfirmer[],
+  /** The same plan policy the preparation service was given: a plan rebuilt without it describes another permission. */
+  planPolicy?: PlanPolicy,
 ): Promise<RunWorld> {
   const kernel = new FakeKernel(world);
   const orders = new FakeOrders();
@@ -263,6 +279,7 @@ export async function attachRunner(
     chain,
     minWindowMs: 5_000,
     infrastructure,
+    ...(planPolicy && { planPolicy }),
     now,
   });
   // A device-key wallet has a recorded DEVICE_KEY root (a fresh clone) and no passkey for the root actions to find.
@@ -291,6 +308,7 @@ export async function attachRunner(
           allowedContracts: request.allowedContracts,
           allowedAssetIds: request.allowedAssetIds,
           perTransactionLimit: request.perTransactionLimit,
+          ...(request.scopeKey !== undefined && { scopeKey: request.scopeKey }),
           enforcement: {
             contracts: "ONCHAIN",
             operations: "ONCHAIN",
@@ -323,7 +341,7 @@ export async function attachRunner(
     preparation: world.service,
     wallets,
     kernel,
-    orders,
+    settlement: createSettlementConfirmerRegistry(confirmers ?? [orders]),
     cipher,
     chain,
     signer,
@@ -331,6 +349,7 @@ export async function attachRunner(
     minWindowMs: 5_000,
     minNativeWei,
     infrastructure,
+    ...(planPolicy && { planPolicy }),
     poll: { intervalMs: 1, maxWaitMs: 3 },
     // Waiting moves the test clock, so bounded polls end instead of spinning on a frozen time.
     sleep: (ms) => {

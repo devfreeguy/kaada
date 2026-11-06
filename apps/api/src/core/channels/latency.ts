@@ -113,7 +113,8 @@ export function classifyAction(
     | "RETRY"
     | "SET_COUNTRY"
     | "CONVERT_CURRENCY"
-    | "KEEP_CURRENCY",
+    | "KEEP_CURRENCY"
+    | "CONFIRM_CONVERSION",
   suggestion?: string,
 ): LatencyPlan {
   switch (kind) {
