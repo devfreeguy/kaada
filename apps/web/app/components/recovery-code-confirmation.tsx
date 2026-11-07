@@ -3,7 +3,6 @@ import { formatRecoveryCode, parseRecoveryCode } from "../lib/recovery-code";
 import { ActionButton } from "./application/action-button";
 import { StatusNote } from "./application/status-note";
 import { TextField } from "./application/text-field";
-import { RecoveryNeeds } from "./recovery-needs";
 import type { useRecoveryCode } from "./use-recovery-code";
 export function RecoveryCodeConfirmation({
   controller,
@@ -34,7 +33,6 @@ export function RecoveryCodeConfirmation({
       )}
       {step.name === "confirm" && (
         <>
-          <RecoveryNeeds />
           <TextField
             label="Type the code back"
             value={typed}

@@ -13,10 +13,10 @@ export function SetupFinalizeStep({
   onFinish: () => Promise<void>;
 }) {
   return (
-    <FlowSection title="Almost done" description="One last step to create your wallet.">
+    <FlowSection title="Almost done">
       {message ? <StatusNote tone="warning">{message}</StatusNote> : null}
-      <ActionButton busy={busy} busyLabel="Finishing…" onClick={() => void onFinish()}>
-        Finish setup
+      <ActionButton busy={busy} busyLabel="Creating wallet…" onClick={() => void onFinish()}>
+        Create wallet
       </ActionButton>
     </FlowSection>
   );

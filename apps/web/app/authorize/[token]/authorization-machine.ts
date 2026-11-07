@@ -13,6 +13,8 @@
  * so a late answer from a previous request can never turn an approved payment back into a failure.
  */
 
+import type { Operation } from "../../lib/app-copy";
+
 export type Method = "PIN" | "PASSKEY" | "DEVICE_KEY";
 
 interface MoneyView {
@@ -27,6 +29,8 @@ export interface Summary {
   minimumReceive: MoneyView;
 }
 export interface View {
+  /** What is being authorized, as the server states it. */
+  operation: Operation;
   summary: Summary;
   expiresAt: string;
   pin: { isSet: boolean; resetRequired: boolean; lockedUntil?: string };
@@ -67,7 +71,7 @@ export type AuthorizationState =
       lock: Lock | null;
     }
   | { name: "submitting"; view: View; method: Method }
-  | { name: "done"; method: Method };
+  | { name: "done"; method: Method; operation: Operation };
 
 type Resolved = Exclude<AuthorizationState, { name: "loading" | "submitting" | "done" }>;
 
@@ -108,7 +112,9 @@ export function authorizationReducer(
     case "moved":
       return state.name === "submitting" ? event.state : state;
     case "succeeded":
-      return state.name === "submitting" ? { name: "done", method: state.method } : state;
+      return state.name === "submitting"
+        ? { name: "done", method: state.method, operation: state.view.operation }
+        : state;
     case "lock-expired":
       return state.name === "ready" ? { ...state, lock: null } : state;
   }

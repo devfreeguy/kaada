@@ -29,11 +29,11 @@ export function RecoveryStart({
       />
       <ActionButton
         busy={busy}
-        busyLabel="Starting…"
+        busyLabel="Sending…"
         disabled={email.length < 5}
         onClick={() => void start()}
       >
-        Start recovery
+        Send code
       </ActionButton>
     </FlowSection>
   );

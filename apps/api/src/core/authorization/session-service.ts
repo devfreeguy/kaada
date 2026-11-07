@@ -21,6 +21,8 @@ export interface AuthorizationSessionServiceDeps {
 
 /** What the secure page shows. The ids of the user, wallet, intent and route stay on the server. */
 export interface AuthorizationView {
+  /** What is being authorized, so the page says so in its own words instead of assuming. */
+  operation: "SEND" | "CONVERT";
   summary: AuthorizationSummary;
   fees: MoneyView[];
   expiresAt: Date;
@@ -192,7 +194,8 @@ export class AuthorizationSessionService {
       intent.revision !== session.intentRevision ||
       route.intentRevision !== session.intentRevision ||
       route.status !== "VALID" ||
-      !intent.amount
+      !intent.amount ||
+      (intent.type !== "SEND" && intent.type !== "CONVERT")
     ) {
       throw invalid();
     }
@@ -214,6 +217,7 @@ export class AuthorizationSessionService {
     });
     const pin = await this.deps.pins.status(session.userId);
     return {
+      operation: intent.type,
       summary: priced.summary,
       fees: priced.fees,
       expiresAt: session.expiresAt,

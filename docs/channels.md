@@ -112,7 +112,7 @@ the next pass tries again.
 | awaiting authorization                                        | (summary shown)                                                                 |
 | authorization expired / cancelled                             | summary replaced, button removed: "wasn't confirmed in time… nothing was spent" |
 | preparing                                                     | "Authorized ✅ Confirming the final price…"                                     |
-| root step                                                     | "One security step is needed…" + **Continue securely**                          |
+| root step                                                     | "One more confirmation is needed…" + **Continue securely**                          |
 | processing                                                    | "Processing your payment…"                                                      |
 | pending / outcome unknown                                     | "submitted and still confirming… please don't send it again" (never "retry")    |
 | completed                                                     | "Payment sent ✅" (only when the record says COMPLETED)                         |

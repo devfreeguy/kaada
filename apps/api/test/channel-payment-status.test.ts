@@ -224,7 +224,7 @@ describe("PaymentStatusDispatcher", () => {
     const action = ctx.adapter.last?.actions?.[0];
     assert.equal(action?.type, "OPEN_URL");
     assert.equal(action?.type === "OPEN_URL" && action.semantic, "OPEN_ROOT_ACTION");
-    assert.match(ctx.adapter.last?.text ?? "", /One security step is needed/);
+    assert.match(ctx.adapter.last?.text ?? "", /One more security check is needed/);
   });
 
   it("an expired authorization replaces the summary, so its button is no longer offered", async () => {

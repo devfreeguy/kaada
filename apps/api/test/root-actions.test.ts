@@ -54,7 +54,7 @@ describe("installing a permission with a DEVICE-KEY root", () => {
     assert.equal(view.rootType, "DEVICE_KEY");
     assert.equal(await w.rootActions.requiredAction(session.walletId), "ROOT_DEVICE_KEY_REQUIRED");
     // The page's button names the method from the action; the sentence under the title must not talk about a passkey.
-    assert.match(view.message, /^One-time setup/);
+    assert.match(view.message, /^One more security check/);
     assert.doesNotMatch(view.message, /passkey/i);
   });
 

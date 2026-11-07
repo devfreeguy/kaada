@@ -35,7 +35,7 @@ export function CancelFlow() {
           {view.name === "error" && <StatusNote tone="danger">{view.message}</StatusNote>}
           <ActionButton
             busy={view.name === "working"}
-            busyLabel="Confirm on your device…"
+            busyLabel="Confirming…"
             onClick={() => void cancelWithRoot()}
           >
             This wasn’t me. Stop it

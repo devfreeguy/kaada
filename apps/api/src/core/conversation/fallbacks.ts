@@ -177,7 +177,7 @@ export function fallbackParts(
       }
       return {
         acknowledgement: "Wallet ready 🎉",
-        body: "Now set up your 6-digit PIN. You'll use it to approve payments without having to confirm with your root credential every time.",
+        body: "Now set up your 6-digit PIN. You'll use it to approve payments.",
       };
     case "ONBOARDING_RECOVERY_NEEDED":
       if (facts.context === "RESUMING" || facts.context === "CHECK_IN") {

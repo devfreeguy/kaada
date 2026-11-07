@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, describeError, json } from "../../lib/api";
 import { failureCopy } from "../../lib/app-copy";
+import type { Operation } from "../../lib/app-copy";
 import { logFailure } from "../../lib/client-log";
 import { observeRequest } from "../../lib/observe-request";
 import type { RootChallenge } from "../../lib/root-proof";
@@ -9,16 +10,18 @@ import { DeviceKeyMissingError, proveRoot } from "../../lib/root-proof";
 import { useOperation } from "../../lib/use-operation";
 
 type RootAction = "ROOT_PASSKEY_REQUIRED" | "ROOT_DEVICE_KEY_REQUIRED";
+type RootMethod = "passkey" | "device";
 export type View =
   | { name: "loading" }
   | { name: "invalid" }
   | { name: "load-error"; message: string }
-  | { name: "ready"; message: string; action: RootAction; notice?: string }
-  | { name: "confirming"; message: string; action: RootAction }
-  | { name: "done" };
+  | { name: "ready"; message: string; action: RootAction; operation: Operation; notice?: string }
+  | { name: "confirming"; message: string; action: RootAction; operation: Operation }
+  | { name: "done"; method: RootMethod; operation: Operation };
 
 /**
- * Wallet setup that needs the person's ROOT (creating the account and installing the restricted permission for one payment).
+ * The extra confirmation a payment or conversion can need from the person's ROOT (creating the account and installing the
+ * restricted permission for it). It belongs to THAT operation: the server names it, and this page words itself from it.
  * The server decides exactly what is signed and which signer the wallet has: the page shows a sentence and the matching prompt
  * (a passkey, or this device's key), sends back the root's proof and nothing else, and never asks for the PIN.
  *
@@ -26,12 +29,14 @@ export type View =
  * second tap sends nothing, a late answer is dropped, and a completed setup can never be replaced by a failure.
  */
 async function loadRootAction(token: string): Promise<View> {
-  const body = await json<{ message: string; action: RootAction }>(
+  const body = await json<{ message: string; action: RootAction; operation: Operation }>(
     await api("/root-action/view", token),
   );
   if (body.action !== "ROOT_PASSKEY_REQUIRED" && body.action !== "ROOT_DEVICE_KEY_REQUIRED")
     throw new Error("Unsupported root action");
-  return { name: "ready", message: body.message, action: body.action };
+  if (body.operation !== "SEND" && body.operation !== "CONVERT")
+    throw new Error("Unsupported operation");
+  return { name: "ready", message: body.message, action: body.action, operation: body.operation };
 }
 
 export function useRootAction({ token }: { token: string }) {
@@ -69,12 +74,12 @@ export function useRootAction({ token }: { token: string }) {
 
   const confirm = useCallback(async () => {
     if (view.name !== "ready") return;
-    const { action, message } = view;
+    const { action, message, operation: kind } = view;
     const operation = gate.begin();
     if (!operation) return;
-    setView({ name: "confirming", action, message });
+    setView({ name: "confirming", action, message, operation: kind });
     const fail = (notice: string) =>
-      operation.commit(() => setView({ name: "ready", action, message, notice }));
+      operation.commit(() => setView({ name: "ready", action, message, operation: kind, notice }));
     try {
       const options = await api("/root-action/options", token);
       if (options.status === 401) {
@@ -92,7 +97,13 @@ export function useRootAction({ token }: { token: string }) {
         return;
       }
       if (!response.ok) throw new Error("complete");
-      operation.succeed(() => setView({ name: "done" }));
+      operation.succeed(() =>
+        setView({
+          name: "done",
+          operation: kind,
+          method: action === "ROOT_PASSKEY_REQUIRED" ? "passkey" : "device",
+        }),
+      );
     } catch (error) {
       logFailure("root_action.register_failed", error);
       // Cancelling the prompt is the person's choice, and certain: nothing was submitted.
@@ -101,8 +112,8 @@ export function useRootAction({ token }: { token: string }) {
         error instanceof DeviceKeyMissingError
           ? failureCopy.deviceKeyMissing
           : cancelled
-            ? failureCopy.cancelled
-            : failureCopy.unknownRequest,
+            ? failureCopy.cancelledPayment
+            : failureCopy.unknownResult,
       );
     } finally {
       operation.finish();

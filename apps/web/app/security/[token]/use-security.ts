@@ -11,12 +11,16 @@ import { useBrowserCapabilities } from "../../lib/browser-capabilities";
 
 type Kind = "ROTATE_ROOT" | "ENROLL_BACKUP";
 type NewType = "PASSKEY" | "DEVICE_KEY";
+/** Which change this is. Kept through every state, so a later check still knows what it is confirming. */
+export interface Change {
+  kind: Kind;
+  type: NewType;
+}
 export type Progress =
   | { name: "idle" }
-  | { name: "confirmed" }
-  | { name: "pending"; message: string; changeId: string }
+  | { name: "pending"; message: string; changeId: string; change: Change }
   | { name: "working"; message: string }
-  | { name: "done"; kind: Kind }
+  | { name: "done"; change: Change }
   | { name: "error"; message: string };
 interface PreparedChange {
   changeId: string;
@@ -48,16 +52,16 @@ export function useSecurity({ token }: { token: string }) {
   const gate = useOperation();
 
   const check = useCallback(
-    async (changeId: string) => {
+    async (changeId: string, change: Change) => {
       const operation = gate.begin();
       if (!operation) return;
       try {
         const view = await json<ChangeView>(await api(`/wallet/root/changes/${changeId}`, token));
         if (view.status === "CONFIRMED") {
-          operation.succeed(() => setProgress({ name: "confirmed" }));
+          operation.succeed(() => setProgress({ name: "done", change }));
         } else if (view.status === "SUBMITTED") {
           operation.commit(() =>
-            setProgress({ name: "pending", changeId, message: STILL_CONFIRMING }),
+            setProgress({ name: "pending", changeId, change, message: STILL_CONFIRMING }),
           );
         } else {
           operation.commit(() =>
@@ -73,6 +77,7 @@ export function useSecurity({ token }: { token: string }) {
           setProgress({
             name: "pending",
             changeId,
+            change,
             message: describeError(error, "Couldn't check yet. Try again shortly."),
           }),
         );
@@ -141,13 +146,14 @@ export function useSecurity({ token }: { token: string }) {
           );
         }
         if (view.status === "CONFIRMED") {
-          operation.succeed(() => setProgress({ name: "done", kind }));
+          operation.succeed(() => setProgress({ name: "done", change: { kind, type } }));
           return;
         }
         if (view.status === "SUBMITTED") {
           show({
             name: "pending",
             changeId: prepared.changeId,
+            change: { kind, type },
             message: "Submitted and still confirming. Check again shortly.",
           });
           return;
@@ -156,7 +162,12 @@ export function useSecurity({ token }: { token: string }) {
       } catch (error) {
         logFailure("security.change_failed", error);
         if (submittedChange) {
-          show({ name: "pending", changeId: submittedChange, message: UNKNOWN_RESULT });
+          show({
+            name: "pending",
+            changeId: submittedChange,
+            change: { kind, type },
+            message: UNKNOWN_RESULT,
+          });
           return;
         }
         show({

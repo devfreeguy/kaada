@@ -1,5 +1,6 @@
 "use client";
 import { FlowSection } from "../components/application/flow-section";
+import { RECOVERY_WAITING } from "../lib/recovery-copy";
 import type { useRecovery } from "./use-recovery";
 
 function remaining(until: string, now: number): string {
@@ -15,20 +16,36 @@ function remaining(until: string, now: number): string {
 
 export function RecoveryWaiting({ status, now, waiting }: ReturnType<typeof useRecovery>) {
   if (!waiting || !status) return null;
+  const step = status.nextStep;
+  if (
+    step !== "WAIT" &&
+    step !== "SUBMITTING" &&
+    step !== "FINALIZING" &&
+    step !== "WAITING_FOR_PAYMENT"
+  ) {
+    return null;
+  }
+  if (step !== "WAIT") {
+    const copy = RECOVERY_WAITING[step];
+    return <FlowSection title={copy.title} description={copy.description} />;
+  }
+  const copy = RECOVERY_WAITING.WAIT;
+  const deadline = status.executeAfter ? new Date(status.executeAfter).getTime() : null;
   return (
-    <FlowSection
-      title="Recovery in progress"
-      description="This delay protects you. The owner of the current device can cancel it from the email link we sent. You can leave and come back on this device."
-    >
-      {status.executeAfter ? (
+    <FlowSection title={copy.title} description={copy.description}>
+      {deadline === null ? (
+        <p className="text-sm text-app-muted">{copy.pending}</p>
+      ) : deadline <= now ? (
+        <p className="text-sm text-app-muted" aria-live="polite">
+          {copy.over}
+        </p>
+      ) : (
         <div>
-          <p className="text-sm text-app-muted">Your wallet moves to this device in about</p>
+          <p className="text-sm text-app-muted">{copy.countdown}</p>
           <p className="text-3xl font-semibold" aria-live="polite">
-            {remaining(status.executeAfter, now)}
+            {remaining(status.executeAfter ?? "", now)}
           </p>
         </div>
-      ) : (
-        <p className="text-sm text-app-muted">Working…</p>
       )}
     </FlowSection>
   );

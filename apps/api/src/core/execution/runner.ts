@@ -50,10 +50,13 @@ export type RunOutcome =
   | { status: "EXECUTION_ROUTE_UNSUPPORTED" }
   | { status: "NOT_READY" };
 
+/** One sentence for the step the PIN cannot cover, so the bot and the page never describe it differently. */
+export const ROOT_ACTION_NOTICE = "One more security check is needed to continue.";
+
 export function runMessage(outcome: RunOutcome): string {
   switch (outcome.status) {
     case "ROOT_ACTION_REQUIRED":
-      return "Confirm wallet setup to continue your payment.";
+      return ROOT_ACTION_NOTICE;
     case "PROCESSING_PAYMENT":
       return "Processing your payment...";
     case "PAYMENT_SENT":

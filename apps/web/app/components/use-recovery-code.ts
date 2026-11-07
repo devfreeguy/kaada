@@ -19,7 +19,8 @@ export type Step =
   | { name: "intro" }
   | { name: "show"; code: string }
   | { name: "confirm"; code: string; mismatch: boolean }
-  | { name: "arming" }
+  /** The root is being asked to confirm. `method` is known once the server has chosen the prompt. */
+  | { name: "arming"; method?: "passkey" | "device" }
   | { name: "done" }
   | { name: "error"; message: string };
 
@@ -100,6 +101,12 @@ export function useRecoveryCode({
         const prepared = await json<{ configurationId: string; signing: RootSigningRequest }>(
           await api("/recovery/configuration/prepare", token, {
             body: { recoveryAddress: address },
+          }),
+        );
+        operation.commit(() =>
+          setStep({
+            name: "arming",
+            method: prepared.signing.rootKind === "PASSKEY" ? "passkey" : "device",
           }),
         );
         const material = await signRootRequest(prepared.signing);

@@ -39,7 +39,7 @@ describe("root action before payment", () => {
     assert.ok(session);
     const link = await w.rootActions.issueLink({ sessionId: session.id, userId: session.userId });
     const view = await w.rootActions.view(link.token);
-    assert.equal(view.title, "Confirm wallet setup to continue payment");
+    assert.equal(view.operation, "SEND");
     const challenge = await w.rootActions.options(link.token);
     assert.equal(challenge.type, "PASSKEY");
     assert.equal(challenge.action, "ROOT_PASSKEY_REQUIRED");

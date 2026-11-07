@@ -31,6 +31,9 @@ async function loadAuthorization(token: string) {
     api("/authorization", token).then(json<View>),
     methodFor(token),
   ]);
+  // Every screen after this one speaks as the operation the server named: an unknown one is a load failure, not a "payment".
+  if (view.operation !== "SEND" && view.operation !== "CONVERT")
+    throw new Error("Unsupported operation");
   return initialScreen(view, method, Date.now());
 }
 

@@ -1,3 +1,4 @@
+import { LINK_UNAVAILABLE, failureCopy } from "./app-copy";
 import { loggedFetch } from "./client-log";
 
 /** One way to call the Kaada API from the browser: same origin, never cached, the token only ever in a header. */
@@ -51,29 +52,27 @@ export async function json<T>(response: Response): Promise<T> {
 
 export function describeError(error: unknown, fallback: string): string {
   if (error instanceof ApiError) {
-    if (error.code === "INVALID_PIN") return "That PIN is incorrect. Please try again.";
-    if (error.code === "PIN_LOCKED" || error.status === 423)
-      return "Too many wrong PIN attempts. Please try again later.";
-    if (error.code === "PIN_NOT_SET") return "Create your payment PIN before continuing.";
+    if (error.code === "INVALID_PIN") return failureCopy.wrongPin();
+    if (error.code === "PIN_LOCKED" || error.status === 423) return failureCopy.locked;
+    if (error.code === "PIN_NOT_SET") return failureCopy.pinNotSet;
     if (error.code === "GAS_ESTIMATE_UNAVAILABLE")
-      return "We can't finish securing your account right now. Please try again in a few minutes.";
+      return "We can't confirm the network fee right now. Try again in a few minutes.";
     if (error.code === "GAS_FUNDING_REQUIRED")
-      return "To finish securing your account, add a small amount of CELO to your wallet.";
+      return "Your wallet needs a little CELO for the network fee.";
     if (error.code === "SPONSORSHIP_UNAVAILABLE")
-      return "To finish securing your account, add a small amount of CELO to your wallet, or deposit a larger amount.";
-    if (error.code === "PIN_RESET_REQUIRED")
-      return "Your PIN needs to be reset through account recovery.";
-    if (error.kind === "invalid") return "This link or session has expired. Start again.";
+      return "Your wallet needs a little CELO for the network fee. Add some, or deposit a larger amount.";
+    if (error.code === "PIN_RESET_REQUIRED") return failureCopy.pinResetRequired;
+    if (error.kind === "invalid") return LINK_UNAVAILABLE;
     if (error.kind === "rate-limited") return "Too many attempts. Please wait a few minutes.";
     if (error.kind === "unavailable") return "Kaada is temporarily unavailable. Please try again.";
   }
   if (error instanceof Error && error.name === "NotAllowedError") {
-    return "That was cancelled. Nothing was changed; you can try again.";
+    return failureCopy.cancelled;
   }
   if (error instanceof Error && error.name === "SecurityError")
     return "Open this link on the Kaada address it was sent for, in a supported browser.";
   if (error instanceof Error && error.name === "NotSupportedError")
-    return "This device cannot create that credential. Try another supported device.";
+    return "This device can't create that passkey or key. Try another device.";
   if (error instanceof Error && error.name === "InvalidStateError")
     return "This device already has that passkey. Try a different authenticator.";
   return fallback;

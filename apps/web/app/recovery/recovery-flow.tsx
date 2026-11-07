@@ -1,7 +1,8 @@
 "use client";
-import { ActionButton } from "../components/application/action-button";
+import { ActionButton, ActionLink } from "../components/application/action-button";
 import { FlowSection } from "../components/application/flow-section";
 import { FlowStatus } from "../components/application/flow-status";
+import { TELEGRAM_BOT_URL } from "../lib/site";
 import { StatusNote } from "../components/application/status-note";
 import { PinReset } from "./pin-reset";
 import { RecoveryCredential } from "./recovery-credential";
@@ -46,9 +47,9 @@ export function RecoveryFlow() {
           title="Wallet recovered"
           description="This device now controls your wallet. Your PIN, authenticator app and Recovery Code are set."
         >
-          <ActionButton variant="secondary" onClick={forget}>
-            Close
-          </ActionButton>
+          <ActionLink href={TELEGRAM_BOT_URL} onClick={forget}>
+            Back to Kaada
+          </ActionLink>
         </FlowSection>
       )}
       {step === "STOPPED" && (

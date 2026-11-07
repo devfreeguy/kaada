@@ -26,7 +26,7 @@ export function usePinReset({ token, onDone }: { token: string; onDone: () => vo
     setValue("");
     if (entered !== first) {
       setFirst(null);
-      setMessage("The PINs didn’t match. Start again.");
+      setMessage("The PINs didn’t match. Try again.");
       return;
     }
     const operation = gate.begin();

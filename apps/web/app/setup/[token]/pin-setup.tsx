@@ -4,6 +4,7 @@ import { FlowSection } from "../../components/application/flow-section";
 import { FlowStatus } from "../../components/application/flow-status";
 import { StatusNote } from "../../components/application/status-note";
 import { PinKeypad } from "../../components/pin-keypad";
+import { rootPromptCopy } from "../../lib/app-copy";
 import { usePinSetup } from "./use-pin-setup";
 
 export function PinSetup({ token, onDone }: { token: string; onDone?: (() => void) | undefined }) {
@@ -11,12 +12,12 @@ export function PinSetup({ token, onDone }: { token: string; onDone?: (() => voi
   if (step.name === "loading") return <FlowStatus kind="loading" subject="setup" />;
   if (step.name === "set") return null;
   if (step.name === "saved") {
-    return <FlowSection title="PIN saved" description="You can return to your chat." />;
+    return <FlowSection title="PIN saved" />;
   }
   if (step.name === "working") {
     return (
-      <FlowSection title="Create your PIN">
-        <StatusNote>Confirming it’s you…</StatusNote>
+      <FlowSection title="Verify it's you">
+        <StatusNote>{rootPromptCopy[step.method ?? "pending"]}</StatusNote>
       </FlowSection>
     );
   }
@@ -24,19 +25,22 @@ export function PinSetup({ token, onDone }: { token: string; onDone?: (() => voi
     return (
       <FlowSection title="Create your PIN">
         <StatusNote tone="danger">{step.message}</StatusNote>
-        <ActionButton
-          variant="secondary"
-          onClick={step.name === "error" ? () => setStep({ name: "enter" }) : reload}
-        >
-          Try again
-        </ActionButton>
+        {step.name === "error" ? (
+          <ActionButton variant="secondary" onClick={() => setStep({ name: "enter" })}>
+            Try again
+          </ActionButton>
+        ) : (
+          <ActionButton variant="secondary" onClick={reload}>
+            Check again
+          </ActionButton>
+        )}
       </FlowSection>
     );
   }
   return (
     <FlowSection
       title={step.name === "confirm" ? "Confirm your PIN" : "Create your PIN"}
-      description="You'll use it to approve payments."
+      {...(step.name === "enter" && { description: "You'll use it to approve payments." })}
     >
       <PinKeypad
         value={value}

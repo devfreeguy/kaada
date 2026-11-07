@@ -2,9 +2,44 @@ import { logFailure } from "../../lib/client-log";
 import { api } from "../../lib/api";
 export interface Outcome {
   state: string;
-  message: string;
+  message?: string;
+  /** Which signer the next step needs, when the server says the payment waits on one. */
+  action?: string;
 }
 const PENDING_STATES = new Set(["PREPARING", "NOT_STARTED", "PREPARATION_IN_PROGRESS"]);
+/** Payment states that are final: nothing that arrives later may replace them. */
+const FINAL_STATES = new Set([
+  "PAYMENT_SENT",
+  "PAYMENT_FAILED",
+  "REAUTHORIZATION_REQUIRED",
+  "INSUFFICIENT_BALANCE",
+  "GAS_FUNDING_REQUIRED",
+  "EXECUTION_ROUTE_UNSUPPORTED",
+  "EXECUTION_BLOCKED",
+  "FIRM_QUOTE_TOO_CLOSE_TO_EXPIRY",
+  "FINAL_PRICE_UNAVAILABLE",
+  "PROVIDER_CAPACITY_REACHED",
+]);
+/** States a payment reaches only after its price is confirmed and execution has begun. */
+const PROGRESSED_STATES = new Set([
+  "EXECUTION_READY",
+  "ROOT_ACTION_REQUIRED",
+  "PROCESSING_PAYMENT",
+  "PAYMENT_PENDING",
+]);
+
+/**
+ * Which of two answers the page should keep. The payment's status can be read from the server a moment before its run has
+ * recorded anything, which comes back as "not started" even though the price was already confirmed: that answer describes an
+ * older moment, so it never replaces a later one. A final state is never replaced by anything. Every other change is a real
+ * transition and is shown.
+ */
+export function advanceOutcome(current: Outcome | null, incoming: Outcome): Outcome {
+  if (!current) return incoming;
+  if (FINAL_STATES.has(current.state)) return current;
+  if (incoming.state === "NOT_STARTED" && PROGRESSED_STATES.has(current.state)) return current;
+  return incoming;
+}
 /** Payment states after which nothing more will happen on its own. */
 const PAYMENT_DONE = new Set([
   "PAYMENT_SENT",
@@ -109,10 +144,7 @@ export function watchFinalPricing(
     } catch (error) {
       logFailure("authorize.final_pricing_failed", error);
       if (!cancelled) {
-        setOutcome({
-          state: "ERROR",
-          message: "Couldn't confirm your payment's progress. Check your chat before trying again.",
-        });
+        setOutcome({ state: "ERROR" });
       }
     }
   })();

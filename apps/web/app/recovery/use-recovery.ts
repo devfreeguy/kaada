@@ -261,7 +261,7 @@ export function useRecovery() {
       const material = await signRootRequest(request);
       await json(await api("/recovery/signing-proof", token, { body: { material } }));
       await refresh(token);
-    }, "Couldn’t confirm your new credential.");
+    }, "Couldn’t confirm your new passkey or key.");
   const forget = () => {
     // A new recovery starts clean: invalidate anything still running for the old one.
     epoch.current += 1;

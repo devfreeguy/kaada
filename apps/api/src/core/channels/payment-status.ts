@@ -9,6 +9,7 @@ import type {
 import { errorDetails } from "./error-details.js";
 import { paymentView } from "../execution/run-status.js";
 import type { RunOutcome } from "../execution/runner.js";
+import { ROOT_ACTION_NOTICE } from "../execution/runner.js";
 import type { AgentLog } from "../agent/ports.js";
 import { noopLog } from "../agent/ports.js";
 import { NO_CAPABILITIES } from "../conversation/capabilities.js";
@@ -161,7 +162,7 @@ export function describeProgress(progress: PaymentProgress, seed = ""): string {
     case "PREPARING":
       return "Authorized ✅ Confirming the final price…";
     case "ROOT_ACTION_REQUIRED":
-      return "One security step is needed before this payment can be sent.";
+      return ROOT_ACTION_NOTICE;
     case "PROCESSING":
       return "Processing your payment…";
     case "PENDING":

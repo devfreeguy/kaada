@@ -51,7 +51,11 @@ export function VerificationStep({
       {actionHidden
         ? null
         : (children ?? (
-            <ActionButton busy={waiting} busyLabel={copy.waiting} onClick={onConfirm}>
+            <ActionButton
+              busy={waiting}
+              {...(copy.waiting && { busyLabel: copy.waiting })}
+              onClick={onConfirm}
+            >
               {copy.action}
             </ActionButton>
           ))}

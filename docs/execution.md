@@ -95,7 +95,7 @@ lock is a conditional database update.
 
 ## User-facing states
 
-`ROOT_ACTION_REQUIRED` ("Confirm wallet setup to continue payment") - `PROCESSING_PAYMENT` - `PAYMENT_SENT` -
+`ROOT_ACTION_REQUIRED` ("One more confirmation is needed before this payment can be sent") - `PROCESSING_PAYMENT` - `PAYMENT_SENT` -
 `PAYMENT_PENDING` ("don't send it again") - `PAYMENT_FAILED` - `REAUTHORIZATION_REQUIRED` - `GAS_FUNDING_REQUIRED` -
 `INSUFFICIENT_BALANCE` - `EXECUTION_ROUTE_UNSUPPORTED`. The API returns a state, a sentence and (for failures) a short
 code. Never a claim token, UserOperation internals, calldata, a hash or an amount.

@@ -12,7 +12,7 @@ export function SetupNextStep({ token, funded }: { token: string; funded: boolea
   if (!pinComplete) return <PinSetup token={token} onDone={finishPin} />;
   if (funded) return <RecoveryCodeCreator token={token} standalone />;
   return (
-    <FlowSection title="Wallet ready" description="You can return to your chat.">
+    <FlowSection title="Wallet ready">
       <ActionLink href={TELEGRAM_BOT_URL}>Back to Kaada</ActionLink>
     </FlowSection>
   );

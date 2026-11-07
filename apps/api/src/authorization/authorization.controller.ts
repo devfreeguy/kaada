@@ -88,6 +88,7 @@ export class AuthorizationController {
     try {
       const view = await this.sessionService().view(bearer(authorization));
       return {
+        operation: view.operation,
         summary: view.summary,
         fees: view.fees,
         expiresAt: view.expiresAt.toISOString(),

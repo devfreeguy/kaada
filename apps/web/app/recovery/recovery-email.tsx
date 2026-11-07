@@ -1,6 +1,7 @@
 "use client";
 import { ActionButton } from "../components/application/action-button";
 import { FlowSection } from "../components/application/flow-section";
+import { EMAIL_CODE_MINUTES } from "../lib/recovery-copy";
 import { TextField } from "../components/application/text-field";
 import type { useRecovery } from "./use-recovery";
 
@@ -16,7 +17,7 @@ export function RecoveryEmail({
   return (
     <FlowSection
       title="Check your email"
-      description="If that address belongs to a Kaada wallet, we sent a 6-digit code. It expires soon."
+      description={`If that address belongs to a Kaada wallet, we sent a 6-digit code. It expires in ${String(EMAIL_CODE_MINUTES)} minutes.`}
     >
       <TextField
         label="6-digit code"
@@ -34,7 +35,7 @@ export function RecoveryEmail({
         disabled={emailCode.length !== 6}
         onClick={() => void verifyEmail()}
       >
-        Verify
+        Verify email
       </ActionButton>
       <ActionButton variant="quiet" disabled={busy} onClick={() => void resend()}>
         Send a new code

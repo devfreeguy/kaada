@@ -1,7 +1,7 @@
 import { ApplicationShell } from "../../components/application/application-shell";
 import { RootActionFlow } from "./root-action-flow";
 export const metadata = {
-  title: "Confirm wallet setup",
+  title: "Confirm",
   referrer: "no-referrer" as const,
   robots: { index: false, follow: false },
 };

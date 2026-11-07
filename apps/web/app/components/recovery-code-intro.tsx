@@ -23,13 +23,12 @@ export function RecoveryCodeIntro({
       )}
       {step.name === "authenticator" && (
         <>
-          <RecoveryNeeds />
           <AuthenticatorEnroller token={token} onDone={() => setStep({ name: "intro" })} />
         </>
       )}
       {step.name === "intro" && (
         <>
-          <RecoveryNeeds />
+          <RecoveryNeeds only="warning" />
           <p className="text-sm text-app-muted">
             Kaada never sees your Recovery Code. Write it down and keep it away from your phone.
           </p>

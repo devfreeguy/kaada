@@ -25,9 +25,18 @@ export type View =
   | { name: "finish" }
   | { name: "creating"; action: "create" | "device" | "finish" }
   | { name: "done"; address: string }
-  | { name: "error"; message: string; retry: "load" | "create" | "device" | "finish" };
+  /**
+   * `retry` says what the screen may offer. load: the first read failed. create / device: it failed before anything was sent, so
+   * the same action can run again. check: the request went out and its result is unknown, so the only safe step is to read the
+   * wallet's state again. finish: the credential is saved and only the last step is left.
+   */
+  | { name: "error"; message: string; retry: "load" | "check" | "create" | "device" | "finish" };
 
-const SAVED_BUT_UNCONFIRMED = "Your credential is saved. Wallet creation isn't confirmed yet.";
+const SAVED_BUT_UNCONFIRMED = "Your setup is saved, but your wallet isn't confirmed yet.";
+const PASSKEY_UNCONFIRMED =
+  "We couldn't confirm your setup. Check again before creating another passkey.";
+const DEVICE_UNCONFIRMED =
+  "We couldn't confirm your setup. Check again before creating another key.";
 
 /** Sends the setup token as a bearer header: it is never put in a body, a query string or a log. */
 async function loadSetup(
@@ -134,6 +143,8 @@ export function useSetup({ token }: { token: string }) {
         return;
       }
       show({ name: "creating", action: "device" });
+      // Once the registration request has gone out, a failure no longer proves that nothing was created.
+      let submitted = false;
       try {
         const key = await generateDeviceKey();
         const optionsResponse = await api("/wallet/device-keys/options", token, {
@@ -153,6 +164,7 @@ export function useSetup({ token }: { token: string }) {
         const { r, s } = await signDevicePayload(key.privateKey, challenge.payload);
         // Kept BEFORE the server records it: a key lost after the server accepted it would lock the wallet.
         await saveDeviceKey(challenge.keyId, key.privateKey);
+        submitted = true;
         const registerResponse = await api("/wallet/device-keys/register", token, {
           method: "POST",
           body: {
@@ -170,7 +182,7 @@ export function useSetup({ token }: { token: string }) {
         if (registerResponse.status === 502) {
           show({
             name: "error",
-            message: "Your device key is saved. Wallet creation isn't confirmed yet.",
+            message: SAVED_BUT_UNCONFIRMED,
             retry: "finish",
           });
           return;
@@ -182,11 +194,15 @@ export function useSetup({ token }: { token: string }) {
         operation.succeed(() => setView({ name: "done", address }));
       } catch (error) {
         logFailure("setup.device_key_failed", error);
-        show({
-          name: "error",
-          message: describeError(error, "Couldn't confirm setup. Reload before trying again."),
-          retry: "load",
-        });
+        show(
+          submitted
+            ? { name: "error", message: describeError(error, DEVICE_UNCONFIRMED), retry: "check" }
+            : {
+                name: "error",
+                message: describeError(error, "Couldn't create a key on this device. Try again."),
+                retry: "device",
+              },
+        );
       }
     },
     [token],
@@ -206,6 +222,8 @@ export function useSetup({ token }: { token: string }) {
     const operation = gate.begin();
     if (!operation) return;
     const show = (next: View) => operation.commit(() => setView(next));
+    // Once the verification request has gone out, a failure no longer proves that nothing was created.
+    let submitted = false;
     try {
       if (!browserSupportsWebAuthn()) {
         // Passkeys are preferred but not required: without them, a device key is the way in (when it is enabled).
@@ -233,6 +251,7 @@ export function useSetup({ token }: { token: string }) {
         typeof startRegistration
       >[0]["optionsJSON"];
       const credential = await startRegistration({ optionsJSON });
+      submitted = true;
       const verifyResponse = await api("/wallet/passkeys/registration/verify", token, {
         method: "POST",
         body: credential,
@@ -253,13 +272,17 @@ export function useSetup({ token }: { token: string }) {
     } catch (error) {
       logFailure("setup.passkey_failed", error);
       const cancelled = error instanceof Error && error.name === "NotAllowedError";
-      show({
-        name: "error",
-        message: cancelled
-          ? failureCopy.cancelled
-          : describeError(error, "Couldn't confirm setup. Reload before trying again."),
-        retry: cancelled ? "create" : "load",
-      });
+      show(
+        cancelled
+          ? { name: "error", message: failureCopy.cancelled, retry: "create" }
+          : submitted
+            ? { name: "error", message: describeError(error, PASSKEY_UNCONFIRMED), retry: "check" }
+            : {
+                name: "error",
+                message: describeError(error, "Couldn't create your passkey. Try again."),
+                retry: "create",
+              },
+      );
     } finally {
       operation.finish();
     }

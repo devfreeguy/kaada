@@ -1,7 +1,7 @@
 import { ApplicationShell } from "../../components/application/application-shell";
 import { AuthorizeFlow } from "./authorize-flow";
 export const metadata = {
-  title: "Authorize payment",
+  title: "Confirm payment",
   referrer: "no-referrer" as const,
   robots: { index: false, follow: false },
 };

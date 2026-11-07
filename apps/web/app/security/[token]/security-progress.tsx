@@ -2,7 +2,7 @@
 import { ActionButton } from "../../components/application/action-button";
 import { StatusNote } from "../../components/application/status-note";
 import type { useSecurity } from "./use-security";
-import { securityActions } from "./security-actions";
+import { changeDoneCopy } from "./security-actions";
 export function SecurityProgress({
   progress,
   check,
@@ -18,7 +18,10 @@ export function SecurityProgress({
       return (
         <>
           <StatusNote>{progress.message}</StatusNote>
-          <ActionButton variant="secondary" onClick={() => void check(progress.changeId)}>
+          <ActionButton
+            variant="secondary"
+            onClick={() => void check(progress.changeId, progress.change)}
+          >
             Check status
           </ActionButton>
         </>
@@ -26,10 +29,8 @@ export function SecurityProgress({
     case "done":
       return (
         <StatusNote tone="success">
-          {securityActions[progress.kind === "ROTATE_ROOT" ? "rotate" : "backup"].done}
+          {changeDoneCopy(progress.change.kind, progress.change.type)}
         </StatusNote>
       );
-    case "confirmed":
-      return <StatusNote tone="success">Change confirmed.</StatusNote>;
   }
 }

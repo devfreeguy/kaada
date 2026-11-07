@@ -47,7 +47,8 @@ export interface RootActionServiceDeps {
 
 /** What the secure page shows. No ids, no operation internals. */
 export interface RootActionView {
-  title: string;
+  /** What this confirmation is FOR, taken from the stored payment authorization: the page words itself from it, never from a default. */
+  operation: "SEND" | "CONVERT";
   message: string;
   expiresAt: Date;
   /** Which signer UX the client must show: decided by the wallet's root, never by the client. */
@@ -201,12 +202,14 @@ export class RootActionService {
 
   async view(token: string): Promise<RootActionView> {
     const { session, root } = await this.resolveWithRoot(token);
-    // A conversion was confirmed with one tap, not a PIN, and this setup is what lets later ones run without asking.
-    const message = (await this.isConversion(session.executionId))
-      ? "One-time setup so Kaada can convert between your own currencies without asking each time."
-      : "One-time setup for this payment.";
+    const operation = await this.operationOf(session.executionId);
+    // Said without promising how often it is needed: whether the installed permission covers a later operation depends on its scope.
+    const message =
+      operation === "CONVERT"
+        ? "One more security check is needed to convert between your own currencies."
+        : "One more security check is needed.";
     return {
-      title: "Confirm wallet setup to continue payment",
+      operation,
       message,
       expiresAt: session.expiresAt,
       action: rootActionFor(root.type),
@@ -214,14 +217,19 @@ export class RootActionService {
     };
   }
 
-  /** Whether the payment waiting on this setup is a conversion between the person's own currencies. */
-  private async isConversion(executionId: string): Promise<boolean> {
+  /**
+   * What the payment waiting on this confirmation is. A session always belongs to an execution, so an operation that cannot
+   * be found means the link is not usable: say so, rather than guessing one and showing the wrong words.
+   */
+  private async operationOf(executionId: string): Promise<"SEND" | "CONVERT"> {
     const record = await this.uow.read.executionPlans.findById(executionId);
-    if (!record) return false;
-    const authorization = await this.uow.read.paymentAuthorizations.findById(
-      record.paymentAuthorizationId,
-    );
-    return authorization?.operation === "CONVERT";
+    const authorization = record
+      ? await this.uow.read.paymentAuthorizations.findById(record.paymentAuthorizationId)
+      : null;
+    if (!authorization) {
+      throw new KaadaError("AUTHORIZATION_SESSION_INVALID", "this action link is not valid");
+    }
+    return authorization.operation;
   }
 
   /** What the client must sign: a WebAuthn request (passkey) or the documented payload (device key). */

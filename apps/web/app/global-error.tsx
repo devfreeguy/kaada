@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 
+import { errorCopy } from "./lib/app-copy";
 import { logFailure } from "./lib/client-log";
 
 /** The last line of defence: the root layout itself crashed. It must bring its own html and body. */
@@ -29,12 +30,11 @@ export default function GlobalError({
           margin: "0 auto",
         }}
       >
-        <h1>Something went wrong</h1>
-        <p>
-          Kaada hit a problem loading this page. If you already approved an action, check its status
-          in your chat before starting again
-          {error.digest ? ` (reference ${error.digest})` : ""}.
-        </p>
+        <h1>{errorCopy.title}</h1>
+        <p>{errorCopy.body}</p>
+        {error.digest ? (
+          <p style={{ fontSize: "0.75rem", opacity: 0.7 }}>Reference: {error.digest}</p>
+        ) : null}
         <button
           type="button"
           onClick={reset}
@@ -48,7 +48,7 @@ export default function GlobalError({
             cursor: "pointer",
           }}
         >
-          Try again
+          {errorCopy.action}
         </button>
       </body>
     </html>

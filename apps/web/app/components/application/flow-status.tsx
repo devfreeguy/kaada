@@ -5,8 +5,8 @@ import { FlowSection } from "./flow-section";
 import { StatusNote } from "./status-note";
 
 /**
- * The three states every link-driven screen has before its real content: loading, an expired link, a load failure. One
- * component, so the payment, setup, wallet-action and security pages say them the same way.
+ * The three states every link-driven screen has before its real content: loading, a link that is no longer available, a load failure. One
+ * component, so the payment, setup, confirmation and security pages say them the same way.
  */
 export function FlowStatus({
   kind,
@@ -14,7 +14,7 @@ export function FlowStatus({
   message,
   onRetry,
 }: {
-  kind: "loading" | "expired" | "load-failed";
+  kind: "loading" | "unavailable" | "load-failed";
   subject: LinkSubject;
   /** For a load failure: why. */
   message?: string | undefined;
@@ -27,8 +27,8 @@ export function FlowStatus({
       </p>
     );
   }
-  if (kind === "expired") {
-    const copy = linkCopy.expired(subject);
+  if (kind === "unavailable") {
+    const copy = linkCopy.unavailable(subject);
     return <FlowSection title={copy.title} description={copy.body} />;
   }
   const copy = linkCopy.loadFailed(subject);

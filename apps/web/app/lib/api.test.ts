@@ -9,7 +9,7 @@ describe("safe API errors", () => {
       (error) => {
         assert.ok(error instanceof ApiError);
         assert.equal(error.kind, "rejected");
-        assert.match(describeError(error, "fallback"), /PIN is incorrect/);
+        assert.match(describeError(error, "fallback"), /Incorrect PIN/);
         return true;
       },
     );
@@ -34,7 +34,7 @@ describe("safe API errors", () => {
         assert.ok(error instanceof ApiError);
         assert.equal(
           describeError(error, "fallback"),
-          "To finish securing your account, add a small amount of CELO to your wallet.",
+          "Your wallet needs a little CELO for the network fee.",
         );
         return true;
       },
@@ -66,7 +66,7 @@ describe("safe API errors", () => {
         const text = describeError(error, "fallback");
         assert.equal(
           text,
-          "We can't finish securing your account right now. Please try again in a few minutes.",
+          "We can't confirm the network fee right now. Try again in a few minutes.",
         );
         assert.doesNotMatch(text, /CELO|deposit/);
         return true;
@@ -100,12 +100,12 @@ describe("safe API errors", () => {
   it("keeps lockouts, rate limits and device cancellation distinct", () => {
     assert.match(
       describeError(new ApiError(423, "rejected", "PIN_LOCKED"), "fallback"),
-      /wrong PIN/,
+      /Too many attempts/,
     );
     assert.match(describeError(new ApiError(429, "rate-limited"), "fallback"), /Too many attempts/);
     assert.match(
       describeError(new DOMException("private detail", "NotAllowedError"), "fallback"),
-      /cancelled/,
+      /Cancelled/,
     );
   });
 });

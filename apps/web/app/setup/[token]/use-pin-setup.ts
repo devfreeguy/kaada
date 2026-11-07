@@ -15,7 +15,8 @@ export type Step =
   | { name: "set" }
   | { name: "enter" }
   | { name: "confirm"; first: string }
-  | { name: "working" }
+  /** Saving: asking the wallet's root to confirm it is the person. `method` is known once the server has chosen the prompt. */
+  | { name: "working"; method?: "passkey" | "device" }
   | { name: "saved" }
   | { name: "error"; message: string };
 
@@ -80,26 +81,39 @@ export function usePinSetup({
       const operation = gate.begin();
       if (!operation) return;
       operation.commit(() => setStep({ name: "working" }));
+      // Until the PIN itself has been sent, a failure proves nothing was saved and the person can simply try again.
+      let submitted = false;
       try {
         const optionsResponse = await api("/wallet/pin/options", token, { method: "POST" });
         const challenge = await json<RootChallenge>(optionsResponse);
+        operation.commit(() =>
+          setStep({ name: "working", method: challenge.type === "PASSKEY" ? "passkey" : "device" }),
+        );
         // The wallet's root decides the prompt: a passkey, or this device's key. The PIN is only ever sent with that proof.
         const proof = await proveRoot(challenge);
+        submitted = true;
         await json(await api("/wallet/pin", token, { method: "POST", body: { pin, proof } }));
         operation.succeed(() => setStep({ name: "saved" }));
       } catch (error) {
         logFailure("setup.pin_failed", error);
         const cancelled = error instanceof Error && error.name === "NotAllowedError";
-        const message =
-          error instanceof DeviceKeyMissingError
-            ? failureCopy.deviceKeyMissing
-            : cancelled
-              ? "Cancelled. Your PIN wasn't saved."
-              : describeError(
-                  error,
-                  "Couldn't confirm your PIN was saved. Reload before trying again.",
-                );
-        operation.commit(() => setStep({ name: "load-error", message }));
+        if (submitted) {
+          // The PIN went out and the answer was lost: read the state again rather than offering to enter it twice.
+          operation.commit(() =>
+            setStep({
+              name: "load-error",
+              message: describeError(error, "We couldn't confirm your PIN was saved."),
+            }),
+          );
+        } else {
+          const message =
+            error instanceof DeviceKeyMissingError
+              ? failureCopy.deviceKeyMissing
+              : cancelled
+                ? "Cancelled. Your PIN wasn't saved."
+                : describeError(error, "Couldn't confirm it's you. Try again.");
+          operation.commit(() => setStep({ name: "error", message }));
+        }
       } finally {
         operation.finish();
       }
@@ -117,7 +131,7 @@ export function usePinSetup({
       const first = step.first;
       setValue("");
       if (entered !== first) {
-        setStep({ name: "error", message: "The PINs didn't match. Start again." });
+        setStep({ name: "error", message: "The PINs didn't match. Try again." });
         return;
       }
       void save(entered);

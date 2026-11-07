@@ -1,5 +1,7 @@
 "use client";
+import { EMAIL_CODE_MINUTES } from "../lib/recovery-copy";
 import { ActionButton } from "./application/action-button";
+import { FlowSection } from "./application/flow-section";
 import { StatusNote } from "./application/status-note";
 import { TextField } from "./application/text-field";
 import { useRecoveryEmail } from "./use-recovery-email";
@@ -10,8 +12,7 @@ export function RecoveryEmailStep({ token, onDone }: { token: string; onDone: ()
   );
 
   return (
-    <div className="flex flex-col gap-4">
-      <h3>1. Recovery email</h3>
+    <FlowSection title="Recovery email" as="h2">
       {step.name === "loading" && <StatusNote>Loading…</StatusNote>}
       {step.name === "done" && (
         <StatusNote tone="success">
@@ -51,8 +52,8 @@ export function RecoveryEmailStep({ token, onDone }: { token: string; onDone: ()
       {(step.name === "code" || step.name === "checking") && (
         <>
           <p className="text-sm text-app-muted">
-            If that address can be used, a 6-digit code is on its way to {step.email}. It expires in
-            10 minutes.
+            If that address can be used, we sent a 6-digit code to {step.email}. It expires in{" "}
+            {EMAIL_CODE_MINUTES} minutes.
           </p>
           <TextField
             label="6-digit code"
@@ -81,6 +82,6 @@ export function RecoveryEmailStep({ token, onDone }: { token: string; onDone: ()
           </ActionButton>
         </>
       )}
-    </div>
+    </FlowSection>
   );
 }

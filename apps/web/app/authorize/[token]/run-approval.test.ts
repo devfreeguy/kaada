@@ -21,6 +21,7 @@ import { runApproval } from "./run-approval.js";
  */
 
 const view: View = {
+  operation: "SEND",
   summary: {
     amountMode: "EXACT_INPUT",
     senderSpends: { display: "₦700" },

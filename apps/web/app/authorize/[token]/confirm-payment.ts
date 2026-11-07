@@ -56,7 +56,7 @@ export function interpretRejection(
   }
   if (code === "GAS_FUNDING_REQUIRED") return { type: "failed", notice: failureCopy.gasFunding };
   if (code === "NOT_SENT") return { type: "failed", notice: failureCopy.notSent };
-  return { type: "failed", notice: failureCopy.unknownPayment };
+  return { type: "failed", notice: failureCopy.unknownResult };
 }
 
 /**
@@ -102,6 +102,6 @@ export async function confirmPayment(
     if (error instanceof Error && error.name === "NotAllowedError") {
       return { type: "failed", notice: failureCopy.cancelledPayment };
     }
-    return { type: "failed", notice: failureCopy.unknownPayment };
+    return { type: "failed", notice: failureCopy.unknownResult };
   }
 }

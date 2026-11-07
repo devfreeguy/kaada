@@ -523,7 +523,7 @@ describe("converting your own money is one tap, not a PIN", () => {
 });
 
 describe("the secure authorization flow", () => {
-  it("shows the summary with an 'Authorize payment' link to the secure page and tracks the payment", async () => {
+  it("shows the summary with an 'Confirm payment' link to the secure page and tracks the payment", async () => {
     const sessionId = randomUUID();
     const agent = scriptedAgent(authorizationResponse(sessionId));
     const { adapter, service, links, stores } = build({ agent });
@@ -538,7 +538,7 @@ describe("the secure authorization flow", () => {
 
     const [authorize] = urlActions(adapter.last);
     assert.equal(authorize?.semantic, "OPEN_AUTHORIZATION");
-    assert.equal(authorize?.label, "Authorize payment");
+    assert.equal(authorize?.label, "Confirm payment");
     assert.match(authorize?.url ?? "", /^https:\/\/app\.kaada\.test\/authorize\//);
     assert.deepEqual(links.authorization, [sessionId]);
 

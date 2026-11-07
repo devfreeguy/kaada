@@ -1334,7 +1334,7 @@ It's in your ${from.name} balance.`,
       actions.push({
         type: "OPEN_URL",
         semantic: "OPEN_AUTHORIZATION",
-        label: "Authorize payment",
+        label: "Confirm payment",
         url,
       });
     }
