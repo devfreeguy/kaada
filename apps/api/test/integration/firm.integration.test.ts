@@ -423,6 +423,21 @@ describe("firm quotes and execution plans on the real database", { skip }, () =>
     assert.equal(audit.includes(CLAIM), false);
   });
 
+  it("records the firm quote of a provider that reserves nothing: no claim token, and the database accepts it", async () => {
+    // Found in production: an AMM (Uniswap) issues no claim token, and an old check constraint demanded one on every quoted row,
+    // so the final price for a Uniswap payment could never be saved. The in-memory tests could not see it.
+    const ctx = await authorized("amm");
+    const provider = Object.assign(new FakeProvider(), { issuesClaimToken: false });
+    const { service } = services(provider);
+    const outcome = await service.prepare(ctx.authorization.id);
+    assert.equal(outcome.status, "EXECUTION_READY", JSON.stringify(outcome));
+    const attempt = await database.client.firmQuoteAttempt.findFirstOrThrow({
+      where: { paymentAuthorizationId: ctx.authorization.id },
+    });
+    assert.equal(attempt.status, "QUOTED");
+    assert.equal(attempt.claimSecretId, null, "nothing was reserved, so there is no token to keep");
+  });
+
   it("a price above the authorization needs a new authorization and changes nothing", async () => {
     const ctx = await authorized("over");
     const provider = new FakeProvider("92306282"); // one atom above the 92306281 ceiling
