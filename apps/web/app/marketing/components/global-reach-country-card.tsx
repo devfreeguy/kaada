@@ -30,6 +30,9 @@ export function GlobalReachCountryCard({ country }: { country: SupportedCountry 
           <span aria-hidden="true">·</span>
           <span>{country.code}</span>
         </p>
+        {country.swapComingSoon ? (
+          <p className={styles.badge}>Swaps coming soon</p>
+        ) : null}
       </div>
     </article>
   );

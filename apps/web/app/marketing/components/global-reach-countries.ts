@@ -18,6 +18,8 @@ export type SupportedCountry = {
   coordinates: [number, number];
   coin: StaticImageData;
   coinSize: number;
+  /** True while the currency can be sent and received but not yet swapped. */
+  swapComingSoon?: boolean;
 };
 
 export const supportedCountries: SupportedCountry[] = [
@@ -70,6 +72,7 @@ export const supportedCountries: SupportedCountry[] = [
     coordinates: [-102.5528, 23.6345],
     coin: coin4,
     coinSize: 44,
+    swapComingSoon: true,
   },
   {
     id: "170",
@@ -80,6 +83,7 @@ export const supportedCountries: SupportedCountry[] = [
     coordinates: [-74.2973, 4.5709],
     coin: coin5,
     coinSize: 30,
+    swapComingSoon: true,
   },
   {
     id: "152",
@@ -90,6 +94,7 @@ export const supportedCountries: SupportedCountry[] = [
     coordinates: [-71.543, -35.6751],
     coin: coin6,
     coinSize: 24,
+    swapComingSoon: true,
   },
   {
     id: "604",
@@ -100,6 +105,7 @@ export const supportedCountries: SupportedCountry[] = [
     coordinates: [-75.0152, -9.19],
     coin: coin7,
     coinSize: 32,
+    swapComingSoon: true,
   },
   {
     id: "840",
