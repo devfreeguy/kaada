@@ -14,3 +14,7 @@ export const SITE_URL = "https://kaada.xyz";
 
 /** The secure application (setup, authorize, recovery). */
 export const APP_PATH_RECOVERY = "/recovery";
+
+/** The demo video shown in the How It Works section (YouTube video id). */
+export const DEMO_VIDEO_ID = "ktSs18YEfFk";
+export const DEMO_VIDEO_URL = `https://youtu.be/${DEMO_VIDEO_ID}`;

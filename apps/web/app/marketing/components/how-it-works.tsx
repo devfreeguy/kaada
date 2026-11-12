@@ -1,5 +1,6 @@
 import { SectionHeading } from "../../components/section-heading";
 import { SectionWrapper } from "../../components/section-wrapper";
+import { DemoVideo } from "./demo-video";
 import { HowItWorksSteps } from "./how-it-works-steps";
 import { StartWithKaada } from "./start-with-kaada";
 
@@ -18,6 +19,7 @@ export function HowItWorks() {
           action={<StartWithKaada variant="primary" className="" />}
         />
         <HowItWorksSteps />
+        <DemoVideo />
       </SectionWrapper>
     </section>
   );
